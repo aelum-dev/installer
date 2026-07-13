@@ -174,6 +174,91 @@ The working pattern for page transitions:
 
 ---
 
+## 7. Dropdown Popup Clipped by Parent Overflow
+
+**Issue**: Custom dropdown component's popup list was visually covered/hidden behind the footer. The dropdown had `z-index: 1000` but still didn't appear.
+
+**Root cause**: `.content-area` has `overflow: hidden` (needed for page transition animations). This clips *everything* inside it regardless of z-index — the dropdown popup extends past the bottom of `.content-area` and gets clipped by the overflow, not covered by the footer.
+
+**Fix**: Change `.content-area` from `overflow: hidden` to `overflow: visible`. The page transition animations still work because they use `{#key}` re-rendering rather than overflow-based clipping.
+
+```css
+.content-area {
+    /* ... */
+    overflow: visible;  /* was: hidden */
+}
+```
+
+---
+
+## 8. Locking Window Size in Wails v2
+
+**Issue**: Tried to set `Resizable: false` on the Wails app config, but the field doesn't exist.
+
+**Fix**: Use `MinWidth`, `MaxWidth`, `MinHeight`, `MaxHeight` all set to the same values:
+```go
+wails.Run(&options.App{
+    Title:     "my-app",
+    Width:     900,
+    Height:    600,
+    MinWidth:  900,
+    MaxWidth:  900,
+    MinHeight: 600,
+    MaxHeight: 600,
+})
+```
+
+---
+
+## 9. Consistent Heading Positioning Across Pages
+
+**Issue**: Each page has its own heading (`<h1>` or `<h2>`) and they should all appear at the same vertical position.
+
+**Fix**: Use absolute positioning on all page headings:
+```css
+h1, h2 {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+```
+This keeps headings at a fixed distance from the content area top without affecting the layout flow of other page content.
+
+---
+
+## 10. Custom Dropdown Component Pattern
+
+A reusable dropdown component (`Dropdown.svelte`) was created to replace native `<select>` for full light-theme control. Key design decisions:
+
+- **Props**: `options`, `selectedValue`, `placeholder`, `width`, `onChange`
+- **Keyboard nav**: Arrow keys, Enter, Space, Escape
+- **ARIA**: `role="combobox"` on button, `role="listbox"`/`role="option"` on list
+- **Click outside** closes via `$effect` with `mousedown` listener
+- **Max height + scroll**: `max-height: 200px; overflow-y: auto` prevents overflow beyond window
+- **Dynamic classes use clsx form**: `class={{ 'selected': condition }}` instead of `class:list` to avoid CSS unused selector warnings
+- **Avoid attribute selectors in CSS**: Use `.dropdown--open` instead of `[aria-expanded='true']` to prevent `css_unused_selector` warnings
+
+---
+
+## 11. Page-to-Parent Communication via Custom Events
+
+When a child page needs to trigger navigation in the parent App, use custom events on `document`:
+
+```ts
+// Child page dispatches:
+document.dispatchEvent(new CustomEvent('go-next'));
+
+// Parent listens:
+$effect(() => {
+    const handler = () => goToNext();
+    document.addEventListener('go-next', handler);
+    return () => document.removeEventListener('go-next', handler);
+});
+```
+
+---
+
 ## Checklist for Future Sessions
 
 When modifying this project:
@@ -187,3 +272,8 @@ When modifying this project:
 7. ✅ Mirror path aliases in both `vite.config.ts` AND `tsconfig.json`
 8. ✅ Run `npx svelte-check` after every component change
 9. ✅ Run `npm run build` before committing to verify full pipeline
+10. ✅ Use `MinWidth/MaxWidth/MinHeight/MaxHeight` (not `Resizable`) to lock window size in Wails v2
+11. ✅ Use `overflow: visible` on `.content-area` for dropdowns/popups to escape overflow clipping
+12. ✅ Position all page headings absolutely at `top: 24px` for consistent vertical alignment
+13. ✅ Use `class={{ ... }}` (clsx form) instead of `class:list` to avoid CSS unused selector warnings
+14. ✅ Avoid attribute selectors in scoped CSS — use regular classes like `.dropdown--open`
