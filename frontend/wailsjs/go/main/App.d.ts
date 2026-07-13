@@ -8,7 +8,13 @@ export function CanGoNext():Promise<boolean>;
 
 export function GetCurrentPage():Promise<number>;
 
+export function GetLanguages():Promise<Array<main.Language>>;
+
+export function GetSelectedLanguage():Promise<string>;
+
 export function SetCurrentPage(arg1:main.PageID):Promise<void>;
+
+export function SetSelectedLanguage(arg1:string):Promise<void>;
 
 export function ValidateDiskSelection(arg1:main.DiskSelectionData):Promise<void>;
 

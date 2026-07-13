@@ -14,8 +14,20 @@ export function GetCurrentPage() {
   return window['go']['main']['App']['GetCurrentPage']();
 }
 
+export function GetLanguages() {
+  return window['go']['main']['App']['GetLanguages']();
+}
+
+export function GetSelectedLanguage() {
+  return window['go']['main']['App']['GetSelectedLanguage']();
+}
+
 export function SetCurrentPage(arg1) {
   return window['go']['main']['App']['SetCurrentPage'](arg1);
+}
+
+export function SetSelectedLanguage(arg1) {
+  return window['go']['main']['App']['SetSelectedLanguage'](arg1);
 }
 
 export function ValidateDiskSelection(arg1) {

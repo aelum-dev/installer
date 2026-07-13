@@ -12,6 +12,22 @@ export namespace main {
 	        this.diskId = source["diskId"];
 	    }
 	}
+	export class Language {
+	    code: string;
+	    name: string;
+	    locale: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Language(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.code = source["code"];
+	        this.name = source["name"];
+	        this.locale = source["locale"];
+	    }
+	}
 	export class UserAccountData {
 	    username: string;
 	    password: string;
