@@ -14,6 +14,10 @@
 	}
 
 	h2 {
+		position: absolute;
+		top: 24px;
+		left: 50%;
+		transform: translateX(-50%);
 		font-size: 1.5rem;
 		color: #333;
 		margin: 0;

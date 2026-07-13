@@ -8,11 +8,13 @@
 		options,
 		selectedValue,
 		placeholder = 'Select...',
+		width = 160,
 		onChange,
 	}: {
 		options: Option[];
 		selectedValue: string;
 		placeholder?: string;
+		width?: number;
 		onChange: (value: string) => void;
 	} = $props();
 
@@ -103,6 +105,7 @@
 	<button
 		type="button"
 		class="dropdown-button"
+		style:width={width + 'px'}
 		aria-expanded={isOpen}
 		aria-haspopup="listbox"
 		aria-label={placeholder}

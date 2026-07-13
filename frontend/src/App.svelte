@@ -17,6 +17,12 @@
 	let isTransitioning = $state(false);
 	let errorMessage = $state('');
 
+	$effect(() => {
+		const handler = () => goToNext();
+		document.addEventListener('go-next', handler);
+		return () => document.removeEventListener('go-next', handler);
+	});
+
 	// Animation state
 	let animKey = $state(0);
 	let animDirection = $state<TransitionDirection>('forward');
@@ -113,7 +119,9 @@
 		</PageTransition>
 	</main>
 
-	<AppFooter {currentPage} onBack={goToBack} onNext={goToNext} />
+	{#if currentPage > 0}
+		<AppFooter {currentPage} onBack={goToBack} onNext={goToNext} />
+	{/if}
 </div>
 
 <style>

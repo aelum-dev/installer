@@ -45,38 +45,74 @@
 </script>
 
 <div class="page">
-	<h2>Welcome Page</h2>
-	<p>This is page 1 of 5.</p>
+	<div class="welcome-content">
+		<h1>Welcome to AestheticOS</h1>
+		<p class="subtitle">This installer will guide you through setting up your system.</p>
 
-	{#if loading}
-		<span class="loading-text">Loading...</span>
-	{:else}
-		<Dropdown
-			options={dropdownOptions}
-			selectedValue={selectedCode}
-			placeholder="Language"
-			onChange={onLanguageChange}
-		/>
-	{/if}
+		{#if loading}
+			<span class="loading-text">Loading...</span>
+		{:else}
+			<div class="language-selector">
+				<p class="language-label">Please select your language</p>
+				<Dropdown
+					options={dropdownOptions}
+					selectedValue={selectedCode}
+					placeholder="Select language"
+					width={240}
+					onChange={onLanguageChange}
+				/>
+			</div>
+		{/if}
+
+		<button class="cta-button" onclick={() => document.dispatchEvent(new CustomEvent('go-next'))}>
+			Get Started
+		</button>
+	</div>
 </div>
 
 <style>
 	.page {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		height: 100%;
-		gap: 12px;
 	}
 
-	h2 {
-		font-size: 1.5rem;
-		color: #333;
+	.welcome-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 24px;
+		text-align: center;
+	}
+
+	h1 {
+		position: absolute;
+		top: 24px;
+		left: 50%;
+		transform: translateX(-50%);
+		font-size: 2rem;
+		font-weight: 700;
+		color: #222;
 		margin: 0;
 	}
 
-	p {
+	.subtitle {
+		font-size: 1.05rem;
+		color: #666;
+		margin: 0;
+		max-width: 360px;
+	}
+
+	.language-selector {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		align-items: flex-start;
+	}
+
+	.language-label {
+		font-size: 0.85rem;
 		color: #666;
 		margin: 0;
 	}
@@ -85,5 +121,25 @@
 		font-size: 0.9rem;
 		color: #888;
 		margin-top: 16px;
+	}
+
+	.cta-button {
+		padding: 10px 32px;
+		border: none;
+		border-radius: 6px;
+		background-color: #4a90d9;
+		color: #fff;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.15s ease, transform 0.1s ease;
+	}
+
+	.cta-button:hover {
+		background-color: #3a7bc8;
+	}
+
+	.cta-button:active {
+		transform: scale(0.98);
 	}
 </style>
