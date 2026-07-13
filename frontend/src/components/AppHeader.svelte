@@ -18,10 +18,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 14px 24px;
+		padding: 10px 24px;
 		background-color: #e8e8e8;
 		border-bottom: 1px solid #ccc;
-		min-height: 56px;
+		min-height: 44px;
 	}
 
 	.header h1 {
