@@ -86,12 +86,7 @@
 </script>
 
 <div class="app-layout">
-	<AppHeader
-		{currentPage}
-		canGoBack={currentPage > 0}
-		onBack={goToBack}
-		onNext={goToNext}
-	/>
+	<AppHeader {currentPage} />
 
 	<main class="content-area">
 		{#if errorMessage}
@@ -118,7 +113,7 @@
 		</PageTransition>
 	</main>
 
-	<AppFooter {currentPage} />
+	<AppFooter {currentPage} onBack={goToBack} onNext={goToNext} />
 </div>
 
 <style>
