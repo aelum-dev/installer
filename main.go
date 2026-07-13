@@ -17,9 +17,13 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "aesthetic-os-installer",
-		Width:  900,
-		Height: 600,
+		Title:     "aesthetic-os-installer",
+		Width:     900,
+		Height:    600,
+		MinWidth:  900,
+		MaxWidth:  900,
+		MinHeight: 600,
+		MaxHeight: 600,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

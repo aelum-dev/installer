@@ -128,7 +128,7 @@
 	.content-area {
 		flex: 1;
 		position: relative;
-		overflow: hidden;
+		overflow: visible;
 		background-color: #f9f9f9;
 	}
 
