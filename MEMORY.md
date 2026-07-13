@@ -1,0 +1,189 @@
+# Memory — Known Issues & Fixes
+
+## Project Stack
+- **Backend**: Go 1.25 + Wails v2.13
+- **Frontend**: Svelte 5 (runes mode) + TypeScript + Vite 6
+- **Target**: Arch-based Linux distro installer, light theme, barebones functional design
+
+---
+
+## 1. Wails Go Bindings Generation
+
+**Issue**: After updating `app.go` with new exported methods, the frontend still only had the old `Greet` binding. TypeScript compilation failed because the generated `.d.ts` didn't include new methods.
+
+**Fix**: Run `wails generate module` from the project root after every change to exported Go methods. This regenerates:
+- `frontend/wailsjs/go/main/App.d.ts` — TypeScript type declarations
+- `frontend/wailsjs/go/main/App.js` — JS IPC bridge functions
+- `frontend/wailsjs/go/models.ts` — Struct model types
+
+**Command**: `wails generate module`
+
+---
+
+## 2. Vite Cannot Resolve `wailsjs` Directory
+
+**Issue**: `npm run build` failed with:
+```
+Could not resolve "../../wailsjs/go/main/App" from "src/App.svelte"
+```
+
+**Root cause**: The `wailsjs` directory lives outside `src/`. Vite/Rollup only resolves modules from `node_modules` and the `src/` directory by default.
+
+**Fix**: Add a resolve alias in `frontend/vite.config.ts`:
+```ts
+import path from 'path'
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@wails': path.resolve('./wailsjs'),
+      // ... other aliases
+    },
+  },
+})
+```
+
+Then import using the alias:
+```ts
+import { CanGoNext } from '@wails/go/main/App.js';
+```
+
+**Note**: The `.js` extension is required — ESM modules need explicit file extensions.
+
+---
+
+## 3. Svelte 5 Runes Mode — Legacy Syntax Errors
+
+### `export let` → `$props()`
+**Issue**: `Cannot use export let in runes mode`
+**Fix**: Replace all `export let prop: Type = default;` with destructured `$props()`:
+```ts
+let { children, direction = 'forward' }: { children: any; direction?: string } = $props();
+```
+
+### `<svelte:component>` deprecated
+**Issue**: `` `<svelte:component>` is deprecated in runes mode ``
+**Fix**: Use conditional `{#if}` blocks instead of dynamic component rendering:
+```svelte
+{#if currentPage === 0}
+  <WelcomePage />
+{:else if currentPage === 1}
+  <UserAccountPage />
+{/if}
+```
+
+### `$:` rune not allowed in runes mode
+**Issue**: `` `$:` is not allowed in runes mode, use `$derived` or `$effect` instead ``
+**Fix**: Replace all `$:` reactive statements with `$derived` (for computed values) or `$effect` (for side effects):
+```ts
+// Before
+$: className = 'base' + (active ? ' active' : '');
+
+// After
+let className = $derived('base' + (active ? ' active' : ''));
+```
+
+---
+
+## 4. PageTransition Component — Dynamic Class Management
+
+### `class:list` with object literals causes TS parse errors
+**Issue**: `class:list={{ leaving, entering }}` inside `{#key}` blocks caused:
+```
+Error: Left side of comma operator is unused and has no side effects.
+Error: ';' expected.
+```
+
+**Fix**: Use a computed string via `$derived` instead:
+```ts
+let className = $derived('transition-content' + (leaving ? ' leaving' : '') + (entering ? ' entering' : ''));
+```
+```svelte
+<div class={className}>
+```
+
+### `bind:this` doesn't expose exported component methods
+**Issue**: Tried to use `bind:this={pageRef}` and call `pageRef.animate()` on a Svelte 5 component. This doesn't work — Svelte 5 components don't expose their exports as instance properties.
+
+**Fix**: Lift animation state (key, direction, leaving/entering booleans) to the parent component and pass them as props. The child becomes a pure presentational wrapper.
+
+### CSS unused selector warnings for dynamic classes
+**Issue**: `Unused CSS selector ".transition-content.entering"` — Svelte's scoped CSS compiler can't detect classes applied via `class:list` or computed `class=` strings at runtime.
+
+**Fix**: Add suppress comments before each affected selector:
+```css
+/* svelte-ignore css_unused_selector */
+.transition-content.entering {
+  opacity: 0;
+}
+```
+
+### Attribute selectors on regular HTML elements trigger warnings
+**Issue**: `.transition-content[transition-direction="forward"].leaving` still triggers `css_unused_selector` because Svelte doesn't recognize attribute selectors on plain `<div>` elements.
+
+**Fix**: Prefix with the element type:
+```css
+/* svelte-ignore css_unused_selector */
+div[data-transition-direction="forward"].leaving {
+  transform: translateX(0);
+}
+```
+
+---
+
+## 5. Animation State Management Pattern
+
+The working pattern for page transitions:
+
+1. **Parent (App.svelte)** manages animation state: `animKey`, `animDirection`, `animLeaving`, `animEntering`
+2. **Child (PageTransition.svelte)** receives all four as props — it's purely presentational
+3. Animation flow in parent:
+   ```ts
+   async function animateTransition(direction) {
+     animDirection = direction;
+     animLeaving = true;            // phase 1: leave animation (200ms)
+     await delay(200);
+     animKey++;                     // triggers {#key} re-render → content swap
+     animLeaving = false;           // start enter phase
+     animEntering = true;
+     await delay(200);              // wait for enter animation (200ms)
+     animEntering = false;          // done
+   }
+   ```
+4. CSS handles the actual transitions via `transition` property with class-based keyframes
+
+---
+
+## 6. TypeScript Path Aliases Must Match in Both Files
+
+**Issue**: Added `$components`, `$pages`, `$lib` aliases in `vite.config.ts` but forgot to add matching entries in `tsconfig.json`. TypeScript would report "cannot find module" errors even though Vite resolved them at build time.
+
+**Fix**: Always mirror path aliases in both files:
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "$components/*": ["src/components/*"],
+      "$pages/*": ["src/pages/*"],
+      "$lib/*": ["src/lib/*"]
+    }
+  }
+}
+```
+
+---
+
+## Checklist for Future Sessions
+
+When modifying this project:
+
+1. ✅ After changing exported Go methods → run `wails generate module`
+2. ✅ Import Wails bindings using `@wails/...` alias, not relative paths
+3. ✅ Always include `.js` extension on ESM imports
+4. ✅ Use `$props()` — never `export let`
+5. ✅ Use `$derived` — never `$:` statements
+6. ✅ Use conditional blocks — never `<svelte:component>`
+7. ✅ Mirror path aliases in both `vite.config.ts` AND `tsconfig.json`
+8. ✅ Run `npx svelte-check` after every component change
+9. ✅ Run `npm run build` before committing to verify full pipeline
