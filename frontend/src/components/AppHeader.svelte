@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { PAGE_NAMES } from '$lib/types';
 
-	let { currentPage, canGoBack, onNext }: { currentPage: number; canGoBack: boolean; onNext: () => void } = $props();
+	let { currentPage, canGoBack, onBack, onNext }: { currentPage: number; canGoBack: boolean; onBack: () => void; onNext: () => void } = $props();
 
 	$effect(() => {
 		document.title = `${PAGE_NAMES[currentPage]} — Arch Installer`;
@@ -11,7 +11,7 @@
 <header class="header">
 	<div class="header-left">
 		{#if canGoBack}
-			<button class="btn-back" onclick={() => void 0}>← Back</button>
+			<button class="btn-back" onclick={onBack}>← Back</button>
 		{/if}
 	</div>
 	<h1 class="header-title">{PAGE_NAMES[currentPage]}</h1>

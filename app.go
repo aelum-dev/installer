@@ -62,25 +62,9 @@ func (a *App) SetCurrentPage(pageID PageID) error {
 }
 
 // CanGoNext checks if the user can proceed to the next page.
+// TODO: Re-enable validation once UI forms are implemented.
 func (a *App) CanGoNext() bool {
-	nextPage := a.currentPage + 1
-	if nextPage > PageFinish {
-		return false
-	}
-
-	switch a.currentPage {
-	case PageWelcome:
-		// Always allow moving forward from welcome
-		return true
-	case PageUserAccount:
-		return a.validateUserAccount(a.userAccount) == nil
-	case PageDiskSelection:
-		return a.validateDiskSelection(a.diskSelection) == nil
-	case PageInstallation:
-		return true // already past the hard part
-	default:
-		return false
-	}
+	return a.currentPage < PageFinish
 }
 
 // CanGoBack checks if the user can go back to the previous page.
