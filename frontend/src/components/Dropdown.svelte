@@ -158,11 +158,11 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 6px 32px 6px 12px;
+		padding: 11px 32px 11px 16px;
 		border: 1px solid #999;
-		border-radius: 4px;
+		border-radius: 10px;
 		background-color: #fff;
-		font-size: 0.9rem;
+		font-size: 1rem;
 		color: #333;
 		cursor: pointer;
 		min-width: 160px;
@@ -224,6 +224,7 @@
 		cursor: pointer;
 		white-space: nowrap;
 		transition: background-color 0.1s ease;
+		text-align: left;
 	}
 
 	.dropdown-item:hover,

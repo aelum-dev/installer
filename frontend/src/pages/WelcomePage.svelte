@@ -59,7 +59,7 @@
 					options={dropdownOptions}
 					selectedValue={selectedCode}
 					placeholder="Select language"
-					width={240}
+					width={280}
 					onChange={onLanguageChange}
 				/>
 			</div>
