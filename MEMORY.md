@@ -259,6 +259,66 @@ $effect(() => {
 
 ---
 
+## 12. Custom Button Component (`Button.svelte`)
+
+A reusable aesthetic button component was created to replace native `<button>` elements throughout the app.
+
+### Location
+`frontend/src/components/Button.svelte`
+
+### Variants
+| Variant | Look | Use Case |
+|---------|------|----------|
+| `primary` | Solid blue (`#4a90d9`) with shadow lift on hover | Main CTAs like "Get Started" |
+| `secondary` | White with subtle border, lifts on hover | "Next →", "Finish" actions |
+| `ghost` | Transparent bg, light gray border (`#d8d8d8`) | "← Back" navigation |
+
+### Props
+- `variant?: 'primary' | 'secondary' | 'ghost'` (default: `'primary'`)
+- `size?: 'small' | 'medium' | 'large'` (default: `'medium'`)
+- `disabled?: boolean` (default: `false`)
+- `fullWidth?: boolean` (default: `false`)
+- `onClick?: (e: MouseEvent) => void`
+- `children: Snippet` — use `{@render children()}` in template, NOT `<slot />`
+
+### Usage
+```svelte
+<Button variant="primary" size="large" onClick={handleClick}>
+    Get Started
+</Button>
+```
+
+### Key Implementation Details
+- **NO `<slot />`** — deprecated in Svelte 5. Use `{@render children()}` with `children: Snippet` prop type.
+- **NO `$derived.by()`** for class computation — causes HMR instability. Use a plain function `getBtnClass(): string` instead.
+- **Event forwarding**: Use `onClick?: (e: MouseEvent) => void` prop, call via `onclick={(e) => onClick?.(e)}` on the native button element.
+
+### Replaced Components
+- `AppFooter.svelte` — Back (`ghost`) and Next/Finish (`secondary`) buttons
+- `WelcomePage.svelte` — Get Started (`primary`, `large`) button
+
+---
+
+## 13. Wails Dev Mode — HMR Unreliable with New Component Files
+
+**Issue**: Adding a new `.svelte` component file or modifying files that import new components causes `wails dev` to show a blank dark bluish page (the app crashes in the WebView). The app works after a full rebuild (`wails build`) but breaks intermittently during `wails dev`.
+
+**Root cause**: Known Svelte 5 HMR bug. When Vite hot-reloads after adding new component files, the Wails WebView loses connection to the dev server. This is documented in Svelte issues (#12403) and Wails template README as a known limitation.
+
+**Fix / Workaround**:
+- **Always use `wails build` + run the binary** for reliable testing after component changes
+- If `wails dev` goes blank: delete `frontend/node_modules/.vite` cache, then `fuser -k 34115/tcp 5173/tcp` to clear ports, restart
+- Accept that HMR in `wails dev` is unreliable with new `.svelte` files — it may work after modifying existing files but not after adding new ones
+
+**Development workflow**:
+```bash
+# After adding/modifying .svelte components:
+fuser -k 34115/tcp 2>/dev/null; fuser -k 5173/tcp 2>/dev/null
+wails build && ./build/bin/aesthetic-os-installer
+```
+
+---
+
 ## Checklist for Future Sessions
 
 When modifying this project:
@@ -271,9 +331,11 @@ When modifying this project:
 6. ✅ Use conditional blocks — never `<svelte:component>`
 7. ✅ Mirror path aliases in both `vite.config.ts` AND `tsconfig.json`
 8. ✅ Run `npx svelte-check` after every component change
-9. ✅ Run `npm run build` before committing to verify full pipeline
+9. ✅ Run `wails build` (NOT `wails dev`) for reliable testing with new `.svelte` files — HMR is broken in `wails dev` when adding new components
 10. ✅ Use `MinWidth/MaxWidth/MinHeight/MaxHeight` (not `Resizable`) to lock window size in Wails v2
 11. ✅ Use `overflow: visible` on `.content-area` for dropdowns/popups to escape overflow clipping
 12. ✅ Position all page headings absolutely at `top: 24px` for consistent vertical alignment
 13. ✅ Use `class={{ ... }}` (clsx form) instead of `class:list` to avoid CSS unused selector warnings
 14. ✅ Avoid attribute selectors in scoped CSS — use regular classes like `.dropdown--open`
+15. ✅ Use `{@render children()}` with `children: Snippet` prop — never `<slot />` (deprecated in Svelte 5)
+16. ✅ Use plain function for dynamic class computation — never `$derived.by()` (causes HMR instability)

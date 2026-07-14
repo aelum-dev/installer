@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Button from '$components/Button.svelte';
+
 	let { currentPage, onBack, onNext }: { currentPage: number; onBack: () => void; onNext: () => void } = $props();
 
 	const isLastPage = $derived(currentPage === 4);
@@ -8,11 +10,11 @@
 <footer class="footer">
 	<div class="footer-left">
 		{#if showBack}
-			<button class="btn-back" onclick={onBack}>← Back</button>
+			<Button variant="ghost" onClick={onBack}>← Back</Button>
 		{/if}
 	</div>
 	<div class="footer-right">
-		<button class="btn-next" onclick={onNext}>{isLastPage ? 'Finish' : 'Next →'}</button>
+		<Button variant="secondary" onClick={onNext}>{isLastPage ? 'Finish' : 'Next →'}</Button>
 	</div>
 </footer>
 
@@ -22,30 +24,15 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 10px 24px;
-		background-color: #e8e8e8;
-		border-top: 1px solid #ccc;
-		min-height: 44px;
+		background-color: #f3f3f3;
+		border-top: 1px solid #e5e5e5;
+		min-height: 52px;
 	}
 
 	.footer-left,
 	.footer-right {
 		display: flex;
 		align-items: center;
-	}
-
-	.btn-back,
-	.btn-next {
-		padding: 6px 16px;
-		border: 1px solid #999;
-		border-radius: 4px;
-		background-color: #fff;
-		color: #333;
-		cursor: pointer;
-		font-size: 0.9rem;
-	}
-
-	.btn-back:hover,
-	.btn-next:hover {
-		background-color: #f0f0f0;
+		gap: 8px;
 	}
 </style>
