@@ -31,6 +31,7 @@ export namespace main {
 	export class UserAccountData {
 	    username: string;
 	    password: string;
+	    confirmPassword: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new UserAccountData(source);
@@ -40,6 +41,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.username = source["username"];
 	        this.password = source["password"];
+	        this.confirmPassword = source["confirmPassword"];
 	    }
 	}
 

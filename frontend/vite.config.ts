@@ -13,4 +13,9 @@ export default defineConfig({
       '@wails': path.resolve('./wailsjs'),
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+  },
 })

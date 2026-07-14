@@ -25,8 +25,9 @@ const (
 
 // UserAccountData holds user account form fields.
 type UserAccountData struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
 }
 
 // DiskSelectionData holds disk selection info.
@@ -156,6 +157,12 @@ func (a *App) validateUserAccount(data UserAccountData) error {
 	}
 	if len(data.Password) < 6 {
 		return fmt.Errorf("password must be at least 6 characters")
+	}
+	if data.ConfirmPassword == "" {
+		return fmt.Errorf("please confirm your password")
+	}
+	if data.Password != data.ConfirmPassword {
+		return fmt.Errorf("passwords do not match")
 	}
 	return nil
 }
