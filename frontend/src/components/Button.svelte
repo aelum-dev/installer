@@ -44,9 +44,9 @@
 <style>
 	.btn {
 		font-family: inherit;
-		font-weight: 600;
+		font-weight: var(--font-weight-600);
 		border: none;
-		border-radius: 8px;
+		border-radius: var(--radius-md);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		display: inline-flex;
@@ -63,28 +63,28 @@
 
 	/* svelte-ignore css_unused_selector */
 	.btn-primary {
-		background-color: #4a90d9;
-		color: #fff;
+		background-color: var(--color-primary);
+		color: var(--color-bg-white);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-primary:hover:not(:disabled) {
-		background-color: #3a7bc8;
+		background-color: var(--color-primary-hover);
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(74, 144, 217, 0.35);
+		box-shadow: var(--shadow-primary);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-primary:active:not(:disabled) {
 		transform: translateY(0) scale(0.98);
-		box-shadow: 0 2px 6px rgba(74, 144, 217, 0.25);
+		box-shadow: var(--shadow-sm);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-secondary {
-		background-color: #ffffff;
-		color: #3d3d3d;
-		border: 1.5px solid #d0d0d0;
+		background-color: var(--color-bg-white);
+		color: var(--color-text);
+		border: 1.5px solid var(--color-border-light);
 	}
 
 	/* svelte-ignore css_unused_selector */
@@ -105,20 +105,20 @@
 	.btn-ghost {
 		background-color: transparent;
 		color: #555;
-		padding: 6px 12px;
-		border: 1.5px solid #d8d8d8;
+		padding: var(--spacing-xs) var(--spacing-sm);
+		border: 1.5px solid var(--color-border-light);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-ghost:hover:not(:disabled) {
-		color: #333;
+		color: var(--color-text);
 		border-color: #c0c0c0;
 		background-color: rgba(0, 0, 0, 0.02);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-ghost:active:not(:disabled) {
-		color: #333;
+		color: var(--color-text);
 		border-color: #aaa;
 		background-color: rgba(0, 0, 0, 0.04);
 	}

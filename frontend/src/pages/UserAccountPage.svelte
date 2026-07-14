@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LogInfo } from '@wails/runtime/runtime';
+	import PageLayout from '$components/PageLayout.svelte';
 	import { userAccountData } from '$lib/store';
 	import { validateUserAccount, hasErrors } from '$lib/validate';
 
@@ -39,9 +40,7 @@
 	});
 </script>
 
-<div class="page">
-	<h2>Create User Account</h2>
-
+<PageLayout title="Create User Account">
 	<form class="form" onsubmit={(e) => e.preventDefault()}>
 		<div class="field">
 			<label for="username">Username</label>
@@ -88,32 +87,13 @@
 			{/if}
 		</div>
 	</form>
-</div>
+</PageLayout>
 
 <style>
-	.page {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		gap: 32px;
-	}
-
-	h2 {
-		position: absolute;
-		top: 24px;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 1.5rem;
-		color: #333;
-		margin: 0;
-	}
-
 	.form {
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		gap: var(--spacing-lg);
 		width: 100%;
 		max-width: 320px;
 	}
@@ -121,55 +101,55 @@
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: var(--spacing-xs);
 		text-align: left;
 	}
 
 	label {
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: #666;
+		font-size: var(--font-size-md);
+		font-weight: var(--font-weight-600);
+		color: var(--color-text-muted);
 		letter-spacing: 0.02em;
 	}
 
 	.line-edit {
-		background-color: #fff;
-		border: 1px solid #999;
-		border-radius: 10px;
+		background-color: var(--color-bg-white);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
 		padding: 11px 16px;
 		font-family: inherit;
-		font-size: 1rem;
-		color: #333;
+		font-size: var(--font-size-base);
+		color: var(--color-text);
 		outline: none;
 		transition: background-color 0.15s ease, border-color 0.15s ease;
 	}
 
 	.line-edit::placeholder {
-		color: #999;
+		color: var(--color-text-light);
 	}
 
 	.line-edit:focus {
-		border-color: #4a90d9;
-		outline: 2px solid #4a90d9;
+		border-color: var(--color-primary);
+		outline: 2px solid var(--color-primary);
 		outline-offset: 1px;
 	}
 
 	.line-edit:hover:not(:focus) {
-		background-color: #f5f5f5;
+		background-color: var(--color-bg-hover);
 	}
 
 	.line-edit--error {
-		border-color: #d32f2f;
+		border-color: var(--color-danger);
 	}
 
 	.line-edit--error:focus {
-		border-color: #d32f2f;
-		outline-color: #d32f2f;
+		border-color: var(--color-danger);
+		outline-color: var(--color-danger);
 	}
 
 	.error {
-		font-size: 0.8rem;
-		color: #d32f2f;
+		font-size: var(--font-size-sm);
+		color: var(--color-danger);
 		margin: 0;
 	}
 </style>

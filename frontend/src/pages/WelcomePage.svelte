@@ -4,6 +4,7 @@
 	import { LogInfo, LogError } from '@wails/runtime/runtime';
 	import Button from '$components/Button.svelte';
 	import Dropdown from '$components/Dropdown.svelte';
+	import PageLayout from '$components/PageLayout.svelte';
 
 	interface Language {
 		code: string;
@@ -46,9 +47,8 @@
 	loadLanguages();
 </script>
 
-<div class="page">
+<PageLayout title="Welcome to AestheticOS">
 	<div class="welcome-content">
-		<h1>Welcome to AestheticOS</h1>
 		<p class="subtitle">This installer will guide you through setting up your system.</p>
 
 		{#if loading}
@@ -73,38 +73,20 @@
 			Get Started
 		</Button>
 	</div>
-</div>
+</PageLayout>
 
 <style>
-	.page {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-	}
-
 	.welcome-content {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 24px;
+		gap: var(--spacing-xl);
 		text-align: center;
-	}
-
-	h1 {
-		position: absolute;
-		top: 24px;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 2rem;
-		font-weight: 700;
-		color: #222;
-		margin: 0;
 	}
 
 	.subtitle {
 		font-size: 1.05rem;
-		color: #666;
+		color: var(--color-text-muted);
 		margin: 0;
 		max-width: 360px;
 	}

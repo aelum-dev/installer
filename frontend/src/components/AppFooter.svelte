@@ -23,10 +23,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 10px 24px;
-		background-color: #f3f3f3;
-		border-top: 1px solid #e5e5e5;
-		min-height: 52px;
+		padding: var(--spacing-sm) var(--spacing-xl);
+		background-color: var(--color-bg-footer);
+		border-top: 1px solid var(--color-border-light);
+		min-height: var(--footer-height);
 	}
 
 	.footer-left,

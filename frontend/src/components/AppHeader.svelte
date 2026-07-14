@@ -12,16 +12,16 @@
 	.header {
 		display: flex;
 		align-items: center;
-		padding: 10px 24px;
-		background-color: #e8e8e8;
-		border-bottom: 1px solid #ccc;
-		min-height: 44px;
+		padding: var(--spacing-sm) var(--spacing-xl);
+		background-color: var(--color-bg-header);
+		border-bottom: 1px solid var(--color-border-light);
+		min-height: var(--header-height);
 	}
 
 	.brand {
 		font-size: 0.95rem;
-		font-weight: 700;
-		color: #333;
+		font-weight: var(--font-weight-700);
+		color: var(--color-text);
 		text-transform: uppercase;
 		letter-spacing: 1px;
 	}

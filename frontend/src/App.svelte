@@ -152,20 +152,20 @@
 		flex: 1;
 		position: relative;
 		overflow: visible;
-		background-color: #f9f9f9;
+		background-color: var(--color-bg-light);
 	}
 
 	.error-banner {
 		position: absolute;
-		top: 56px;
+		top: 62px;
 		left: 50%;
 		transform: translateX(-50%);
-		background-color: #ffe0e0;
-		border: 1px solid #ffaaaa;
-		color: #cc0000;
-		padding: 8px 16px;
-		border-radius: 4px;
-		font-size: 0.85rem;
+		background-color: var(--color-danger-light);
+		border: 1px solid var(--color-danger-border);
+		color: var(--color-danger);
+		padding: var(--spacing-sm) var(--spacing-lg);
+		border-radius: var(--radius-sm);
+		font-size: var(--font-size-md);
 		z-index: 10;
 	}
 </style>

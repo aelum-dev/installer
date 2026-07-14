@@ -1,30 +1,14 @@
-<div class="page">
-	<h2>Finish Page</h2>
+<script lang="ts">
+	import PageLayout from '$components/PageLayout.svelte';
+</script>
+
+<PageLayout title="Finish">
 	<p>This is page 5 of 5.</p>
-</div>
+</PageLayout>
 
 <style>
-	.page {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		gap: 12px;
-	}
-
-	h2 {
-		position: absolute;
-		top: 24px;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 1.5rem;
-		color: #333;
-		margin: 0;
-	}
-
 	p {
-		color: #666;
+		color: var(--color-text-muted);
 		margin: 0;
 	}
 </style>
