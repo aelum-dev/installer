@@ -72,7 +72,7 @@ vi.mock('@wails/runtime/runtime', () => ({
 }));
 
 // Mock Wails Go bindings
-vi.mock('@wails/go/main/App.js', () => ({
+vi.mock('@wails/go/app/App.js', () => ({
 	CanGoNext: vi.fn(() => Promise.resolve(true)),
 	CanGoBack: vi.fn(() => Promise.resolve(true)),
 	SetCurrentPage: vi.fn(() => Promise.resolve()),
