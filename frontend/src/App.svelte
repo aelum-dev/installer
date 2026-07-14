@@ -157,7 +157,7 @@
 
 	.error-banner {
 		position: absolute;
-		top: 8px;
+		top: 56px;
 		left: 50%;
 		transform: translateX(-50%);
 		background-color: #ffe0e0;
