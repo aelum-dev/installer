@@ -29,9 +29,20 @@
 
 	loadLanguageInfo();
 
-	function handleConfirm(): void {
+	let showConfirmDialog = $state(false);
+
+	function handleConfirmClick(): void {
+		showConfirmDialog = true;
+	}
+
+	function handleConfirmYes(): void {
+		showConfirmDialog = false;
 		LogInfo('[ConfirmationPage] User confirmed installation');
 		document.dispatchEvent(new CustomEvent('go-next'));
+	}
+
+	function handleConfirmNo(): void {
+		showConfirmDialog = false;
 	}
 </script>
 
@@ -85,6 +96,30 @@
 			</p>
 		</div>
 	</div>
+
+	<!-- Confirmation Dialog -->
+	{#if showConfirmDialog}
+		<div class="dialog-overlay" onclick={handleConfirmNo} onkeydown={(e) => e.key === 'Escape' && handleConfirmNo()} role="presentation">
+			<div class="dialog" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
+				<div class="dialog-icon">⚠️</div>
+				<h2 id="dialog-title" class="dialog-title">Confirm Installation</h2>
+				<p class="dialog-message">
+					Are you sure you want to install AestheticOS on
+					<strong> {$diskSelectionData.disk?.model || 'Unknown'} </strong>?
+					<br />
+					<strong>All data on this disk will be permanently erased.</strong>
+				</p>
+				<div class="dialog-actions">
+					<button type="button" class="btn-cancel" onclick={handleConfirmNo}>
+						Cancel
+					</button>
+					<button type="button" class="btn-confirm" onclick={handleConfirmYes}>
+						Yes, Erase & Install
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </PageLayout>
 
 <style>
@@ -207,5 +242,108 @@
 
 	.error {
 		color: var(--color-danger);
+	}
+
+	/* ── Dialog ── */
+	.dialog-overlay {
+		position: fixed;
+		inset: 0;
+		background-color: rgba(0, 0, 0, 0.6);
+		backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		animation: fadeIn 150ms ease;
+	}
+
+	.dialog {
+		background-color: var(--color-bg-white);
+		border-radius: var(--radius-xl);
+		padding: 32px;
+		max-width: 440px;
+		width: 90%;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.dialog-icon {
+		font-size: 2.5rem;
+		text-align: center;
+		margin-bottom: 16px;
+	}
+
+	.dialog-title {
+		margin: 0 0 12px;
+		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-700);
+		color: var(--color-text);
+		text-align: center;
+	}
+
+	.dialog-message {
+		margin: 0 0 24px;
+		font-size: var(--font-size-md);
+		color: var(--color-text-muted);
+		line-height: 1.6;
+		text-align: center;
+	}
+
+	.dialog-message strong {
+		color: var(--color-text);
+	}
+
+	.dialog-actions {
+		display: flex;
+		gap: 12px;
+		justify-content: flex-end;
+	}
+
+	.btn-cancel,
+	.btn-confirm {
+		font-family: inherit;
+		font-weight: 600;
+		font-size: var(--font-size-md);
+		padding: 10px 24px;
+		border-radius: var(--radius-md);
+		border: none;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-cancel {
+		background-color: var(--color-bg-light);
+		color: var(--color-text);
+	}
+
+	.btn-cancel:hover {
+		background-color: #e8e8e8;
+	}
+
+	.btn-confirm {
+		background-color: var(--color-danger);
+		color: white;
+	}
+
+	.btn-confirm:hover {
+		background-color: #c62828;
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px) scale(0.95);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
 	}
 </style>
