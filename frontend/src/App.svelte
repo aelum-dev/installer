@@ -28,6 +28,7 @@
 	let animDirection = $state<TransitionDirection>('forward');
 	let animLeaving = $state(false);
 	let animEntering = $state(false);
+	let animEnteringDone = $state(false);
 
 	// Jump to start page on init if configured
 	async function initStartPage(): Promise<void> {
@@ -60,10 +61,14 @@
 				errorMessage = null;
 
 				setTimeout(() => {
+					animEnteringDone = true;
+				}, 200);
+				setTimeout(() => {
 					animEntering = false;
+					animEnteringDone = false;
 					isTransitioning = false;
 					resolve();
-				}, 200);
+				}, 450);
 			}, 200);
 		});
 	}
@@ -132,6 +137,7 @@
 			direction={animDirection}
 			leaving={animLeaving}
 			entering={animEntering}
+			enteringDone={animEnteringDone}
 		>
 			{#if currentPage === 0}
 				<WelcomePage />
