@@ -10,6 +10,10 @@ export function CanGoNext() {
   return window['go']['app']['App']['CanGoNext']();
 }
 
+export function ClearStartPage() {
+  return window['go']['app']['App']['ClearStartPage']();
+}
+
 export function GetCurrentPage() {
   return window['go']['app']['App']['GetCurrentPage']();
 }
@@ -26,12 +30,20 @@ export function GetSelectedLanguage() {
   return window['go']['app']['App']['GetSelectedLanguage']();
 }
 
+export function GetStartPage() {
+  return window['go']['app']['App']['GetStartPage']();
+}
+
 export function SetCurrentPage(arg1) {
   return window['go']['app']['App']['SetCurrentPage'](arg1);
 }
 
 export function SetSelectedLanguage(arg1) {
   return window['go']['app']['App']['SetSelectedLanguage'](arg1);
+}
+
+export function SetStartPage(arg1) {
+  return window['go']['app']['App']['SetStartPage'](arg1);
 }
 
 export function ValidateDiskSelection(arg1) {

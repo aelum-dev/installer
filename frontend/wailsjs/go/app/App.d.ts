@@ -6,6 +6,8 @@ export function CanGoBack():Promise<boolean>;
 
 export function CanGoNext():Promise<boolean>;
 
+export function ClearStartPage():Promise<void>;
+
 export function GetCurrentPage():Promise<number>;
 
 export function GetDisks():Promise<Array<app.DiskInfo>>;
@@ -14,9 +16,13 @@ export function GetLanguages():Promise<Array<app.Language>>;
 
 export function GetSelectedLanguage():Promise<string>;
 
+export function GetStartPage():Promise<number>;
+
 export function SetCurrentPage(arg1:app.PageID):Promise<void>;
 
 export function SetSelectedLanguage(arg1:string):Promise<void>;
+
+export function SetStartPage(arg1:app.PageID):Promise<void>;
 
 export function ValidateDiskSelection(arg1:app.DiskSelectionData):Promise<void>;
 

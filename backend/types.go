@@ -36,6 +36,7 @@ type DiskSelectionData struct {
 type App struct {
 	ctx             context.Context
 	currentPage     PageID
+	startPage       PageID
 	userAccount     UserAccountData
 	diskSelection   DiskSelectionData
 	selectedLanguage string
