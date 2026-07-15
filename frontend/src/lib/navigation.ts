@@ -11,7 +11,7 @@ export async function goNext(currentPage: number): Promise<string | null> {
 	// Check if we can go next
 	const canGo = await CanGoNext();
 	if (!canGo) {
-		return 'Validation failed. Please fix the issues above.';
+		return getPageErrorMessage(currentPage);
 	}
 
 	// Update backend
@@ -43,6 +43,15 @@ export async function finish(): Promise<string | null> {
 	}
 }
 
+function getPageErrorMessage(page: number): string {
+	const messages: Record<number, string> = {
+		1: 'Please complete all required fields to continue.',
+		2: 'Please select a disk to continue.',
+		3: 'Please review your installation details.',
+	};
+	return messages[page] ?? 'Please fix the issues above to continue.';
+}
+
 async function validateCurrentPage(page: number): Promise<string | null> {
 	try {
 		if (page === 1) {
@@ -61,6 +70,6 @@ async function validateCurrentPage(page: number): Promise<string | null> {
 
 		return null; // Validation passed
 	} catch {
-		return 'Validation failed. Please fix the issues above.';
+		return getPageErrorMessage(page);
 	}
 }
