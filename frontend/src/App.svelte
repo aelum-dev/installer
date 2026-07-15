@@ -161,7 +161,7 @@
 		</PageTransition>
 	</main>
 
-	{#if currentPage > 0}
+	{#if currentPage > 0 && currentPage !== 3}
 		<AppFooter {currentPage} onBack={goToBack} onNext={goToNext} />
 	{/if}
 </div>
