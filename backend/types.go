@@ -16,8 +16,9 @@ const (
 	PageWelcome       PageID = 0
 	PageUserAccount   PageID = 1
 	PageDiskSelection PageID = 2
-	PageInstallation  PageID = 3
-	PageFinish        PageID = 4
+	PageConfirmation  PageID = 3
+	PageInstallation  PageID = 4
+	PageFinish        PageID = 5
 )
 
 // UserAccountData holds user account form fields.

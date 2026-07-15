@@ -7,6 +7,7 @@ export const userAccountData = writable<{ username: string; password: string; co
 	confirmPassword: '',
 });
 
-export const diskSelectionData = writable<{ diskId: string }>({
+export const diskSelectionData = writable<{ diskId: string; disk: DiskInfo | null }>({
 	diskId: '',
+	disk: null,
 });

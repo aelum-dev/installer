@@ -30,7 +30,7 @@
 
 	function selectDisk(disk: DiskInfo): void {
 		selectedDiskId = disk.path;
-		diskSelectionData.set({ diskId: disk.path });
+		diskSelectionData.set({ diskId: disk.path, disk });
 	}
 
 	function onDiskSelect(disk: DiskInfo): void {

@@ -6,6 +6,7 @@
 	import WelcomePage from '$pages/WelcomePage.svelte';
 	import UserAccountPage from '$pages/UserAccountPage.svelte';
 	import DiskSelectionPage from '$pages/DiskSelectionPage.svelte';
+	import ConfirmationPage from '$pages/ConfirmationPage.svelte';
 	import InstallationPage from '$pages/InstallationPage.svelte';
 	import FinishPage from '$pages/FinishPage.svelte';
 
@@ -27,7 +28,7 @@
 
 		try {
 			const startPage = await GetStartPage();
-			if (startPage >= 0 && startPage < 5) {
+			if (startPage >= 0 && startPage < 6) {
 				// Skip directly to the configured page, bypassing all validation
 				currentPage = startPage;
 				animKey++;
@@ -162,14 +163,16 @@
 			{:else if currentPage === 2}
 				<DiskSelectionPage />
 			{:else if currentPage === 3}
-				<InstallationPage />
+				<ConfirmationPage />
 			{:else if currentPage === 4}
+				<InstallationPage />
+			{:else if currentPage === 5}
 				<FinishPage />
 			{/if}
 		</PageTransition>
 	</main>
 
-	{#if currentPage > 0 && currentPage !== 3}
+	{#if currentPage > 0 && currentPage !== 4}
 		<AppFooter {currentPage} onBack={goToBack} onNext={goToNext} onFinish={handleFinish} />
 	{/if}
 </div>
