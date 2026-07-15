@@ -3,10 +3,18 @@ set -e
 
 cd "$(dirname "$0")"
 
-if [[ "$1" == "--dry-run" ]]; then
-  export AESTHETIC_DRY_RUN=1
-  echo "Running in DRY RUN mode..."
-fi
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      export AESTHETIC_DRY_RUN=1
+      echo "Running in DRY RUN mode..."
+      ;;
+    --debug-css)
+      export VITE_DEBUG_CSS=1
+      echo "Running with DEBUG CSS overlay enabled..."
+      ;;
+  esac
+done
 
 echo "Building and starting aesthetic-os-installer..."
 

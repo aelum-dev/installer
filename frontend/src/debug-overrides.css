@@ -1,0 +1,79 @@
+/* Debug CSS Overlay - Highlights all container elements with semi-transparent colored backgrounds */
+
+/* Make all container elements relative for overlay positioning */
+body.debug-mode div,
+body.debug-mode section,
+body.debug-mode main,
+body.debug-mode header,
+body.debug-mode footer,
+body.debug-mode aside,
+body.debug-mode article,
+body.debug-mode nav,
+body.debug-mode form {
+  position: relative !important;
+}
+
+/* Apply semi-transparent overlay to all container elements */
+body.debug-mode div::before,
+body.debug-mode section::before,
+body.debug-mode main::before,
+body.debug-mode header::before,
+body.debug-mode footer::before,
+body.debug-mode aside::before,
+body.debug-mode article::before,
+body.debug-mode nav::before,
+body.debug-mode form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: inherit;
+}
+
+/* Alternating colors (Catppuccin Latte palette) */
+body.debug-mode :nth-child(10n+1)::before { background-color: rgba(210, 15, 57, 0.12); }   /* Red */
+body.debug-mode :nth-child(10n+2)::before { background-color: rgba(30, 102, 245, 0.12); }   /* Blue */
+body.debug-mode :nth-child(10n+3)::before { background-color: rgba(64, 160, 43, 0.12); }    /* Green */
+body.debug-mode :nth-child(10n+4)::before { background-color: rgba(223, 142, 29, 0.12); }   /* Yellow/Peach */
+body.debug-mode :nth-child(10n+5)::before { background-color: rgba(136, 57, 239, 0.12); }   /* Mauve */
+body.debug-mode :nth-child(10n+6)::before { background-color: rgba(234, 118, 203, 0.12); }  /* Pink */
+body.debug-mode :nth-child(10n+7)::before { background-color: rgba(23, 146, 153, 0.12); }   /* Teal */
+body.debug-mode :nth-child(10n+8)::before { background-color: rgba(4, 165, 229, 0.12); }    /* Sky */
+body.debug-mode :nth-child(10n+9)::before { background-color: rgba(254, 100, 11, 0.12); }   /* Orange */
+body.debug-mode :nth-child(10n)::before { background-color: rgba(114, 135, 253, 0.12); }    /* Lavender */
+
+/* Element labels - uses data-debug-label attribute set by main.ts */
+body.debug-mode div::after,
+body.debug-mode section::after,
+body.debug-mode main::after,
+body.debug-mode header::after,
+body.debug-mode footer::after,
+body.debug-mode aside::after,
+body.debug-mode article::after,
+body.debug-mode nav::after,
+body.debug-mode form::after {
+  content: attr(data-debug-label);
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 2px;
+  z-index: 10000;
+  pointer-events: none;
+  white-space: nowrap;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
