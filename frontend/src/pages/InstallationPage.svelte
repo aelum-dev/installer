@@ -13,6 +13,7 @@
 	const EVENT_ERROR    = 'installation:error';
 
 	let currentStep = $state(0);
+	let currentStepLabel = $state('');
 	let progress = $state(0);
 	let isRunning = $state(false);
 	let isComplete = $state(false);
@@ -36,6 +37,7 @@
 	// Listen for installation events from the backend
 	$effect(() => {
 		const handleProgress = (data: { label: string; percent: number; phase: string }) => {
+			currentStepLabel = data.label;
 			if (data.phase === 'running') {
 				currentStep = data.percent;
 				errorMessage = '';
@@ -94,7 +96,7 @@
 	const currentLabel = $derived(
 		isComplete ? 'Installation completed!' :
 		errorMessage ? `Error: ${errorMessage}` :
-		isRunning ? `Step ${currentStep}%` : 'Waiting...'
+		currentStepLabel || 'Initializing...'
 	);
 </script>
 
