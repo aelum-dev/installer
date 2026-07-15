@@ -81,6 +81,11 @@
 	async function goToBack() {
 		if (isTransitioning || currentPage === 0) return;
 
+		// Reset disk selection when going back from ConfirmationPage
+		if (currentPage === 3) {
+			diskSelectionData.set({ diskId: '', disk: null });
+		}
+
 		isTransitioning = true;
 		await animateTransition('backward');
 		currentPage--;
