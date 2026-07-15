@@ -110,11 +110,11 @@
 	<AppHeader {currentPage} />
 
 	<main class="content-area">
-		{#if errorMessage}
-			<div class="error-banner">{errorMessage}</div>
-		{/if}
 		{#key currentPage}
 			<div class="page-content" transition:fly={{ x: direction === 'forward' ? -40 : 40, duration: 250, easing: quadOut }}>
+				{#if errorMessage}
+					<div class="error-banner">{errorMessage}</div>
+				{/if}
 				{#if currentPage === PAGE_IDS.WELCOME}
 					<WelcomePage />
 				{:else if currentPage === PAGE_IDS.USER_ACCOUNT}
@@ -129,7 +129,7 @@
 					<FinishPage />
 				{/if}
 			</div>
-			{/key}
+		{/key}
 	</main>
 
 	<ConfirmDialog />
@@ -151,15 +151,12 @@
 	.content-area {
 		flex: 1;
 		position: relative;
-		overflow: visible;
+		overflow: hidden;
 		background-color: var(--color-bg-light);
-		padding-top: 24px;
 	}
 
 	.page-content {
-		position: absolute;
-		top: 0;
-		left: 0;
+		position: relative;
 		width: 100%;
 		height: 100%;
 	}
