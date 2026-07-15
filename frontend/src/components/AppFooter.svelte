@@ -1,10 +1,11 @@
 <script lang="ts">
 	import Button from '$components/Button.svelte';
+	import { PAGE_IDS } from '$lib/types';
 
 	let { currentPage }: { currentPage: number } = $props();
 
-	const isLastPage = $derived(currentPage === 5);
-	const showBack = $derived(currentPage > 0 && !isLastPage);
+	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
+	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage);
 
 	const buttonHandler = $derived(isLastPage ? () => {
 		document.dispatchEvent(new CustomEvent('finish', { cancelable: true }));

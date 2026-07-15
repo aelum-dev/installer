@@ -1,12 +1,39 @@
-export type PageID = 0 | 1 | 2 | 3 | 4 | 5;
+export const PAGE_IDS = {
+	WELCOME: 0,
+	USER_ACCOUNT: 1,
+	DISK_SELECTION: 2,
+	CONFIRMATION: 3,
+	INSTALLATION: 4,
+	FINISH: 5,
+} as const;
 
-export const PAGE_NAMES: Record<number, string> = {
-	0: 'Welcome',
-	1: 'User Account',
-	2: 'Disk Selection',
-	3: 'Confirmation',
-	4: 'Installation',
-	5: 'Finish',
+export type PageID = (typeof PAGE_IDS)[keyof typeof PAGE_IDS];
+
+export const TOTAL_PAGES = 6;
+
+export const PAGE_NAMES: Record<PageID, string> = {
+	[PAGE_IDS.WELCOME]: 'Welcome',
+	[PAGE_IDS.USER_ACCOUNT]: 'User Account',
+	[PAGE_IDS.DISK_SELECTION]: 'Disk Selection',
+	[PAGE_IDS.CONFIRMATION]: 'Confirmation',
+	[PAGE_IDS.INSTALLATION]: 'Installation',
+	[PAGE_IDS.FINISH]: 'Finish',
+};
+
+// Pages that show no header/footer (welcome has its own CTA, installation runs automatically)
+export const PAGES_NO_NAV = new Set<PageID>([PAGE_IDS.WELCOME, PAGE_IDS.INSTALLATION]);
+
+// Pages that require validation before advancing
+export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
+
+// Page-specific error messages for validation failures
+export const PAGE_ERROR_MESSAGES: Record<PageID, string> = {
+	[PAGE_IDS.WELCOME]: 'Please select a language to continue.',
+	[PAGE_IDS.USER_ACCOUNT]: 'Please complete all required fields to continue.',
+	[PAGE_IDS.DISK_SELECTION]: 'Please select a disk to continue.',
+	[PAGE_IDS.CONFIRMATION]: 'Please review your installation details.',
+	[PAGE_IDS.INSTALLATION]: 'Please wait for the installation to complete.',
+	[PAGE_IDS.FINISH]: 'The installation is complete.',
 };
 
 // Transition direction for animations.
