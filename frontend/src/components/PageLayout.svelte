@@ -4,15 +4,15 @@
 	let { title, children }: { title: string; children: Snippet } = $props();
 </script>
 
-<div class="page">
+<div class="page-layout">
 	<h2>{title}</h2>
-	<div class="content">
+	<div class="page-content">
 		{@render children()}
 	</div>
 </div>
 
 <style>
-	.page {
+	.page-layout {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -31,7 +31,7 @@
 		margin: 0;
 	}
 
-	.content {
+	.page-content {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
