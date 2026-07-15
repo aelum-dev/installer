@@ -17,6 +17,7 @@
 	let progress = $state(0);
 	let isRunning = $state(false);
 	let isComplete = $state(false);
+	let hasTransitioned = $state(false);
 	let elapsedSeconds = $state(0);
 	let errorMessage = $state('');
 	let isDryRun = $state(false);
@@ -70,6 +71,13 @@
 			offComplete();
 			offError();
 		};
+	});
+
+	// Auto-transition to Finish page when installation is done
+	$effect(() => {
+		if (!isComplete || hasTransitioned) return;
+		hasTransitioned = true;
+		document.dispatchEvent(new CustomEvent('go-next'));
 	});
 
 	// Auto-start installation when page is reached
