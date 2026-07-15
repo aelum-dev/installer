@@ -9,6 +9,8 @@
     --color-danger: #d32f2f;
     --color-danger-light: #ffe0e0;
     --color-danger-border: #ffaaaa;
+    --color-warning: #fa8c16;
+    --color-warning-light: rgba(250, 140, 22, 0.15);
     --color-border: #999;
     --color-border-light: #ccc;
     --color-bg-white: #fff;
@@ -51,6 +53,9 @@
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
     --shadow-primary: 0 4px 12px rgba(74, 144, 217, 0.35);
+
+    /* Mono font for code elements */
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 }
 
 html {

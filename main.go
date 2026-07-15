@@ -37,7 +37,7 @@ func main() {
 	// Create an instance of the app structure
 	app := backend.NewApp(dryRun)
 	// Starting page for debug purposes
-	app.SetStartPage(backend.PageWelcome)
+	app.SetStartPage(backend.PageConfirmation)
 
 	// Create application with options
 	err := wails.Run(&options.App{

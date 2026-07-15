@@ -36,5 +36,6 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--spacing-md, 12px);
+		padding-top: calc(var(--page-heading-top, 24px) + var(--font-size-lg, 1.5rem) + var(--spacing-md, 12px));
 	}
 </style>

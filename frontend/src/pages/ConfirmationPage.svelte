@@ -35,20 +35,10 @@
 	}
 </script>
 
-<PageLayout title="Review & Confirm">
+<PageLayout title="Installation Summary">
 	<div class="confirmation">
-		<!-- Warning banner -->
-		<div class="warning-banner">
-			<span class="warning-icon">⚠️</span>
-			<p class="warning-text">
-				<strong>Warning:</strong> All data on the selected disk will be permanently erased.
-			</p>
-		</div>
-
 		<!-- Summary -->
 		<div class="summary">
-			<h2 class="summary-title">Installation Summary</h2>
-
 			<div class="summary-section">
 				<h3 class="section-title">Language</h3>
 				<p class="section-value">{selectedLanguageName}</p>
@@ -59,22 +49,20 @@
 				<p class="section-value">
 					Username: <strong>{$userAccountData.username || '—'}</strong>
 				</p>
+				{#if $userAccountData.password}
+					<p class="section-value">
+						Password: <strong>{'●'.repeat($userAccountData.password.length)}</strong>
+					</p>
+				{/if}
 			</div>
 
 			<div class="summary-section">
 				<h3 class="section-title">Target Disk</h3>
 				{#if $diskSelectionData.disk}
-					<div class="disk-summary">
-						<p class="section-value disk-name">{$diskSelectionData.disk.model || 'Unknown'}</p>
-						<div class="disk-details">
-							<span>{formatSize($diskSelectionData.disk.size)}</span>
-							<span class="divider">·</span>
-							<span>{$diskSelectionData.disk.rotational ? 'HDD' : 'SSD'}</span>
-							{#if $diskSelectionData.disk.trans}
-								<span class="divider">·</span>
-								<span>{$diskSelectionData.disk.trans.toUpperCase()}</span>
-							{/if}
-						</div>
+					<div class="disk-summary no-gap">
+						<p class="section-value disk-name">
+							{$diskSelectionData.disk.model || 'Unknown'} ({formatSize($diskSelectionData.disk.size)} {$diskSelectionData.disk.rotational ? 'HDD' : 'SSD'} {$diskSelectionData.disk.trans?.toUpperCase() || ''})
+						</p>
 						<p class="disk-path">Device: <code>{$diskSelectionData.disk.path}</code></p>
 						{#if $diskSelectionData.disk.fstype}
 							<p class="disk-extra">Existing filesystem: <span class="tag fstype-tag">{$diskSelectionData.disk.fstype}</span></p>
@@ -87,6 +75,14 @@
 					<p class="section-value error">No disk selected</p>
 				{/if}
 			</div>
+		</div>
+
+		<!-- Warning banner -->
+		<div class="warning-banner">
+			<span class="warning-icon">⚠️</span>
+			<p class="warning-text">
+				<strong>Warning:</strong> All data on the selected disk will be permanently erased.
+			</p>
 		</div>
 	</div>
 </PageLayout>
@@ -106,7 +102,7 @@
 		align-items: flex-start;
 		gap: 12px;
 		padding: 16px;
-		background-color: rgba(234, 88, 12, 0.1);
+		background-color: var(--color-warning-light);
 		border: 1px solid rgba(234, 88, 12, 0.3);
 		border-radius: var(--radius-md);
 	}
@@ -121,21 +117,19 @@
 		margin: 0;
 		font-size: var(--font-size-md);
 		color: var(--color-warning);
+		font-weight: 500;
 		line-height: 1.5;
 	}
 
 	/* ── Summary ── */
 	.summary {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: 1fr;
 		gap: var(--spacing-md);
 	}
 
-	.summary-title {
-		margin: 0;
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-700);
-		color: var(--color-text);
+	.summary-section {
+		text-align: left;
 	}
 
 	.section-title {
@@ -145,7 +139,7 @@
 		color: var(--color-text-muted);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		margin-bottom: 4px;
+		margin-bottom: 0;
 	}
 
 	.section-value {
@@ -159,29 +153,23 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+		width: 100%;
+	}
+
+	.disk-summary.no-gap {
+		gap: 0;
 	}
 
 	.disk-name {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-600);
-	}
-
-	.disk-details {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-	}
-
-	.disk-details .divider {
-		font-size: var(--font-size-xs);
+		font-size: var(--font-size-md);
+		margin: 0;
 	}
 
 	.disk-path {
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
-		margin-top: 4px;
+		margin-top: 2px;
+		margin-bottom: 0;
 	}
 
 	.disk-path code {
@@ -195,7 +183,8 @@
 	.disk-extra {
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
-		margin-top: 4px;
+		margin-top: 2px;
+		margin-bottom: 0;
 	}
 
 	/* ── Tags ── */
@@ -207,13 +196,13 @@
 	}
 
 	.fstype-tag {
-		background-color: #fff3e0;
-		color: #e65100;
+		background-color: var(--color-warning-light);
+		color: var(--color-warning);
 	}
 
 	.serial-tag {
-		background-color: #f3e5f5;
-		color: #6a1b9a;
+		background-color: rgba(156, 39, 176, 0.15);
+		color: #ce93d8;
 	}
 
 	.error {
