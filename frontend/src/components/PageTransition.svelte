@@ -1,15 +1,16 @@
 <script lang="ts">
 	import type { TransitionDirection } from '$lib/types';
 
-	let { children, contentKey, direction, leaving, entering }: {
+	let { children, contentKey, direction, leaving, entering, enteringDone }: {
 		children: any;
 		contentKey: number;
 		direction: TransitionDirection;
 		leaving: boolean;
 		entering: boolean;
+		enteringDone: boolean;
 	} = $props();
 
-	let className = $derived('transition-content' + (leaving ? ' leaving' : '') + (entering ? ' entering' : ''));
+	let className = $derived('transition-content' + (leaving ? ' leaving' : '') + (entering ? ' entering' : '') + (enteringDone ? ' done' : ''));
 </script>
 
 <div class="page-transition">
@@ -31,40 +32,48 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		transition: transform 200ms ease, opacity 200ms ease;
+		transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
+		            opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+		will-change: transform, opacity;
 	}
 
-	/* svelte-ignore css_unused_selector */
-	.transition-content.entering {
+	/* ── Forward direction ── */
+
+	/* Leaving page slides left and fades out */
+	div[data-transition-direction="forward"].leaving {
+		transform: translateX(-40px);
 		opacity: 0;
 	}
 
-	/* svelte-ignore css_unused_selector */
-	.transition-content.leaving {
+	/* Entering page starts off-screen right with no opacity */
+	div[data-transition-direction="forward"].entering {
+		transform: translateX(40px);
+		opacity: 0;
+	}
+
+	/* Entering page ends at normal position with full opacity */
+	div[data-transition-direction="forward"].entering.done {
+		transform: translateX(0);
 		opacity: 1;
 	}
 
-	/* Forward direction */
-	/* svelte-ignore css_unused_selector */
-	div[data-transition-direction="forward"].leaving {
-		transform: translateX(0);
-	}
+	/* ── Backward direction ── */
 
-	/* svelte-ignore css_unused_selector */
-	div[data-transition-direction="forward"].entering {
-		transform: translateX(30px);
-		opacity: 0;
-	}
-
-	/* Backward direction */
-	/* svelte-ignore css_unused_selector */
+	/* Leaving page slides right and fades out */
 	div[data-transition-direction="backward"].leaving {
-		transform: translateX(0);
+		transform: translateX(40px);
+		opacity: 0;
 	}
 
-	/* svelte-ignore css_unused_selector */
+	/* Entering page starts off-screen left with no opacity */
 	div[data-transition-direction="backward"].entering {
-		transform: translateX(-30px);
+		transform: translateX(-40px);
 		opacity: 0;
+	}
+
+	/* Entering page ends at normal position with full opacity */
+	div[data-transition-direction="backward"].entering.done {
+		transform: translateX(0);
+		opacity: 1;
 	}
 </style>

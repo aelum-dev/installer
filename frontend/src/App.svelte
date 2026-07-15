@@ -63,6 +63,7 @@
 	let animDirection = $state<TransitionDirection>('forward');
 	let animLeaving = $state(false);
 	let animEntering = $state(false);
+	let animEnteringDone = $state(false);
 
 	async function goToNext() {
 		if (isTransitioning) return;
@@ -150,19 +151,24 @@
 		animDirection = direction;
 		animLeaving = true;
 
-		// Wait for leave animation (200ms), then swap content and start enter
+		// Wait for leave animation (250ms), then swap content and start enter
 		await new Promise<void>((resolve) => {
 			setTimeout(() => {
 				animKey++; // triggers re-render with new key
 				animLeaving = false;
 				animEntering = true;
+				animEnteringDone = false;
 
-				// Wait for enter animation to complete (200ms)
-				setTimeout(resolve, 200);
-			}, 200);
+				// Wait for enter animation to complete (250ms), then add done class
+				setTimeout(() => {
+					animEnteringDone = true;
+					setTimeout(resolve, 50);
+				}, 250);
+			}, 250);
 		});
 
 		animEntering = false;
+		animEnteringDone = false;
 		isTransitioning = false;
 	}
 </script>
@@ -180,6 +186,7 @@
 			direction={animDirection}
 			leaving={animLeaving}
 			entering={animEntering}
+			enteringDone={animEnteringDone}
 		>
 			{#if currentPage === 0}
 				<WelcomePage />
