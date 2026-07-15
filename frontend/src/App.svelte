@@ -235,7 +235,7 @@
 
 	.dialog {
 		background-color: var(--color-bg-white);
-		border-radius: 30px;
+		border-radius: var(--radius-xl);
 		padding: 32px;
 		max-width: 440px;
 		width: 90%;
