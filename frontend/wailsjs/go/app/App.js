@@ -42,6 +42,10 @@ export function Reboot() {
   return window['go']['app']['App']['Reboot']();
 }
 
+export function RebootAndClose() {
+  return window['go']['app']['App']['RebootAndClose']();
+}
+
 export function SetCurrentPage(arg1) {
   return window['go']['app']['App']['SetCurrentPage'](arg1);
 }

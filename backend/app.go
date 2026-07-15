@@ -48,6 +48,26 @@ func (a *App) GetDryRun() bool {
 	return a.dryRun
 }
 
+// RebootAndClose initiates a system reboot and closes the application window.
+// In dry-run mode, it only logs the action without rebooting.
+func (a *App) RebootAndClose() error {
+	if a.dryRun {
+		wailsRuntime.LogInfo(a.ctx, "Rebooting...")
+		wailsRuntime.Quit(a.ctx)
+		return nil
+	}
+
+	// Initiate system reboot
+	cmd := exec.Command("reboot")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// Close the application window after initiating reboot
+	wailsRuntime.Quit(a.ctx)
+	return nil
+}
+
 // Reboot initiates a system reboot.
 // In dry-run mode, it only logs the action without actually rebooting.
 func (a *App) Reboot() error {

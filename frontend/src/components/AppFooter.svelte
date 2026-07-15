@@ -3,10 +3,10 @@
 
 	let { currentPage, onBack, onNext, onFinish }: { currentPage: number; onBack: () => void; onNext: () => void; onFinish?: () => void } = $props();
 
-	const buttonHandler = $derived(isLastPage && onFinish ? onFinish : onNext);
-
 	const isLastPage = $derived(currentPage === 4);
 	const showBack = $derived(currentPage > 0 && !isLastPage);
+
+	const buttonHandler = $derived(isLastPage && onFinish ? onFinish : onNext);
 </script>
 
 <footer class="footer">
