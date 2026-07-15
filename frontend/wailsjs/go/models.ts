@@ -1,5 +1,39 @@
 export namespace app {
 	
+	export class DiskInfo {
+	    name: string;
+	    path: string;
+	    size: string;
+	    type: string;
+	    model: string;
+	    vendor: string;
+	    rotational: boolean;
+	    ro: boolean;
+	    fstype: string;
+	    mountpoint: string;
+	    serial: string;
+	    trans: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DiskInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.path = source["path"];
+	        this.size = source["size"];
+	        this.type = source["type"];
+	        this.model = source["model"];
+	        this.vendor = source["vendor"];
+	        this.rotational = source["rotational"];
+	        this.ro = source["ro"];
+	        this.fstype = source["fstype"];
+	        this.mountpoint = source["mountpoint"];
+	        this.serial = source["serial"];
+	        this.trans = source["trans"];
+	    }
+	}
 	export class DiskSelectionData {
 	    diskId: string;
 	

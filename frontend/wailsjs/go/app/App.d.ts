@@ -8,6 +8,8 @@ export function CanGoNext():Promise<boolean>;
 
 export function GetCurrentPage():Promise<number>;
 
+export function GetDisks():Promise<Array<app.DiskInfo>>;
+
 export function GetLanguages():Promise<Array<app.Language>>;
 
 export function GetSelectedLanguage():Promise<string>;

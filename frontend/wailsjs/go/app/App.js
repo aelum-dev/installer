@@ -14,6 +14,10 @@ export function GetCurrentPage() {
   return window['go']['app']['App']['GetCurrentPage']();
 }
 
+export function GetDisks() {
+  return window['go']['app']['App']['GetDisks']();
+}
+
 export function GetLanguages() {
   return window['go']['app']['App']['GetLanguages']();
 }
