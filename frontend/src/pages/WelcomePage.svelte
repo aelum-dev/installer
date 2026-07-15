@@ -102,13 +102,13 @@
 
 	.language-label {
 		font-size: 0.85rem;
-		color: #666;
+		color: var(--color-text-muted);
 		margin: 0;
 	}
 
 	.loading-text {
 		font-size: 0.9rem;
-		color: #888;
+		color: var(--color-text-light);
 		margin-top: 16px;
 	}
 </style>

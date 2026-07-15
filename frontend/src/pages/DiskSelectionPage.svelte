@@ -184,14 +184,14 @@
 
 	.disk-card:hover {
 		border-color: var(--color-primary);
-		background-color: #f8faff;
-		box-shadow: 0 2px 8px rgba(74, 144, 217, 0.12);
+		background-color: var(--color-bg-light);
+		box-shadow: 0 2px 8px rgba(30, 102, 245, 0.12);
 	}
 
 	.disk-card.selected {
 		border-color: var(--color-primary);
-		background-color: #f0f6ff;
-		box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+		background-color: rgba(30, 102, 245, 0.06);
+		box-shadow: 0 0 0 1px var(--color-primary);
 	}
 
 	.disk-main {
@@ -213,7 +213,7 @@
 	}
 
 	.disk-card.selected .disk-icon {
-		background-color: rgba(74, 144, 217, 0.1);
+		background-color: rgba(30, 102, 245, 0.08);
 	}
 
 	.disk-info {
@@ -290,17 +290,17 @@
 	}
 
 	.fstype-tag {
-		background-color: #fff3e0;
-		color: #e65100;
+		background-color: rgba(223, 142, 29, 0.12);
+		color: #df8e1d;
 	}
 
 	.mount-tag {
-		background-color: #e8f5e9;
-		color: #2e7d32;
+		background-color: rgba(64, 160, 43, 0.12);
+		color: #40a02b;
 	}
 
 	.serial-tag {
-		background-color: #f3e5f5;
-		color: #6a1b9a;
+		background-color: rgba(136, 57, 239, 0.12);
+		color: #8839ef;
 	}
 </style>

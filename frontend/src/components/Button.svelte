@@ -89,22 +89,22 @@
 
 	/* svelte-ignore css_unused_selector */
 	.btn-secondary:hover:not(:disabled) {
-		background-color: #f7f8fa;
-		border-color: #b8b8b8;
+		background-color: var(--color-bg-light);
+		border-color: var(--color-border);
 		transform: translateY(-1px);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+		box-shadow: 0 2px 8px rgba(76, 79, 105, 0.08);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-secondary:active:not(:disabled) {
 		transform: translateY(0) scale(0.98);
-		background-color: #f0f1f3;
+		background-color: var(--color-bg-hover);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-ghost {
 		background-color: transparent;
-		color: #555;
+		color: var(--color-text-muted);
 		padding: var(--spacing-xs) var(--spacing-sm);
 		border: 1.5px solid var(--color-border-light);
 	}
@@ -112,15 +112,15 @@
 	/* svelte-ignore css_unused_selector */
 	.btn-ghost:hover:not(:disabled) {
 		color: var(--color-text);
-		border-color: #c0c0c0;
-		background-color: rgba(0, 0, 0, 0.02);
+		border-color: var(--color-border);
+		background-color: var(--color-bg-light);
 	}
 
 	/* svelte-ignore css_unused_selector */
 	.btn-ghost:active:not(:disabled) {
 		color: var(--color-text);
-		border-color: #aaa;
-		background-color: rgba(0, 0, 0, 0.04);
+		border-color: var(--color-border);
+		background-color: var(--color-bg-hover);
 	}
 
 	.btn:disabled {

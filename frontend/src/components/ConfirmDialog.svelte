@@ -118,7 +118,7 @@
 	}
 
 	.btn-cancel:hover {
-		background-color: #e8e8e8;
+		background-color: var(--color-bg-hover);
 	}
 
 	.btn-confirm {
@@ -127,9 +127,9 @@
 	}
 
 	.btn-confirm:hover {
-		background-color: #c62828;
+		background-color: #e01340;
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+		box-shadow: 0 4px 12px rgba(210, 15, 57, 0.25);
 	}
 
 	@keyframes fadeIn {

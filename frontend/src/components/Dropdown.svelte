@@ -175,8 +175,8 @@
 	}
 
 	.dropdown-button:focus-visible {
-		outline: 2px solid var(--color-primary);
-		outline-offset: 1px;
+		box-shadow: 0 0 0 2px rgba(30, 102, 245, 0.15);
+		outline: none;
 	}
 
 	.dropdown-label {
@@ -229,7 +229,7 @@
 
 	.dropdown-item:hover,
 	.dropdown-item:focus {
-		background-color: #e8f0fe;
+		background-color: var(--color-bg-hover);
 		outline: none;
 	}
 

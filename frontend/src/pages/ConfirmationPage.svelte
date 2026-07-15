@@ -185,8 +185,8 @@
 	}
 
 	.serial-tag {
-		background-color: rgba(156, 39, 176, 0.15);
-		color: #ce93d8;
+		background-color: rgba(136, 57, 239, 0.12);
+		color: #8839ef;
 	}
 
 	.error {

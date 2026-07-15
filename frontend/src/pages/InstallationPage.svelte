@@ -152,7 +152,7 @@
 	/* ── Dry-run badge ── */
 	.dry-run-badge {
 		padding: 4px 12px;
-		background: #ff9800;
+		background: var(--color-warning);
 		color: white;
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-700);
@@ -180,7 +180,7 @@
 	.progress-bar-fill {
 		height: 100%;
 		width: var(--progress);
-		background: linear-gradient(90deg, var(--color-primary), #6db3f2);
+		background: linear-gradient(90deg, var(--color-primary), var(--color-sky));
 		border-radius: 999px;
 		transition: width 0.5s ease;
 	}

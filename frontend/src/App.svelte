@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
@@ -21,6 +22,24 @@
 	let currentPage = $state(0);
 	let isTransitioning = $state(false);
 	let errorMessage = $state<string | null>(null);
+
+	// Auto-dismiss error banner after 5 seconds
+	let dismissTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		if (!errorMessage) return;
+		if (dismissTimer) clearTimeout(dismissTimer);
+		dismissTimer = setTimeout(() => {
+			errorMessage = null;
+			dismissTimer = null;
+		}, 5000);
+		return () => {
+			if (dismissTimer) {
+				clearTimeout(dismissTimer);
+				dismissTimer = null;
+			}
+		};
+	});
 
 	// Animation state
 	let animKey = $state(0);
@@ -128,9 +147,8 @@
 
 	<main class="content-area">
 		{#if errorMessage}
-			<div class="error-banner">{errorMessage}</div>
+			<div class="error-banner" in:fade={{ duration: 200 }} out:fade={{ duration: 300 }}>{errorMessage}</div>
 		{/if}
-
 		<PageTransition
 			contentKey={animKey}
 			direction={animDirection}
@@ -175,19 +193,22 @@
 		position: relative;
 		overflow: visible;
 		background-color: var(--color-bg-light);
+		padding-top: 24px;
 	}
 
 	.error-banner {
 		position: absolute;
-		top: 62px;
+		top: 4px;
 		left: 50%;
 		transform: translateX(-50%);
 		background-color: var(--color-danger-light);
 		border: 1px solid var(--color-danger-border);
 		color: var(--color-danger);
-		padding: var(--spacing-sm) var(--spacing-lg);
+		padding: 4px 16px;
 		border-radius: var(--radius-sm);
 		font-size: var(--font-size-md);
+		text-align: center;
+		max-width: calc(100vw - 40px);
 		z-index: 10;
 	}
 </style>

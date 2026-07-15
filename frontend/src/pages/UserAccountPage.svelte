@@ -139,8 +139,8 @@
 
 	.line-edit:focus {
 		border-color: var(--color-primary);
-		outline: 2px solid var(--color-primary);
-		outline-offset: 1px;
+		box-shadow: 0 0 0 2px rgba(30, 102, 245, 0.15);
+		outline: none;
 	}
 
 	.line-edit:hover:not(:focus) {
@@ -153,7 +153,7 @@
 
 	.line-edit--error:focus {
 		border-color: var(--color-danger);
-		outline-color: var(--color-danger);
+		box-shadow: 0 0 0 2px rgba(210, 15, 57, 0.15);
 	}
 
 	.error {
