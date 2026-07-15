@@ -266,6 +266,23 @@ This is **the correct pattern** for Wails event-driven communication. The Wails 
 
 ---
 
+## Critical Bug Fix: `{#key}` Causing Store Data Loss
+
+**Bug discovered**: User account data was being overwritten with empty strings on every navigation.
+
+**Root cause**: `PageTransition.svelte` used `{#key contentKey}` which forced a complete remount of page components on every navigation. When remounted:
+- Local `$state` variables reset to initial values (`''`)
+- `$effect` ran with empty values and called `store.set()`
+- Store was overwritten **before validation could read the real data**
+
+**Evidence**: Debug logs showed `[UserAccountPage] $effect running - setting store: {"username":"","password":"","confirmPassword":""}` on **every** button click, even on unrelated pages.
+
+**Fix**: Removed `{#key contentKey}`. Pages now persist across transitions via `{#if}` conditionals only.
+
+**Lesson**: `{#key}` forces complete component remount and destroys ALL local state. Only use when you intentionally want to reset state (e.g., reset form on re-entry). For page transitions, let Svelte's natural reactivity handle component switching.
+
+---
+
 ## Recommended Action Plan
 
 1. **Do Phase 2.1 immediately** — Migrate `writable` stores to `$state`. This is the single biggest win.

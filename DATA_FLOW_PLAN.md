@@ -383,6 +383,24 @@ Language Data:
 
 ---
 
+## Known Issues & Fixes
+
+### Critical: `{#key}` in PageTransition Caused Store Data Loss
+
+**Bug**: User account data was reset to empty strings on every navigation, even after being filled in.
+
+**Root cause**: `{#key contentKey}` in `PageTransition.svelte` forced a complete remount of all page components on every navigation. When remounted:
+- Local `$state` variables reset to initial values (`''`)
+- `$effect` in UserAccountPage ran with empty values
+- `userAccountData.store.set()` was called with empty data
+- Store was **overwritten** before validation could read it
+
+**Fix**: Removed `{#key contentKey}` from PageTransition. Pages now persist across transitions via `{#if currentPage === X}` conditionals only.
+
+**Debugging tip**: When `$effect` logs show empty values on navigation, check for `{#key}` blocks forcing remounts.
+
+---
+
 ## Known Gaps & TODOs
 
 1. **Language selection UI** — Languages are available via backend but no frontend component to select one

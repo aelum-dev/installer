@@ -299,7 +299,39 @@ A reusable aesthetic button component was created to replace native `<button>` e
 
 ---
 
-## 13. Wails Dev Mode — HMR Unreliable with New Component Files
+## 13. PageTransition `{#key}` Causes Store Data Loss on Navigation
+
+**Issue**: User account data was being reset to empty strings every time the user navigated between pages. Even after filling in the form, clicking Next would show empty data in the store.
+
+**Root cause**: `PageTransition.svelte` used `{#key contentKey}` which forced a **complete remount** of all page components on every navigation. When remounted:
+- Local `$state` variables reset to their initial values (`''`)
+- `$effect` in UserAccountPage ran with empty values
+- `userAccountData.store.set()` was called with empty data
+- Store was **overwritten with empty values**
+
+**Debugging evidence**: Console logs showed `[UserAccountPage] $effect running - setting store` with empty values on EVERY button click (even Get Started on Welcome page), proving the component was remounting unnecessarily.
+
+**Fix**: Remove `{#key contentKey}` from `PageTransition.svelte`. The `{#if currentPage === X}` conditionals in App.svelte handle page switching without needing `{#key}`. Svelte automatically re-renders when `$state` changes.
+
+```svelte
+<!-- Before (broken) -->
+{#key contentKey}
+    <div class={className}>
+        {@render children()}
+    </div>
+{/key}
+
+<!-- After (fixed) -->
+<div class={className}>
+    {@render children()}
+</div>
+```
+
+**Key insight**: `{#key}` forces remount and destroys ALL local state. Only use it when you intentionally want to reset component state (e.g., resetting a form on navigation). For page transitions, let Svelte's natural reactivity handle it.
+
+---
+
+## 14. Wails Dev Mode — HMR Unreliable with New Component Files
 
 **Issue**: Adding a new `.svelte` component file or modifying files that import new components causes `wails dev` to show a blank dark bluish page (the app crashes in the WebView). The app works after a full rebuild (`wails build`) but breaks intermittently during `wails dev`.
 
@@ -339,3 +371,7 @@ When modifying this project:
 14. ✅ Avoid attribute selectors in scoped CSS — use regular classes like `.dropdown--open`
 15. ✅ Use `{@render children()}` with `children: Snippet` prop — never `<slot />` (deprecated in Svelte 5)
 16. ✅ Use plain function for dynamic class computation — never `$derived.by()` (causes HMR instability)
+17. ✅ **NEVER use `{#key}` in PageTransition** — forces full component remount, resets `$state`, overwrites stores with empty data
+18. ✅ When `$effect` syncs to writable store, ensure it runs at the right time — component remounts can cause stale data
+19. ✅ Use safe Wails logging wrappers (try/catch) — `window.runtime` doesn't exist in Vite dev mode
+20. ✅ Add console debug logging early when debugging reactivity/state bugs — they reveal timing issues that code inspection can't
