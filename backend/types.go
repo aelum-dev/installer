@@ -37,6 +37,7 @@ type App struct {
 	ctx             context.Context
 	currentPage     PageID
 	startPage       PageID
+	dryRun          bool
 	userAccount     UserAccountData
 	diskSelection   DiskSelectionData
 	selectedLanguage string

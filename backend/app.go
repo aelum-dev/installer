@@ -4,9 +4,10 @@ import "context"
 import "fmt"
 
 // NewApp creates a new App application struct
-func NewApp() *App {
+func NewApp(dryRun bool) *App {
 	return &App{
 		currentPage: PageWelcome,
+		dryRun:      dryRun,
 	}
 }
 
@@ -35,4 +36,9 @@ func (a *App) GetStartPage() int {
 // ClearStartPage clears the start page so it won't be used again.
 func (a *App) ClearStartPage() {
 	a.startPage = PageWelcome
+}
+
+// GetDryRun returns whether the app is running in dry-run mode.
+func (a *App) GetDryRun() bool {
+	return a.dryRun
 }

@@ -22,6 +22,10 @@ export function GetDisks() {
   return window['go']['app']['App']['GetDisks']();
 }
 
+export function GetDryRun() {
+  return window['go']['app']['App']['GetDryRun']();
+}
+
 export function GetLanguages() {
   return window['go']['app']['App']['GetLanguages']();
 }

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+
 	"embed"
 
 	backend "aesthetic-os-installer/backend"
@@ -14,8 +17,16 @@ import (
 var assets embed.FS
 
 func main() {
+	// Parse command-line flags
+	dryRun := flag.Bool("dry-run", false, "Simulate installation without executing real commands")
+	flag.Parse()
+
+	if *dryRun {
+		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
+	}
+
 	// Create an instance of the app structure
-	app := backend.NewApp()
+	app := backend.NewApp(*dryRun)
 	// Starting page for debug purposes
 	app.SetStartPage(backend.PageInstallation)
 
