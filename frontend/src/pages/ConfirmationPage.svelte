@@ -94,14 +94,6 @@
 				{/if}
 			</div>
 		</div>
-
-		<!-- Warning banner -->
-		<div class="warning-banner">
-			<span class="warning-icon">⚠️</span>
-			<p class="warning-text">
-				<strong>Warning:</strong> All data on the selected disk will be permanently erased.
-			</p>
-		</div>
 	</div>
 
 	<!-- Confirmation Dialog -->
@@ -133,34 +125,9 @@
 	.confirmation {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-lg);
+		gap: var(--spacing-md);
 		width: 100%;
 		max-width: 520px;
-	}
-
-	/* ── Warning banner ── */
-	.warning-banner {
-		display: flex;
-		align-items: flex-start;
-		gap: 12px;
-		padding: 16px;
-		background-color: var(--color-warning-light);
-		border: 1px solid rgba(234, 88, 12, 0.3);
-		border-radius: var(--radius-md);
-	}
-
-	.warning-icon {
-		font-size: 1.5rem;
-		line-height: 1;
-		flex-shrink: 0;
-	}
-
-	.warning-text {
-		margin: 0;
-		font-size: var(--font-size-md);
-		color: var(--color-warning);
-		font-weight: 500;
-		line-height: 1.5;
 	}
 
 	/* ── Summary ── */
