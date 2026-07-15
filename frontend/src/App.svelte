@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
+	import { fly, slide } from 'svelte/transition';
 	import { quadOut } from 'svelte/easing';
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
@@ -26,6 +26,7 @@
 	// Auto-dismiss error banner after 5 seconds
 	let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
+	// Start auto-dismiss timer for new error messages
 	$effect(() => {
 		if (!errorMessage) return;
 		if (dismissTimer) clearTimeout(dismissTimer);
@@ -57,6 +58,13 @@
 	initStartPage();
 
 	async function handleNext(e?: Event) {
+		// Clear any existing error before showing new one
+		errorMessage = null;
+		if (dismissTimer) {
+			clearTimeout(dismissTimer);
+			dismissTimer = null;
+		}
+
 		// Run validation first
 		const error = await goNext(currentPage);
 		if (error) {
@@ -74,6 +82,13 @@
 	async function handleBack() {
 		if (currentPage === PAGE_IDS.WELCOME) return;
 
+		// Clear any existing error before showing new one
+		errorMessage = null;
+		if (dismissTimer) {
+			clearTimeout(dismissTimer);
+			dismissTimer = null;
+		}
+
 		const error = await goBack(currentPage);
 		if (error) {
 			errorMessage = error;
@@ -85,6 +100,13 @@
 	}
 
 	async function handleFinish() {
+		// Clear any existing error before showing new one
+		errorMessage = null;
+		if (dismissTimer) {
+			clearTimeout(dismissTimer);
+			dismissTimer = null;
+		}
+
 		errorMessage = await finish();
 	}
 
@@ -112,15 +134,12 @@
 	<main class="content-area">
 		{#key currentPage}
 			<div class="page-content" transition:fly={{ x: direction === 'forward' ? -40 : 40, duration: 250, easing: quadOut }}>
-				{#if errorMessage}
-					<div class="error-banner">{errorMessage}</div>
-				{/if}
 				{#if currentPage === PAGE_IDS.WELCOME}
 					<WelcomePage />
 				{:else if currentPage === PAGE_IDS.USER_ACCOUNT}
-					<UserAccountPage />
+					<UserAccountPage {errorMessage} />
 				{:else if currentPage === PAGE_IDS.DISK_SELECTION}
-					<DiskSelectionPage />
+					<DiskSelectionPage {errorMessage} />
 				{:else if currentPage === PAGE_IDS.CONFIRMATION}
 					<ConfirmationPage />
 				{:else if currentPage === PAGE_IDS.INSTALLATION}
@@ -159,28 +178,5 @@
 		position: relative;
 		width: 100%;
 		height: 100%;
-	}
-
-	.error-banner {
-		position: absolute;
-		bottom: 40px;
-		left: 50%;
-		transform: translateX(-50%);
-		background-color: var(--color-danger-light);
-		border: 1px solid var(--color-danger-border);
-		color: var(--color-danger);
-		padding: 4px 16px;
-		border-radius: var(--radius-sm);
-		font-size: var(--font-size-md);
-		text-align: center;
-		max-width: calc(100vw - 40px);
-		z-index: 10;
-		animation: shake 0.5s ease-in-out;
-	}
-
-	@keyframes shake {
-		0%, 100% { transform: translateX(-50%) translateX(0); }
-		10%, 30%, 50%, 70%, 90% { transform: translateX(-50%) translateX(-4px); }
-		20%, 40%, 60%, 80% { transform: translateX(-50%) translateX(4px); }
 	}
 </style>
