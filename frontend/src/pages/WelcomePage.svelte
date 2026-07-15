@@ -26,6 +26,7 @@
 			languages = await GetLanguages();
 			if (languages.length > 0) {
 				selectedCode = languages[0].code;
+				await SetSelectedLanguage(selectedCode);
 			}
 		} catch (err) {
 			LogError(`Failed to load languages: ${err}`);

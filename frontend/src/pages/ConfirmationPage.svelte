@@ -14,23 +14,37 @@
 		locale: string;
 	}
 
-	let selectedLanguageName = $state<string>('loading...');
+	let languages = $state<Language[]>([]);
+	let selectedLanguageName = $state<string>('—');
 
-	async function loadLanguageName(): Promise<void> {
+	async function loadLanguageInfo(): Promise<void> {
 		try {
+			languages = await GetLanguages();
 			const code = await GetSelectedLanguage();
-			const languages: Language[] = await GetLanguages();
 			const lang = languages.find((l) => l.code === code);
-			selectedLanguageName = lang?.name || code || 'Unknown';
+			selectedLanguageName = lang?.name || code || '—';
 		} catch {
-			selectedLanguageName = 'Unknown';
+			selectedLanguageName = '—';
 		}
 	}
 
-	loadLanguageName();
+	loadLanguageInfo();
 
-	const userData = $derived(get(userAccountData));
-	const diskData = $derived(get(diskSelectionData));
+	let userData = $state(get(userAccountData));
+	let diskData = $state(get(diskSelectionData));
+
+	$effect(() => {
+		const unsubscribeUser = userAccountData.subscribe(value => {
+			userData = value;
+		});
+		const unsubscribeDisk = diskSelectionData.subscribe(value => {
+			diskData = value;
+		});
+		return () => {
+			unsubscribeUser();
+			unsubscribeDisk();
+		};
+	});
 
 	const hasValidData = $derived(
 		userData.username.length > 0 && diskData.disk !== null
