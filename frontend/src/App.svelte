@@ -163,7 +163,7 @@
 
 	.error-banner {
 		position: absolute;
-		bottom: 34px;
+		bottom: 40px;
 		left: 50%;
 		transform: translateX(-50%);
 		background-color: var(--color-danger-light);
@@ -175,5 +175,12 @@
 		text-align: center;
 		max-width: calc(100vw - 40px);
 		z-index: 10;
+		animation: shake 0.5s ease-in-out;
+	}
+
+	@keyframes shake {
+		0%, 100% { transform: translateX(-50%) translateX(0); }
+		10%, 30%, 50%, 70%, 90% { transform: translateX(-50%) translateX(-4px); }
+		20%, 40%, 60%, 80% { transform: translateX(-50%) translateX(4px); }
 	}
 </style>
