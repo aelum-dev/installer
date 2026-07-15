@@ -65,7 +65,7 @@
 		});
 	}
 
-	async function handleNext() {
+	async function handleNext(e?: Event) {
 		if (isTransitioning) return;
 
 		// Run validation first
@@ -74,6 +74,9 @@
 			errorMessage = error;
 			return; // Don't navigate if validation fails
 		}
+
+		// Check if a child component (e.g., ConfirmationPage) cancelled the navigation
+		if (e?.defaultPrevented) return;
 
 		// Only start animation after validation passes
 		await startTransition('forward', currentPage + 1);
@@ -97,14 +100,18 @@
 
 	// Subscribe to navigation events from footer and pages
 	$effect(() => {
-		document.addEventListener('go-next', handleNext);
-		document.addEventListener('go-back', handleBack);
-		document.addEventListener('finish', handleFinish);
+		const onGoNext = (e: Event) => { handleNext(e); };
+		const onGoBack = (e: Event) => { if (!e.defaultPrevented) handleBack(); };
+		const onFinish = (e: Event) => { if (!e.defaultPrevented) handleFinish(); };
+
+		document.addEventListener('go-next', onGoNext);
+		document.addEventListener('go-back', onGoBack);
+		document.addEventListener('finish', onFinish);
 
 		return () => {
-			document.removeEventListener('go-next', handleNext);
-			document.removeEventListener('go-back', handleBack);
-			document.removeEventListener('finish', handleFinish);
+			document.removeEventListener('go-next', onGoNext);
+			document.removeEventListener('go-back', onGoBack);
+			document.removeEventListener('finish', onFinish);
 		};
 	});
 </script>

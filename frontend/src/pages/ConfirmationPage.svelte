@@ -34,17 +34,18 @@
 	// Intercept go-next event and show confirmation dialog
 	$effect(() => {
 		const handler = (e: Event) => {
+			// If dialog is already showing (user clicked Yes), let the event through
+			if (showConfirmDialog) return;
 			showConfirmDialog = true;
-			e.stopPropagation();
+			e.preventDefault();
 		};
 		document.addEventListener('go-next', handler);
 		return () => document.removeEventListener('go-next', handler);
 	});
 
 	function handleConfirmYes(): void {
-		showConfirmDialog = false;
 		LogInfo('[ConfirmationPage] User confirmed installation');
-		document.dispatchEvent(new CustomEvent('go-next'));
+		document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
 	}
 
 	function handleConfirmNo(): void {

@@ -70,7 +70,7 @@
 
 		<Button variant="primary" size="large" onClick={() => {
 				LogInfo(`[WelcomePage] Selected language: ${selectedCode}`);
-			document.dispatchEvent(new CustomEvent('go-next'));
+			document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
 		}}>
 			Get Started
 		</Button>

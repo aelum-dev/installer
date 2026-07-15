@@ -76,7 +76,7 @@
 	$effect(() => {
 		if (!isComplete || hasTransitioned) return;
 		hasTransitioned = true;
-		document.dispatchEvent(new CustomEvent('go-next'));
+		document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
 	});
 
 	// Auto-start installation when page is reached

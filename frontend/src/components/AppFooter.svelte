@@ -7,16 +7,16 @@
 	const showBack = $derived(currentPage > 0 && !isLastPage);
 
 	const buttonHandler = $derived(isLastPage ? () => {
-		document.dispatchEvent(new CustomEvent('finish'));
+		document.dispatchEvent(new CustomEvent('finish', { cancelable: true }));
 	} : () => {
-		document.dispatchEvent(new CustomEvent('go-next'));
+		document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
 	});
 </script>
 
 <footer class="footer">
 	<div class="footer-left">
 		{#if showBack}
-			<Button variant="ghost" onClick={() => document.dispatchEvent(new CustomEvent('go-back'))}>← Back</Button>
+			<Button variant="ghost" onClick={() => document.dispatchEvent(new CustomEvent('go-back', { cancelable: true }))}>← Back</Button>
 		{/if}
 	</div>
 	<div class="footer-right">
