@@ -163,7 +163,7 @@
 
 	.error-banner {
 		position: absolute;
-		top: 4px;
+		bottom: 34px;
 		left: 50%;
 		transform: translateX(-50%);
 		background-color: var(--color-danger-light);

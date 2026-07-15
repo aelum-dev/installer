@@ -61,9 +61,7 @@
 				bind:value={username}
 				onblur={() => handleBlur('username')}
 			/>
-			{#if errors.username}
-				<span class="error">{errors.username}</span>
-			{/if}
+			<span class="error" class:visible={!!errors.username}>{errors.username}</span>
 		</div>
 
 		<div class="field">
@@ -76,9 +74,7 @@
 				bind:value={password}
 				onblur={() => handleBlur('password')}
 			/>
-			{#if errors.password}
-				<span class="error">{errors.password}</span>
-			{/if}
+			<span class="error" class:visible={!!errors.password}>{errors.password}</span>
 		</div>
 
 		<div class="field">
@@ -91,9 +87,7 @@
 				bind:value={confirmPassword}
 				onblur={() => handleBlur('confirmPassword')}
 			/>
-			{#if errors.confirmPassword}
-				<span class="error">{errors.confirmPassword}</span>
-			{/if}
+			<span class="error" class:visible={!!errors.confirmPassword}>{errors.confirmPassword}</span>
 		</div>
 	</form>
 </PageLayout>
@@ -102,7 +96,7 @@
 	.form {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-lg);
+		gap: var(--spacing-xs);
 		width: 100%;
 		max-width: 320px;
 	}
@@ -110,8 +104,15 @@
 	.field {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-xs);
 		text-align: left;
+	}
+
+	.field > :first-child {
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.field > :nth-child(2) {
+		margin-bottom: var(--spacing-xs);
 	}
 
 	label {
@@ -160,5 +161,11 @@
 		font-size: var(--font-size-sm);
 		color: var(--color-danger);
 		margin: 0;
+		min-height: 1.4em;
+		overflow: hidden;
+	}
+
+	.error.visible {
+		overflow: visible;
 	}
 </style>
