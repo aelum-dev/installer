@@ -45,10 +45,11 @@ func (j *jsonSize) UnmarshalJSON(data []byte) error {
 type jsonBool bool
 
 func (j *jsonBool) UnmarshalJSON(data []byte) error {
-	switch string(data) {
-	case "true", "1":
+	s := string(data)
+	switch s {
+	case "true", `"1"`:
 		*j = true
-	case "false", "0", "null":
+	case "false", `"0"`, "null":
 		*j = false
 	default:
 		*j = false
