@@ -24,6 +24,8 @@ export function SetSelectedLanguage(arg1:string):Promise<void>;
 
 export function SetStartPage(arg1:app.PageID):Promise<void>;
 
+export function StartInstallation():Promise<void>;
+
 export function ValidateDiskSelection(arg1:app.DiskSelectionData):Promise<void>;
 
 export function ValidateUserAccount(arg1:app.UserAccountData):Promise<void>;

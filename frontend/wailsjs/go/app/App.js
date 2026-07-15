@@ -46,6 +46,10 @@ export function SetStartPage(arg1) {
   return window['go']['app']['App']['SetStartPage'](arg1);
 }
 
+export function StartInstallation() {
+  return window['go']['app']['App']['StartInstallation']();
+}
+
 export function ValidateDiskSelection(arg1) {
   return window['go']['app']['App']['ValidateDiskSelection'](arg1);
 }
