@@ -13,11 +13,9 @@
 </script>
 
 <div class="page-transition">
-	{#key contentKey}
-		<div class={className} data-transition-direction={direction}>
-			{@render children()}
-		</div>
-	{/key}
+	<div class={className} data-transition-direction={direction}>
+		{@render children()}
+	</div>
 </div>
 
 <style>
