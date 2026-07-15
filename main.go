@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"embed"
 
@@ -18,15 +19,23 @@ var assets embed.FS
 
 func main() {
 	// Parse command-line flags
-	dryRun := flag.Bool("dry-run", false, "Simulate installation without executing real commands")
 	flag.Parse()
+	dryRun := false
+	if f := flag.Lookup("dry-run"); f != nil && f.Value.String() == "true" {
+		dryRun = true
+	}
 
-	if *dryRun {
+	// Also check environment variable (set by run.sh for wails dev)
+	if os.Getenv("AESTHETIC_DRY_RUN") == "1" {
+		dryRun = true
+	}
+
+	if dryRun {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
 	}
 
 	// Create an instance of the app structure
-	app := backend.NewApp(*dryRun)
+	app := backend.NewApp(dryRun)
 	// Starting page for debug purposes
 	app.SetStartPage(backend.PageInstallation)
 

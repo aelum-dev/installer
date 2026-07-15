@@ -3,9 +3,8 @@ set -e
 
 cd "$(dirname "$0")"
 
-DRY_RUN=""
 if [[ "$1" == "--dry-run" ]]; then
-  DRY_RUN="--dry-run"
+  export AESTHETIC_DRY_RUN=1
   echo "Running in DRY RUN mode..."
 fi
 
@@ -18,4 +17,4 @@ if [ ! -d "frontend/node_modules" ]; then
 fi
 
 # Build and run the Wails app
-wails dev $DRY_RUN
+wails dev
