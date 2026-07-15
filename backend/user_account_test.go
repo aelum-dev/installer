@@ -5,7 +5,7 @@ import (
 )
 
 func TestValidateUserAccount(t *testing.T) {
-	app := NewApp()
+	app := NewApp(false)
 
 	tests := []struct {
 		name        string
@@ -87,7 +87,7 @@ func TestValidateUserAccount(t *testing.T) {
 }
 
 func TestValidateUserAccount_SavesOnSuccess(t *testing.T) {
-	app := NewApp()
+	app := NewApp(false)
 	data := UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
 
 	err := app.ValidateUserAccount(data)
@@ -104,7 +104,7 @@ func TestValidateUserAccount_SavesOnSuccess(t *testing.T) {
 }
 
 func TestValidateUserAccount_DoesNotSaveOnFailure(t *testing.T) {
-	app := NewApp()
+	app := NewApp(false)
 	validData := UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
 	invalidData := UserAccountData{Username: "", Password: "", ConfirmPassword: ""}
 

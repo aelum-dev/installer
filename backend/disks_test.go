@@ -178,7 +178,7 @@ func TestDiskInfo_DiskSizeBytes(t *testing.T) {
 }
 
 func TestValidateDiskSelection(t *testing.T) {
-	app := NewApp()
+	app := NewApp(false)
 
 	tests := []struct {
 		name        string
@@ -224,7 +224,7 @@ func TestValidateDiskSelection(t *testing.T) {
 }
 
 func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
-	app := NewApp()
+	app := NewApp(false)
 	data := DiskSelectionData{DiskID: "/dev/sda"}
 
 	err := app.ValidateDiskSelection(data)
@@ -238,7 +238,7 @@ func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 }
 
 func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
-	app := NewApp()
+	app := NewApp(false)
 	validData := DiskSelectionData{DiskID: "/dev/sda"}
 	invalidData := DiskSelectionData{DiskID: ""}
 
