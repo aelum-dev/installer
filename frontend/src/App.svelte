@@ -30,8 +30,6 @@
 	let isTransitioning = $state(false);
 	let errorMessage = $state('');
 	let hasStarted = $state(false); // prevents double-jump
-	let showDebug = $state(false);
-	let debugMessage = $state('');
 
 	// Jump to start page on init if configured
 	async function initStartPage(): Promise<void> {
@@ -112,8 +110,6 @@
 
 			if (currentPage === 1) {
 				logInfo(`[DEBUG] Page 1 -> User Account Data: ${JSON.stringify(allData.userAccountData, null, 2)}`);
-				debugMessage = `USER ACCOUNT DATA:\n${JSON.stringify(allData.userAccountData, null, 2)}`;
-				showDebug = true;
 
 				const data = get(userAccountData);
 				await ValidateUserAccount({
@@ -125,8 +121,6 @@
 
 			if (currentPage === 2) {
 				logInfo(`[DEBUG] Page 2 -> Disk Selection Data: ${JSON.stringify(allData.diskSelectionData, null, 2)}`);
-				debugMessage = `DISK SELECTION DATA:\n${JSON.stringify(allData.diskSelectionData, null, 2)}`;
-				showDebug = true;
 
 				const data = get(diskSelectionData);
 				await ValidateDiskSelection({ diskId: data.diskId });
@@ -171,27 +165,6 @@
 <div class="app-layout">
 	<AppHeader {currentPage} />
 
-	<!-- Debug Panel Toggle -->
-	<button
-		type="button"
-		class="debug-toggle"
-		onclick={() => { showDebug = !showDebug; if (showDebug) { debugMessage = `ALL STORED DATA (Page ${currentPage}):\n\nUser Account Data:\n${JSON.stringify(get(userAccountData), null, 2)}\n\nDisk Selection Data:\n${JSON.stringify(get(diskSelectionData), null, 2)}`; logInfo(`[DEBUG] Show debug panel - Page ${currentPage}: ${JSON.stringify({userAccount: get(userAccountData), diskSelection: get(diskSelectionData)})}`); } }}
-		title="Toggle debug view"
-	>
-		🐛 Debug
-	</button>
-
-	<!-- Debug Panel -->
-	{#if showDebug}
-		<div class="debug-panel">
-			<div class="debug-header">
-				<span>🐛 Debug - Page {currentPage} ({currentPage === 0 ? 'Welcome' : currentPage === 1 ? 'User Account' : currentPage === 2 ? 'Disk Selection' : currentPage === 3 ? 'Confirmation' : currentPage === 4 ? 'Installation' : 'Finish'})</span>
-				<button type="button" class="debug-close" onclick={() => showDebug = false}>✕</button>
-			</div>
-			<pre class="debug-content">{debugMessage}</pre>
-		</div>
-	{/if}
-
 	<main class="content-area">
 		{#if errorMessage}
 			<div class="error-banner">{errorMessage}</div>
@@ -231,82 +204,6 @@
 		height: 100vh;
 		width: 100vw;
 		overflow: hidden;
-	}
-
-	.debug-toggle {
-		position: fixed;
-		top: 8px;
-		right: 8px;
-		z-index: 1000;
-		background: #1a1a2e;
-		color: #00ff88;
-		border: 1px solid #00ff88;
-		border-radius: 6px;
-		padding: 6px 12px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		cursor: pointer;
-		font-family: monospace;
-		transition: all 0.15s ease;
-	}
-
-	.debug-toggle:hover {
-		background: #00ff88;
-		color: #1a1a2e;
-	}
-
-	.debug-panel {
-		position: fixed;
-		top: 50px;
-		right: 8px;
-		z-index: 999;
-		background: #1a1a2e;
-		border: 2px solid #00ff88;
-		border-radius: 8px;
-		max-width: 500px;
-		max-height: 60vh;
-		overflow: hidden;
-		box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
-	}
-
-	.debug-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background: #16213e;
-		padding: 8px 12px;
-		color: #00ff88;
-		font-family: monospace;
-		font-size: 0.85rem;
-		font-weight: 600;
-		border-bottom: 1px solid #00ff88;
-	}
-
-	.debug-close {
-		background: none;
-		border: none;
-		color: #00ff88;
-		font-size: 1.2rem;
-		cursor: pointer;
-		padding: 0 4px;
-		line-height: 1;
-	}
-
-	.debug-close:hover {
-		color: #ff4444;
-	}
-
-	.debug-content {
-		margin: 0;
-		padding: 12px;
-		color: #e0e0e0;
-		font-family: 'JetBrains Mono', 'Fira Code', monospace;
-		font-size: 0.78rem;
-		line-height: 1.5;
-		white-space: pre-wrap;
-		word-break: break-all;
-		max-height: calc(60vh - 40px);
-		overflow-y: auto;
 	}
 
 	.content-area {
