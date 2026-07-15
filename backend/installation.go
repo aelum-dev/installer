@@ -99,10 +99,7 @@ var installationSteps = []installationStep{
 		label: "Installing base system",
 		run:   stepInstallBase,
 	},
-	{
-		label: "Installing kernel",
-		run:   stepInstallKernel,
-	},
+
 	{
 		label: "Configuring bootloader",
 		run:   stepConfigureBootloader,
@@ -154,13 +151,6 @@ func stepInstallBase(diskID string) error {
 	if err != nil {
 		return fmt.Errorf("pacstrap failed: %w: %s", err, string(output))
 	}
-	return nil
-}
-
-// stepInstallKernel installs additional kernel packages.
-// Kernel is already installed via pacstrap in the base step.
-func stepInstallKernel(diskID string) error {
-	// No additional action needed — kernel is installed via pacstrap
 	return nil
 }
 
