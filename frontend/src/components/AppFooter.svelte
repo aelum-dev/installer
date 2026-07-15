@@ -3,7 +3,7 @@
 
 	let { currentPage, onBack, onNext, onFinish }: { currentPage: number; onBack: () => void; onNext: () => void; onFinish?: () => void } = $props();
 
-const buttonHandler = $derived(onFinish ?? onNext);
+	const buttonHandler = $derived(isLastPage && onFinish ? onFinish : onNext);
 
 	const isLastPage = $derived(currentPage === 4);
 	const showBack = $derived(currentPage > 0 && !isLastPage);
