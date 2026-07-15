@@ -1,7 +1,12 @@
 package app
 
-import "context"
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"os/exec"
+
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+)
 
 // NewApp creates a new App application struct
 func NewApp(dryRun bool) *App {
@@ -41,4 +46,16 @@ func (a *App) ClearStartPage() {
 // GetDryRun returns whether the app is running in dry-run mode.
 func (a *App) GetDryRun() bool {
 	return a.dryRun
+}
+
+// Reboot initiates a system reboot.
+// In dry-run mode, it only logs the action without actually rebooting.
+func (a *App) Reboot() error {
+	if a.dryRun {
+		wailsRuntime.LogInfo(a.ctx, "Rebooting system...")
+		return nil
+	}
+
+	cmd := exec.Command("reboot")
+	return cmd.Run()
 }

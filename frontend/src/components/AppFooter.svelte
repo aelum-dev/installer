@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Button from '$components/Button.svelte';
 
-	let { currentPage, onBack, onNext }: { currentPage: number; onBack: () => void; onNext: () => void } = $props();
+	let { currentPage, onBack, onNext, onFinish }: { currentPage: number; onBack: () => void; onNext: () => void; onFinish?: () => void } = $props();
+
+const buttonHandler = $derived(onFinish ?? onNext);
 
 	const isLastPage = $derived(currentPage === 4);
-	const showBack = $derived(currentPage > 0);
+	const showBack = $derived(currentPage > 0 && !isLastPage);
 </script>
 
 <footer class="footer">
@@ -14,7 +16,7 @@
 		{/if}
 	</div>
 	<div class="footer-right">
-		<Button variant="secondary" onClick={onNext}>{isLastPage ? 'Finish' : 'Next →'}</Button>
+		<Button variant="secondary" onClick={buttonHandler}>{isLastPage ? 'Reboot' : 'Next →'}</Button>
 	</div>
 </footer>
 
