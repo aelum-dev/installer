@@ -1,18 +1,22 @@
 <script lang="ts">
 	import Button from '$components/Button.svelte';
 
-	let { currentPage, onBack, onNext, onFinish }: { currentPage: number; onBack: () => void; onNext: () => void; onFinish?: () => void } = $props();
+	let { currentPage }: { currentPage: number } = $props();
 
 	const isLastPage = $derived(currentPage === 5);
 	const showBack = $derived(currentPage > 0 && !isLastPage);
 
-	const buttonHandler = $derived(isLastPage && onFinish ? onFinish : onNext);
+	const buttonHandler = $derived(isLastPage ? () => {
+		document.dispatchEvent(new CustomEvent('finish'));
+	} : () => {
+		document.dispatchEvent(new CustomEvent('go-next'));
+	});
 </script>
 
 <footer class="footer">
 	<div class="footer-left">
 		{#if showBack}
-			<Button variant="ghost" onClick={onBack}>← Back</Button>
+			<Button variant="ghost" onClick={() => document.dispatchEvent(new CustomEvent('go-back'))}>← Back</Button>
 		{/if}
 	</div>
 	<div class="footer-right">
