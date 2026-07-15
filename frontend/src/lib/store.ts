@@ -11,3 +11,5 @@ export const diskSelectionData = writable<{ diskId: string; disk: DiskInfo | nul
 	diskId: '',
 	disk: null,
 });
+
+export const showConfirmDialog = writable(false);
