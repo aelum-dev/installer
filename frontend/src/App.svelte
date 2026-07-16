@@ -65,6 +65,9 @@
 			dismissTimer = null;
 		}
 
+		// Dispatch sync event so child pages can update their store before validation
+		document.dispatchEvent(new CustomEvent('sync-page-data'));
+
 		// Run validation first
 		const error = await goNext(currentPage);
 		if (error) {

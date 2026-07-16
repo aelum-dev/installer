@@ -8,7 +8,7 @@
 		try { WailsLogInfo(msg); } catch { /* dev mode: no Wails runtime */ }
 	}
 	import { userAccountData } from '$lib/store';
-	import { validateUserAccount, hasErrors } from '$lib/validate';
+	import { validateUserAccount } from '$lib/validate';
 	import ErrorBanner from '$components/ErrorBanner.svelte';
 
 	// Props
@@ -29,11 +29,14 @@
 
 	const errors = $derived(validateUserAccount(username, password, confirmPassword, validationState));
 
-	// Sync form inputs to store on every change
+	// Sync to store when navigating (triggered by App.svelte)
 	$effect(() => {
-		const data = { username, password, confirmPassword };
-		logInfo(`[UserAccountPage] $effect running - setting store: ${JSON.stringify(data)}`);
-		userAccountData.set(data);
+		const handler = () => {
+			userAccountData.set({ username, password, confirmPassword });
+			logInfo(`[UserAccountPage] Syncing to store on navigation`);
+		};
+		document.addEventListener('sync-page-data', handler);
+		return () => document.removeEventListener('sync-page-data', handler);
 	});
 
 	function handleBlur(field: 'username' | 'password' | 'confirmPassword'): void {
@@ -44,9 +47,10 @@
 		}
 	}
 
+	// Log when leaving the page
 	$effect(() => {
 		const handler = () => {
-			LogInfo(`[UserAccountPage] username: ${username}, password: ${password}`);
+			logInfo(`[UserAccountPage] username: ${username}, password: ${password}`);
 		};
 		document.addEventListener('page-leave', handler);
 		return () => document.removeEventListener('page-leave', handler);
