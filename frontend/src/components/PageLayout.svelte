@@ -3,12 +3,32 @@
 	import ErrorBanner from '$components/ErrorBanner.svelte';
 
 	let { title, children, errorMessage }: { title: string; children: Snippet; errorMessage?: string | null } = $props();
+	let pageTitleRef = $state<HTMLHeadingElement | null>(null);
+	let errorBannerRef = $state<HTMLDivElement | null>(null);
+
+	$effect(() => {
+		if (!errorMessage || !errorBannerRef || !pageTitleRef) return;
+
+		const positionBanner = () => {
+			if (!errorBannerRef || !pageTitleRef) return;
+			const header = document.querySelector('app-header, [class*="header"], header');
+			const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+			const titleTop = pageTitleRef.getBoundingClientRect().top;
+			const midPoint = (headerBottom + titleTop) / 2;
+			errorBannerRef.style.top = `${midPoint - errorBannerRef.offsetHeight / 2}px`;
+		};
+
+		// Wait for DOM to be ready
+		requestAnimationFrame(positionBanner);
+
+		return () => {};
+	});
 </script>
 
 <div class="page-layout">
-	<h2 class="page-title">{title}</h2>
+	<h2 class="page-title" bind:this={pageTitleRef}>{title}</h2>
 	{#if errorMessage}
-		<div class="error-banner-fixed">
+		<div class="error-banner-fixed" bind:this={errorBannerRef}>
 			<ErrorBanner message={errorMessage} />
 		</div>
 	{/if}
@@ -36,18 +56,17 @@
 	}
 
 	@keyframes shake {
-		0%, 100% { transform: translateX(-50%); }
-		10%, 30%, 50%, 70%, 90% { transform: translateX(calc(-50% - 4px)); }
-		20%, 40%, 60%, 80% { transform: translateX(calc(-50% + 4px)); }
+		0%, 100% { transform: translateX(-50%) translateX(0); }
+		10%, 30%, 50%, 70%, 90% { transform: translateX(-50%) translateX(-4px); }
+		20%, 40%, 60%, 80% { transform: translateX(-50%) translateX(4px); }
 	}
 
 	.error-banner-fixed {
 		animation: shake 0.5s ease-in-out;
-		position: absolute;
-		top: 20px;
+		position: fixed;
 		left: 50%;
 		transform: translateX(-50%);
-		z-index: 10;
+		z-index: 100;
 		width: 100%;
 		max-width: 520px;
 		padding: 0 16px;
