@@ -6,8 +6,9 @@
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
 	const isWelcomePage = $derived(currentPage === PAGE_IDS.WELCOME);
-	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage);
-	const showNext = $derived(!isLastPage && !isWelcomePage);
+	const isInstallationPage = $derived(currentPage === PAGE_IDS.INSTALLATION);
+	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage && !isInstallationPage);
+	const showNext = $derived(!isLastPage && !isWelcomePage && !isInstallationPage);
 
 	const buttonHandler = $derived(isLastPage ? () => {
 		document.dispatchEvent(new CustomEvent('finish', { cancelable: true }));
