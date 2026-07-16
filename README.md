@@ -1,16 +1,159 @@
-# README
+# Aesthetic OS Installer
 
-## About
+A modern, beautiful Arch Linux installer built with [Wails](https://wails.io/) (Go + Svelte 5) featuring a step-by-step wizard interface. Designed for simplicity and visual appeal using the [Catppuccin Latte](https://catppuccin.com/palette/latte) color palette.
 
-This is the official Wails Svelte-TS template.
+## Features
 
-## Live Development
+- **Multi-step wizard** — 6-page guided installation flow
+- **Language selection** — Support for 8 languages (English, German, French, Spanish, Japanese, Chinese, Korean, Russian)
+- **User account setup** — Create your username and password with validation
+- **Disk selection** — Auto-detects available block devices via `lsblk`, displays model, size, and type (HDD/SSD)
+- **Installation confirmation** — Review details before proceeding
+- **Live progress tracking** — Real-time progress updates during installation
+- **Dry-run mode** — Simulate the entire installation without making changes (great for testing)
+- **Cross-platform builds** — macOS, Windows, and Linux support via Wails
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+## Installation Wizard Pages
 
-## Building
+| # | Page | Description |
+|---|------|-------------|
+| 1 | **Welcome** | Language selection to begin |
+| 2 | **User Account** | Create username and password |
+| 3 | **Disk Selection** | Choose target disk from auto-detected devices |
+| 4 | **Confirmation** | Review all installation settings |
+| 5 | **Installation** | Watch progress as the system is installed |
+| 6 | **Finish** | Completion screen with reboot option |
 
-To build a redistributable, production mode package, use `wails build`.
+## Installation Steps (Backend)
+
+The installer performs the following steps on the target disk:
+
+1. **Format disk** — Creates ext4 filesystem
+2. **Mount filesystem** — Mounts target at `/mnt`
+3. **Install base system** — Uses `pacstrap` to install `base`, `linux`, `linux-firmware`, `base-devel`
+4. **Configure bootloader** — Installs and configures GRUB
+5. **Set up users** — Creates user accounts
+6. **Install packages** — Additional package installation
+7. **Configure system** — Hostname, timezone, locale, etc.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Go 1.25 + Wails v2 |
+| **Frontend** | Svelte 5, TypeScript, Vite |
+| **UI Theme** | Catppuccin Latte color palette |
+| **Font** | Nunito (primary), JetBrains Mono (code) |
+| **System Integration** | D-Bus (Linux notifications), native shell commands |
+
+## Project Structure
+
+```
+aesthetic-os-installer/
+├── backend/                 # Go backend (Wails bindings)
+│   ├── app.go              # App lifecycle, reboot logic
+│   ├── types.go            # Shared types & PageID enum
+│   ├── navigation.go       # Page navigation & validation
+│   ├── installation.go     # Installation steps & progress
+│   ├── disks.go            # Disk detection via lsblk
+│   ├── languages.go        # Language selection
+│   ├── validators.go       # Form validation
+│   ├── root_linux.go       # Root privilege check (Linux)
+│   └── root_other.go       # Root privilege check (other OS)
+├── frontend/               # Svelte 5 + TypeScript frontend
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   │   ├── AppHeader.svelte
+│   │   │   ├── AppFooter.svelte
+│   │   │   ├── Button.svelte
+│   │   │   ├── ConfirmDialog.svelte
+│   │   │   ├── Dropdown.svelte
+│   │   │   ├── ErrorBanner.svelte
+│   │   │   └── PageLayout.svelte
+│   │   ├── pages/          # Wizard page components
+│   │   │   ├── WelcomePage.svelte
+│   │   │   ├── UserAccountPage.svelte
+│   │   │   ├── DiskSelectionPage.svelte
+│   │   │   ├── ConfirmationPage.svelte
+│   │   │   ├── InstallationPage.svelte
+│   │   │   └── FinishPage.svelte
+│   │   ├── lib/            # Utilities & state
+│   │   │   ├── types.ts    # TypeScript types & helpers
+│   │   │   ├── navigation.ts  # Navigation logic
+│   │   │   └── store.ts    # Svelte state stores
+│   │   ├── App.svelte      # Main app component
+│   │   └── style.css       # Catppuccin theme variables
+│   └── package.json
+├── build/                  # Platform-specific build assets
+├── main.go                 # Application entrypoint
+├── wails.json              # Wails configuration
+├── go.mod                  # Go dependencies
+└── run.sh                  # Development launcher script
+```
+
+## Getting Started
+
+### Prerequisites
+
+- [Go](https://go.dev/) 1.25+
+- [Node.js](https://nodejs.org/) 18+
+- [Wails CLI](https://wails.io/docs/gettingstarted/installation)
+- npm or pnpm
+
+### Development
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd aesthetic-os-installer
+
+# Run in development mode (with hot reload)
+./run.sh
+
+# Run with dry-run mode (simulates installation)
+./run.sh --dry-run
+
+# Run with CSS debug overlay
+./run.sh --debug-css
+```
+
+### Building
+
+```bash
+# Build for current platform
+wails build
+
+# Build for specific platform
+wails build -platform darwin/amd64
+wails build -platform windows/amd64
+wails build -platform linux/amd64
+```
+
+## Architecture
+
+### State Management
+
+State is managed through a combination of:
+- **Backend struct** (`backend/types.go`) — Holds form data, current page, language selection
+- **Svelte 5 runes** (`$state`, `$effect`, `$derived`) — Reactive frontend state
+- **Wails events** — Installation progress events (`installation:progress`, `installation:complete`, `installation:error`)
+
+### Navigation
+
+The wizard uses a page ID system (`PageID` enum) with built-in forward/backward navigation. Validation is performed before advancing to the next step. Pages requiring validation: User Account and Disk Selection.
+
+### Dry-Run Mode
+
+Set via `--dry-run` flag or `AESTHETIC_DRY_RUN=1` environment variable. In dry-run mode:
+- All installation steps are simulated with randomized delays
+- No system modifications are made
+- No root privileges are required
+- Progress events include `[DRY RUN]` prefix
+
+## License
+
+This project is licensed under the terms of the license included in the repository.
+
+## Author
+
+**KornienkoDev** — [tsunadegodaime3@gmail.com](mailto:tsunadegodaime3@gmail.com)
