@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { get } from 'svelte/store';
-import { userAccountData, diskSelectionData } from '$lib/store';
+import { userAccountData, diskSelectionData } from '$lib/state.svelte';
 
 // Mock Wails Go bindings
 vi.mock('@wails/go/app/App.js', () => ({
@@ -24,9 +23,12 @@ vi.mock('@wails/runtime/runtime', () => ({
 describe('App navigation logic', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset stores
-		userAccountData.set({ username: '', password: '', confirmPassword: '' });
-		diskSelectionData.set({ diskId: '', disk: null });
+		// Reset state
+		userAccountData.username = '';
+		userAccountData.password = '';
+		userAccountData.confirmPassword = '';
+		diskSelectionData.diskId = '';
+		diskSelectionData.disk = null;
 	});
 
 	describe('currentPage state', () => {
@@ -130,17 +132,18 @@ describe('App navigation logic', () => {
 		});
 	});
 
-	describe('store updates', () => {
-		it('should update userAccountData store', () => {
+describe('state updates', () => {
+		it('should update userAccountData state', () => {
 			const testData = { username: 'testuser', password: 'pass123', confirmPassword: 'pass123' };
-			userAccountData.set(testData);
-			expect(get(userAccountData)).toEqual(testData);
+			userAccountData.username = testData.username;
+			userAccountData.password = testData.password;
+			userAccountData.confirmPassword = testData.confirmPassword;
+			expect(userAccountData).toEqual(testData);
 		});
 
-		it('should update diskSelectionData store', () => {
-			const testData = { diskId: '/dev/sda' };
-			diskSelectionData.set(testData);
-			expect(get(diskSelectionData)).toEqual(testData);
+		it('should update diskSelectionData state', () => {
+			diskSelectionData.diskId = '/dev/sda';
+			expect(diskSelectionData.diskId).toBe('/dev/sda');
 		});
 	});
 });

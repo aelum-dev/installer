@@ -10,7 +10,7 @@
 	}
 	import PageLayout from '$components/PageLayout.svelte';
 	import Button from '$components/Button.svelte';
-	import { diskSelectionData } from '$lib/store';
+	import { diskSelectionData } from '$lib/state.svelte';
 	import type { DiskInfo } from '$lib/types';
 	import { formatSize } from '$lib/types';
 
@@ -36,7 +36,8 @@
 
 	function selectDisk(disk: DiskInfo): void {
 		selectedDiskId = disk.path;
-		diskSelectionData.set({ diskId: disk.path, disk });
+		diskSelectionData.diskId = disk.path;
+		diskSelectionData.disk = disk;
 		logInfo(`[DiskSelectionPage] Selected: ${disk.path} (${formatSize(disk.size)})`);
 	}
 
@@ -46,7 +47,8 @@
 	$effect(() => {
 		const handler = () => {
 			const disk = disks.find(d => d.path === selectedDiskId) ?? null;
-			diskSelectionData.set({ diskId: selectedDiskId, disk });
+			diskSelectionData.diskId = selectedDiskId;
+			diskSelectionData.disk = disk;
 			logInfo(`[DiskSelectionPage] Syncing to store for validation`);
 		};
 		document.addEventListener('sync-to-store', handler);

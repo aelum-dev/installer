@@ -19,8 +19,8 @@
 	} = $props();
 
 	let isOpen = $state(false);
-	let listRef = $state<HTMLUListElement | null>(null);
-	let buttonRef = $state<HTMLButtonElement | null>(null);
+	let listEl: HTMLUListElement | null = null;
+	let buttonEl: HTMLButtonElement | null = null;
 
 	let selectedLabel = $derived.by(() => {
 		const found = options.find((o) => o.value === selectedValue);
@@ -48,7 +48,7 @@
 		switch (event.key) {
 			case 'Escape':
 				isOpen = false;
-				buttonRef?.focus();
+				buttonEl?.focus();
 				break;
 			case 'ArrowDown':
 				event.preventDefault();
@@ -70,8 +70,8 @@
 	}
 
 	function focusNext(direction: number): void {
-		if (!listRef) return;
-		const items = listRef.querySelectorAll<HTMLElement>('[data-option-index]');
+		if (!listEl) return;
+		const items = listEl.querySelectorAll<HTMLElement>('[data-option-index]');
 		if (items.length === 0) return;
 
 		let currentIdx = -1;
@@ -86,8 +86,8 @@
 	function handleClickOutside(event: MouseEvent): void {
 		if (
 			isOpen &&
-			buttonRef && !buttonRef.contains(event.target as Node) &&
-			listRef && !listRef.contains(event.target as Node)
+			buttonEl && !buttonEl.contains(event.target as Node) &&
+			listEl && !listEl.contains(event.target as Node)
 		) {
 			isOpen = false;
 		}
@@ -111,7 +111,7 @@
 		aria-label={placeholder}
 		onclick={toggle}
 		onkeydown={handleKeyDown}
-		bind:this={buttonRef}
+		{@attach (el) => { buttonEl = el; }}
 	>
 		<span class="dropdown-label">{selectedLabel}</span>
 		<svg class="dropdown-chevron" viewBox="0 0 12 8" width="12" height="8" fill="none" aria-hidden="true">
@@ -124,7 +124,7 @@
 			class="dropdown-list"
 			role="listbox"
 			aria-label={placeholder}
-			bind:this={listRef}
+			{@attach (el) => { listEl = el; }}
 		>
 			{#each options as option, i (option.value)}
 				<li

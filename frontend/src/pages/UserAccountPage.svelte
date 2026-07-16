@@ -7,7 +7,7 @@
 	function logInfo(msg: string): void {
 		try { WailsLogInfo(msg); } catch { /* dev mode: no Wails runtime */ }
 	}
-	import { userAccountData } from '$lib/store';
+	import { userAccountData } from '$lib/state.svelte';
 	import { validateUserAccount } from '$lib/validate';
 
 	let username = $state('');
@@ -28,7 +28,9 @@
 	// Sync to store when requested (before validation)
 	$effect(() => {
 		const handler = () => {
-			userAccountData.set({ username, password, confirmPassword });
+			userAccountData.username = username;
+			userAccountData.password = password;
+			userAccountData.confirmPassword = confirmPassword;
 			logInfo(`[UserAccountPage] Syncing to store for validation`);
 		};
 		document.addEventListener('sync-to-store', handler);
