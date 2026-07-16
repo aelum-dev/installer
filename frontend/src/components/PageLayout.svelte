@@ -35,7 +35,14 @@
 		font-weight: var(--font-weight-700, 700);
 	}
 
+	@keyframes shake {
+		0%, 100% { transform: translateX(-50%); }
+		10%, 30%, 50%, 70%, 90% { transform: translateX(calc(-50% - 4px)); }
+		20%, 40%, 60%, 80% { transform: translateX(calc(-50% + 4px)); }
+	}
+
 	.error-banner-fixed {
+		animation: shake 0.5s ease-in-out;
 		position: absolute;
 		top: 20px;
 		left: 50%;
