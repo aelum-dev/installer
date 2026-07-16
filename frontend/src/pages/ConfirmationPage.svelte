@@ -102,7 +102,7 @@
 		flex-direction: column;
 		gap: var(--spacing-md);
 		width: 100%;
-		max-width: 520px;
+		text-align: center;
 	}
 
 	/* ── Summary ── */

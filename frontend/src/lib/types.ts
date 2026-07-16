@@ -20,8 +20,8 @@ export const PAGE_NAMES: Record<PageID, string> = {
 	[PAGE_IDS.FINISH]: 'Finish',
 };
 
-// Pages that show no header/footer (welcome has its own CTA, installation runs automatically)
-export const PAGES_NO_NAV = new Set<PageID>([PAGE_IDS.WELCOME, PAGE_IDS.INSTALLATION]);
+// Pages that show no header/footer (installation runs automatically)
+export const PAGES_NO_NAV = new Set<PageID>([PAGE_IDS.INSTALLATION]);
 
 // Pages that require validation before advancing
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);

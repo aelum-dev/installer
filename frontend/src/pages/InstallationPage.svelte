@@ -162,8 +162,7 @@
 
 	/* ── Progress bar ── */
 	.progress-container {
-		width: 520px;
-		max-width: calc(100vw - 40px);
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;

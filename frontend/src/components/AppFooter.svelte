@@ -5,7 +5,9 @@
 	let { currentPage }: { currentPage: number } = $props();
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
+	const isWelcomePage = $derived(currentPage === PAGE_IDS.WELCOME);
 	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage);
+	const showNext = $derived(!isLastPage && !isWelcomePage);
 
 	const buttonHandler = $derived(isLastPage ? () => {
 		document.dispatchEvent(new CustomEvent('finish', { cancelable: true }));
@@ -21,7 +23,11 @@
 		{/if}
 	</div>
 	<div class="footer-right">
-		<Button variant="secondary" onClick={buttonHandler}>{isLastPage ? 'Reboot' : 'Next →'}</Button>
+		{#if showNext}
+			<Button variant="secondary" onClick={buttonHandler}>Next →</Button>
+		{:else if isLastPage}
+			<Button variant="secondary" onClick={buttonHandler}>Reboot</Button>
+		{/if}
 	</div>
 </footer>
 

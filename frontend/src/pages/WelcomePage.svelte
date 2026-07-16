@@ -83,7 +83,6 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--spacing-xl);
-		text-align: center;
 	}
 
 	.subtitle {
@@ -97,13 +96,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		align-items: flex-start;
+		align-items: center;
 	}
 
 	.language-label {
 		font-size: 0.85rem;
 		color: var(--color-text-muted);
 		margin: 0;
+		text-align: center;
 	}
 
 	.loading-text {
