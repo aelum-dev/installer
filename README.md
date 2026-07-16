@@ -13,7 +13,6 @@ A modern, beautiful Arch Linux installer built with [Wails](https://wails.io/) (
 - **Installation confirmation** — Review details before proceeding
 - **Live progress tracking** — Real-time progress updates during installation
 - **Dry-run mode** — Simulate the entire installation without making changes (great for testing)
-- **Cross-platform builds** — macOS, Windows, and Linux support via Wails
 
 ## Installation Wizard Pages
 
