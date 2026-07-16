@@ -38,10 +38,6 @@ export function GetStartPage() {
   return window['go']['app']['App']['GetStartPage']();
 }
 
-export function Reboot() {
-  return window['go']['app']['App']['Reboot']();
-}
-
 export function RebootAndClose() {
   return window['go']['app']['App']['RebootAndClose']();
 }

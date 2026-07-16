@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
 import { userAccountData, diskSelectionData } from '$lib/store';
-import type { TransitionDirection } from '$lib/types';
 
 // Mock Wails Go bindings
 vi.mock('@wails/go/app/App.js', () => ({
@@ -13,7 +12,6 @@ vi.mock('@wails/go/app/App.js', () => ({
 	SetStartPage: vi.fn(() => Promise.resolve()),
 	GetStartPage: vi.fn(() => Promise.resolve(-1)),
 	ClearStartPage: vi.fn(() => Promise.resolve()),
-	Reboot: vi.fn(() => Promise.resolve()),
 }));
 
 // Mock Wails runtime
@@ -28,7 +26,7 @@ describe('App navigation logic', () => {
 		vi.clearAllMocks();
 		// Reset stores
 		userAccountData.set({ username: '', password: '', confirmPassword: '' });
-		diskSelectionData.set({ diskId: '' });
+		diskSelectionData.set({ diskId: '', disk: null });
 	});
 
 	describe('currentPage state', () => {
@@ -129,14 +127,6 @@ describe('App navigation logic', () => {
 			const onNext = () => console.log('next');
 			const buttonHandler = isLastPage && undefined ? undefined : onNext;
 			expect(buttonHandler).toBe(onNext);
-		});
-	});
-
-	describe('transition direction', () => {
-		it('should have valid transition directions', () => {
-			const directions: TransitionDirection[] = ['forward', 'backward'];
-			expect(directions).toContain('forward');
-			expect(directions).toContain('backward');
 		});
 	});
 

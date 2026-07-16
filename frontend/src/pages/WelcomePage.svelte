@@ -17,10 +17,6 @@
 	let selectedCode = $state<string>('');
 	let loading = $state(true);
 
-	function toDropdownOption(lang: Language): { value: string; label: string } {
-		return { value: lang.code, label: lang.name };
-	}
-
 	async function loadLanguages(): Promise<void> {
 		try {
 			languages = await GetLanguages();
@@ -44,7 +40,7 @@
 		}
 	}
 
-	const dropdownOptions = $derived(languages.map(toDropdownOption));
+	const dropdownOptions = $derived(languages.map(l => ({ value: l.code, label: l.name })));
 
 	loadLanguages();
 </script>

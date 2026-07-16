@@ -67,15 +67,3 @@ func (a *App) RebootAndClose() error {
 	wailsRuntime.Quit(a.ctx)
 	return nil
 }
-
-// Reboot initiates a system reboot.
-// In dry-run mode, it only logs the action without actually rebooting.
-func (a *App) Reboot() error {
-	if a.dryRun {
-		wailsRuntime.LogInfo(a.ctx, "Rebooting system...")
-		return nil
-	}
-
-	cmd := exec.Command("reboot")
-	return cmd.Run()
-}

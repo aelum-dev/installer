@@ -17,24 +17,12 @@
 		children: Snippet;
 	} = $props();
 
-	function getBtnClass(): string {
-		let cls = 'btn';
-		if (variant === 'primary') cls += ' btn-primary';
-		else if (variant === 'secondary') cls += ' btn-secondary';
-		else if (variant === 'ghost') cls += ' btn-ghost';
-
-		if (size === 'small') cls += ' btn-small';
-		else if (size === 'medium') cls += ' btn-medium';
-		else if (size === 'large') cls += ' btn-large';
-
-		if (fullWidth) cls += ' btn-fullWidth';
-		return cls;
-	}
+	const btnClass = $derived(`btn btn-${variant} btn-${size}${fullWidth ? ' btn-fullWidth' : ''}`);
 </script>
 
 <button
 	type="button"
-	class={getBtnClass()}
+	class={btnClass}
 	disabled={disabled}
 	onclick={(e) => onClick?.(e)}
 >

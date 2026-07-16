@@ -40,14 +40,7 @@
 	function selectDisk(disk: DiskInfo): void {
 		selectedDiskId = disk.path;
 		diskSelectionData.set({ diskId: disk.path, disk });
-		logInfo(`[DEBUG] Disk selected - diskId: ${disk.path}`);
-		logInfo(`[DEBUG] Disk object: ${JSON.stringify(disk)}`);
-		logInfo(`[DEBUG] diskSelectionData store: ${JSON.stringify({ diskId: disk.path, disk })}`);
-	}
-
-	function onDiskSelect(disk: DiskInfo): void {
 		logInfo(`[DiskSelectionPage] Selected: ${disk.path} (${formatSize(disk.size)})`);
-		selectDisk(disk);
 	}
 
 	loadDisks();
@@ -85,7 +78,7 @@
 				<button
 					type="button"
 					class={['disk-card', { selected: selectedDiskId === disk.path }]}
-					onclick={() => onDiskSelect(disk)}
+					onclick={() => selectDisk(disk)}
 				>
 					<div class="disk-main">
 						<div class="disk-icon">

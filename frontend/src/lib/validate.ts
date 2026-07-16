@@ -43,7 +43,3 @@ export function validateUserAccount(
 				: null,
 	};
 }
-
-export function hasErrors(result: ValidationResult): boolean {
-	return !!(result.username || result.password || result.confirmPassword);
-}

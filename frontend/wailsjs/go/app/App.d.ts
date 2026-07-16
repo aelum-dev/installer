@@ -20,8 +20,6 @@ export function GetSelectedLanguage():Promise<string>;
 
 export function GetStartPage():Promise<number>;
 
-export function Reboot():Promise<void>;
-
 export function RebootAndClose():Promise<void>;
 
 export function SetCurrentPage(arg1:app.PageID):Promise<void>;

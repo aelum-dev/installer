@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateUserAccount, hasErrors } from './validate';
+import { validateUserAccount } from './validate';
 
 const emptyState = {
 	usernameTouched: false,
@@ -106,17 +106,5 @@ describe('validateUserAccount', () => {
 			expect(result.password).toBe('Password must be at least 6 characters');
 			expect(result.confirmPassword).toBe('Please confirm your password');
 		});
-	});
-});
-
-describe('hasErrors', () => {
-	it('returns true when any error exists', () => {
-		expect(hasErrors({ username: 'error', password: null, confirmPassword: null })).toBe(true);
-		expect(hasErrors({ username: null, password: 'error', confirmPassword: null })).toBe(true);
-		expect(hasErrors({ username: null, password: null, confirmPassword: 'error' })).toBe(true);
-	});
-
-	it('returns false when no errors exist', () => {
-		expect(hasErrors({ username: null, password: null, confirmPassword: null })).toBe(false);
 	});
 });

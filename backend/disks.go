@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
@@ -123,14 +122,4 @@ func (a *App) GetDisks() ([]DiskInfo, error) {
 	}
 
 	return disks, nil
-}
-
-// DiskSizeBytes returns the size in bytes for a disk (for internal use).
-// Only works correctly when lsblk was called with -b flag.
-func (d DiskInfo) DiskSizeBytes() int64 {
-	bytes, err := strconv.ParseInt(d.Size, 10, 64)
-	if err != nil {
-		return 0
-	}
-	return bytes
 }

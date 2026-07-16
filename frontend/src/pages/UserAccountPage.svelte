@@ -21,13 +21,13 @@
 	let passwordTouched = $state(false);
 	let confirmPasswordTouched = $state(false);
 
-	const validationState = $derived.by(() => ({
-		usernameTouched,
-		passwordTouched,
-		confirmPasswordTouched,
-	}));
-
-	const errors = $derived(validateUserAccount(username, password, confirmPassword, validationState));
+	const errors = $derived(
+		validateUserAccount(username, password, confirmPassword, {
+			usernameTouched,
+			passwordTouched,
+			confirmPasswordTouched,
+		})
+	);
 
 	// Sync to store when requested (before validation)
 	$effect(() => {

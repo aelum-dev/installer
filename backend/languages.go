@@ -21,28 +21,21 @@ func (a *App) GetSelectedLanguage() string {
 	return a.selectedLanguage
 }
 
-// SetSelectedLanguage sets the selected language and applies the locale.
+// SetSelectedLanguage sets the selected language.
 func (a *App) SetSelectedLanguage(code string) error {
 	a.selectedLanguage = code
-	lang := a.findLanguage(code)
-	if lang == nil {
+	if a.findLanguage(code) == nil {
 		return fmt.Errorf("unknown language code: %s", code)
 	}
-	a.applyLocale(lang.Locale)
 	return nil
 }
 
 // findLanguage finds a language by code.
 func (a *App) findLanguage(code string) *Language {
-	for i, lang := range a.GetLanguages() {
+	for _, lang := range a.GetLanguages() {
 		if lang.Code == code {
-			return &a.GetLanguages()[i]
+			return &lang
 		}
 	}
 	return nil
-}
-
-// applyLocale applies the locale string.
-func (a *App) applyLocale(locale string) {
-	_ = locale
 }

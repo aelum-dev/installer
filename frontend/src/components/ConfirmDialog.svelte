@@ -35,7 +35,7 @@
 				<button type="button" class="btn-confirm" onclick={() => {
 					LogInfo('[ConfirmDialog] User confirmed installation');
 					document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
-					setTimeout(() => showConfirmDialog.set(false), 0);
+					showConfirmDialog.set(false);
 				}}>
 					Yes, Erase & Install
 				</button>

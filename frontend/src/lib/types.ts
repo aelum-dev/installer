@@ -26,19 +26,6 @@ export const PAGES_NO_NAV = new Set<PageID>();
 // Pages that require validation before advancing
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
 
-// Page-specific error messages for validation failures
-export const PAGE_ERROR_MESSAGES: Record<PageID, string> = {
-	[PAGE_IDS.WELCOME]: 'Please select a language to continue.',
-	[PAGE_IDS.USER_ACCOUNT]: 'Please complete all required fields to continue.',
-	[PAGE_IDS.DISK_SELECTION]: 'Please select a disk to continue.',
-	[PAGE_IDS.CONFIRMATION]: 'Please review your installation details.',
-	[PAGE_IDS.INSTALLATION]: 'Please wait for the installation to complete.',
-	[PAGE_IDS.FINISH]: 'The installation is complete.',
-};
-
-// Transition direction for animations.
-export type TransitionDirection = 'forward' | 'backward';
-
 // DiskInfo represents a block device discovered on the system.
 export interface DiskInfo {
 	name: string;
@@ -67,12 +54,4 @@ export function formatSize(bytes: string): string {
 
 	if (i === 0) return `${Math.round(size)} ${units[0]}`;
 	return `${size.toFixed(1)} ${units[i]}`;
-}
-
-// Get a display label for the disk.
-export function diskLabel(disk: DiskInfo): string {
-	const model = disk.model || 'Unknown';
-	const size = formatSize(disk.size);
-	const indicator = disk.rotational ? 'HDD' : 'SSD';
-	return `${model} (${size}, ${indicator})`;
 }

@@ -154,29 +154,6 @@ func TestLsblkEntry_UnmarshalJSON_StringSize(t *testing.T) {
 	}
 }
 
-func TestDiskInfo_DiskSizeBytes(t *testing.T) {
-	tests := []struct {
-		name     string
-		size     string
-		expected int64
-	}{
-		{"1 TB", "1099511627776", 1099511627776},
-		{"500 GB", "500107862016", 500107862016},
-		{"zero", "0", 0},
-		{"invalid", "500.0 GB", 0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			disk := DiskInfo{Size: tt.size}
-			got := disk.DiskSizeBytes()
-			if got != tt.expected {
-				t.Errorf("expected %d, got %d", tt.expected, got)
-			}
-		})
-	}
-}
-
 func TestValidateDiskSelection(t *testing.T) {
 	app := NewApp(false)
 
