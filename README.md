@@ -122,13 +122,7 @@ cd aesthetic-os-installer
 ### Building
 
 ```bash
-# Build for current platform
 wails build
-
-# Build for specific platform
-wails build -platform darwin/amd64
-wails build -platform windows/amd64
-wails build -platform linux/amd64
 ```
 
 ## Architecture
@@ -158,4 +152,4 @@ This project is licensed under the terms of the license included in the reposito
 
 ## Author
 
-**KornienkoDev** — [tsunadegodaime3@gmail.com](mailto:tsunadegodaime3@gmail.com)
+**KornienkoDev** — [ik.workmail39@gmail.com](mailto:tsunadegodaime3@gmail.com)
