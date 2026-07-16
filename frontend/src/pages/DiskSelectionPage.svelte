@@ -51,6 +51,17 @@
 	}
 
 	loadDisks();
+
+	// Sync to store when requested (before validation)
+	$effect(() => {
+		const handler = () => {
+			const disk = disks.find(d => d.path === selectedDiskId) ?? null;
+			diskSelectionData.set({ diskId: selectedDiskId, disk });
+			logInfo(`[DiskSelectionPage] Syncing to store for validation`);
+		};
+		document.addEventListener('sync-to-store', handler);
+		return () => document.removeEventListener('sync-to-store', handler);
+	});
 </script>
 <PageLayout title="Select Installation Disk" {errorMessage}>
 		<p class="hint">Choose a disk to install AestheticOS. All data on the selected disk will be erased.</p>

@@ -29,14 +29,23 @@
 
 	const errors = $derived(validateUserAccount(username, password, confirmPassword, validationState));
 
-	// Sync to store when navigating (triggered by App.svelte)
+	// Sync to store when requested (before validation)
 	$effect(() => {
 		const handler = () => {
 			userAccountData.set({ username, password, confirmPassword });
-			logInfo(`[UserAccountPage] Syncing to store on navigation`);
+			logInfo(`[UserAccountPage] Syncing to store for validation`);
 		};
-		document.addEventListener('sync-page-data', handler);
-		return () => document.removeEventListener('sync-page-data', handler);
+		document.addEventListener('sync-to-store', handler);
+		return () => document.removeEventListener('sync-to-store', handler);
+	});
+
+	// Log after backend confirms
+	$effect(() => {
+		const handler = () => {
+			logInfo(`[UserAccountPage] Backend confirmed, data is valid`);
+		};
+		document.addEventListener('backend-confirmed', handler);
+		return () => document.removeEventListener('backend-confirmed', handler);
 	});
 
 	function handleBlur(field: 'username' | 'password' | 'confirmPassword'): void {
