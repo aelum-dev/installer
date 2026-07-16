@@ -2,6 +2,8 @@
 
 A modern, beautiful Arch Linux installer built with [Wails](https://wails.io/) (Go + Svelte 5) featuring a step-by-step wizard interface. Designed for simplicity and visual appeal using the [Catppuccin Latte](https://catppuccin.com/palette/latte) color palette.
 
+<img width="1125" height="750" alt="screenshot_2026-07-16_11-25-01" src="https://github.com/user-attachments/assets/0b5cc06e-aadd-4510-aa49-a9ea5e1319d2" />
+
 ## Features
 
 - **Multi-step wizard** — 6-page guided installation flow
