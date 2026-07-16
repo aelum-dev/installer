@@ -9,10 +9,6 @@
 	}
 	import { userAccountData } from '$lib/store';
 	import { validateUserAccount } from '$lib/validate';
-	import ErrorBanner from '$components/ErrorBanner.svelte';
-
-	// Props
-	let { errorMessage }: { errorMessage?: string | null } = $props();
 
 	let username = $state('');
 	let password = $state('');
@@ -66,7 +62,7 @@
 	});
 </script>
 
-<PageLayout title="Create User Account" {errorMessage}>
+<PageLayout title="Create User Account">
 	<form class="form" onsubmit={(e) => e.preventDefault()}>
 		<div class="field">
 			<label for="username">Username</label>

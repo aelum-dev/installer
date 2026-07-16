@@ -13,10 +13,7 @@
 	import { diskSelectionData } from '$lib/store';
 	import type { DiskInfo } from '$lib/types';
 	import { formatSize } from '$lib/types';
-	import ErrorBanner from '$components/ErrorBanner.svelte';
 
-	// Props
-	let { errorMessage }: { errorMessage?: string | null } = $props();
 
 	let disks = $state<DiskInfo[]>([]);
 	let selectedDiskId = $state<string>('');
@@ -56,7 +53,7 @@
 		return () => document.removeEventListener('sync-to-store', handler);
 	});
 </script>
-<PageLayout title="Select Installation Disk" {errorMessage}>
+<PageLayout title="Select Installation Disk">
 		<p class="hint">Choose a disk to install AestheticOS. All data on the selected disk will be erased.</p>
 
 		{#if loading}
