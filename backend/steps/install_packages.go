@@ -3,27 +3,26 @@ package steps
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 )
 
-// InstallPackages installs additional packages using pkexec.
-func InstallPackages(diskID string, username, password, language string) error {
-	// Default packages to install
-	packages := []string{"networkmanager", "sudo", "vim", "nano", "wget", "curl"}
-
-	exe, err := exec.LookPath("aesthetic-os-installer")
-	if err != nil {
-		exe = "aesthetic-os-installer"
+// InstallPackages installs additional packages via arch-chroot using sudo.
+// This runs AFTER pacstrap, so packages are installed into the already-mounted system.
+func InstallPackages(diskID, helper, username, password, language string) error {
+	// Additional packages to install via arch-chroot (after base system is set up)
+	packages := []string{
+		"htop", "neofetch", "git", "fish",
 	}
-	dir := filepath.Dir(exe)
-	helper := filepath.Join(dir, "root-helper")
 
-	args := []string{"/mnt"}
+	if len(packages) == 0 {
+		return nil
+	}
+
+	args := []string{"arch-chroot", "/mnt", "pacman", "-S", "--noconfirm"}
 	args = append(args, packages...)
-	cmd := exec.Command("pkexec", append([]string{helper, "pacstrap"}, args...)...)
+	cmd := exec.Command("sudo", append([]string{helper, "run"}, args...)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("pacstrap failed: %w: %s", err, string(output))
+		return fmt.Errorf("arch-chroot pacman failed: %w: %s", err, string(output))
 	}
 	return nil
 }

@@ -3,19 +3,20 @@ package steps
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 )
 
-// InstallBase installs the Arch Linux base system using pkexec.
-func InstallBase(diskID string, username, password, language string) error {
-	exe, err := exec.LookPath("aesthetic-os-installer")
-	if err != nil {
-		exe = "aesthetic-os-installer"
+// InstallBase installs the Arch Linux base system + additional packages using sudo.
+// pacstrap runs only once with all packages.
+func InstallBase(diskID, helper, username, password, language string) error {
+	// All packages to install via pacstrap (runs only once)
+	packages := []string{
+		"base", "linux", "linux-firmware", "base-devel",
+		"networkmanager", "sudo", "vim", "nano", "wget", "curl",
 	}
-	dir := filepath.Dir(exe)
-	helper := filepath.Join(dir, "root-helper")
 
-	cmd := exec.Command("pkexec", helper, "pacstrap", "/mnt", "base", "linux", "linux-firmware", "base-devel")
+	args := []string{"/mnt"}
+	args = append(args, packages...)
+	cmd := exec.Command("sudo", append([]string{helper, "pacstrap"}, args...)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("pacstrap failed: %w: %s", err, string(output))

@@ -3,27 +3,39 @@ package steps
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 )
 
-// FormatDisk formats the target disk with ext4 filesystem using pkexec.
-func FormatDisk(diskID string, username, password, language string) error {
+// FormatDisk creates 2 partitions (EFI + root) and formats them using sudo.
+// Partition layout:
+//   - /dev/sda1: 128MB EFI (FAT32)
+//   - /dev/sda2: Rest of disk (ext4)
+func FormatDisk(diskID, helper, username, password, language string) error {
 	if diskID == "" {
 		diskID = "/dev/sda"
 	}
 
-	// Get the path to the root-helper binary (next to the main binary)
-	exe, err := exec.LookPath("aesthetic-os-installer")
-	if err != nil {
-		exe = "aesthetic-os-installer"
-	}
-	dir := filepath.Dir(exe)
-	helper := filepath.Join(dir, "root-helper")
-
-	cmd := exec.Command("pkexec", helper, "format", diskID)
+	// Step 1: Create partition table and partitions
+	cmd := exec.Command("sudo", helper, "parted", diskID)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("format disk failed: %w: %s", err, string(output))
+		return fmt.Errorf("partitioning failed: %w: %s", err, string(output))
 	}
+
+	// Step 2: Format EFI partition (FAT32)
+	efiPartition := diskID + "1"
+	cmd = exec.Command("sudo", helper, "format", efiPartition)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("format EFI partition failed: %w: %s", err, string(output))
+	}
+
+	// Step 3: Format root partition (ext4)
+	rootPartition := diskID + "2"
+	cmd = exec.Command("sudo", helper, "format", rootPartition)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("format root partition failed: %w: %s", err, string(output))
+	}
+
 	return nil
 }

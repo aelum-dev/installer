@@ -19,9 +19,15 @@ type HelperCommand struct {
 
 var commands = []HelperCommand{
 	{
+		Name:  "parted",
+		Usage: "parted <disk>",
+		Help:  "Create partition table and partitions (EFI + root)",
+		Run:   cmdParted,
+	},
+	{
 		Name:  "format",
-		Usage: "format <disk>",
-		Help:  "Format a disk with ext4",
+		Usage: "format <partition>",
+		Help:  "Format a partition with ext4",
 		Run:   cmdFormat,
 	},
 	{
@@ -49,16 +55,16 @@ var commands = []HelperCommand{
 		Run:   cmdGenfstab,
 	},
 	{
-		Name:  "grub-install",
-		Usage: "grub-install <disk>",
-		Help:  "Install GRUB bootloader",
-		Run:   cmdGrubInstall,
+		Name:  "bootctl-install",
+		Usage: "bootctl-install <esp>",
+		Help:  "Install systemd-boot to ESP",
+		Run:   cmdBootctlInstall,
 	},
 	{
-		Name:  "grub-mkconfig",
-		Usage: "grub-mkconfig -o <output>",
-		Help:  "Generate GRUB config",
-		Run:   cmdGrubMkconfig,
+		Name:  "bootctl-set-default",
+		Usage: "bootctl-set-default <entry>",
+		Help:  "Set default boot entry",
+		Run:   cmdBootctlSetDefault,
 	},
 	{
 		Name:  "passwd",
@@ -124,11 +130,39 @@ func runCommand(name string, args ...string) error {
 	return nil
 }
 
+func cmdParted(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: parted <disk>")
+	}
+	disk := args[0]
+	// Create GPT partition table
+	if err := runCommand("sgdisk", "-Z", disk); err != nil {
+		return fmt.Errorf("failed to clear disk: %w", err)
+	}
+	// Create EFI partition (128MB, FAT32, boot flag)
+	if err := runCommand("sgdisk", "-n", "1:0:0", "-t", "1:EF00", "-c", "1:EFI", disk); err != nil {
+		return fmt.Errorf("failed to create EFI partition: %w", err)
+	}
+	// Create root partition (rest of disk, ext4)
+	if err := runCommand("sgdisk", "-n", "2:0:0", "-t", "2:8300", "-c", "2:Root", disk); err != nil {
+		return fmt.Errorf("failed to create root partition: %w", err)
+	}
+	// Re-read partition table
+	return runCommand("partprobe", disk)
+}
+
 func cmdFormat(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: format <disk>")
+		return fmt.Errorf("usage: format <partition>")
 	}
-	return runCommand("mkfs.ext4", "-F", "-L", "aesthetic-os", args[0])
+	partition := args[0]
+	// Determine filesystem based on partition name
+	if strings.HasSuffix(partition, "1") || strings.Contains(partition, "efi") || strings.Contains(partition, "EFI") {
+		// EFI partition - FAT32
+		return runCommand("mkfs.fat", "-F", "32", "-n", "EFI", partition)
+	}
+	// Root partition - ext4
+	return runCommand("mkfs.ext4", "-F", "-L", "aesthetic-os", partition)
 }
 
 func cmdMount(args []string) error {
@@ -160,25 +194,26 @@ func cmdGenfstab(args []string) error {
 	return runCommand("genfstab", "-U", args[0])
 }
 
-func cmdGrubInstall(args []string) error {
+func cmdBootctlInstall(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: grub-install <disk>")
+		return fmt.Errorf("usage: bootctl-install <esp>")
 	}
-	return runCommand("grub-install", "--target=i386-pc", args[0])
+	// Install systemd-boot to the EFI System Partition
+	if err := runCommand("bootctl", "install", "--path="+args[0]); err != nil {
+		return err
+	}
+	// Create default loader configuration
+	return runCommand("bootctl", "setup", "--path="+args[0])
 }
 
-func cmdGrubMkconfig(args []string) error {
+func cmdBootctlSetDefault(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: grub-mkconfig -o <output>")
+		return fmt.Errorf("usage: bootctl-set-default <entry>")
 	}
-	// Find the -o flag and output path
-	for i, arg := range args {
-		if arg == "-o" && i+1 < len(args) {
-			output := args[i+1]
-			return runCommand("grub-mkconfig", "-o", output)
-		}
-	}
-	return fmt.Errorf("usage: grub-mkconfig -o <output>")
+	// Set the default boot entry
+	loaderConfig := args[0] + "/boot/loader/loader.conf"
+	content := "default aesthetic-os.conf\ntimeout 5\n"
+	return os.WriteFile(loaderConfig, []byte(content), 0644)
 }
 
 func cmdPasswd(args []string) error {

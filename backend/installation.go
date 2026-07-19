@@ -1,9 +1,9 @@
 package app
 
 import (
-	"fmt"
 	"math/rand"
-	"runtime"
+	"os"
+	"path/filepath"
 	"time"
 
 	"aesthetic-os-installer/backend/steps"
@@ -27,13 +27,6 @@ type InstallationProgress struct {
 // StartInstallation begins the installation process asynchronously.
 // Privileged operations are performed via pkexec using the root-helper binary.
 func (a *App) StartInstallation() error {
-	// Skip root check in dry-run mode
-	if !a.dryRun && runtime.GOOS == "linux" {
-		if !isRoot() {
-			return fmt.Errorf("installation requires root privileges (run with sudo)")
-		}
-	}
-
 	// Run installation in a goroutine so it doesn't block the UI
 	go a.runInstallation()
 	return nil
@@ -52,10 +45,13 @@ func (a *App) runInstallation() {
 
 		// Execute the step (or simulate in dry-run mode)
 		var err error
+		helper := findHelper()
+
+		// Execute the step (or simulate in dry-run mode)
 		if a.dryRun {
 			err = simulateStep()
 		} else {
-			err = step.run(a.diskSelection.DiskID, a.userAccount.Username, a.userAccount.Password, a.selectedLanguage)
+			err = step.run(a.diskSelection.DiskID, helper, a.userAccount.Username, a.userAccount.Password, a.selectedLanguage)
 		}
 
 		if err != nil {
@@ -78,6 +74,22 @@ func (a *App) runInstallation() {
 		Percent: 100,
 		Phase:   "done",
 	})
+}
+
+// findHelper finds the root-helper binary.
+// For testing: looks in /shared first, then next to the main executable.
+func findHelper() string {
+	// Try /shared first (testing)
+	if _, err := os.Stat("/shared/root-helper"); err == nil {
+		return "/shared/root-helper"
+	}
+	// Fallback: next to the main executable
+	exe, err := os.Executable()
+	if err != nil {
+		return "./root-helper"
+	}
+	dir := filepath.Dir(exe)
+	return filepath.Join(dir, "root-helper")
 }
 
 // simulateStep simulates a step by sleeping for a random duration.
@@ -108,7 +120,7 @@ func (a *App) emitError(label string, message string) {
 // installationStep defines a single step in the installation process.
 type installationStep struct {
 	label string
-	run   func(diskID string, username string, password string, language string) error
+	run   func(diskID string, helper string, username string, password string, language string) error
 }
 
 var installationSteps = []installationStep{
