@@ -43,6 +43,18 @@ var commands = []HelperCommand{
 		Run:   cmdUmount,
 	},
 	{
+		Name:  "mountpoints",
+		Usage: "mountpoints <device>",
+		Help:  "List mountpoints for a device (one per line)",
+		Run:   cmdMountpoints,
+	},
+	{
+		Name:  "lsblk-partitions",
+		Usage: "lsblk-partitions <device>",
+		Help:  "List partitions with mountpoints (NAME|MOUNTPOINT per line)",
+		Run:   cmdLsblkPartitions,
+	},
+	{
 		Name:  "pacstrap",
 		Usage: "pacstrap <mountpoint> <packages...>",
 		Help:  "Install base packages with pacstrap",
@@ -140,7 +152,7 @@ func cmdParted(args []string) error {
 		return fmt.Errorf("failed to clear disk: %w", err)
 	}
 	// Create EFI partition (128MB, FAT32, boot flag)
-	if err := runCommand("sgdisk", "-n", "1:0:0", "-t", "1:EF00", "-c", "1:EFI", disk); err != nil {
+	if err := runCommand("sgdisk", "-n", "1:2048:+128M", "-t", "1:EF00", "-c", "1:EFI", disk); err != nil {
 		return fmt.Errorf("failed to create EFI partition: %w", err)
 	}
 	// Create root partition (rest of disk, ext4)
@@ -176,7 +188,58 @@ func cmdUmount(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: umount <mountpoint>")
 	}
-	return runCommand("umount", args[0])
+	// Use -l (lazy) to unmount even if busy
+	return runCommand("umount", "-l", args[0])
+}
+
+func cmdMountpoints(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: mountpoints <device>")
+	}
+	device := args[0]
+	// Use lsblk to get all mountpoints for the disk and its children
+	cmd := exec.Command("lsblk", "-lnbo", "MOUNTPOINT", device)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, mp := range lines {
+		mp = strings.TrimSpace(mp)
+		if mp != "" && mp != "[" {
+			fmt.Println(mp)
+		}
+	}
+	return nil
+}
+
+func cmdLsblkPartitions(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: lsblk-partitions <device>")
+	}
+	device := args[0]
+	// Output: NAME|MOUNTPOINT for each partition
+	cmd := exec.Command("lsblk", "-ln", "-o", "NAME,MOUNTPOINT", device)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "NAME") {
+			continue
+		}
+		// Parse: NAME     MOUNTPOINT (whitespace-separated, may have trailing -)
+		fields := strings.Fields(line)
+		if len(fields) >= 2 {
+			mountpoint := fields[1]
+			if mountpoint != "-" {
+				fmt.Println(mountpoint)
+			}
+		}
+	}
+	return nil
 }
 
 func cmdPacstrap(args []string) error {

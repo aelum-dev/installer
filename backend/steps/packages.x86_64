@@ -1,0 +1,40 @@
+# Base system
+base
+linux-lts
+linux-firmware
+mkinitcpio
+arch-install-scripts
+mkinitcpio-archiso
+qemu-guest-agent
+edk2-shell
+memtest86+-efi
+
+# Utilities
+util-linux
+gptfdisk
+parted
+dosfstools
+e2fsprogs
+pv
+
+# System
+sudo
+polkit
+
+# Editor
+vim
+
+# Desktop
+btop
+fastfetch
+nano
+hyprland
+noto-fonts
+adwaita-cursors
+alacritty
+webkit2gtk-4.1
+
+# GPU drivers
+vulkan-radeon
+vulkan-intel
+vulkan-nouveau

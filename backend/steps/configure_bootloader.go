@@ -2,9 +2,7 @@ package steps
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -23,28 +21,30 @@ func ConfigureBootloader(diskID, helper, username, password, language string) er
 		return fmt.Errorf("bootctl install failed: %w: %s", err, string(output))
 	}
 
-	// Create bootloader entry directory
-	entryDir := filepath.Join(esp, "boot", "loader", "entries")
-	if err := os.MkdirAll(entryDir, 0755); err != nil {
-		return fmt.Errorf("failed to create boot entry directory: %w", err)
-	}
-
 	// Find the root partition UUID on the selected disk
 	rootUUID, err := findRootPartitionUUID(diskID)
 	if err != nil {
 		return fmt.Errorf("failed to find root partition UUID: %w", err)
 	}
 
-	// Create the boot entry configuration
+	// Create the boot entry configuration via chroot
 	entryContent := fmt.Sprintf(`title   Aesthetic OS
 linux   /vmlinuz-linux
 initrd  /initramfs-linux.img
 options root=UUID=%s rw
 `, rootUUID)
 
-	entryPath := filepath.Join(entryDir, "aesthetic-os.conf")
-	if err := os.WriteFile(entryPath, []byte(entryContent), 0644); err != nil {
-		return fmt.Errorf("failed to write boot entry: %w", err)
+	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("mkdir -p /boot/efi/boot/loader/entries && cat > /boot/efi/boot/loader/entries/aesthetic-os.conf << 'BOOTEOF'\n%s\nBOOTEOF", entryContent))
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to write boot entry: %w: %s", err, string(output))
+	}
+
+	// Set default boot entry
+	cmd = exec.Command("sudo", helper, "bootctl-set-default", "/boot/efi")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to set default boot entry: %w: %s", err, string(output))
 	}
 
 	return nil

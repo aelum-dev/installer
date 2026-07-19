@@ -1,4 +1,4 @@
-export namespace app {
+export namespace shared {
 	
 	export class DiskInfo {
 	    name: string;

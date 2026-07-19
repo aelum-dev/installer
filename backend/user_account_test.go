@@ -2,6 +2,8 @@ package app
 
 import (
 	"testing"
+
+	"aesthetic-os-installer/backend/shared"
 )
 
 func TestValidateUserAccount(t *testing.T) {
@@ -9,61 +11,60 @@ func TestValidateUserAccount(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		data        UserAccountData
+		data        shared.UserAccountData
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name:        "valid account data",
-			data:        UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"},
+			data:        shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"},
 			expectError: false,
 		},
 		{
 			name:        "valid minimum length username and password",
-			data:        UserAccountData{Username: "abc", Password: "abc123", ConfirmPassword: "abc123"},
+			data:        shared.UserAccountData{Username: "abc", Password: "abc123", ConfirmPassword: "abc123"},
 			expectError: false,
 		},
 		{
 			name:        "empty username",
-			data:        UserAccountData{Username: "", Password: "password123", ConfirmPassword: "password123"},
+			data:        shared.UserAccountData{Username: "", Password: "password123", ConfirmPassword: "password123"},
 			expectError: true,
-			errorMsg:    "username is required",
+			errorMsg:    "Username is required",
 		},
 		{
 			name:        "username too short",
-			data:        UserAccountData{Username: "ab", Password: "password123", ConfirmPassword: "password123"},
+			data:        shared.UserAccountData{Username: "ab", Password: "password123", ConfirmPassword: "password123"},
 			expectError: true,
-			errorMsg:    "username must be at least 3 characters",
+			errorMsg:    "Username must be at least 3 characters",
 		},
 		{
-			name:        "empty password",
-			data:        UserAccountData{Username: "john_doe", Password: "", ConfirmPassword: ""},
-			expectError: true,
-			errorMsg:    "password is required",
+			name:        "empty password (skipped, waiting for input)",
+			data:        shared.UserAccountData{Username: "john_doe", Password: "", ConfirmPassword: ""},
+			expectError: false,
 		},
 		{
 			name:        "password too short",
-			data:        UserAccountData{Username: "john_doe", Password: "abc12", ConfirmPassword: "abc12"},
+			data:        shared.UserAccountData{Username: "john_doe", Password: "abc12", ConfirmPassword: "abc12"},
 			expectError: true,
-			errorMsg:    "password must be at least 6 characters",
+			errorMsg:    "Password must be at least 6 characters",
 		},
 		{
 			name:        "empty confirm password",
-			data:        UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: ""},
+			data:        shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: ""},
 			expectError: true,
-			errorMsg:    "please confirm your password",
+			errorMsg:    "Please confirm your password",
 		},
 		{
 			name:        "passwords do not match",
-			data:        UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "different"},
+			data:        shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "different"},
 			expectError: true,
-			errorMsg:    "passwords do not match",
+			errorMsg:    "Passwords do not match",
 		},
 		{
 			name:        "all fields empty",
-			data:        UserAccountData{Username: "", Password: "", ConfirmPassword: ""},
+			data:        shared.UserAccountData{Username: "", Password: "", ConfirmPassword: ""},
 			expectError: true,
-			errorMsg:    "username is required",
+			errorMsg:    "Username is required",
 		},
 	}
 
@@ -88,7 +89,7 @@ func TestValidateUserAccount(t *testing.T) {
 
 func TestValidateUserAccount_SavesOnSuccess(t *testing.T) {
 	app := NewApp(false)
-	data := UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
+	data := shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
 
 	err := app.ValidateUserAccount(data)
 	if err != nil {
@@ -105,8 +106,8 @@ func TestValidateUserAccount_SavesOnSuccess(t *testing.T) {
 
 func TestValidateUserAccount_DoesNotSaveOnFailure(t *testing.T) {
 	app := NewApp(false)
-	validData := UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
-	invalidData := UserAccountData{Username: "", Password: "", ConfirmPassword: ""}
+	validData := shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
+	invalidData := shared.UserAccountData{Username: "", Password: "", ConfirmPassword: ""}
 
 	// First, save valid data
 	err := app.ValidateUserAccount(validData)

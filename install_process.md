@@ -25,10 +25,11 @@ Standard 2-partition layout:
 1. **FormatDisk**: Create partitions and format
 2. **MountFilesystem**: Mount root and EFI partitions
 3. **InstallBase**: pacstrap base system + packages (runs once)
-4. **ConfigureBootloader**: Setup systemd-boot
-5. **SetupUsers**: Create user accounts
-6. **InstallPackages**: Additional packages via arch-chroot
-7. **ConfigureSystem**: System configuration (TODO)
+4. **GenerateFstab**: Generate /etc/fstab from genfstab
+5. **ConfigureBootloader**: Setup systemd-boot
+6. **SetupUsers**: Create user accounts
+7. **InstallPackages**: Additional packages via arch-chroot
+8. **ConfigureSystem**: System configuration (hostname, timezone, locale, services)
 
 ## Required Packages (Live ISO)
 
@@ -150,23 +151,46 @@ Uses `blkid -s UUID -o value /dev/vda2` to get root partition UUID.
 - [ ] Support for LVM
 - [ ] Add network configuration step
 
+## CLI Installer
+
+An automatic CLI installer is available at `cmd/installer/`:
+
+```bash
+# Build
+./build.sh
+
+# Run (as normal user, NOT root)
+./build/bin/installer --install /dev/vda [--dry-run]
+```
+
+The CLI installer:
+- Uses same backend as GUI (single source of truth)
+- Automatic installation with no interactive prompts
+- Dry-run mode for testing without making changes
+- Detects root-helper automatically
+- Runs all installation steps via root-helper
+
 ## File Locations
 
 ```
 aesthetic-os-installer/
 ├── backend/
-│   ├── installation.go       # Installation orchestration
+│   ├── installation.go       # Installation orchestration (GUI)
 │   ├── app.go                # Main app structure
 │   └── steps/                # Individual installation steps
 │       ├── format_disk.go
 │       ├── mount_filesystem.go
 │       ├── install_base.go
+│       ├── generate_fstab.go
 │       ├── configure_bootloader.go
 │       ├── setup_users.go
 │       ├── install_packages.go
 │       └── configure_system.go
-├── cmd/root-helper/
-│   └── main.go               # Privileged helper binary
+├── cmd/
+│   ├── root-helper/          # Privileged helper binary
+│   │   └── main.go
+│   └── installer/            # CLI installer
+│       └── main.go
 ├── build.sh                  # Build script
 └── install_process.md        # This file
 ```
