@@ -53,7 +53,7 @@ func (a *App) runInstallation() {
 		// Execute the step (or simulate in dry-run mode)
 		var err error
 		if a.dryRun {
-			err = simulateStep(step.label)
+			err = simulateStep()
 		} else {
 			err = step.run(a.diskSelection.DiskID, a.userAccount.Username, a.userAccount.Password, a.selectedLanguage)
 		}
@@ -81,7 +81,7 @@ func (a *App) runInstallation() {
 }
 
 // simulateStep simulates a step by sleeping for a random duration.
-func simulateStep(label string) error {
+func simulateStep() error {
 	duration := time.Duration(600+rand.Intn(1400)) * time.Millisecond
 	time.Sleep(duration)
 	return nil
