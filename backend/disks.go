@@ -87,7 +87,7 @@ func (a *App) GetDisks() ([]DiskInfo, error) {
 		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
 	}
 
-	var disks []DiskInfo
+	disks := []DiskInfo{}
 	for _, bd := range result.Blockdevices {
 		if bd.Type != "disk" {
 			continue

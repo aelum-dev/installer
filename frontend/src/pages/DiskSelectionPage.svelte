@@ -22,9 +22,9 @@
 
 	async function loadDisks(): Promise<void> {
 		try {
-			disks = await GetDisks();
+			disks = (await GetDisks()) ?? [];
 			if (disks.length === 0) {
-				error = 'No disks found. Please connect a storage device.';
+				error = null;
 			}
 		} catch (err) {
 			error = `Failed to load disks: ${err instanceof Error ? err.message : String(err)}`;
