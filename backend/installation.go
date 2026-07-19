@@ -36,12 +36,13 @@ func (a *App) StartInstallation() error {
 		wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
 	}
 	installer.OnError = func(label, message string) {
+		logPath := WriteErrorLog(label, message)
 		progress := InstallationProgress{
 			Label:   label,
 			Percent: 0,
 			Phase:   "error",
 		}
-		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, message)
+		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, message, logPath)
 	}
 
 	// Run installation in a goroutine so it doesn't block the UI

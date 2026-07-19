@@ -55,6 +55,10 @@ func (inst *Installer) Install() error {
 		return fmt.Errorf("disk ID is required")
 	}
 
+	// Clear previous log
+	logPath := GetLogPath()
+	os.WriteFile(logPath, nil, 0644)
+
 	steps := inst.installationSteps()
 
 	for idx, step := range steps {
@@ -64,6 +68,7 @@ func (inst *Installer) Install() error {
 		}
 
 		inst.emitProgress(label, int(float64(idx)/float64(len(steps))*100), "running")
+		WriteLog("Starting step: %s", step.label)
 
 		var err error
 		if inst.dryRun {
@@ -73,14 +78,17 @@ func (inst *Installer) Install() error {
 		}
 
 		if err != nil {
+			WriteLog("Step failed: %s - %v", step.label, err)
 			inst.emitError(step.label, err.Error())
 			return fmt.Errorf("step \"%s\" failed: %w", step.label, err)
 		}
 
+		WriteLog("Step completed: %s", step.label)
 		percent := int(float64(idx+1) / float64(len(steps)) * 100)
 		inst.emitProgress(label, percent, "done")
 	}
 
+	WriteLog("Installation completed successfully")
 	return nil
 }
 
@@ -91,7 +99,9 @@ func (i *Installer) installationSteps() []installationStep {
 		{label: "Mounting filesystem", run: steps.MountFilesystem},
 		{label: "Installing base system", run: steps.Install},
 		{label: "Generating fstab", run: steps.GenerateFstab},
-		{label: "Configuring bootloader", run: steps.ConfigureBootloader},
+		{label: "Configuring bootloader", run: func(diskID, helper, username, password, language string) error {
+			return steps.ConfigureBootloader(diskID, helper, "/mnt/boot/efi", username, password, language)
+		}},
 		{label: "Setting up users", run: steps.SetupUsers},
 		{label: "Configuring system", run: steps.ConfigureSystem},
 	}

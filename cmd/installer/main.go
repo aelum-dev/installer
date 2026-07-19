@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"aesthetic-os-installer/backend"
+	app "aesthetic-os-installer/backend"
 )
 
 func main() {
@@ -35,9 +35,9 @@ func main() {
 	installer := app.NewInstaller(
 		*installFlag,
 		helper,
-		"", // username (not needed for basic install)
-		"", // password
-		"", // locale
+		"aestheticos", // username
+		"aestheticos", // password
+		"en_US.UTF-8", // locale
 		*dryRun,
 	)
 

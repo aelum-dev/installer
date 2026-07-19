@@ -7,15 +7,13 @@ import (
 )
 
 // ConfigureBootloader sets up systemd-boot bootloader using sudo.
-func ConfigureBootloader(diskID, helper, username, password, language string) error {
+func ConfigureBootloader(diskID, helper, esp, username, password, language string) error {
 	if diskID == "" {
 		diskID = "/dev/sda"
 	}
 
-	esp := "/boot/efi"
-
 	// Install systemd-boot to ESP
-	cmd := exec.Command("sudo", helper, "bootctl-install", esp)
+	cmd := exec.Command("sudo", helper, "run", "bootctl", "install", "--esp-path="+esp)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("bootctl install failed: %w: %s", err, string(output))
@@ -34,14 +32,16 @@ initrd  /initramfs-linux.img
 options root=UUID=%s rw
 `, rootUUID)
 
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("mkdir -p /boot/efi/boot/loader/entries && cat > /boot/efi/boot/loader/entries/aesthetic-os.conf << 'BOOTEOF'\n%s\nBOOTEOF", entryContent))
+	loaderPath := esp + "/boot/loader/entries"
+	entryPath := loaderPath + "/aesthetic-os.conf"
+	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("mkdir -p %s && cat > %s << 'BOOTEOF'\n%s\nBOOTEOF", loaderPath, entryPath, entryContent))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write boot entry: %w: %s", err, string(output))
 	}
 
 	// Set default boot entry
-	cmd = exec.Command("sudo", helper, "bootctl-set-default", "/boot/efi")
+	cmd = exec.Command("sudo", helper, "run", "bootctl", "set-default", "aesthetic-os.conf")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set default boot entry: %w: %s", err, string(output))

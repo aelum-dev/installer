@@ -19,15 +19,14 @@ pv
 
 # System
 sudo
-polkit
 
 # Editor
 vim
+nano
 
 # Desktop
 btop
 fastfetch
-nano
 hyprland
 noto-fonts
 adwaita-cursors

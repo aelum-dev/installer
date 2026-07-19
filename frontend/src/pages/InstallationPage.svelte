@@ -20,6 +20,7 @@
 	let elapsedSeconds = $state(0);
 	let errorMessage = $state('');
 	let isDryRun = $state(false);
+	let logPath = $state('');
 
 
 
@@ -55,10 +56,14 @@
 			LogInfo('[InstallationPage] Installation complete');
 		};
 
-		const handleError = (data: { label: string; percent: number; phase: string }, message: string) => {
+		const handleError = (data: { label: string; percent: number; phase: string }, message: string, logPathParam: string) => {
 			isRunning = false;
 			errorMessage = message;
+			logPath = logPathParam;
 			LogInfo(`[InstallationPage] Installation error: ${message}`);
+			if (logPathParam) {
+				LogInfo(`[InstallationPage] Log file: ${logPathParam}`);
+			}
 		};
 
 		const offProgress = EventsOn(EVENT_PROGRESS, handleProgress);
@@ -137,6 +142,11 @@
 
 		<!-- Current step label -->
 		<p class="step-label">{currentLabel}</p>
+
+		<!-- Log file path on error -->
+		{#if logPath}
+			<p class="log-path">Log file: {logPath}</p>
+		{/if}
 	</div>
 </PageLayout>
 
@@ -214,5 +224,14 @@
 
 	.disk-info strong {
 		color: var(--color-text);
+	}
+
+	/* ── Log path ── */
+	.log-path {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		font-family: var(--font-mono, monospace);
+		color: var(--color-text-muted);
+		word-break: break-all;
 	}
 </style>

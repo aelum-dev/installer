@@ -56,33 +56,5 @@ func ConfigureSystem(diskID, helper, username, password, language string) error 
 		return fmt.Errorf("failed to set keymap: %w: %s", err, string(output))
 	}
 
-	// Step 5: Enable NetworkManager service
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "chroot /mnt systemctl enable NetworkManager")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to enable NetworkManager: %w: %s", err, string(output))
-	}
-
-	// Step 6: Enable sudo group wheel membership (already done by useradd -G in some variants)
-	// Ensure user is in wheel group for sudo access
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("chroot /mnt usermod -aG wheel %s", username))
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to add user to wheel group: %w: %s", err, string(output))
-	}
-
-	// Step 7: Configure sudoers for passwordless sudo for wheel group
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "echo '%wheel ALL=(ALL:ALL) ALL' > /mnt/etc/sudoers.d/wheel")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to configure sudoers: %w: %s", err, string(output))
-	}
-	// Set proper permissions on sudoers file
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "chmod 0440 /mnt/etc/sudoers.d/wheel")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to set sudoers permissions: %w: %s", err, string(output))
-	}
-
 	return nil
 }
