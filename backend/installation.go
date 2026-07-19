@@ -25,7 +25,7 @@ type InstallationProgress struct {
 }
 
 // StartInstallation begins the installation process asynchronously.
-// It reports progress to the frontend via Wails events.
+// Privileged operations are performed via pkexec using the root-helper binary.
 func (a *App) StartInstallation() error {
 	// Skip root check in dry-run mode
 	if !a.dryRun && runtime.GOOS == "linux" {
@@ -55,7 +55,7 @@ func (a *App) runInstallation() {
 		if a.dryRun {
 			err = simulateStep(step.label)
 		} else {
-			err = step.run(a.diskSelection.DiskID)
+			err = step.run(a.diskSelection.DiskID, a.userAccount.Username, a.userAccount.Password, a.selectedLanguage)
 		}
 
 		if err != nil {
@@ -108,7 +108,7 @@ func (a *App) emitError(label string, message string) {
 // installationStep defines a single step in the installation process.
 type installationStep struct {
 	label string
-	run   func(diskID string) error
+	run   func(diskID string, username string, password string, language string) error
 }
 
 var installationSteps = []installationStep{

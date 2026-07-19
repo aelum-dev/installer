@@ -12,12 +12,18 @@ if [ ! -d "frontend/node_modules" ]; then
 fi
 cd frontend && npm run build && cd ..
 
-echo "=== Building Go binary with Wails ==="
+echo "=== Building Go binaries with Wails ==="
 wails build -clean
 
-echo "=== Copying executable to ${SHARED_DIR} ==="
+echo "=== Building root-helper ==="
+go build -o build/bin/root-helper ./cmd/root-helper
+
+echo "=== Copying executables to ${SHARED_DIR} ==="
 mkdir -p "$SHARED_DIR"
 cp build/bin/aesthetic-os-installer "$SHARED_DIR/"
-chmod +x "$SHARED_DIR/aesthetic-os-installer"
+cp build/bin/root-helper "$SHARED_DIR/"
+chmod +x "$SHARED_DIR/aesthetic-os-installer" "$SHARED_DIR/root-helper"
 
-echo "Done! Executable copied to: ${SHARED_DIR}/aesthetic-os-installer"
+echo "Done! Executables copied to: ${SHARED_DIR}/"
+echo "  - aesthetic-os-installer"
+echo "  - root-helper"
