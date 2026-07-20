@@ -2,6 +2,8 @@ package core
 
 import (
 	"testing"
+
+	"aesthetic-os-installer/backend/shared"
 )
 
 func TestInstaller_StepNames(t *testing.T) {
@@ -50,7 +52,7 @@ func TestInstaller_Context(t *testing.T) {
 		helperPath: "/usr/bin/helper",
 		username:   "testuser",
 		password:   "testpass",
-		locale:     "en_US.UTF-8",
+		region:     shared.GetRegion("en_US"),
 		esp:        "/mnt/boot",
 	}
 

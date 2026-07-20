@@ -36,7 +36,8 @@ func (a *App) StartInstallation() error {
 		helper,
 		a.userAccount.Username,
 		a.userAccount.Password,
-		a.selectedLanguage,
+		a.hostname,
+		a.region,
 		a.dryRun,
 	)
 

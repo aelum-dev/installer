@@ -1,17 +1,12 @@
 package shared
 
-// GetLanguages returns the list of available languages.
-// Shared by GUI and console installer.
+// GetLanguages returns the list of available languages/regions.
+// Currently limited to 3 regions for simplicity — expand as needed.
 func GetLanguages() []Language {
 	return []Language{
-		{Code: "en", Name: "English", Locale: "en_US.UTF-8"},
-		{Code: "de", Name: "Deutsch", Locale: "de_DE.UTF-8"},
-		{Code: "fr", Name: "Français", Locale: "fr_FR.UTF-8"},
-		{Code: "es", Name: "Español", Locale: "es_ES.UTF-8"},
-		{Code: "ja", Name: "日本語", Locale: "ja_JP.UTF-8"},
-		{Code: "zh_CN", Name: "简体中文", Locale: "zh_CN.UTF-8"},
-		{Code: "ko", Name: "한국어", Locale: "ko_KR.UTF-8"},
-		{Code: "ru", Name: "Русский", Locale: "ru_RU.UTF-8"},
+		{Code: "en_US", Name: "English (United States)", Locale: "en_US.UTF-8"},
+		{Code: "ru_RU", Name: "Русский (Россия)", Locale: "ru_RU.UTF-8"},
+		{Code: "uk_UA", Name: "Українська (Україна)", Locale: "uk_UA.UTF-8"},
 	}
 }
 

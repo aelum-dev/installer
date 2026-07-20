@@ -26,6 +26,10 @@ export function GetDryRun() {
   return window['go']['gui']['App']['GetDryRun']();
 }
 
+export function GetHostname() {
+  return window['go']['gui']['App']['GetHostname']();
+}
+
 export function GetLanguages() {
   return window['go']['gui']['App']['GetLanguages']();
 }
@@ -44,6 +48,10 @@ export function RebootAndClose() {
 
 export function SetCurrentPage(arg1) {
   return window['go']['gui']['App']['SetCurrentPage'](arg1);
+}
+
+export function SetHostname(arg1) {
+  return window['go']['gui']['App']['SetHostname'](arg1);
 }
 
 export function SetSelectedLanguage(arg1) {

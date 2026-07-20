@@ -11,5 +11,6 @@ type InstallContext struct {
 	Helper     string
 	Username   string
 	Password   string
-	Locale     string
+	Hostname   string
+	Region     shared.Region
 }

@@ -14,20 +14,21 @@ func (a *App) GetDisks() ([]shared.DiskInfo, error) {
 	return shared.GetDisks()
 }
 
-// GetLanguages returns the list of available languages.
+// GetLanguages returns the list of available languages/regions.
 // Wails binding: frontend calls this.
 func (a *App) GetLanguages() []shared.Language {
 	return shared.GetLanguages()
 }
 
-// GetSelectedLanguage returns the currently selected language code.
+// GetSelectedLanguage returns the currently selected language/region code.
 func (a *App) GetSelectedLanguage() string {
 	return a.selectedLanguage
 }
 
-// SetSelectedLanguage sets the selected language.
+// SetSelectedLanguage sets the selected language/region.
 func (a *App) SetSelectedLanguage(code string) error {
 	a.selectedLanguage = code
+	a.region = shared.GetRegion(code)
 	if shared.FindLanguage(code) == nil {
 		return fmt.Errorf("unknown language code: %s", code)
 	}

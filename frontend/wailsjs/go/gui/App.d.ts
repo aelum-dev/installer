@@ -15,6 +15,8 @@ export function GetDisks():Promise<Array<shared.DiskInfo>>;
 
 export function GetDryRun():Promise<boolean>;
 
+export function GetHostname():Promise<string>;
+
 export function GetLanguages():Promise<Array<shared.Language>>;
 
 export function GetSelectedLanguage():Promise<string>;
@@ -24,6 +26,8 @@ export function GetStartPage():Promise<number>;
 export function RebootAndClose():Promise<void>;
 
 export function SetCurrentPage(arg1:gui.PageID):Promise<void>;
+
+export function SetHostname(arg1:string):Promise<void>;
 
 export function SetSelectedLanguage(arg1:string):Promise<void>;
 

@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"aesthetic-os-installer/backend/core"
+	"aesthetic-os-installer/backend/shared"
 )
 
 func main() {
@@ -43,25 +44,18 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	flag.Parse()
-	// Pairs are (disk, stepName). Empty stepName means "full install".
-	disk, stepName := resolveDiskAndStep(
-		*installFlag,
-		"",                  // full install = run all steps
-		*formatDiskFlag,
-		"format_disk",
-		*mountFsFlag,
-		"mount_filesystem",
-		*installSystemFlag,
-		"install",
-		*genFstabFlag,
-		"generate_fstab",
-		*bootloaderFlag,
-		"configure_bootloader",
-		*setupUsersFlag,
-		"setup_users",
-		*configureSysFlag,
-		"configure_system",
-	)
+
+	// Determine which flag was provided (first one wins)
+	disk, stepName := resolveDiskAndStep(resolveFlags(
+		installFlag, "",
+		formatDiskFlag, "format_disk",
+		mountFsFlag, "mount_filesystem",
+		installSystemFlag, "install",
+		genFstabFlag, "generate_fstab",
+		bootloaderFlag, "configure_bootloader",
+		setupUsersFlag, "setup_users",
+		configureSysFlag, "configure_system",
+	)...)
 
 	if disk == "" {
 		printUsage()
@@ -82,9 +76,10 @@ func main() {
 	installer := core.NewInstaller(
 		disk,
 		helper,
-		"aestheticos", // username
-		"aestheticos", // password
-		"en_US.UTF-8", // locale
+		"aesthetic",               // username
+		"aesthetic",               // password
+		"aestheticos",             // hostname
+		shared.GetRegion("en_US"), // region (default)
 		*dryRun,
 	)
 
@@ -125,6 +120,18 @@ func main() {
 	} else {
 		fmt.Printf("%s✓%s Installation completed successfully!\n", "\033[32m", "\033[0m")
 	}
+}
+
+// resolveFlags converts flag pointers and their step names into a flat list.
+// Each pair is (flagValue, stepName). Empty stepName means "full install".
+func resolveFlags(pairs ...interface{}) []string {
+	var result []string
+	for i := 0; i < len(pairs); i += 2 {
+		flagPtr := pairs[i].(*string)
+		stepName := pairs[i+1].(string)
+		result = append(result, *flagPtr, stepName)
+	}
+	return result
 }
 
 // resolveDiskAndStep checks the flags in priority order and returns the disk path

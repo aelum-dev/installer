@@ -144,7 +144,7 @@ func TestInstallContext_SetValues(t *testing.T) {
 		Helper:   "/usr/bin/aestheticos-helper",
 		Username: "testuser",
 		Password: "testpass",
-		Locale:   "en_US.UTF-8",
+		Region:   shared.GetRegion("en_US"),
 	}
 
 	if ctx.DiskID != "/dev/sda" {

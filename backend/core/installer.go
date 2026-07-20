@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"aesthetic-os-installer/backend/shared"
 	"aesthetic-os-installer/backend/steps"
 )
 
@@ -21,7 +22,8 @@ type Installer struct {
 	helperPath string
 	username   string
 	password   string
-	locale     string
+	hostname   string
+	region     shared.Region
 	dryRun     bool
 	esp        string // ESP mount point (default: /mnt/boot)
 
@@ -32,13 +34,14 @@ type Installer struct {
 }
 
 // NewInstaller creates a new Installer instance.
-func NewInstaller(diskID, helperPath, username, password, locale string, dryRun bool) *Installer {
+func NewInstaller(diskID, helperPath, username, password, hostname string, region shared.Region, dryRun bool) *Installer {
 	return &Installer{
 		diskID:     diskID,
 		helperPath: helperPath,
 		username:   username,
 		password:   password,
-		locale:     locale,
+		hostname:   hostname,
+		region:     region,
 		dryRun:     dryRun,
 		esp:        "/mnt/boot",
 	}
@@ -61,7 +64,7 @@ func (inst *Installer) Install() error {
 		Helper:   inst.helperPath,
 		Username: inst.username,
 		Password: inst.password,
-		Locale:   inst.locale,
+		Region:   inst.region,
 	}
 
 	steps := inst.installationSteps()
@@ -170,7 +173,8 @@ func (i *Installer) context() *steps.InstallContext {
 		Helper:   i.helperPath,
 		Username: i.username,
 		Password: i.password,
-		Locale:   i.locale,
+		Hostname: i.hostname,
+		Region:   i.region,
 	}
 }
 

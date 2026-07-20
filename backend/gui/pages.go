@@ -27,7 +27,9 @@ type App struct {
 	dryRun          bool
 	userAccount     shared.UserAccountData
 	diskSelection   shared.DiskSelectionData
+	hostname        string
 	selectedLanguage string
+	region          shared.Region
 }
 
 // GetCurrentPage returns the current page index (0-based).
@@ -53,4 +55,14 @@ func (a *App) CanGoNext() bool {
 // CanGoBack checks if the user can go back to the previous page.
 func (a *App) CanGoBack() bool {
 	return a.currentPage > PageWelcome
+}
+
+// SetHostname sets the system hostname.
+func (a *App) SetHostname(hostname string) {
+	a.hostname = hostname
+}
+
+// GetHostname returns the system hostname.
+func (a *App) GetHostname() string {
+	return a.hostname
 }
