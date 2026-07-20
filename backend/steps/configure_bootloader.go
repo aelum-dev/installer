@@ -55,67 +55,37 @@ func ConfigureBootloader(ctx *InstallContext) error {
 		return err
 	}
 
-	// Step 5: Verify installation
+	// Step 5: Clean up orphaned files from the ESP (leftover from previous installations)
+	if err := cleanupEsp(helper, esp); err != nil {
+		return err
+	}
+
+	// Step 6: Generate random seed for the new system's entropy pool
+	// This is best-effort — failure is not fatal
+	if err := generateRandomSeed(helper, esp); err != nil {
+		return err
+	}
+
+	// Step 7: Verify installation
 	return verifyBootloaderInstallation(helper, esp)
-}
-
-// cleanStaleBootEntries removes all existing "Linux Boot Manager" EFI entries
-// that were registered by previous installations. This prevents partition UUID
-// mismatches when the ESP partition has been reformatted or reassigned.
-func cleanStaleBootEntries(helper string) error {
-	// List all EFI boot entries
-	cmd := exec.Command("sudo", helper, "run", "efibootmgr", "list")
-	output, err := cmd.Output()
-	if err != nil {
-		// If efibootmgr list fails (e.g., no entries exist), that's fine
-		return nil
-	}
-
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	deleted := false
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		// Parse "BootNNNN|Title" format
-		parts := strings.SplitN(line, "|", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		bootNum := parts[0]
-		title := strings.TrimSpace(parts[1])
-
-		// Delete all "Linux Boot Manager" entries (systemd-boot's title)
-		if strings.Contains(title, "Linux Boot Manager") {
-			cmd := exec.Command("sudo", helper, "run", "efibootmgr", "delete", bootNum)
-			if err := cmd.Run(); err != nil {
-				// Log but don't fail — some entries may already be gone
-				fmt.Fprintf(os.Stderr, "Warning: failed to delete Boot%s: %v\n", bootNum, err)
-				continue
-			}
-			fmt.Fprintf(os.Stderr, "Cleaned stale EFI entry: Boot%s (%s)\n", bootNum, title)
-			deleted = true
-		}
-	}
-
-	if deleted {
-		fmt.Fprintf(os.Stderr, "Cleaned stale EFI boot entries\n")
-	}
-	return nil
 }
 
 // installSystemdBoot runs bootctl install to place systemd-boot on the ESP.
 // Per the bootctl man page: "Installs systemd-boot into the EFI system partition."
-// First cleans up any stale "Linux Boot Manager" EFI entries from previous installs.
+//
+// Note: running outside chroot, so --graceful is NOT implicitly enabled.
+// We add it explicitly to make install robust against edge cases:
+//   - ESP not found
+//   - EFI variables can't be written
+//   - Different/newer boot loader already installed
+//
+// Uses a custom boot option description so entries can be identified later.
 func installSystemdBoot(helper, esp string) error {
-	// Clean up stale EFI boot entries before installing
-	if err := cleanStaleBootEntries(helper); err != nil {
-		return fmt.Errorf("failed to clean stale EFI entries: %w", err)
-	}
-
-	cmd := exec.Command("sudo", helper, "run", "bootctl", "install", "--esp-path="+esp)
+	cmd := exec.Command("sudo", helper, "run", "bootctl", "install",
+		"--esp-path="+esp,
+		"--graceful",
+		"--efi-boot-option-description=Aesthetic OS",
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("bootctl install failed: %w: %s", err, string(output))
@@ -178,6 +148,39 @@ options root=UUID=%s rw
 		return fmt.Errorf("failed to write boot entry to %s: %w: %s", entryPath, err, string(output))
 	}
 
+	return nil
+}
+
+// cleanupEsp removes orphaned files from the ESP and XBOOTLDR partitions that
+// belong to the entry token but are not referenced by any boot loader entries.
+// This cleans up leftover kernels, initrds, and entry files from previous installations.
+// Per the bootctl man page: "Removes files from the ESP and XBOOTLDR partitions that
+// belong to the entry token but are not referenced in any boot loader entries."
+func cleanupEsp(helper, esp string) error {
+	cmd := exec.Command("sudo", helper, "run", "bootctl", "cleanup",
+		"--esp-path="+esp,
+		"--graceful",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("bootctl cleanup failed: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	return nil
+}
+
+// generateRandomSeed generates a random seed for the new system's entropy pool.
+// Per the bootctl man page: "Generates a random seed and stores it in the EFI System
+// Partition (ESP), for use by the systemd-boot boot loader."
+// The seed is credited to the kernel's entropy pool during early boot.
+func generateRandomSeed(helper, esp string) error {
+	cmd := exec.Command("sudo", helper, "run", "bootctl", "random-seed",
+		"--esp-path="+esp,
+	)
+	if err := cmd.Run(); err != nil {
+		// Not fatal — entropy generation is a best-effort improvement
+		fmt.Fprintf(os.Stderr, "Warning: failed to generate random seed: %v\n", err)
+		return nil
+	}
 	return nil
 }
 
