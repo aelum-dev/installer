@@ -208,7 +208,7 @@ aesthetic-os-installer/
 │   │   ├── setup_users.go
 │   │   ├── configure_system.go
 │   │   └── cleanup.go
-│   ├── cli/                  # aestheticos-cli entry point
+│   ├── cli/                  # aestheticos-installer-cli entry point
 │   └── helper/               # aestheticos-helper binary
 ├── frontend/                 # SvelteKit GUI
 ├── build.sh                  # Build script
@@ -218,7 +218,7 @@ aesthetic-os-installer/
 ### Key Files
 - `backend/core/installer.go` — **Single source of truth** for installation
 - `backend/steps/*.go` — Individual installation steps
-- `backend/cli/main.go` — CLI entry point (`aestheticos-cli`)
+- `backend/cli/main.go` — CLI entry point (`aestheticos-installer-cli`)
 - `backend/helper/main.go` — Privileged operations (`aestheticos-helper`)
 
 ### Commands
@@ -227,7 +227,7 @@ aesthetic-os-installer/
 ./build.sh
 
 # Run CLI installer
-./build/bin/aestheticos-cli --install /dev/vda [--dry-run]
+./build/bin/aestheticos-installer-cli --install /dev/vda [--dry-run]
 
 # Run GUI installer
 ./build/bin/aestheticos-installer

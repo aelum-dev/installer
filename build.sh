@@ -18,17 +18,17 @@ wails build -clean
 echo "=== Building aestheticos-helper ==="
 go build -o build/bin/aestheticos-helper ./backend/helper
 
-echo "=== Building aestheticos-cli ==="
-go build -o build/bin/aestheticos-cli ./backend/cli
+echo "=== Building aestheticos-installer-cli ==="
+go build -o build/bin/aestheticos-installer-cli ./backend/cli
 
 echo "=== Copying executables to ${SHARED_DIR} ==="
 mkdir -p "$SHARED_DIR"
 cp build/bin/aestheticos-installer "$SHARED_DIR/"
 cp build/bin/aestheticos-helper "$SHARED_DIR/"
-cp build/bin/aestheticos-cli "$SHARED_DIR/"
-chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-cli"
+cp build/bin/aestheticos-installer-cli "$SHARED_DIR/"
+chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-installer-cli"
 
 echo "Done! Executables built:"
 echo "  GUI:     build/bin/aestheticos-installer"
 echo "  Helper:  build/bin/aestheticos-helper"
-echo "  CLI:     build/bin/aestheticos-cli"
+echo "  CLI:     build/bin/aestheticos-installer-cli"

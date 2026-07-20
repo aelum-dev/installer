@@ -1,5 +1,5 @@
-// aestheticos-cli is a CLI-based Arch Linux installer that performs automatic installation.
-// Usage: ./aestheticos-cli --install /dev/vda [--dry-run]
+// aestheticos-installer-cli is a CLI-based Arch Linux installer that performs automatic installation.
+// Usage: ./aestheticos-installer-cli --install /dev/vda [--dry-run]
 package main
 
 import (
