@@ -24,6 +24,11 @@ import (
 )
 
 func main() {
+	// Set custom usage function for --help
+	flag.Usage = func() {
+		printUsage()
+	}
+
 	// Full installation
 	installFlag := flag.String("install", "", "Disk to install to (runs all steps)")
 
@@ -38,8 +43,6 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	flag.Parse()
-
-	// Determine which mode we're in
 	// Pairs are (disk, stepName). Empty stepName means "full install".
 	disk, stepName := resolveDiskAndStep(
 		*installFlag,
