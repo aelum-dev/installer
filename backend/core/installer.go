@@ -27,6 +27,9 @@ type Installer struct {
 	dryRun     bool
 	esp        string // ESP mount point (default: /mnt/boot)
 
+	// Logger for step output (injected by CLI/GUI; default is ConsoleLogger)
+	Logger steps.Logger
+
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
 	// Error callback
@@ -44,6 +47,7 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 		region:     region,
 		dryRun:     dryRun,
 		esp:        "/mnt/boot",
+		Logger:     &steps.ConsoleLogger{},
 	}
 }
 
@@ -66,17 +70,19 @@ func (inst *Installer) Install() error {
 		Password: inst.password,
 		Hostname: inst.hostname,
 		Region:   inst.region,
+		Logger:   inst.Logger,
 	}
 
-	steps := inst.installationSteps()
+	stepList := inst.installationSteps()
 
-	for idx, step := range steps {
+	for idx, step := range stepList {
 		label := step.label
 		if inst.dryRun {
 			label = "[DRY RUN] " + label
 		}
 
-		inst.emitProgress(label, int(float64(idx)/float64(len(steps))*100), "running")
+		inst.emitProgress(label, int(float64(idx)/float64(len(stepList))*100), "running")
+		inst.logInfo("Starting step: %s", step.label)
 		WriteLog("Starting step: %s", step.label)
 
 		var err error
@@ -87,13 +93,15 @@ func (inst *Installer) Install() error {
 		}
 
 		if err != nil {
+			inst.logError("Step failed: %s - %v", step.label, err)
 			WriteLog("Step failed: %s - %v", step.label, err)
 			inst.emitError(step.label, err.Error())
 			return fmt.Errorf("step \"%s\" failed: %w", step.label, err)
 		}
 
+		inst.logInfo("Step completed: %s", step.label)
 		WriteLog("Step completed: %s", step.label)
-		percent := int(float64(idx+1) / float64(len(steps)) * 100)
+		percent := int(float64(idx+1) / float64(len(stepList)) * 100)
 		inst.emitProgress(label, percent, "done")
 	}
 
@@ -145,6 +153,7 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 				label = "[DRY RUN] " + label
 			}
 			i.emitProgress(label, 0, "running")
+			i.logInfo("Starting step: %s", s.label)
 			WriteLog("Starting step: %s", s.label)
 			var stepErr error
 			if i.dryRun {
@@ -153,11 +162,13 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 				stepErr = s.run(i.context())
 			}
 			if stepErr != nil {
+				i.logError("Step failed: %s - %v", s.label, stepErr)
 				WriteLog("Step failed: %s - %v", s.label, stepErr)
 				i.emitError(s.label, stepErr.Error())
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.label, stepErr)
 			}
 			i.emitProgress(label, 100, "done")
+			i.logInfo("Step completed: %s", s.label)
 			WriteLog("Step completed: %s", s.label)
 			return label, 100, nil
 		}
@@ -176,6 +187,7 @@ func (i *Installer) context() *steps.InstallContext {
 		Password: i.password,
 		Hostname: i.hostname,
 		Region:   i.region,
+		Logger:   i.Logger,
 	}
 }
 
@@ -190,6 +202,20 @@ func (i *Installer) emitProgress(label string, percent int, phase string) {
 func (i *Installer) emitError(label, message string) {
 	if i.OnError != nil {
 		i.OnError(label, message)
+	}
+}
+
+// logInfo logs an informational message via the step logger.
+func (i *Installer) logInfo(format string, args ...interface{}) {
+	if i.Logger != nil {
+		i.Logger.Info(format, args...)
+	}
+}
+
+// logError logs an error message via the step logger.
+func (i *Installer) logError(format string, args ...interface{}) {
+	if i.Logger != nil {
+		i.Logger.Error(format, args...)
 	}
 }
 

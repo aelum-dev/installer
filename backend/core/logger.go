@@ -9,13 +9,11 @@ import (
 
 // GetLogPath returns the path to the installation log file.
 func GetLogPath() string {
-	// Same directory as the executable
 	exe, err := os.Executable()
 	if err == nil {
 		dir := filepath.Dir(exe)
 		return filepath.Join(dir, "installation.log")
 	}
-	// Fallback to user's home directory
 	home, err := os.UserHomeDir()
 	if err == nil {
 		return filepath.Join(home, "installation.log")
@@ -36,5 +34,5 @@ func WriteLog(format string, args ...interface{}) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	msg := fmt.Sprintf("[%s] %s\n", timestamp, fmt.Sprintf(format, args...))
-	f.WriteString(msg) // ignore write errors too
+	f.WriteString(msg)
 }

@@ -38,6 +38,9 @@ func ConfigureBootloader(ctx *InstallContext) error {
 
 	// Auto-discover partitions if FormatDisk hasn't run yet (standalone bootloader install)
 	if ctx.Partitions == nil {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Auto-discovering partitions for bootloader")
+		}
 		partitions, err := discoverPartitions(ctx.Helper, esp)
 		if err != nil {
 			return fmt.Errorf("failed to discover partitions: %w", err)
@@ -48,6 +51,9 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	helper := ctx.Helper
 
 	// Step 1: Install systemd-boot to the ESP
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Installing systemd-boot to ESP (%s)", esp)
+	}
 	if err := installSystemdBoot(helper, esp); err != nil {
 		return err
 	}
@@ -57,29 +63,47 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	if err != nil {
 		return err
 	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Kernel: %s, Initrd: %s", kernel, initrd)
+	}
 
 	// Step 3: Write boot entry configuration
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Writing boot entry to %s/loader/entries/aesthetic-os.conf", esp)
+	}
 	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd); err != nil {
 		return err
 	}
 
 	// Step 4: Set as default boot entry
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Setting default boot entry to aesthetic-os.conf")
+	}
 	if err := setDefaultBootEntry(helper, "aesthetic-os.conf"); err != nil {
 		return err
 	}
 
 	// Step 5: Clean up orphaned files from the ESP (leftover from previous installations)
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Cleaning up orphaned ESP files")
+	}
 	if err := cleanupEsp(helper, esp); err != nil {
 		return err
 	}
 
 	// Step 6: Generate random seed for the new system's entropy pool
 	// This is best-effort — failure is not fatal
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Generating random seed for entropy pool")
+	}
 	if err := generateRandomSeed(helper, esp); err != nil {
 		return err
 	}
 
 	// Step 7: Verify installation
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Verifying bootloader installation")
+	}
 	return verifyBootloaderInstallation(helper, esp)
 }
 

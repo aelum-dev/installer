@@ -18,6 +18,10 @@ func SetupUsers(ctx *InstallContext) error {
 
 	helper := ctx.Helper
 
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Creating user account '%s' with wheel group", ctx.Username)
+	}
+
 	// Create user inside chroot (skip if already exists)
 	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
 		"chroot /mnt bash -c 'if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi'",
@@ -27,9 +31,15 @@ func SetupUsers(ctx *InstallContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
 	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
 
 	// Set password inside chroot
 	if ctx.Password != "" {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Setting password for user '%s'", ctx.Username)
+		}
 		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
 			"chroot /mnt bash -c \"echo '%s:%s' | chpasswd\"",
 			ctx.Username, ctx.Password,
@@ -41,12 +51,18 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	// Configure sudoers: wheel group requires password for sudo
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Configuring sudoers for wheel group")
+	}
 	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
 		"chroot /mnt bash -c 'mkdir -p /etc/sudoers.d && echo \"%%wheel ALL=(ALL:ALL) ALL\" > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel'",
 	))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to configure sudoers: %w: %s", err, string(output))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
 	}
 
 	return nil

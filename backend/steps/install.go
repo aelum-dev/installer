@@ -27,12 +27,19 @@ func Install(ctx *InstallContext) error {
 		return fmt.Errorf("no packages to install")
 	}
 
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Installing %d packages via pacstrap", len(packages))
+	}
+
 	args := []string{"/mnt"}
 	args = append(args, packages...)
 	cmd := exec.Command("sudo", append([]string{ctx.Helper, "pacstrap"}, args...)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("pacstrap failed: %w: %s", err, string(output))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
 	}
 	return nil
 }

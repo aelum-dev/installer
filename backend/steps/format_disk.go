@@ -21,9 +21,17 @@ func FormatDisk(ctx *InstallContext) error {
 		return fmt.Errorf("disk ID not set. Provide a disk path (e.g., --format-disk /dev/vda)")
 	}
 
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Unmounting existing partitions on %s", diskID)
+	}
+
 	// Unmount ALL partitions on this disk (live ISO may have them mounted)
 	if err := FormatDiskErrorCleanup(diskID, ctx.Helper); err != nil {
 		return fmt.Errorf("failed to unmount disk partitions: %w", err)
+	}
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Creating partition table on %s", diskID)
 	}
 
 	// Create partition table and partitions
@@ -32,15 +40,29 @@ func FormatDisk(ctx *InstallContext) error {
 	if err != nil {
 		return fmt.Errorf("partitioning failed: %w: %s", err, string(output))
 	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
 
 	efiPartition := diskID + "1"
 	rootPartition := diskID + "2"
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Formatting EFI partition (%s) as FAT32", efiPartition)
+	}
 
 	// Format EFI partition (FAT32)
 	cmd = exec.Command("sudo", ctx.Helper, "format", efiPartition)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("format EFI partition failed: %w: %s", err, string(output))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Formatting root partition (%s) as ext4", rootPartition)
 	}
 
 	// Format root partition (ext4)
@@ -49,9 +71,16 @@ func FormatDisk(ctx *InstallContext) error {
 	if err != nil {
 		return fmt.Errorf("format root partition failed: %w: %s", err, string(output))
 	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
 
 	// Re-read partition table so UUIDs are available
 	exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID).Run()
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Reading partition UUIDs")
+	}
 
 	// Read UUIDs via blkid
 	efiUUID, err := readPartitionUUID(ctx.Helper, efiPartition)
@@ -62,6 +91,10 @@ func FormatDisk(ctx *InstallContext) error {
 	rootUUID, err := readPartitionUUID(ctx.Helper, rootPartition)
 	if err != nil {
 		return fmt.Errorf("failed to read root partition UUID: %w", err)
+	}
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("UUID: EFI=%s, Root=%s", efiUUID, rootUUID)
 	}
 
 	ctx.Partitions = &shared.PartitionInfo{

@@ -31,6 +31,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Hostname == "" {
 		return fmt.Errorf("hostname not set")
 	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Setting hostname to '%s'", ctx.Hostname)
+	}
 	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("echo '%s' > /mnt/etc/hostname", ctx.Hostname))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -38,6 +41,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Step 2: Set timezone from region
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Setting timezone to %s", region.Timezone)
+	}
 	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("ln -sf /usr/share/zoneinfo/%s /mnt/etc/localtime", region.Timezone))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
@@ -46,6 +52,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 
 	// Step 3: Configure locale from region
 	// Uncomment locale in locale.gen
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Configuring locale: %s", region.Locale)
+	}
 	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("sed -i 's/^#%s/%s/' /mnt/etc/locale.gen", region.Locale, region.Locale))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
@@ -53,10 +62,16 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Generate locale
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Generating locale")
+	}
 	cmd = exec.Command("sudo", helper, "run", "chroot", "/mnt", "locale-gen")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
 	}
 
 	// Write locale.conf
@@ -67,6 +82,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Step 4: Set console keymap from region
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Setting console keymap to %s", region.Keymap)
+	}
 	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > /mnt/etc/vconsole.conf", region.Keymap))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
@@ -74,6 +92,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Step 5: Copy mirror list for region
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Copying mirror list for region %s", region.Code)
+	}
 	if err := copyMirrorList(helper, region.Code); err != nil {
 		return err
 	}
