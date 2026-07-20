@@ -5,31 +5,44 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"aesthetic-os-installer/backend/shared"
 )
 
 // ConfigureBootloader installs systemd-boot and writes the boot entry configuration.
-// It receives known partition data from FormatDisk — no on-the-fly detection.
+// When ctx.Partitions is nil, it auto-discovers the ESP and root partition from the live system.
 //
 // Steps performed:
-//   1. Run bootctl install --esp-path=<ESP> to install systemd-boot to the ESP
-//   2. Discover kernel/initrd filenames from /mnt/boot/ (flavor-agnostic)
-//   3. Write a Type #2 boot entry to <ESP>/loader/entries/aesthetic-os.conf
-//   4. Set it as the default entry via bootctl set-default
-//   5. Verify installation with bootctl status
+//   1. Auto-discover ESP and root partition if not provided via FormatDisk
+//   2. Run bootctl install --esp-path=<ESP> to install systemd-boot to the ESP
+//   3. Discover kernel/initrd filenames from /mnt/boot/ (flavor-agnostic)
+//   4. Write a Type #2 boot entry to <ESP>/loader/entries/aesthetic-os.conf
+//   5. Set it as the default entry via bootctl set-default
+//   6. Verify installation with bootctl status
 //
-// The boot entry uses the root partition UUID captured during formatting,
-// and kernel/initrd paths discovered from the installed system — so it works
+// The boot entry uses the root partition UUID captured during formatting (or discovered
+// on-the-fly), and kernel/initrd paths discovered from the installed system — so it works
 // regardless of filesystem type (ext4, btrfs, etc.) or kernel flavor (linux, linux-lts, etc.).
 func ConfigureBootloader(ctx *InstallContext) error {
-	p := ctx.Partitions
-	if p == nil {
-		return fmt.Errorf("partition info not available (FormatDisk must run first)")
-	}
-
 	esp := ctx.ESP
 	if esp == "" {
 		esp = "/mnt/boot"
+	}
+
+	// Check that /mnt is mounted (system must be installed and mounted)
+	if err := validateMountedSystem(ctx); err != nil {
+		return err
+	}
+
+	// Auto-discover partitions if FormatDisk hasn't run yet (standalone bootloader install)
+	if ctx.Partitions == nil {
+		partitions, err := discoverPartitions(ctx.Helper, esp)
+		if err != nil {
+			return fmt.Errorf("failed to discover partitions: %w", err)
+		}
+		ctx.Partitions = partitions
 	}
 
 	helper := ctx.Helper
@@ -46,7 +59,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	}
 
 	// Step 3: Write boot entry configuration
-	if err := writeBootEntry(helper, esp, p.RootUUID, kernel, initrd); err != nil {
+	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd); err != nil {
 		return err
 	}
 
@@ -256,4 +269,75 @@ func verifyBootloaderInstallation(helper, esp string) error {
 	}
 
 	return nil
+}
+
+// discoverPartitions finds the ESP and root partition from a running system.
+// It looks for the ESP at the given espPath, then finds the root partition
+// mounted at /mnt. UUIDs are read via blkid.
+// This enables standalone bootloader installation without running FormatDisk first.
+func discoverPartitions(helper, espPath string) (*shared.PartitionInfo, error) {
+	esp := strings.TrimRight(espPath, "/")
+
+	// Find which partition the ESP is mounted on
+	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("findmnt -n -o SOURCE %s 2>/dev/null", esp))
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find ESP mount point for %s: %w", esp, err)
+	}
+	espDevice := strings.TrimSpace(string(output))
+	if espDevice == "" {
+		return nil, fmt.Errorf("ESP not found mounted at %s", esp)
+	}
+
+	// Find the root partition mounted at /mnt
+	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "findmnt -n -o SOURCE /mnt 2>/dev/null")
+	output, err = cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find root partition mounted at /mnt: %w", err)
+	}
+	rootDevice := strings.TrimSpace(string(output))
+	if rootDevice == "" {
+		return nil, fmt.Errorf("root partition not found mounted at /mnt")
+	}
+
+	// Derive disk path from partition (e.g., /dev/sda1 -> /dev/sda)
+	disk := partitionToDisk(espDevice)
+
+	// Read UUIDs via blkid
+	espUUID, err := readPartitionUUID(helper, espDevice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read ESP UUID: %w", err)
+	}
+
+	rootUUID, err := readPartitionUUID(helper, rootDevice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read root UUID: %w", err)
+	}
+
+	return &shared.PartitionInfo{
+		Disk:     disk,
+		EFIPart:  espDevice,
+		EFIUUID:  espUUID,
+		RootPart: rootDevice,
+		RootUUID: rootUUID,
+	}, nil
+}
+
+// partitionToDisk extracts the disk device from a partition path.
+// e.g., /dev/sda1 -> /dev/sda, /dev/nvme0n1p1 -> /dev/nvme0n1
+func partitionToDisk(partition string) string {
+	// Handle nvme: /dev/nvme0n1p1 -> /dev/nvme0n1
+	// NVMe partitions have format: nvmeXnYpZ (controller, namespace, partition)
+	// We need to strip only the "p<digit>" suffix, not digits in the disk name
+	if strings.HasPrefix(partition, "/dev/nvme") {
+		if idx := strings.LastIndex(partition, "p"); idx != -1 {
+			// Make sure it's followed by a digit (real partition)
+			if idx+1 < len(partition) && partition[idx+1] >= '0' && partition[idx+1] <= '9' {
+				return partition[:idx]
+			}
+		}
+		return partition
+	}
+	// Handle sd/vd/xvd: /dev/sda1 -> /dev/sda
+	return regexp.MustCompile(`[0-9]+$`).ReplaceAllString(partition, "")
 }

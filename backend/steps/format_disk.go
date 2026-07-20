@@ -18,7 +18,7 @@ import (
 func FormatDisk(ctx *InstallContext) error {
 	diskID := ctx.DiskID
 	if diskID == "" {
-		diskID = "/dev/sda"
+		return fmt.Errorf("disk ID not set. Provide a disk path (e.g., --format-disk /dev/vda)")
 	}
 
 	// Unmount ALL partitions on this disk (live ISO may have them mounted)

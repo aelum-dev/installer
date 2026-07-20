@@ -8,6 +8,10 @@ import (
 // GenerateFstab generates the fstab file for the installed system using sudo.
 // This must be done after pacstrap and before chroot operations.
 func GenerateFstab(ctx *InstallContext) error {
+	if err := validateMountedSystem(ctx); err != nil {
+		return err
+	}
+
 	// Run genfstab -U /mnt and redirect output to /mnt/etc/fstab
 	cmd := exec.Command("sudo", ctx.Helper, "run", "bash", "-c", "genfstab -U /mnt > /mnt/etc/fstab")
 	output, err := cmd.CombinedOutput()

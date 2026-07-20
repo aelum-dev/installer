@@ -24,17 +24,17 @@ func GetLogPath() string {
 }
 
 // WriteLog writes a message to the installation log file.
-func WriteLog(format string, args ...interface{}) error {
+// Silently ignores write errors so callers don't need to handle them.
+func WriteLog(format string, args ...interface{}) {
 	logPath := GetLogPath()
 
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return
 	}
 	defer f.Close()
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	msg := fmt.Sprintf("[%s] %s\n", timestamp, fmt.Sprintf(format, args...))
-	_, err = f.WriteString(msg)
-	return err
+	f.WriteString(msg) // ignore write errors too
 }

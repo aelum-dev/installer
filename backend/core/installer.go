@@ -99,20 +99,78 @@ func (inst *Installer) Install() error {
 
 // installationStep defines a single step in the installation process.
 type installationStep struct {
-	label string
+	name  string // programmatic name, e.g. "format_disk"
+	label string // human-readable label, e.g. "Formatting disk"
 	run   func(ctx *steps.InstallContext) error
 }
 
 // installationSteps returns the list of installation steps.
 func (i *Installer) installationSteps() []installationStep {
 	return []installationStep{
-		{label: "Formatting disk", run: steps.FormatDisk},
-		{label: "Mounting filesystem", run: steps.MountFilesystem},
-		{label: "Installing base system", run: steps.Install},
-		{label: "Generating fstab", run: steps.GenerateFstab},
-		{label: "Configuring bootloader", run: steps.ConfigureBootloader},
-		{label: "Setting up users", run: steps.SetupUsers},
-		{label: "Configuring system", run: steps.ConfigureSystem},
+		{name: "format_disk", label: "Formatting disk", run: steps.FormatDisk},
+		{name: "mount_filesystem", label: "Mounting filesystem", run: steps.MountFilesystem},
+		{name: "install", label: "Installing base system", run: steps.Install},
+		{name: "generate_fstab", label: "Generating fstab", run: steps.GenerateFstab},
+		{name: "configure_bootloader", label: "Configuring bootloader", run: steps.ConfigureBootloader},
+		{name: "setup_users", label: "Setting up users", run: steps.SetupUsers},
+		{name: "configure_system", label: "Configuring system", run: steps.ConfigureSystem},
+	}
+}
+
+// validStepNames returns the list of valid step names for error messages.
+func validStepNames() []string {
+	steps := (&Installer{}).installationSteps()
+	names := make([]string, len(steps))
+	for i, s := range steps {
+		names[i] = s.name
+	}
+	return names
+}
+
+// RunStep runs a single named installation step.
+// Returns the step label, the percentage (0-100, always 100 for single step), and any error.
+func (i *Installer) RunStep(stepName string) (label string, percent int, err error) {
+	// Clear previous log for standalone step runs
+	logPath := GetLogPath()
+	os.WriteFile(logPath, nil, 0644)
+	allSteps := i.installationSteps()
+	for _, s := range allSteps {
+		if s.name == stepName {
+			label = s.label
+			if i.dryRun {
+				label = "[DRY RUN] " + label
+			}
+			i.emitProgress(label, 0, "running")
+			WriteLog("Starting step: %s", s.label)
+			var stepErr error
+			if i.dryRun {
+				stepErr = simulateStep()
+			} else {
+				stepErr = s.run(i.context())
+			}
+			if stepErr != nil {
+				WriteLog("Step failed: %s - %v", s.label, stepErr)
+				i.emitError(s.label, stepErr.Error())
+				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.label, stepErr)
+			}
+			i.emitProgress(label, 100, "done")
+			WriteLog("Step completed: %s", s.label)
+			return label, 100, nil
+		}
+	}
+	valid := validStepNames()
+	return "", 0, fmt.Errorf("unknown step %q, valid steps: %v", stepName, valid)
+}
+
+// context creates an InstallContext for this installer.
+func (i *Installer) context() *steps.InstallContext {
+	return &steps.InstallContext{
+		DiskID:   i.diskID,
+		ESP:      i.esp,
+		Helper:   i.helperPath,
+		Username: i.username,
+		Password: i.password,
+		Locale:   i.locale,
 	}
 }
 

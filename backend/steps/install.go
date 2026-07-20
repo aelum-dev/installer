@@ -14,6 +14,10 @@ var packagesFile string
 // Install installs the Arch Linux base system via pacstrap.
 // Packages are read from the embedded packages.x86_64 file.
 func Install(ctx *InstallContext) error {
+	if err := validateMountedSystem(ctx); err != nil {
+		return err
+	}
+
 	packages, err := parsePackages(packagesFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse packages: %w", err)

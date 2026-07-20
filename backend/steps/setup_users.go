@@ -7,6 +7,10 @@ import (
 
 // SetupUsers creates user accounts using sudo.
 func SetupUsers(ctx *InstallContext) error {
+	if err := validateMountedSystem(ctx); err != nil {
+		return err
+	}
+
 	// Skip user setup if username is not provided (CLI mode)
 	if ctx.Username == "" {
 		return nil

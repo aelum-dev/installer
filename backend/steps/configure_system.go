@@ -8,6 +8,10 @@ import (
 // ConfigureSystem sets up system configuration in the installed system via chroot.
 // Configures: hostname, timezone, locale, keymap, and enables services.
 func ConfigureSystem(ctx *InstallContext) error {
+	if err := validateMountedSystem(ctx); err != nil {
+		return err
+	}
+
 	if ctx.Username == "" {
 		return fmt.Errorf("username not set")
 	}
