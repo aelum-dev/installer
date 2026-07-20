@@ -1,4 +1,4 @@
-package app
+package gui
 
 import (
 	"aesthetic-os-installer/backend/shared"

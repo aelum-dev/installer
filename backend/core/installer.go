@@ -1,16 +1,10 @@
-package app
+package core
 
 import (
 	"fmt"
 	"os"
 
 	"aesthetic-os-installer/backend/steps"
-)
-
-const (
-	EventInstallationProgress = "installation:progress"
-	EventInstallationComplete = "installation:complete"
-	EventInstallationError    = "installation:error"
 )
 
 // InstallationProgress is emitted as an event to the frontend.
@@ -133,17 +127,17 @@ func simulateStep() error {
 	return nil
 }
 
-// FindHelper finds the root-helper binary.
+// FindHelper finds the aestheticos-helper binary.
 func FindHelper() string {
 	// Try /shared first (testing/live ISO)
-	if _, err := os.Stat("/shared/root-helper"); err == nil {
-		return "/shared/root-helper"
+	if _, err := os.Stat("/shared/aestheticos-helper"); err == nil {
+		return "/shared/aestheticos-helper"
 	}
 	// Fallback: next to the main executable
 	exe, err := os.Executable()
 	if err != nil {
-		return "./root-helper"
+		return "./aestheticos-helper"
 	}
-	dir := exe[:len(exe)-len("aesthetic-os-installer")]
-	return dir + "root-helper"
+	dir := exe[:len(exe)-len("aestheticos-installer")]
+	return dir + "aestheticos-helper"
 }

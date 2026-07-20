@@ -15,20 +15,20 @@ cd frontend && npm run build && cd ..
 echo "=== Building Go binaries with Wails ==="
 wails build -clean
 
-echo "=== Building root-helper ==="
-go build -o build/bin/root-helper ./cmd/root-helper
+echo "=== Building aestheticos-helper ==="
+go build -o build/bin/aestheticos-helper ./backend/helper
 
-echo "=== Building installer (CLI) ==="
-go build -o build/bin/installer ./cmd/installer
+echo "=== Building aestheticos-cli ==="
+go build -o build/bin/aestheticos-cli ./backend/cli
 
 echo "=== Copying executables to ${SHARED_DIR} ==="
 mkdir -p "$SHARED_DIR"
-cp build/bin/aesthetic-os-installer "$SHARED_DIR/"
-cp build/bin/root-helper "$SHARED_DIR/"
-cp build/bin/installer "$SHARED_DIR/"
-chmod +x "$SHARED_DIR/aesthetic-os-installer" "$SHARED_DIR/root-helper" "$SHARED_DIR/installer"
+cp build/bin/aestheticos-installer "$SHARED_DIR/"
+cp build/bin/aestheticos-helper "$SHARED_DIR/"
+cp build/bin/aestheticos-cli "$SHARED_DIR/"
+chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-cli"
 
 echo "Done! Executables built:"
-echo "  GUI:    build/bin/aesthetic-os-installer"
-echo "  Helper: build/bin/root-helper"
-echo "  CLI:    build/bin/installer"
+echo "  GUI:     build/bin/aestheticos-installer"
+echo "  Helper:  build/bin/aestheticos-helper"
+echo "  CLI:     build/bin/aestheticos-cli"

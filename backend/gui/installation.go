@@ -1,23 +1,37 @@
-package app
+package gui
 
 import (
 	"fmt"
 
+	"aesthetic-os-installer/backend/core"
 	"aesthetic-os-installer/backend/steps"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const (
+	EventInstallationProgress = "installation:progress"
+	EventInstallationComplete = "installation:complete"
+	EventInstallationError    = "installation:error"
+)
+
+// InstallationProgress is emitted as an event to the frontend.
+type InstallationProgress struct {
+	Label   string `json:"label"`
+	Percent int    `json:"percent"`
+	Phase   string `json:"phase"` // "running" | "done" | "error"
+}
+
 // StartInstallation begins the installation process using the shared Installer.
 func (a *App) StartInstallation() error {
-	helper := FindHelper()
+	helper := core.FindHelper()
 
 	// Cleanup leftover mounts before starting
 	if err := steps.CleanupMounts(helper); err != nil {
 		wailsRuntime.LogWarning(a.ctx, fmt.Sprintf("Failed to cleanup mounts: %v", err))
 	}
 
-	installer := NewInstaller(
+	installer := core.NewInstaller(
 		a.diskSelection.DiskID,
 		helper,
 		a.userAccount.Username,

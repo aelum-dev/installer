@@ -1,9 +1,11 @@
-package app
+package gui
 
 import (
 	"context"
 	"fmt"
 	"os/exec"
+
+	"aesthetic-os-installer/backend/core"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -57,10 +59,11 @@ func (a *App) RebootAndClose() error {
 		return nil
 	}
 
-	// Initiate system reboot
-	cmd := exec.Command("reboot")
+	// Use aestheticos-helper to reboot (requires root via sudo)
+	helper := core.FindHelper()
+	cmd := exec.Command("sudo", helper, "reboot")
 	if err := cmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("failed to reboot: %w", err)
 	}
 
 	// Close the application window after initiating reboot

@@ -184,33 +184,42 @@
 ```
 aesthetic-os-installer/
 ├── backend/
-│   ├── installer.go          # Core installation logic
-│   ├── installation.go       # GUI integration
-│   ├── shared/               # Shared utilities
+│   ├── core/                 # Platform-independent core (shared by CLI + GUI)
+│   │   ├── installer.go      # Installer struct, step orchestration
+│   │   └── logger.go         # WriteLog, GetLogPath
+│   ├── gui/                  # Wails/GUI-specific layer
+│   │   ├── app.go            # App struct, lifecycle
+│   │   ├── pages.go          # PageID, navigation
+│   │   ├── validation.go     # GUI validation delegates
+│   │   ├── api.go            # Wails API bindings
+│   │   ├── installation.go   # StartInstallation (events + goroutine)
+│   │   └── logger.go         # WriteErrorLog (wailsRuntime)
+│   ├── shared/               # Pure utilities (no GUI, no core deps)
+│   │   ├── types.go
 │   │   ├── disks.go
 │   │   ├── languages.go
 │   │   └── validators.go
-│   └── steps/                # Installation steps
-│       ├── format_disk.go
-│       ├── mount_filesystem.go
-│       ├── install.go
-│       ├── generate_fstab.go
-│       ├── configure_bootloader.go
-│       ├── setup_users.go
-│       └── configure_system.go
-├── cmd/
-│   ├── installer/            # CLI entry point
-│   └── root-helper/          # Privileged helper
+│   ├── steps/                # Installation step implementations
+│   │   ├── format_disk.go
+│   │   ├── mount_filesystem.go
+│   │   ├── install.go
+│   │   ├── generate_fstab.go
+│   │   ├── configure_bootloader.go
+│   │   ├── setup_users.go
+│   │   ├── configure_system.go
+│   │   └── cleanup.go
+│   ├── cli/                  # aestheticos-cli entry point
+│   └── helper/               # aestheticos-helper binary
 ├── frontend/                 # SvelteKit GUI
 ├── build.sh                  # Build script
 └── ROADMAP.md                # This file
 ```
 
 ### Key Files
-- `backend/installer.go` — **Single source of truth** for installation
+- `backend/core/installer.go` — **Single source of truth** for installation
 - `backend/steps/*.go` — Individual installation steps
-- `cmd/installer/main.go` — CLI entry point
-- `cmd/root-helper/main.go` — Privileged operations
+- `backend/cli/main.go` — CLI entry point (`aestheticos-cli`)
+- `backend/helper/main.go` — Privileged operations (`aestheticos-helper`)
 
 ### Commands
 ```bash
@@ -218,10 +227,10 @@ aesthetic-os-installer/
 ./build.sh
 
 # Run CLI installer
-./build/bin/installer --install /dev/vda [--dry-run]
+./build/bin/aestheticos-cli --install /dev/vda [--dry-run]
 
 # Run GUI installer
-./build/bin/aesthetic-os-installer
+./build/bin/aestheticos-installer
 
 # Run tests
 go test ./...

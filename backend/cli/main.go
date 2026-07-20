@@ -1,5 +1,5 @@
-// installer is a CLI-based Arch Linux installer that performs automatic installation.
-// Usage: ./installer --install /dev/vda [--dry-run]
+// aestheticos-cli is a CLI-based Arch Linux installer that performs automatic installation.
+// Usage: ./aestheticos-cli --install /dev/vda [--dry-run]
 package main
 
 import (
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	app "aesthetic-os-installer/backend"
+	"aesthetic-os-installer/backend/core"
 )
 
 func main() {
@@ -25,14 +25,14 @@ func main() {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
 	}
 
-	helper := app.FindHelper()
+	helper := core.FindHelper()
 	if helper == "" {
-		fmt.Fprintf(os.Stderr, "Error: root-helper not found\n")
+		fmt.Fprintf(os.Stderr, "Error: aestheticos-helper not found\n")
 		os.Exit(1)
 	}
-	fmt.Printf("Found root-helper: %s\n", helper)
+	fmt.Printf("Found aestheticos-helper: %s\n", helper)
 
-	installer := app.NewInstaller(
+	installer := core.NewInstaller(
 		*installFlag,
 		helper,
 		"aestheticos", // username

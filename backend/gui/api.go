@@ -1,4 +1,4 @@
-package app
+package gui
 
 import (
 	"fmt"
@@ -7,6 +7,12 @@ import (
 )
 
 // --- GUI methods (delegate to shared package) ---
+
+// GetDisks returns a list of available block devices (disks) for installation.
+// Wails binding: frontend calls this.
+func (a *App) GetDisks() ([]shared.DiskInfo, error) {
+	return shared.GetDisks()
+}
 
 // GetLanguages returns the list of available languages.
 // Wails binding: frontend calls this.

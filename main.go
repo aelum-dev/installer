@@ -7,7 +7,7 @@ import (
 
 	"embed"
 
-	backend "aesthetic-os-installer/backend"
+	"aesthetic-os-installer/backend/gui"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -35,9 +35,9 @@ func main() {
 	}
 
 	// Create an instance of the app structure
-	app := backend.NewApp(dryRun)
+	app := gui.NewApp(dryRun)
 	// Starting page for debug purposes
-	app.SetStartPage(backend.PageWelcome)
+	app.SetStartPage(gui.PageWelcome)
 
 	// Create application with options
 	err := wails.Run(&options.App{

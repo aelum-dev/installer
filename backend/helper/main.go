@@ -1,5 +1,5 @@
-// root-helper is a privileged helper binary that performs system operations.
-// It is invoked via pkexec by the main aesthetic-os-installer GUI.
+// aestheticos-helper is a privileged helper binary that performs system operations.
+// It is invoked via sudo by the main aestheticos-installer GUI.
 package main
 
 import (
@@ -96,6 +96,12 @@ var commands = []HelperCommand{
 		Help:  "Run any command as root",
 		Run:   cmdRun,
 	},
+	{
+		Name:  "reboot",
+		Usage: "reboot",
+		Help:  "Reboot the system",
+		Run:   cmdReboot,
+	},
 }
 
 func main() {
@@ -123,7 +129,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println("Usage: root-helper <command> [args...]")
+	fmt.Println("Usage: aestheticos-helper <command> [args...]")
 	fmt.Println()
 	fmt.Println("Commands:")
 	for _, cmd := range commands {
@@ -300,12 +306,6 @@ func cmdRun(args []string) error {
 	return runCommand(args[0], args[1:]...)
 }
 
-// HelperPath returns the path to the root-helper binary next to the main binary.
-func HelperPath() string {
-	exe, err := os.Executable()
-	if err != nil {
-		exe = os.Args[0]
-	}
-	dir := strings.TrimSuffix(exe, "aesthetic-os-installer")
-	return dir + "root-helper"
+func cmdReboot(args []string) error {
+	return runCommand("reboot")
 }
