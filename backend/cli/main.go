@@ -64,8 +64,4 @@ func main() {
 
 	fmt.Println()
 	fmt.Printf("%s✓%s Installation completed successfully!\n", "\033[32m", "\033[0m")
-	fmt.Println()
-	fmt.Println("Next steps:")
-	fmt.Println("  1. Remove the installation media")
-	fmt.Println("  2. Boot from the new system")
 }

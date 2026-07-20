@@ -91,6 +91,12 @@ var commands = []HelperCommand{
 		Run:   cmdUseradd,
 	},
 	{
+		Name:  "efibootmgr",
+		Usage: "efibootmgr [list|delete <num>]",
+		Help:  "Manage EFI boot entries (list or delete by number)",
+		Run:   cmdEfibootmgr,
+	},
+	{
 		Name:  "run",
 		Usage: "run <command> [args...]",
 		Help:  "Run any command as root",
@@ -267,22 +273,17 @@ func cmdBootctlInstall(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: bootctl-install <esp>")
 	}
-	// Install systemd-boot to the EFI System Partition
-	if err := runCommand("bootctl", "install", "--path="+args[0]); err != nil {
-		return err
-	}
-	// Create default loader configuration
-	return runCommand("bootctl", "setup", "--path="+args[0])
+	// Install systemd-boot to the EFI System Partition.
+	// Per bootctl(1): "--esp-path= Path to the EFI System Partition (ESP)."
+	return runCommand("bootctl", "install", "--esp-path="+args[0])
 }
 
 func cmdBootctlSetDefault(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-set-default <entry>")
+	if len(args) < 2 {
+		return fmt.Errorf("usage: bootctl-set-default <esp> <entry-id>")
 	}
-	// Set the default boot entry
-	loaderConfig := args[0] + "/boot/loader/loader.conf"
-	content := "default aesthetic-os.conf\ntimeout 5\n"
-	return os.WriteFile(loaderConfig, []byte(content), 0644)
+	// Per bootctl(1): "set-default ID — Sets the default boot loader entry."
+	return runCommand("bootctl", "set-default", "--esp-path="+args[0], args[1])
 }
 
 func cmdPasswd(args []string) error {
@@ -308,4 +309,58 @@ func cmdRun(args []string) error {
 
 func cmdReboot(args []string) error {
 	return runCommand("reboot")
+}
+
+func cmdEfibootmgr(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: efibootmgr [list|delete <num>]")
+	}
+	subcmd := args[0]
+	switch subcmd {
+	case "list":
+		// List all EFI boot entries, output: BOOTNUM|Title
+		cmd := exec.Command("efibootmgr", "-v")
+		output, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("efibootmgr list failed: %w", err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			// Parse lines like: Boot0009* Linux Boot Manager\t\tPCIms\t\tVEN=...\t\tUUID=...
+			// We want to extract the boot number and title
+			if strings.HasPrefix(line, "Boot") && strings.Contains(line, "*") {
+				// Extract boot number: Boot0009*
+				bootNum := ""
+				title := ""
+				for i, ch := range line {
+					if ch >= '0' && ch <= '9' {
+						bootNum += string(ch)
+					} else if ch == '*' {
+						// Rest is the title (possibly with tabs/spaces)
+						title = strings.ReplaceAll(strings.TrimSpace(line[i+1:]), "\t", " ")
+						break
+					}
+				}
+				if bootNum != "" {
+					fmt.Printf("%s|%s\n", bootNum, title)
+				}
+			}
+		}
+		return nil
+	case "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: efibootmgr delete <num>")
+		}
+		bootNum := args[1]
+		cmd := exec.Command("efibootmgr", "--delete-bootnum", "--bootnum", bootNum)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("efibootmgr delete Boot%s failed: %w: %s", bootNum, err, string(output))
+		}
+		fmt.Printf("Deleted Boot%s\n", bootNum)
+		return nil
+	default:
+		return fmt.Errorf("unknown efibootmgr subcommand: %s (use list or delete)", subcmd)
+	}
 }

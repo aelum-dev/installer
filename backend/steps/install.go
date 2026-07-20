@@ -13,7 +13,7 @@ var packagesFile string
 
 // Install installs the Arch Linux base system via pacstrap.
 // Packages are read from the embedded packages.x86_64 file.
-func Install(diskID, helper, username, password, language string) error {
+func Install(ctx *InstallContext) error {
 	packages, err := parsePackages(packagesFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse packages: %w", err)
@@ -25,7 +25,7 @@ func Install(diskID, helper, username, password, language string) error {
 
 	args := []string{"/mnt"}
 	args = append(args, packages...)
-	cmd := exec.Command("sudo", append([]string{helper, "pacstrap"}, args...)...)
+	cmd := exec.Command("sudo", append([]string{ctx.Helper, "pacstrap"}, args...)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("pacstrap failed: %w: %s", err, string(output))

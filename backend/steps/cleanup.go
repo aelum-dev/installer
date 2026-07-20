@@ -9,7 +9,7 @@ import (
 // Used to clean up leftover mounts from previous failed installation attempts.
 // Safe to call even if mounts don't exist (errors are ignored).
 func CleanupMounts(helper string) error {
-	for _, mp := range []string{"/mnt", "/mnt/boot/efi"} {
+	for _, mp := range []string{"/mnt", "/mnt/boot"} {
 		cmd := exec.Command("sudo", helper, "umount", mp)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			// Ignore errors: mountpoint may not exist

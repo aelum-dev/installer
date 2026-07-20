@@ -23,6 +23,7 @@ type Installer struct {
 	password   string
 	locale     string
 	dryRun     bool
+	esp        string // ESP mount point (default: /mnt/boot)
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
@@ -39,6 +40,7 @@ func NewInstaller(diskID, helperPath, username, password, locale string, dryRun 
 		password:   password,
 		locale:     locale,
 		dryRun:     dryRun,
+		esp:        "/mnt/boot",
 	}
 }
 
@@ -52,6 +54,15 @@ func (inst *Installer) Install() error {
 	// Clear previous log
 	logPath := GetLogPath()
 	os.WriteFile(logPath, nil, 0644)
+
+	ctx := &steps.InstallContext{
+		DiskID:   inst.diskID,
+		ESP:      inst.esp,
+		Helper:   inst.helperPath,
+		Username: inst.username,
+		Password: inst.password,
+		Locale:   inst.locale,
+	}
 
 	steps := inst.installationSteps()
 
@@ -68,7 +79,7 @@ func (inst *Installer) Install() error {
 		if inst.dryRun {
 			err = simulateStep()
 		} else {
-			err = step.run(inst.diskID, inst.helperPath, inst.username, inst.password, inst.locale)
+			err = step.run(ctx)
 		}
 
 		if err != nil {
@@ -86,6 +97,12 @@ func (inst *Installer) Install() error {
 	return nil
 }
 
+// installationStep defines a single step in the installation process.
+type installationStep struct {
+	label string
+	run   func(ctx *steps.InstallContext) error
+}
+
 // installationSteps returns the list of installation steps.
 func (i *Installer) installationSteps() []installationStep {
 	return []installationStep{
@@ -93,18 +110,10 @@ func (i *Installer) installationSteps() []installationStep {
 		{label: "Mounting filesystem", run: steps.MountFilesystem},
 		{label: "Installing base system", run: steps.Install},
 		{label: "Generating fstab", run: steps.GenerateFstab},
-		{label: "Configuring bootloader", run: func(diskID, helper, username, password, language string) error {
-			return steps.ConfigureBootloader(diskID, helper, "/mnt/boot/efi", username, password, language)
-		}},
+		{label: "Configuring bootloader", run: steps.ConfigureBootloader},
 		{label: "Setting up users", run: steps.SetupUsers},
 		{label: "Configuring system", run: steps.ConfigureSystem},
 	}
-}
-
-// installationStep defines a single step in the installation process.
-type installationStep struct {
-	label string
-	run   func(diskID, helper, username, password, language string) error
 }
 
 // emitProgress reports progress to the UI.

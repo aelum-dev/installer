@@ -7,10 +7,12 @@ import (
 
 // ConfigureSystem sets up system configuration in the installed system via chroot.
 // Configures: hostname, timezone, locale, keymap, and enables services.
-func ConfigureSystem(diskID, helper, username, password, language string) error {
-	if username == "" {
+func ConfigureSystem(ctx *InstallContext) error {
+	if ctx.Username == "" {
 		return fmt.Errorf("username not set")
 	}
+
+	helper := ctx.Helper
 
 	// Step 1: Set hostname
 	hostname := "aesthetic-os"
@@ -36,7 +38,7 @@ func ConfigureSystem(diskID, helper, username, password, language string) error 
 	}
 
 	// Generate locale
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "chroot /mnt locale-gen")
+	cmd = exec.Command("sudo", helper, "run", "chroot", "/mnt", "locale-gen")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))

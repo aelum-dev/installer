@@ -6,16 +6,18 @@ import (
 )
 
 // SetupUsers creates user accounts using sudo.
-func SetupUsers(diskID, helper, username, password, language string) error {
+func SetupUsers(ctx *InstallContext) error {
 	// Skip user setup if username is not provided (CLI mode)
-	if username == "" {
+	if ctx.Username == "" {
 		return nil
 	}
+
+	helper := ctx.Helper
 
 	// Create user inside chroot (skip if already exists)
 	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
 		"chroot /mnt bash -c 'if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi'",
-		username, username,
+		ctx.Username, ctx.Username,
 	))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -23,10 +25,10 @@ func SetupUsers(diskID, helper, username, password, language string) error {
 	}
 
 	// Set password inside chroot
-	if password != "" {
+	if ctx.Password != "" {
 		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
 			"chroot /mnt bash -c \"echo '%s:%s' | chpasswd\"",
-			username, password,
+			ctx.Username, ctx.Password,
 		))
 		output, err = cmd.CombinedOutput()
 		if err != nil {
