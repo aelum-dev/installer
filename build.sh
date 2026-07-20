@@ -5,6 +5,9 @@ cd "$(dirname "$0")"
 
 SHARED_DIR="/home/power007/Projects/shared"
 
+echo "=== Refreshing mirrorlists ==="
+go run ./backend/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
+
 echo "=== Building frontend ==="
 if [ ! -d "frontend/node_modules" ]; then
   echo "Installing frontend dependencies..."
@@ -13,7 +16,7 @@ fi
 cd frontend && npm run build && cd ..
 
 echo "=== Building Go binaries with Wails ==="
-wails build -clean
+wails build -clean -tags webkit2_41
 
 echo "=== Building aestheticos-helper ==="
 go build -o build/bin/aestheticos-helper ./backend/helper

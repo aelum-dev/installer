@@ -31,12 +31,18 @@ func (a *App) StartInstallation() error {
 		wailsRuntime.LogWarning(a.ctx, fmt.Sprintf("Failed to cleanup mounts: %v", err))
 	}
 
+	// Use provided hostname or fall back to default
+	hostname := a.hostname
+	if hostname == "" {
+		hostname = "aestheticos"
+	}
+
 	installer := core.NewInstaller(
 		a.diskSelection.DiskID,
 		helper,
 		a.userAccount.Username,
 		a.userAccount.Password,
-		a.hostname,
+		hostname,
 		a.region,
 		a.dryRun,
 	)

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
+
+	"aesthetic-os-installer/backend/shared"
 )
 
 // ConfigureSystem sets up system configuration in the installed system via chroot.
@@ -82,31 +83,37 @@ func ConfigureSystem(ctx *InstallContext) error {
 
 // copyMirrorList copies the region-specific mirror list to /etc/pacman.d/mirrorlist.
 func copyMirrorList(helper, regionCode string) error {
-	mirrorListsDir := "/usr/share/aesthetic-os/mirrorlists"
-	sourcePath := filepath.Join(mirrorListsDir, regionCode+".list")
-
-	// Check if region-specific mirror list exists
-	if _, err := os.Stat(sourcePath); err != nil {
-		// Fallback to default
-		sourcePath = filepath.Join(mirrorListsDir, "default.list")
-		if _, err := os.Stat(sourcePath); err != nil {
-			return fmt.Errorf("no mirror list found for region %q and no default available", regionCode)
+	// Read from embedded mirrorlist (baked into binary)
+	rawContent, err := shared.GetEmbeddedMirrorList(regionCode)
+	if err != nil {
+		// Fallback to default mirrorlist
+		rawContent, err = shared.GetEmbeddedMirrorList("default")
+		if err != nil {
+			return fmt.Errorf("no mirror list found for region %q and no default available: %w", regionCode, err)
 		}
 		fmt.Fprintf(os.Stderr, "Warning: no mirror list for %q, using default\n", regionCode)
 	}
 
-	// Read source mirror list
-	content, err := os.ReadFile(sourcePath)
-	if err != nil {
-		return fmt.Errorf("failed to read mirror list: %w", err)
-	}
+	// Uncomment mirror lines (strip leading # from #Server = ...)
+	content := uncommentMirrors(string(rawContent))
 
 	// Write to target mirrorlist
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("cat > /mnt/etc/pacman.d/mirrorlist << 'EOF'\n%s\nEOF", string(content)))
+	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("cat > /mnt/etc/pacman.d/mirrorlist << 'EOF'\n%s\nEOF", content))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write mirror list: %w: %s", err, strings.TrimSpace(string(output)))
 	}
 
 	return nil
+}
+
+// uncommentMirrors removes the leading # from #Server = lines in the mirrorlist.
+func uncommentMirrors(content string) string {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "#Server = ") {
+			lines[i] = "Server = " + strings.TrimPrefix(line, "#Server = ")
+		}
+	}
+	return strings.Join(lines, "\n")
 }

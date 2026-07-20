@@ -64,6 +64,7 @@ func (inst *Installer) Install() error {
 		Helper:   inst.helperPath,
 		Username: inst.username,
 		Password: inst.password,
+		Hostname: inst.hostname,
 		Region:   inst.region,
 	}
 

@@ -2,6 +2,7 @@ package shared
 
 import (
 	"bufio"
+	"embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,10 +12,13 @@ import (
 )
 
 const (
-	mirrorListURL    = "https://archlinux.org/mirrorlist/all/https/"
-	mirrorListsDir   = "mirrorlist"
+	mirrorListURL     = "https://archlinux.org/mirrorlist/all/https/"
 	rawMirrorlistFile = "all_https.txt"
+	mirrorListsDir    = "mirrorlist" // relative to this file (backend/shared/mirrorlist/)
 )
+
+//go:embed mirrorlist/*.list
+var mirrorListFS embed.FS
 
 // countryNameToLocale maps Arch Linux mirrorlist country names to locale codes.
 // These locale codes correspond to Region.Code values.
@@ -31,11 +35,23 @@ type mirrorSection struct {
 	Servers []string // raw mirror lines (e.g., "#Server = https://...")
 }
 
+// GetEmbeddedMirrorList returns the content of a region's mirror list from the embedded filesystem.
+func GetEmbeddedMirrorList(locale string) ([]byte, error) {
+	path := filepath.Join("mirrorlist", locale+".list")
+	data, err := mirrorListFS.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("mirror list for %q not found in embedded filesystem: %w", locale, err)
+	}
+	return data, nil
+}
+
 // EnsureMirrorLists downloads the full mirrorlist if needed and extracts
-// per-region mirror files. It is safe to call multiple times — it only
-// downloads once and reuses cached files.
+// per-region mirror files. This is intended to be called at build time
+// (e.g., from build.sh) to regenerate the embedded mirrorlists.
+// It is safe to call multiple times — it only downloads once and reuses cached files.
 func EnsureMirrorLists() error {
-	rawPath := filepath.Join(mirrorListsDir, rawMirrorlistFile)
+	mlDir := mirrorListsDir
+	rawPath := filepath.Join(mlDir, rawMirrorlistFile)
 
 	// Download the raw mirrorlist if it doesn't exist
 	if _, err := os.Stat(rawPath); os.IsNotExist(err) {
@@ -53,9 +69,9 @@ func EnsureMirrorLists() error {
 	// Write per-region files only if they don't exist (cached)
 	for _, section := range sections {
 		for _, locale := range section.Locales {
-			regionPath := filepath.Join(mirrorListsDir, locale+".list")
+			regionPath := filepath.Join(mlDir, locale+".list")
 			if _, err := os.Stat(regionPath); os.IsNotExist(err) {
-				if err := writeRegionMirrorList(locale, section.Servers); err != nil {
+				if err := writeRegionMirrorList(locale, section.Servers, mlDir); err != nil {
 					return fmt.Errorf("failed to write mirror list for %q: %w", locale, err)
 				}
 			}
@@ -64,9 +80,9 @@ func EnsureMirrorLists() error {
 
 	// Write default.list (worldwide mirrors) if it doesn't exist
 	if len(worldwideServers) > 0 {
-		defaultPath := filepath.Join(mirrorListsDir, "default.list")
+		defaultPath := filepath.Join(mlDir, "default.list")
 		if _, err := os.Stat(defaultPath); os.IsNotExist(err) {
-			if err := writeRegionMirrorList("default", worldwideServers); err != nil {
+			if err := writeRegionMirrorList("default", worldwideServers, mlDir); err != nil {
 				return fmt.Errorf("failed to write default mirror list: %w", err)
 			}
 		}
@@ -187,8 +203,8 @@ func processSection(country string, servers []string, localeToCountries map[stri
 }
 
 // writeRegionMirrorList writes a region's mirror list to a file.
-func writeRegionMirrorList(locale string, servers []string) error {
-	path := filepath.Join(mirrorListsDir, locale+".list")
+func writeRegionMirrorList(locale string, servers []string, mlDir string) error {
+	path := filepath.Join(mlDir, locale+".list")
 
 	f, err := os.Create(path)
 	if err != nil {
