@@ -67,16 +67,7 @@ func (inst *Installer) Install() error {
 	logPath := GetLogPath()
 	os.WriteFile(logPath, nil, 0644)
 
-	ctx := &steps.InstallContext{
-		DiskID:   inst.diskID,
-		ESP:      inst.esp,
-		Helper:   inst.helperPath,
-		Username: inst.username,
-		Password: inst.password,
-		Hostname: inst.hostname,
-		Region:   inst.region,
-		Logger:   inst.Logger,
-	}
+	ctx := inst.context()
 
 	stepList := inst.installationSteps()
 
