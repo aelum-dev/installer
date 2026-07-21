@@ -21,12 +21,33 @@ func MountFilesystem(ctx *InstallContext) error {
 		if ctx.DiskID == "" {
 			return fmt.Errorf("disk ID not set. Provide a disk path (e.g., --mount-filesystem /dev/vda)")
 		}
-		// Derive partition layout from disk ID (matches FormatDisk output)
-		disk := ctx.DiskID
+		// Discover partition paths via lsblk (handles NVMe naming correctly)
+		partitions, err := shared.GetPartitions(ctx.DiskID)
+		if err != nil {
+			return fmt.Errorf("failed to discover partitions: %w", err)
+		}
+
+		// Find EFI and root partitions — try fstype first, fall back to partition index.
+		efiPart, rootPart := findPartitionsByFstype(partitions)
+		if efiPart == nil || rootPart == nil {
+			if ctx.Logger != nil {
+				ctx.Logger.Info("FSTYPE not available, falling back to partition index (1=EFI, 2=root)")
+			}
+			efiPart, rootPart = findPartitionsByIndex(partitions)
+		}
+
+		if efiPart == nil {
+			return fmt.Errorf("could not find EFI partition on %s (got %d partitions)", ctx.DiskID, len(partitions))
+		}
+		if rootPart == nil {
+			return fmt.Errorf("could not find root partition on %s (got %d partitions)", ctx.DiskID, len(partitions))
+		}
 		ctx.Partitions = &shared.PartitionInfo{
-			Disk:     disk,
-			EFIPart:  disk + "1",
-			RootPart: disk + "2",
+			Disk:     ctx.DiskID,
+			EFIPart:  efiPart.Path,
+			EFIUUID:  efiPart.UUID,
+			RootPart: rootPart.Path,
+			RootUUID: rootPart.UUID,
 		}
 	}
 	p := ctx.Partitions

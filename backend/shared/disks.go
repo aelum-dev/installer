@@ -7,6 +7,59 @@ import (
 	"strings"
 )
 
+// PartitionEntry represents a single partition on a disk, as returned by lsblk.
+type PartitionEntry struct {
+	Path    string // e.g. "/dev/sda1" or "/dev/nvme0n1p1"
+	Type    string // always "part"
+	Size    string // byte size (from lsblk -b)
+	Fstype  string // e.g. "vfat", "ext4"
+	UUID    string // filesystem UUID
+	Trans   string // transport: usb, sata, nvme, etc.
+}
+
+// GetPartitions returns the partitions of a given disk by querying lsblk.
+// Handles all naming conventions: /dev/sda, /dev/nvme0n1, /dev/vda, etc.
+// Returns only entries of type "part" (excludes the disk itself and any sub-devices).
+func GetPartitions(diskPath string) ([]PartitionEntry, error) {
+	if !strings.HasPrefix(diskPath, "/dev/") {
+		diskPath = "/dev/" + diskPath
+	}
+
+	cmd := exec.Command("lsblk", "-b", "-J", "-o", "NAME,TYPE,SIZE,FSTYPE,UUID,TRAN", diskPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run lsblk for %s: %w", diskPath, err)
+	}
+
+	var result struct {
+		Blockdevices []lsblkEntry `json:"blockdevices"`
+	}
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
+	}
+
+	if len(result.Blockdevices) == 0 {
+		return nil, fmt.Errorf("no block devices found for %s", diskPath)
+	}
+
+	var partitions []PartitionEntry
+	for _, child := range result.Blockdevices[0].Children {
+		if child.Type != "part" {
+			continue
+		}
+		partitions = append(partitions, PartitionEntry{
+			Path:   "/dev/" + child.Name,
+			Type:   child.Type,
+			Size:   child.Size.Value,
+			Fstype: child.Fstype,
+			UUID:   child.UUID,
+			Trans:  child.Trans,
+		})
+	}
+
+	return partitions, nil
+}
+
 // jsonSize handles lsblk's SIZE field which is a number with -b flag,
 // or a human-readable string without it.
 type jsonSize struct {
@@ -51,6 +104,7 @@ type lsblkEntry struct {
 	Mountpoint string       `json:"mountpoint"`
 	Serial     string       `json:"serial"`
 	Trans      string       `json:"tran"`
+	UUID       string       `json:"uuid"`
 	Children   []lsblkEntry `json:"children"`
 }
 
@@ -104,6 +158,12 @@ func GetDisks() ([]DiskInfo, error) {
 	}
 
 	return disks, nil
+}
+
+// FormatPartitionSize converts a byte size string to human-readable format.
+// Convenience wrapper around FormatSize for partition data.
+func FormatPartitionSize(byteStr string) string {
+	return FormatSize(byteStr)
 }
 
 // FormatSize converts byte size to human-readable format.

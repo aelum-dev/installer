@@ -95,6 +95,7 @@ func TestLsblkEntry_UnmarshalJSON(t *testing.T) {
 		"mountpoint": null,
 		"serial": "ABC123",
 		"tran": "sata",
+		"uuid": "",
 		"children": []
 	}`
 
@@ -134,6 +135,7 @@ func TestLsblkEntry_UnmarshalJSON_StringSize(t *testing.T) {
 		"mountpoint": null,
 		"serial": "ABC123",
 		"tran": "usb",
+		"uuid": "",
 		"children": []
 	}`
 

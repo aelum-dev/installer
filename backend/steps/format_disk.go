@@ -44,15 +44,12 @@ func FormatDisk(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	efiPartition := diskID + "1"
-	rootPartition := diskID + "2"
-
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Formatting EFI partition (%s) as FAT32", efiPartition)
+		ctx.Logger.Info("Formatting EFI partition (128MB FAT32) and root partition (rest, ext4)")
 	}
 
 	// Format EFI partition (FAT32)
-	cmd = exec.Command("sudo", ctx.Helper, "format", efiPartition)
+	cmd = exec.Command("sudo", ctx.Helper, "format", diskID+"1")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("format EFI partition failed: %w: %s", err, string(output))
@@ -61,12 +58,8 @@ func FormatDisk(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Formatting root partition (%s) as ext4", rootPartition)
-	}
-
 	// Format root partition (ext4)
-	cmd = exec.Command("sudo", ctx.Helper, "format", rootPartition)
+	cmd = exec.Command("sudo", ctx.Helper, "format", diskID+"2")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("format root partition failed: %w: %s", err, string(output))
@@ -75,37 +68,83 @@ func FormatDisk(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	// Re-read partition table so UUIDs are available
+	// Re-read partition table
 	exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID).Run()
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Reading partition UUIDs")
+		ctx.Logger.Info("Discovering partition paths and UUIDs via lsblk")
 	}
 
-	// Read UUIDs via blkid
-	efiUUID, err := readPartitionUUID(ctx.Helper, efiPartition)
+	// Use lsblk to get actual partition paths (handles NVMe: nvme0n1p1, not nvme0n11)
+	partitions, err := shared.GetPartitions(diskID)
 	if err != nil {
-		return fmt.Errorf("failed to read EFI partition UUID: %w", err)
+		return fmt.Errorf("failed to discover partitions: %w", err)
 	}
 
-	rootUUID, err := readPartitionUUID(ctx.Helper, rootPartition)
-	if err != nil {
-		return fmt.Errorf("failed to read root partition UUID: %w", err)
+	// Find EFI and root partitions — try fstype first, fall back to partition index.
+	// FSTYPE may be empty if the filesystem superblock hasn't been fully synced yet.
+	efiPart, rootPart := findPartitionsByFstype(partitions)
+	if efiPart == nil || rootPart == nil {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("FSTYPE not available, falling back to partition index (1=EFI, 2=root)")
+		}
+		efiPart, rootPart = findPartitionsByIndex(partitions)
+	}
+
+	if efiPart == nil {
+		return fmt.Errorf("EFI partition not found after formatting (got %d partitions)", len(partitions))
+	}
+	if rootPart == nil {
+		return fmt.Errorf("root partition not found after formatting (got %d partitions)", len(partitions))
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("UUID: EFI=%s, Root=%s", efiUUID, rootUUID)
+		ctx.Logger.Info("EFI: %s (UUID: %s), Root: %s (UUID: %s)", efiPart.Path, efiPart.UUID, rootPart.Path, rootPart.UUID)
 	}
 
 	ctx.Partitions = &shared.PartitionInfo{
 		Disk:     diskID,
-		EFIPart:  efiPartition,
-		EFIUUID:  efiUUID,
-		RootPart: rootPartition,
-		RootUUID: rootUUID,
+		EFIPart:  efiPart.Path,
+		EFIUUID:  efiPart.UUID,
+		RootPart: rootPart.Path,
+		RootUUID: rootPart.UUID,
 	}
 
 	return nil
+}
+
+// findPartitionsByFstype matches EFI (vfat) and root (ext4) partitions by filesystem type.
+// Returns nil for any partition not found.
+func findPartitionsByFstype(partitions []shared.PartitionEntry) (*shared.PartitionEntry, *shared.PartitionEntry) {
+	var efi, root *shared.PartitionEntry
+	for i := range partitions {
+		switch partitions[i].Fstype {
+		case "vfat":
+			if efi == nil {
+				efi = &partitions[i]
+			}
+		case "ext4":
+			if root == nil {
+				root = &partitions[i]
+			}
+		}
+	}
+	return efi, root
+}
+
+// findPartitionsByIndex matches partitions by their position.
+// Partition index 0 = EFI, index 1 = root. Used as fallback when FSTYPE is unavailable.
+func findPartitionsByIndex(partitions []shared.PartitionEntry) (*shared.PartitionEntry, *shared.PartitionEntry) {
+	var efi, root *shared.PartitionEntry
+	for i := range partitions {
+		if i == 0 {
+			efi = &partitions[i]
+		} else if i == 1 {
+			root = &partitions[i]
+			return efi, root
+		}
+	}
+	return efi, root
 }
 
 // readPartitionUUID reads the UUID of a partition using blkid via the helper.
