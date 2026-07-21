@@ -14,6 +14,8 @@ func (a *App) GetDisks() ([]shared.DiskInfo, error) {
 	return shared.GetDisks()
 }
 
+
+
 // GetLanguages returns the list of available languages/regions.
 // Wails binding: frontend calls this.
 func (a *App) GetLanguages() []shared.Language {

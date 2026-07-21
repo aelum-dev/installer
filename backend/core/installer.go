@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"aesthetic-os-installer/backend/shared"
 	"aesthetic-os-installer/backend/steps"
@@ -236,6 +237,7 @@ func FindHelper() string {
 	if err != nil {
 		return "./aestheticos-helper"
 	}
-	dir := exe[:len(exe)-len("aestheticos-installer")]
-	return dir + "aestheticos-helper"
+	// Get the directory of the executable
+	dir := filepath.Dir(exe)
+	return dir + "/aestheticos-helper"
 }

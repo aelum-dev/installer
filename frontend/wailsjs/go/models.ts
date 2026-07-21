@@ -1,3 +1,26 @@
+export namespace core {
+	
+	export class RootCheckResult {
+	    authorized: boolean;
+	    error?: string;
+	    message: string;
+	    output?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RootCheckResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.authorized = source["authorized"];
+	        this.error = source["error"];
+	        this.message = source["message"];
+	        this.output = source["output"];
+	    }
+	}
+
+}
+
 export namespace shared {
 	
 	export class DiskInfo {

@@ -73,6 +73,15 @@ func main() {
 	}
 	fmt.Printf("Found aestheticos-helper: %s\n", helper)
 
+	// Check if sudo is configured to run the helper without a password
+	fmt.Println("\nChecking root privileges...")
+	rootCheck := core.CheckRoot(helper)
+	if !rootCheck.Authorized {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", rootCheck.Message)
+		os.Exit(1)
+	}
+	fmt.Println("✓ Root privileges verified")
+
 	installer := core.NewInstaller(
 		disk,
 		helper,

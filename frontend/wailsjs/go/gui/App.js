@@ -10,6 +10,10 @@ export function CanGoNext() {
   return window['go']['gui']['App']['CanGoNext']();
 }
 
+export function CheckRoot() {
+  return window['go']['gui']['App']['CheckRoot']();
+}
+
 export function ClearStartPage() {
   return window['go']['gui']['App']['ClearStartPage']();
 }
