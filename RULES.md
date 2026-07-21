@@ -20,4 +20,3 @@
 
 ## Testing
 - Run `go test ./...` before building to catch regressions
-- Test individual steps with `--dry-run` flag when possible
