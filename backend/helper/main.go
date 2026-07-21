@@ -188,9 +188,9 @@ func cmdFormat(args []string) error {
 	// Root partition - use specified filesystem type
 	switch fstype {
 	case "ext4":
-		return runCommand("mkfs.ext4", "-F", "-L", "aesthetic-os", partition)
+		return runCommand("mkfs.ext4", "-F", "-L", "aestheticos", partition)
 	case "btrfs":
-		return runCommand("mkfs.btrfs", "-f", "-L", "aesthetic-os", partition)
+		return runCommand("mkfs.btrfs", "-f", "-L", "aestheticos", partition)
 	default:
 		return fmt.Errorf("unsupported filesystem: %s (supported: ext4, btrfs)", fstype)
 	}

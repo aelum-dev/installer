@@ -15,6 +15,7 @@ gptfdisk
 parted
 dosfstools
 e2fsprogs
+btrfs-progs
 pv
 
 # System
