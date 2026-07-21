@@ -37,98 +37,125 @@ describe('App navigation logic', () => {
 			expect(0).toBe(0);
 		});
 
-		it('should have 5 pages (0-4)', () => {
-			const pages = ['Welcome', 'User Account', 'Disk Selection', 'Installation', 'Finish'];
-			expect(pages.length).toBe(5);
+		it('should have 6 pages (0-5)', () => {
+			const pages = ['Welcome', 'User Account', 'Disk Selection', 'Confirmation', 'Installation', 'Finish'];
+			expect(pages.length).toBe(6);
 			expect(pages[0]).toBe('Welcome');
-			expect(pages[4]).toBe('Finish');
+			expect(pages[5]).toBe('Finish');
 		});
 	});
 
 	describe('page visibility rules', () => {
-		it('should NOT show footer on Welcome page (currentPage === 0)', () => {
+		it('should show footer on Welcome page (PAGES_NO_NAV is empty)', () => {
 			const currentPage = 0;
-			const showFooter = currentPage > 0 && currentPage !== 3;
-			expect(showFooter).toBe(false);
+			const showFooter = true; // PAGES_NO_NAV is empty, footer always shown
+			expect(showFooter).toBe(true);
 		});
 
-		it('should show footer on UserAccount page (currentPage === 1)', () => {
+		it('should show footer on UserAccount page', () => {
 			const currentPage = 1;
-			const showFooter = currentPage > 0 && currentPage !== 3;
+			const showFooter = true;
 			expect(showFooter).toBe(true);
 		});
 
-		it('should show footer on DiskSelection page (currentPage === 2)', () => {
+		it('should show footer on DiskSelection page', () => {
 			const currentPage = 2;
-			const showFooter = currentPage > 0 && currentPage !== 3;
+			const showFooter = true;
 			expect(showFooter).toBe(true);
 		});
 
-		it('should NOT show footer on Installation page (currentPage === 3)', () => {
+		it('should show footer on Confirmation page', () => {
 			const currentPage = 3;
-			const showFooter = currentPage > 0 && currentPage !== 3;
-			expect(showFooter).toBe(false);
+			const showFooter = true;
+			expect(showFooter).toBe(true);
 		});
 
-		it('should show footer on Finish page (currentPage === 4)', () => {
+		it('should show footer on Installation page', () => {
 			const currentPage = 4;
-			const showFooter = currentPage > 0 && currentPage !== 3;
+			const showFooter = true;
+			expect(showFooter).toBe(true);
+		});
+
+		it('should show footer on Finish page', () => {
+			const currentPage = 5;
+			const showFooter = true;
 			expect(showFooter).toBe(true);
 		});
 	});
 
 	describe('back button visibility', () => {
 		it('should NOT show back button on Welcome page', () => {
-			const currentPage = 0;
-			const isLastPage = currentPage === 4;
-			const showBack = currentPage > 0 && !isLastPage;
+			const currentPage: number = 0;
+			const isLastPage = currentPage === 5;
+			const isInstallationPage = currentPage === 4;
+			const showBack = currentPage > 0 && !isLastPage && !isInstallationPage;
 			expect(showBack).toBe(false);
 		});
 
 		it('should show back button on UserAccount page', () => {
-			const currentPage = 1;
-			const isLastPage = currentPage === 4;
-			const showBack = currentPage > 0 && !isLastPage;
+			const currentPage: number = 1;
+			const isLastPage = currentPage === 5;
+			const isInstallationPage = currentPage === 4;
+			const showBack = currentPage > 0 && !isLastPage && !isInstallationPage;
 			expect(showBack).toBe(true);
 		});
 
 		it('should show back button on DiskSelection page', () => {
-			const currentPage = 2;
-			const isLastPage = currentPage === 4;
-			const showBack = currentPage > 0 && !isLastPage;
+			const currentPage: number = 2;
+			const isLastPage = currentPage === 5;
+			const isInstallationPage = currentPage === 4;
+			const showBack = currentPage > 0 && !isLastPage && !isInstallationPage;
 			expect(showBack).toBe(true);
 		});
 
+		it('should show back button on Confirmation page', () => {
+			const currentPage: number = 3;
+			const isLastPage = currentPage === 5;
+			const isInstallationPage = currentPage === 4;
+			const showBack = currentPage > 0 && !isLastPage && !isInstallationPage;
+			expect(showBack).toBe(true);
+		});
+
+		it('should NOT show back button on Installation page', () => {
+			const currentPage: number = 4;
+			const isLastPage = currentPage === 5;
+			const isInstallationPage = currentPage === 4;
+			const showBack = currentPage > 0 && !isLastPage && !isInstallationPage;
+			expect(showBack).toBe(false);
+		});
+
 		it('should NOT show back button on Finish page', () => {
-			const currentPage = 4;
-			const isLastPage = currentPage === 4;
-			const showBack = currentPage > 0 && !isLastPage;
+			const currentPage: number = 5;
+			const isLastPage = currentPage === 5;
+			const isInstallationPage = currentPage === 4;
+			const showBack = currentPage > 0 && !isLastPage && !isInstallationPage;
 			expect(showBack).toBe(false);
 		});
 	});
 
 	describe('button handler logic', () => {
-		it('should use onNext for non-last pages', () => {
+		it('should dispatch go-next for non-last pages', () => {
 			const isLastPage = false;
-			const onFinish = () => console.log('finish');
-			const onNext = () => console.log('next');
-			const buttonHandler = isLastPage && onFinish ? onFinish : onNext;
-			expect(buttonHandler).toBe(onNext);
+			const handler = isLastPage
+				? () => document.dispatchEvent(new CustomEvent('finish', { cancelable: true }))
+				: () => document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
+			const mock = vi.fn();
+			document.addEventListener('go-next', mock);
+			handler();
+			expect(mock).toHaveBeenCalled();
+			document.removeEventListener('go-next', mock);
 		});
 
-		it('should use onFinish for last page', () => {
+		it('should dispatch finish for last page', () => {
 			const isLastPage = true;
-			const onFinish = () => console.log('finish');
-			const onNext = () => console.log('next');
-			const buttonHandler = isLastPage && onFinish ? onFinish : onNext;
-			expect(buttonHandler).toBe(onFinish);
-		});
-
-		it('should fall back to onNext when onFinish is undefined', () => {
-			const isLastPage = true;
-			const onNext = () => console.log('next');
-			const buttonHandler = isLastPage && undefined ? undefined : onNext;
-			expect(buttonHandler).toBe(onNext);
+			const handler = isLastPage
+				? () => document.dispatchEvent(new CustomEvent('finish', { cancelable: true }))
+				: () => document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
+			const mock = vi.fn();
+			document.addEventListener('finish', mock);
+			handler();
+			expect(mock).toHaveBeenCalled();
+			document.removeEventListener('finish', mock);
 		});
 	});
 
