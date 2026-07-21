@@ -74,14 +74,13 @@ The system doesn't detect or warn about encrypted (LUKS) or logical volume (LVM)
 
 ### **Medium Priority**
 
-5. **Add pre-flight checks**
-   - Check if disk has mounted partitions before allowing selection
-   - Warn about existing data
-   - Show disk health status if possible
+5. **Add pre-flight checks** — Deferred
+   - Not needed: ConfirmationPage is the explicit "I confirm deletion" step, FormatDisk handles unmounting
+   - Skip per simplicity-first design
 
-6. **Add disk size validation**
-   - Minimum size check (e.g., 8GB for Arch Linux)
-   - Show available space after partitions
+6. ~~**Add disk size validation**~~ ✅ Fixed
+   - ~~Minimum size check (e.g., 8GB for Arch Linux)~~
+   - ~~Show available space after partitions~~
 
 7. **Detect and warn about LUKS/LVM**
    - Check for encrypted or logical volume devices
