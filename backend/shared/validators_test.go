@@ -88,8 +88,9 @@ func TestValidateDiskSelection(t *testing.T) {
 		data      DiskSelectionData
 		expectErr bool
 	}{
-		{name: "valid disk", data: DiskSelectionData{DiskID: "/dev/sda"}, expectErr: false},
+		{name: "valid disk", data: DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"}, expectErr: false},
 		{name: "empty disk", data: DiskSelectionData{DiskID: ""}, expectErr: true},
+		{name: "disk too small", data: DiskSelectionData{DiskID: "/dev/sda", Size: "4000000000"}, expectErr: true},
 	}
 
 	for _, tt := range tests {

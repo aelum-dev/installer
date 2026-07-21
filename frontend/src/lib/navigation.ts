@@ -68,7 +68,10 @@ async function validateCurrentPage(page: number): Promise<string | null> {
 		}
 
 		if (page === PAGE_IDS.DISK_SELECTION) {
-			await ValidateDiskSelection({ diskId: diskSelectionData.diskId });
+			await ValidateDiskSelection({
+				diskId: diskSelectionData.diskId,
+				size: diskSelectionData.disk?.size ?? '',
+			});
 		}
 
 		return null; // Validation passed

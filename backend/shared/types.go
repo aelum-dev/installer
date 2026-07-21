@@ -17,6 +17,7 @@ type UserAccountData struct {
 // DiskSelectionData holds disk selection info.
 type DiskSelectionData struct {
 	DiskID string `json:"diskId"`
+	Size   string `json:"size"` // byte size of selected disk
 }
 
 // PartitionInfo holds the partition layout computed after formatting.

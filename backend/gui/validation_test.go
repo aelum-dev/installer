@@ -138,12 +138,12 @@ func TestValidateDiskSelection(t *testing.T) {
 	}{
 		{
 			name:        "valid disk selection",
-			data:        shared.DiskSelectionData{DiskID: "/dev/sda"},
+			data:        shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"},
 			expectError: false,
 		},
 		{
 			name:        "valid nvme disk",
-			data:        shared.DiskSelectionData{DiskID: "/dev/nvme0n1"},
+			data:        shared.DiskSelectionData{DiskID: "/dev/nvme0n1", Size: "50000000000"},
 			expectError: false,
 		},
 		{
@@ -175,7 +175,7 @@ func TestValidateDiskSelection(t *testing.T) {
 
 func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 	app := NewApp(false)
-	data := shared.DiskSelectionData{DiskID: "/dev/sda"}
+	data := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"}
 
 	err := app.ValidateDiskSelection(data)
 	if err != nil {
@@ -189,7 +189,7 @@ func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 
 func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
 	app := NewApp(false)
-	validData := shared.DiskSelectionData{DiskID: "/dev/sda"}
+	validData := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"}
 	invalidData := shared.DiskSelectionData{DiskID: ""}
 
 	// First, save valid data

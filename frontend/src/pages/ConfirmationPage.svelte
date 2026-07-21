@@ -24,6 +24,13 @@
 	let rootCheckResult = $state<RootCheckResult | null>(null);
 	let rootCheckLoading = $state(true);
 
+	const MIN_DISK_SIZE_BYTES = 8 * 1024 * 1024 * 1024;
+	const isDiskSizeSufficient = $derived.by(() => {
+		if (!diskSelectionData.disk) return false;
+		const size = parseInt(diskSelectionData.disk.size, 10);
+		return !isNaN(size) && size >= MIN_DISK_SIZE_BYTES;
+	});
+
 	async function loadLanguageInfo(): Promise<void> {
 		try {
 			languages = await GetLanguages();
@@ -134,6 +141,9 @@
 						{/if}
 						{#if diskSelectionData.disk.serial}
 							<p class="disk-extra">Serial: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
+						{/if}
+						{#if !isDiskSizeSufficient}
+							<p class="disk-extra disk-size-error">⚠ Disk too small — minimum 8 GB required</p>
 						{/if}
 					</div>
 				{:else}
@@ -288,5 +298,10 @@
 
 	.error {
 		color: var(--color-danger);
+	}
+
+	.disk-size-error {
+		color: var(--color-danger);
+		font-weight: 600;
 	}
 </style>

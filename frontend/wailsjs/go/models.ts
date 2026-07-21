@@ -61,6 +61,7 @@ export namespace shared {
 	}
 	export class DiskSelectionData {
 	    diskId: string;
+	    size: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new DiskSelectionData(source);
@@ -69,6 +70,7 @@ export namespace shared {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.diskId = source["diskId"];
+	        this.size = source["size"];
 	    }
 	}
 	export class Language {
