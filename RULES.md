@@ -26,3 +26,11 @@
 
 ## Testing
 - Run `go test ./...` before building to catch regressions
+
+## Architecture & Code Organization
+- **Single Responsibility:** Each function should do ONE thing. A function named `Validate*` should ONLY validate — never save state, never execute business logic.
+- **Separation of Concerns:** Don't mix layers. Navigation functions (`goNext()`) should not save data. Validation functions should not mutate state. Keep each function in its proper layer.
+- **Workflow Orchestration:** When you need to do multiple steps (validate → save), create a separate orchestration function. Don't cram multiple responsibilities into one function.
+- **Verify Before Implementing:** Before implementing a feature listed in TODOs or issues, check if it's already done. Don't assume something is missing.
+- **Ask Before Adding UI:** When adding user-facing features, confirm the UI/UX with the user first. Don't add selectors or options the user didn't ask for.
+- **Embrace Corrections:** When the user corrects your architecture, they're usually right. Don't defend your implementation — fix it and learn.

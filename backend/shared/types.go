@@ -16,18 +16,21 @@ type UserAccountData struct {
 
 // DiskSelectionData holds disk selection info.
 type DiskSelectionData struct {
-	DiskID string `json:"diskId"`
-	Size   string `json:"size"` // byte size of selected disk
+	DiskID     string `json:"diskId"`
+	Size       string `json:"size"`       // byte size of selected disk
+	FileSystem string `json:"fileSystem"` // root filesystem: "ext4" or "btrfs"
 }
 
 // PartitionInfo holds the partition layout computed after formatting.
 // Populated by FormatDisk and consumed by MountFilesystem, ConfigureBootloader, etc.
 type PartitionInfo struct {
-	Disk     string // e.g. "/dev/sda"
-	EFIPart  string // e.g. "/dev/sda1"
-	EFIUUID  string // UUID of the EFI partition
-	RootPart string // e.g. "/dev/sda2"
-	RootUUID string // UUID of the root partition
+	Disk        string            // e.g. "/dev/sda"
+	LayoutName  string            // Name of the layout used
+	EFIPart     string            // e.g. "/dev/sda1"
+	EFIUUID     string            // UUID of the EFI partition
+	RootPart    string            // e.g. "/dev/sda2"
+	RootUUID    string            // UUID of the root partition
+	MountPoints map[string]string // Additional mount points (e.g., "/home" → "/dev/sda2")
 }
 
 // DiskInfo represents a block device discovered on the system.

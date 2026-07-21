@@ -42,3 +42,13 @@ func (a *App) SetSelectedLanguage(code string) error {
 	}
 	return nil
 }
+
+// GetFileSystem returns the currently selected filesystem type.
+func (a *App) GetFileSystem() string {
+	return a.fileSystem
+}
+
+// GetLayout returns the currently selected partition layout.
+func (a *App) GetLayout() string {
+	return a.layout
+}

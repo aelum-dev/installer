@@ -26,8 +26,8 @@ var commands = []HelperCommand{
 	},
 	{
 		Name:  "format",
-		Usage: "format <partition>",
-		Help:  "Format a partition with ext4",
+		Usage: "format <partition> <fstype>",
+		Help:  "Format a partition (fstype: ext4, btrfs)",
 		Run:   cmdFormat,
 	},
 	{
@@ -108,6 +108,12 @@ var commands = []HelperCommand{
 		Help:  "Reboot the system",
 		Run:   cmdReboot,
 	},
+	{
+		Name:  "btrfs-subvol-create",
+		Usage: "btrfs-subvol-create <mountpoint> <subvol...>",
+		Help:  "Create btrfs subvolumes (e.g., @ and @home)",
+		Run:   cmdBtrfsSubvolCreate,
+	},
 }
 
 func main() {
@@ -176,17 +182,27 @@ func cmdParted(args []string) error {
 }
 
 func cmdFormat(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: format <partition>")
+	if len(args) < 2 {
+		return fmt.Errorf("usage: format <partition> <fstype>")
 	}
 	partition := args[0]
+	fstype := args[1]
+
 	// Determine filesystem based on partition name
 	if strings.HasSuffix(partition, "1") || strings.Contains(partition, "efi") || strings.Contains(partition, "EFI") {
-		// EFI partition - FAT32
+		// EFI partition - FAT32 (always)
 		return runCommand("mkfs.fat", "-F", "32", "-n", "EFI", partition)
 	}
-	// Root partition - ext4
-	return runCommand("mkfs.ext4", "-F", "-L", "aesthetic-os", partition)
+
+	// Root partition - use specified filesystem type
+	switch fstype {
+	case "ext4":
+		return runCommand("mkfs.ext4", "-F", "-L", "aesthetic-os", partition)
+	case "btrfs":
+		return runCommand("mkfs.btrfs", "-f", "-L", "aesthetic-os", partition)
+	default:
+		return fmt.Errorf("unsupported filesystem: %s (supported: ext4, btrfs)", fstype)
+	}
 }
 
 func cmdMount(args []string) error {
@@ -363,4 +379,24 @@ func cmdEfibootmgr(args []string) error {
 	default:
 		return fmt.Errorf("unknown efibootmgr subcommand: %s (use list or delete)", subcmd)
 	}
+}
+
+func cmdBtrfsSubvolCreate(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: btrfs-subvol-create <mountpoint> <subvol1> [subvol2 ...]")
+	}
+	mountpoint := args[0]
+	subvols := args[1:]
+
+	for _, subvol := range subvols {
+		// Create subvolume (e.g., "@" or "@home")
+		cmd := exec.Command("btrfs", "subvolume", "create", mountpoint+"/"+subvol)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to create subvolume %s: %w", subvol, err)
+		}
+		fmt.Printf("Created subvolume: %s/%s\n", mountpoint, subvol)
+	}
+	return nil
 }

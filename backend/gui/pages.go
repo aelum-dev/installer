@@ -30,6 +30,8 @@ type App struct {
 	hostname        string
 	selectedLanguage string
 	region          shared.Region
+	fileSystem      string // root filesystem: "ext4" or "btrfs"
+	layout          string // partition layout: "default" or "btrfs-subvolumes"
 }
 
 // GetCurrentPage returns the current page index (0-based).

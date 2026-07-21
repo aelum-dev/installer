@@ -136,6 +136,9 @@
 							{diskSelectionData.disk.model || 'Unknown'} ({formatSize(diskSelectionData.disk.size)} {diskSelectionData.disk.rotational ? 'HDD' : 'SSD'} {diskSelectionData.disk.trans?.toUpperCase() || ''})
 						</p>
 						<p class="disk-path">Device: <code>{diskSelectionData.disk.path}</code></p>
+						<p class="disk-extra">
+							Filesystem: <span class="tag fs-tag">{diskSelectionData.fileSystem || '—'}</span>
+						</p>
 						{#if diskSelectionData.disk.fstype}
 							<p class="disk-extra">Existing filesystem: <span class="tag fstype-tag">{diskSelectionData.disk.fstype}</span></p>
 						{/if}
@@ -294,6 +297,12 @@
 	.serial-tag {
 		background-color: rgba(136, 57, 239, 0.12);
 		color: #8839ef;
+	}
+
+	.fs-tag {
+		background-color: rgba(30, 102, 245, 0.12);
+		color: var(--color-primary);
+		font-family: var(--font-mono);
 	}
 
 	.error {

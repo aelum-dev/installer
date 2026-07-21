@@ -43,6 +43,8 @@ func main() {
 	configureSysFlag := flag.String("configure-system", "", "Disk to configure system on")
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
+	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
+	layoutFlag := flag.String("layout", "default", "Partition layout: default or btrfs-subvolumes")
 	flag.Parse()
 
 	// Determine which flag was provided (first one wins)
@@ -89,6 +91,8 @@ func main() {
 		"aesthetic",               // password
 		"aestheticos",             // hostname
 		shared.GetRegion("en_US"), // region (default)
+		*fileSystemFlag,
+		*layoutFlag,
 		*dryRun,
 	)
 

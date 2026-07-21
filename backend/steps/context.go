@@ -16,13 +16,15 @@ type Logger interface {
 // InstallContext holds all data needed by installation steps.
 // PartitionInfo is populated by FormatDisk and consumed by subsequent steps.
 type InstallContext struct {
-	DiskID     string
-	ESP        string // ESP mount point, e.g. "/mnt/boot"
-	Partitions *shared.PartitionInfo
-	Helper     string
-	Username   string
-	Password   string
-	Hostname   string
-	Region     shared.Region
-	Logger     Logger // injected by Installer; nil if not set
+	DiskID      string
+	ESP         string // ESP mount point, e.g. "/mnt/boot"
+	Partitions  *shared.PartitionInfo
+	Helper      string
+	Username    string
+	Password    string
+	Hostname    string
+	Region      shared.Region
+	FileSystem  string // root filesystem: "ext4" or "btrfs"
+	LayoutName  string // partition layout name (e.g., "default", "btrfs-subvolumes")
+	Logger      Logger // injected by Installer; nil if not set
 }

@@ -43,6 +43,16 @@ export interface DiskInfo {
 	isRemovable: boolean;
 }
 
+// Filesystem type options for root partition.
+export const FILESYSTEMS = ['ext4', 'btrfs'] as const;
+export type FileSystem = (typeof FILESYSTEMS)[number];
+
+export interface DiskSelectionData {
+	diskId: string;
+	disk: DiskInfo | null;
+	fileSystem: FileSystem | '';
+}
+
 // PartitionDetail represents a partition with full information for display.
 export interface PartitionDetail {
 	path: string;

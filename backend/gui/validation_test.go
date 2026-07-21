@@ -138,12 +138,12 @@ func TestValidateDiskSelection(t *testing.T) {
 	}{
 		{
 			name:        "valid disk selection",
-			data:        shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"},
+			data:        shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000", FileSystem: "ext4"},
 			expectError: false,
 		},
 		{
 			name:        "valid nvme disk",
-			data:        shared.DiskSelectionData{DiskID: "/dev/nvme0n1", Size: "50000000000"},
+			data:        shared.DiskSelectionData{DiskID: "/dev/nvme0n1", Size: "50000000000", FileSystem: "btrfs"},
 			expectError: false,
 		},
 		{
@@ -175,7 +175,7 @@ func TestValidateDiskSelection(t *testing.T) {
 
 func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 	app := NewApp(false)
-	data := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"}
+	data := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000", FileSystem: "ext4"}
 
 	err := app.ValidateDiskSelection(data)
 	if err != nil {
@@ -185,11 +185,21 @@ func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 	if app.diskSelection.DiskID != "/dev/sda" {
 		t.Errorf("expected diskId to be saved as '/dev/sda', got %q", app.diskSelection.DiskID)
 	}
+	if app.diskSelection.FileSystem != "ext4" {
+		t.Errorf("expected FileSystem to be saved as 'ext4', got %q", app.diskSelection.FileSystem)
+	}
+	if app.fileSystem != "ext4" {
+		t.Errorf("expected fileSystem to be saved as 'ext4', got %q", app.fileSystem)
+	}
+	// Layout is NOT set by validation — it's determined in StartInstallation
+	if app.layout != "" {
+		t.Errorf("expected layout to NOT be set by validation, got %q", app.layout)
+	}
 }
 
 func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
 	app := NewApp(false)
-	validData := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000"}
+	validData := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000", FileSystem: "ext4"}
 	invalidData := shared.DiskSelectionData{DiskID: ""}
 
 	// First, save valid data
@@ -207,5 +217,12 @@ func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
 	// Original data should still be saved
 	if app.diskSelection.DiskID != "/dev/sda" {
 		t.Errorf("expected saved diskId to still be '/dev/sda', got %q", app.diskSelection.DiskID)
+	}
+	if app.fileSystem != "ext4" {
+		t.Errorf("expected saved fileSystem to still be 'ext4', got %q", app.fileSystem)
+	}
+	// Layout should still be empty (determined in StartInstallation)
+	if app.layout != "" {
+		t.Errorf("expected layout to still be empty, got %q", app.layout)
 	}
 }

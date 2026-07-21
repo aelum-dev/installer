@@ -44,6 +44,19 @@ func (a *App) StartInstallation() error {
 		hostname = "aestheticos"
 	}
 
+	// Auto-determine layout based on filesystem type
+	layout := a.layout
+	if layout == "" {
+		switch a.fileSystem {
+		case "ext4":
+			layout = "default"
+		case "btrfs":
+			layout = "btrfs-subvolumes"
+		default:
+			layout = "default" // fallback
+		}
+	}
+
 	installer := core.NewInstaller(
 		a.diskSelection.DiskID,
 		helper,
@@ -51,6 +64,8 @@ func (a *App) StartInstallation() error {
 		a.userAccount.Password,
 		hostname,
 		a.region,
+		a.fileSystem,
+		layout,
 		a.dryRun,
 	)
 

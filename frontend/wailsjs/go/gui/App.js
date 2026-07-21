@@ -34,12 +34,20 @@ export function GetDryRun() {
   return window['go']['gui']['App']['GetDryRun']();
 }
 
+export function GetFileSystem() {
+  return window['go']['gui']['App']['GetFileSystem']();
+}
+
 export function GetHostname() {
   return window['go']['gui']['App']['GetHostname']();
 }
 
 export function GetLanguages() {
   return window['go']['gui']['App']['GetLanguages']();
+}
+
+export function GetLayout() {
+  return window['go']['gui']['App']['GetLayout']();
 }
 
 export function GetSelectedLanguage() {
@@ -52,6 +60,14 @@ export function GetStartPage() {
 
 export function RebootAndClose() {
   return window['go']['gui']['App']['RebootAndClose']();
+}
+
+export function SaveDiskSelection(arg1) {
+  return window['go']['gui']['App']['SaveDiskSelection'](arg1);
+}
+
+export function SaveUserAccount(arg1) {
+  return window['go']['gui']['App']['SaveUserAccount'](arg1);
 }
 
 export function SetCurrentPage(arg1) {

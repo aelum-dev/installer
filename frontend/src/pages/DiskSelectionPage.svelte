@@ -12,7 +12,7 @@
 	import Button from '$components/Button.svelte';
 	import { diskSelectionData } from '$lib/state.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
-	import { formatSize } from '$lib/types';
+	import { formatSize, FILESYSTEMS } from '$lib/types';
 
 
 	let disks = $state<DiskInfo[]>([]);
@@ -86,6 +86,34 @@
 			<p class="empty-text">No storage devices found.</p>
 		</div>
 	{:else}
+		<!-- Filesystem selector -->
+		<div class="fs-section">
+			<h3 class="fs-title">Root Filesystem</h3>
+			<p class="fs-hint">Choose the filesystem for the root partition. This cannot be changed after installation.</p>
+			<div class="fs-options">
+				{#each FILESYSTEMS as fs}
+					<button
+						type="button"
+						class={['fs-option', { selected: diskSelectionData.fileSystem === fs }]}
+						onclick={() => { diskSelectionData.fileSystem = fs; }}
+					>
+						<div class="fs-option-main">
+							<div class="fs-radio">
+								<div class={['radio-dot', { checked: diskSelectionData.fileSystem === fs }]}>
+									{#if diskSelectionData.fileSystem === fs}
+										<span class="radio-dot-inner"></span>
+									{/if}
+								</div>
+							</div>
+							<span class="fs-name">{fs}</span>
+						</div>
+						<span class="fs-desc">{fs === 'ext4' ? 'Traditional, stable, mature. Excellent compatibility.' : 'Modern, advanced features. Copy-on-write, snapshots, compression.'}</span>
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<!-- Disk list -->
 		<div class="disk-list">
 			{#each disks as disk (disk.path)}
 				<button
@@ -186,6 +214,110 @@
 		align-items: center;
 		gap: 8px;
 		padding: 32px 0;
+	}
+
+	/* ── Filesystem Selector ── */
+	.fs-section {
+		text-align: center;
+		margin-bottom: 4px;
+	}
+
+	.fs-title {
+		margin: 0 0 4px 0;
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-600);
+		color: var(--color-text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.fs-hint {
+		margin: 0 0 12px 0;
+		font-size: 0.82rem;
+		color: var(--color-text-muted);
+	}
+
+	.fs-options {
+		display: flex;
+		gap: 8px;
+		width: 100%;
+	}
+
+	.fs-option {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 6px;
+		padding: 14px 16px;
+		background-color: var(--color-bg-white);
+		border: 1.5px solid var(--color-border-light);
+		border-radius: var(--radius-lg);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-align: left;
+		font-family: inherit;
+		outline: none;
+	}
+
+	.fs-option:hover {
+		border-color: var(--color-primary);
+		background-color: var(--color-bg-light);
+	}
+
+	.fs-option.selected {
+		border-color: var(--color-primary);
+		background-color: rgba(30, 102, 245, 0.06);
+		box-shadow: 0 0 0 1px var(--color-primary);
+	}
+
+	.fs-option-main {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.fs-radio {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+
+	.radio-dot {
+		width: 20px;
+		height: 20px;
+		border: 2px solid var(--color-border-light);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.15s ease;
+	}
+
+	.radio-dot.checked {
+		border-color: var(--color-primary);
+		background-color: var(--color-primary);
+	}
+
+	.radio-dot-inner {
+		width: 8px;
+		height: 8px;
+		background-color: white;
+		border-radius: 50%;
+	}
+
+	.fs-name {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-text);
+		font-family: var(--font-mono);
+	}
+
+	.fs-desc {
+		font-size: 0.78rem;
+		color: var(--color-text-muted);
+		line-height: 1.4;
+		margin: 0;
 	}
 
 	.loading-text,

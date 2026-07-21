@@ -31,7 +31,9 @@ func ValidateUserAccount(data UserAccountData) error {
 // Minimum disk size: 8 GiB (8 × 1024³ bytes). Arch Linux requires at least ~4GB.
 const minDiskSizeBytes = 8 * 1024 * 1024 * 1024
 
-// ValidateDiskSelection checks that a disk is selected and meets minimum size.
+// ValidateDiskSelection checks that a disk is selected, meets minimum size,
+// and has a valid filesystem type.
+// Layout is auto-determined based on filesystem (ext4→default, btrfs→btrfs-subvolumes).
 // Shared by GUI and console installer.
 func ValidateDiskSelection(data DiskSelectionData) error {
 	if data.DiskID == "" {
@@ -41,6 +43,12 @@ func ValidateDiskSelection(data DiskSelectionData) error {
 	fmt.Sscanf(data.Size, "%d", &sizeBytes)
 	if sizeBytes < minDiskSizeBytes {
 		return fmt.Errorf("Selected disk is too small. Minimum 8 GB required")
+	}
+	if data.FileSystem == "" {
+		return fmt.Errorf("Please select a filesystem")
+	}
+	if data.FileSystem != "ext4" && data.FileSystem != "btrfs" {
+		return fmt.Errorf("Unsupported filesystem: %s (supported: ext4, btrfs)", data.FileSystem)
 	}
 	return nil
 }

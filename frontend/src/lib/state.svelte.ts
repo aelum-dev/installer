@@ -1,4 +1,4 @@
-import type { DiskInfo } from '$lib/types';
+import type { DiskInfo, FileSystem } from '$lib/types';
 
 // User account state
 export let userAccountData = $state({
@@ -11,6 +11,7 @@ export let userAccountData = $state({
 export let diskSelectionData = $state({
 	diskId: '',
 	disk: null as DiskInfo | null,
+	fileSystem: '' as FileSystem | '',
 });
 
 // Confirm dialog state

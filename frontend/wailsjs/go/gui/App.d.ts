@@ -20,15 +20,23 @@ export function GetDisks():Promise<Array<shared.DiskInfo>>;
 
 export function GetDryRun():Promise<boolean>;
 
+export function GetFileSystem():Promise<string>;
+
 export function GetHostname():Promise<string>;
 
 export function GetLanguages():Promise<Array<shared.Language>>;
+
+export function GetLayout():Promise<string>;
 
 export function GetSelectedLanguage():Promise<string>;
 
 export function GetStartPage():Promise<number>;
 
 export function RebootAndClose():Promise<void>;
+
+export function SaveDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;
+
+export function SaveUserAccount(arg1:shared.UserAccountData):Promise<void>;
 
 export function SetCurrentPage(arg1:gui.PageID):Promise<void>;
 
