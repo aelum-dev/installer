@@ -3,6 +3,7 @@ package steps
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 // SetupUsers creates user accounts using sudo.
@@ -47,6 +48,29 @@ func SetupUsers(ctx *InstallContext) error {
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("passwd failed: %w: %s", err, string(output))
+		}
+
+		// Also set root password (same as user password for recovery)
+		// Generate hash on host using openssl, then update /mnt/etc/shadow directly
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Setting root password")
+		}
+		// Generate SHA-512 hash of password
+		hashCmd := exec.Command("openssl", "passwd", "-6", ctx.Password)
+		hashOutput, err := hashCmd.Output()
+		if err != nil {
+			return fmt.Errorf("failed to generate password hash: %w", err)
+		}
+		hash := strings.TrimSpace(string(hashOutput))
+
+		// Update root entry in /mnt/etc/shadow (use | as delimiter since hash contains /)
+		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
+			"sed -i 's|^root:.*|root:%s|' /mnt/etc/shadow",
+			hash,
+		))
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to set root password: %w: %s", err, string(output))
 		}
 	}
 

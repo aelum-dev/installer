@@ -53,19 +53,19 @@ func TestValidateUserAccount_FullData(t *testing.T) {
 			name:      "password too short",
 			data:      UserAccountData{Username: "john_doe", Password: "abc12", ConfirmPassword: "abc12"},
 			expectErr: true,
-			errorMsg:  "Password must be at least 6 characters",
+			errorMsg:  "password must be at least 6 characters",
 		},
 		{
 			name:      "passwords do not match",
 			data:      UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "different"},
 			expectErr: true,
-			errorMsg:  "Passwords do not match",
+			errorMsg:  "passwords do not match",
 		},
 		{
 			name:      "missing confirm password",
 			data:      UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: ""},
 			expectErr: true,
-			errorMsg:  "Please confirm your password",
+			errorMsg:  "please confirm your password",
 		},
 	}
 

@@ -29,13 +29,13 @@ func TestValidateUserAccount(t *testing.T) {
 			name:        "empty username",
 			data:        shared.UserAccountData{Username: "", Password: "password123", ConfirmPassword: "password123"},
 			expectError: true,
-			errorMsg:    "Username is required",
+			errorMsg:    "username is required",
 		},
 		{
 			name:        "username too short",
 			data:        shared.UserAccountData{Username: "ab", Password: "password123", ConfirmPassword: "password123"},
 			expectError: true,
-			errorMsg:    "Username must be at least 3 characters",
+			errorMsg:    "username must be at least 3 characters",
 		},
 		{
 			name:        "empty password (skipped, waiting for input)",
@@ -46,25 +46,25 @@ func TestValidateUserAccount(t *testing.T) {
 			name:        "password too short",
 			data:        shared.UserAccountData{Username: "john_doe", Password: "abc12", ConfirmPassword: "abc12"},
 			expectError: true,
-			errorMsg:    "Password must be at least 6 characters",
+			errorMsg:    "password must be at least 6 characters",
 		},
 		{
 			name:        "empty confirm password",
 			data:        shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: ""},
 			expectError: true,
-			errorMsg:    "Please confirm your password",
+			errorMsg:    "please confirm your password",
 		},
 		{
 			name:        "passwords do not match",
 			data:        shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "different"},
 			expectError: true,
-			errorMsg:    "Passwords do not match",
+			errorMsg:    "passwords do not match",
 		},
 		{
 			name:        "all fields empty",
 			data:        shared.UserAccountData{Username: "", Password: "", ConfirmPassword: ""},
 			expectError: true,
-			errorMsg:    "Username is required",
+			errorMsg:    "username is required",
 		},
 	}
 
@@ -96,6 +96,9 @@ func TestValidateUserAccount_SavesOnSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	// Validate separates concerns — Save must be called explicitly
+	app.SaveUserAccount(data)
+
 	if app.userAccount.Username != "john_doe" {
 		t.Errorf("expected username to be saved as 'john_doe', got %q", app.userAccount.Username)
 	}
@@ -109,19 +112,20 @@ func TestValidateUserAccount_DoesNotSaveOnFailure(t *testing.T) {
 	validData := shared.UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"}
 	invalidData := shared.UserAccountData{Username: "", Password: "", ConfirmPassword: ""}
 
-	// First, save valid data
+	// First, validate and save valid data
 	err := app.ValidateUserAccount(validData)
 	if err != nil {
 		t.Fatalf("unexpected error on valid data: %v", err)
 	}
+	app.SaveUserAccount(validData)
 
-	// Then try invalid data
+	// Then try invalid data — validation should fail
 	err = app.ValidateUserAccount(invalidData)
 	if err == nil {
 		t.Fatal("expected error on invalid data")
 	}
 
-	// Original data should still be saved
+	// Saved data should still be intact (validation doesn't clear state)
 	if app.userAccount.Username != "john_doe" {
 		t.Errorf("expected saved username to still be 'john_doe', got %q", app.userAccount.Username)
 	}
@@ -150,7 +154,7 @@ func TestValidateDiskSelection(t *testing.T) {
 			name:        "empty disk id",
 			data:        shared.DiskSelectionData{DiskID: ""},
 			expectError: true,
-			errorMsg:    "Please select a disk to install to",
+			errorMsg:    "please select a disk to install to",
 		},
 	}
 
@@ -182,6 +186,9 @@ func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	// Validate separates concerns — Save must be called explicitly
+	app.SaveDiskSelection(data)
+
 	if app.diskSelection.DiskID != "/dev/sda" {
 		t.Errorf("expected diskId to be saved as '/dev/sda', got %q", app.diskSelection.DiskID)
 	}
@@ -202,19 +209,20 @@ func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
 	validData := shared.DiskSelectionData{DiskID: "/dev/sda", Size: "50000000000", FileSystem: "ext4"}
 	invalidData := shared.DiskSelectionData{DiskID: ""}
 
-	// First, save valid data
+	// First, validate and save valid data
 	err := app.ValidateDiskSelection(validData)
 	if err != nil {
 		t.Fatalf("unexpected error on valid data: %v", err)
 	}
+	app.SaveDiskSelection(validData)
 
-	// Then try invalid data
+	// Then try invalid data — validation should fail
 	err = app.ValidateDiskSelection(invalidData)
 	if err == nil {
 		t.Fatal("expected error on invalid data")
 	}
 
-	// Original data should still be saved
+	// Saved data should still be intact (validation doesn't clear state)
 	if app.diskSelection.DiskID != "/dev/sda" {
 		t.Errorf("expected saved diskId to still be '/dev/sda', got %q", app.diskSelection.DiskID)
 	}

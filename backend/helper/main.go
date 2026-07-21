@@ -165,20 +165,11 @@ func cmdParted(args []string) error {
 		return fmt.Errorf("usage: parted <disk>")
 	}
 	disk := args[0]
-	// Create GPT partition table
+	// Clear disk (removes partition table and all GPT data)
 	if err := runCommand("sgdisk", "-Z", disk); err != nil {
 		return fmt.Errorf("failed to clear disk: %w", err)
 	}
-	// Create EFI partition (128MB, FAT32, boot flag)
-	if err := runCommand("sgdisk", "-n", "1:2048:+128M", "-t", "1:EF00", "-c", "1:EFI", disk); err != nil {
-		return fmt.Errorf("failed to create EFI partition: %w", err)
-	}
-	// Create root partition (rest of disk, ext4)
-	if err := runCommand("sgdisk", "-n", "2:0:0", "-t", "2:8300", "-c", "2:Root", disk); err != nil {
-		return fmt.Errorf("failed to create root partition: %w", err)
-	}
-	// Re-read partition table
-	return runCommand("partprobe", disk)
+	return nil
 }
 
 func cmdFormat(args []string) error {

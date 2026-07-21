@@ -1,34 +1,10 @@
 package steps
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"aesthetic-os-installer/backend/shared"
 )
-
-// fakeHelper creates a temporary script that simulates aestheticos-helper.
-// It records all commands run through it and returns success by default.
-func fakeHelper(t *testing.T) string {
-	t.Helper()
-
-	// Create a fake helper script
-	tmpDir := t.TempDir()
-	helperPath := filepath.Join(tmpDir, "aestheticos-helper")
-
-	script := `#!/bin/bash
-# Fake aestheticos-helper for testing
-# Records commands to a log file
-echo "$@" >> /tmp/fake_helper_log
-exit 0
-`
-	if err := os.WriteFile(helperPath, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to create fake helper: %v", err)
-	}
-
-	return helperPath
-}
 
 func TestPartitionToDisk(t *testing.T) {
 	tests := []struct {
@@ -64,7 +40,6 @@ func TestFormatDisk_PartitionLayout(t *testing.T) {
 	// This is a logic test, not an execution test
 	ctx := &InstallContext{
 		DiskID: "/dev/vda",
-		Helper: fakeHelper(t),
 	}
 
 	// Verify the context is set up correctly
@@ -77,7 +52,6 @@ func TestMountFilesystem_AutoDiscover(t *testing.T) {
 	// Test that MountFilesystem can auto-discover partitions from disk ID
 	ctx := &InstallContext{
 		DiskID: "/dev/vda",
-		Helper: fakeHelper(t),
 	}
 
 	// Simulate the auto-discovery logic from MountFilesystem
@@ -104,11 +78,7 @@ func TestMountFilesystem_AutoDiscover(t *testing.T) {
 func TestConfigureBootloader_AutoDiscover(t *testing.T) {
 	// Test that ConfigureBootloader can auto-discover partitions
 	// This test verifies the logic without actually running bootctl
-	ctx := &InstallContext{
-		DiskID: "/dev/vda",
-		Helper: fakeHelper(t),
-		ESP:    "/mnt/boot",
-	}
+	ctx := &InstallContext{}
 
 	// Simulate auto-discovery (in real code, this calls discoverPartitions)
 	if ctx.Partitions == nil {
@@ -141,10 +111,7 @@ func TestInstallContext_SetValues(t *testing.T) {
 	ctx := &InstallContext{
 		DiskID:   "/dev/sda",
 		ESP:      "/mnt/boot",
-		Helper:   "/usr/bin/aestheticos-helper",
 		Username: "testuser",
-		Password: "testpass",
-		Region:   shared.GetRegion("en_US"),
 	}
 
 	if ctx.DiskID != "/dev/sda" {

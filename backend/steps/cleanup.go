@@ -1,7 +1,6 @@
 package steps
 
 import (
-	"fmt"
 	"os/exec"
 )
 
@@ -24,39 +23,14 @@ func CleanupMounts(helper string) error {
 // FormatDiskErrorCleanup unmounts all partitions on a disk.
 // Used before formatting to ensure no partitions are mounted.
 func FormatDiskErrorCleanup(disk, helper string) error {
-	// Query all mountpoints on this disk
-	cmd := exec.Command("sudo", helper, "lsblk-partitions", disk)
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("failed to query partitions: %w", err)
+	// Use recursive lazy unmount to handle nested mounts (e.g., /mnt/boot inside /mnt)
+	cmd := exec.Command("sudo", helper, "run", "umount", "-lR", "/mnt")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		// Ignore errors: nothing may be mounted
+		_ = out
+		_ = err
 	}
-
-	// Unmount each one
-	for _, mp := range splitLines(string(output)) {
-		if mp == "" {
-			continue
-		}
-		umountCmd := exec.Command("sudo", helper, "umount", mp)
-		if out, err := umountCmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("failed to unmount %s: %w: %s", mp, err, string(out))
-		}
-	}
-
 	return nil
 }
 
-// splitLines splits a string by newlines and trims each line.
-func splitLines(s string) []string {
-	var lines []string
-	start := 0
-	for i, c := range s {
-		if c == '\n' {
-			lines = append(lines, s[start:i])
-			start = i + 1
-		}
-	}
-	if start < len(s) {
-		lines = append(lines, s[start:])
-	}
-	return lines
-}
+

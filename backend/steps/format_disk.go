@@ -102,9 +102,6 @@ func FormatDisk(ctx *InstallContext) error {
 		}
 	}
 
-	// Re-read partition table
-	exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID).Run()
-
 	// Format each partition according to layout
 	for i, part := range layout.Partitions {
 		partNum := i + 1
@@ -141,7 +138,7 @@ func FormatDisk(ctx *InstallContext) error {
 	// For btrfs subvolume layout, create subvolumes
 	if layoutName == "btrfs-subvolumes" {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Creating btrfs subvolumes (@ and @home)")
+			ctx.Logger.Info("Creating btrfs subvolumes (@, @home, @cache, @log)")
 		}
 
 		// Find root partition
@@ -168,8 +165,8 @@ func FormatDisk(ctx *InstallContext) error {
 			return fmt.Errorf("failed to mount root for subvolume creation: %w", err)
 		}
 
-		// Create subvolumes
-		cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-create", "/mnt", "@", "@home")
+		// Create subvolumes: @ (root), @home, @cache, @log
+		cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-create", "/mnt", "@", "@home", "@cache", "@log")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			// Unmount on error
@@ -184,14 +181,35 @@ func FormatDisk(ctx *InstallContext) error {
 		exec.Command("sudo", ctx.Helper, "umount", "/mnt").Run()
 	}
 
-	// Discover partition paths and UUIDs via lsblk
+	// Sync filesystem writes and re-read partition table
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Discovering partition paths and UUIDs via lsblk")
+		ctx.Logger.Info("Syncing filesystem and re-reading partition table")
 	}
+	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
+	exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID).Run()
 
+	// Discover partition paths via lsblk
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Discovering partition paths")
+	}
 	partitions, err := shared.GetPartitions(diskID)
 	if err != nil {
 		return fmt.Errorf("failed to discover partitions: %w", err)
+	}
+
+	// Read UUIDs via blkid (directly from superblock, more reliable than lsblk sysfs)
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Reading partition UUIDs via blkid")
+	}
+	for i := range partitions {
+		uuid, err := readPartitionUUID(ctx.Helper, partitions[i].Path)
+		if err != nil {
+			return fmt.Errorf("failed to read UUID for %s: %w", partitions[i].Path, err)
+		}
+		partitions[i].UUID = uuid
+		if ctx.Logger != nil {
+			ctx.Logger.Info("%s: UUID=%s", partitions[i].Path, uuid)
+		}
 	}
 
 	// Match partitions by fstype, then by index
@@ -258,9 +276,10 @@ func findPartitionsByFstype(partitions []shared.PartitionEntry) (*shared.Partiti
 func findPartitionsByIndex(partitions []shared.PartitionEntry) (*shared.PartitionEntry, *shared.PartitionEntry) {
 	var efi, root *shared.PartitionEntry
 	for i := range partitions {
-		if i == 0 {
+		switch i {
+		case 0:
 			efi = &partitions[i]
-		} else if i == 1 {
+		case 1:
 			root = &partitions[i]
 			return efi, root
 		}

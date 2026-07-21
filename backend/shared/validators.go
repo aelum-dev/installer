@@ -8,22 +8,22 @@ import "fmt"
 // Shared by GUI and console installer.
 func ValidateUserAccount(data UserAccountData) error {
 	if data.Username == "" {
-		return fmt.Errorf("Username is required")
+		return fmt.Errorf("username is required")
 	}
 	if len(data.Username) < 3 {
-		return fmt.Errorf("Username must be at least 3 characters")
+		return fmt.Errorf("username must be at least 3 characters")
 	}
 	if data.Password == "" {
 		return nil
 	}
 	if len(data.Password) < 6 {
-		return fmt.Errorf("Password must be at least 6 characters")
+		return fmt.Errorf("password must be at least 6 characters")
 	}
 	if data.ConfirmPassword == "" {
-		return fmt.Errorf("Please confirm your password")
+		return fmt.Errorf("please confirm your password")
 	}
 	if data.Password != data.ConfirmPassword {
-		return fmt.Errorf("Passwords do not match")
+		return fmt.Errorf("passwords do not match")
 	}
 	return nil
 }
@@ -37,18 +37,18 @@ const minDiskSizeBytes = 8 * 1024 * 1024 * 1024
 // Shared by GUI and console installer.
 func ValidateDiskSelection(data DiskSelectionData) error {
 	if data.DiskID == "" {
-		return fmt.Errorf("Please select a disk to install to")
+		return fmt.Errorf("please select a disk to install to")
 	}
 	var sizeBytes uint64
 	fmt.Sscanf(data.Size, "%d", &sizeBytes)
 	if sizeBytes < minDiskSizeBytes {
-		return fmt.Errorf("Selected disk is too small. Minimum 8 GB required")
+		return fmt.Errorf("selected disk is too small. minimum 8 GB required")
 	}
 	if data.FileSystem == "" {
-		return fmt.Errorf("Please select a filesystem")
+		return fmt.Errorf("please select a filesystem")
 	}
 	if data.FileSystem != "ext4" && data.FileSystem != "btrfs" {
-		return fmt.Errorf("Unsupported filesystem: %s (supported: ext4, btrfs)", data.FileSystem)
+		return fmt.Errorf("unsupported filesystem: %s (supported: ext4, btrfs)", data.FileSystem)
 	}
 	return nil
 }

@@ -71,7 +71,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Writing boot entry to %s/loader/entries/aesthetic-os.conf", esp)
 	}
-	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd); err != nil {
+	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.LayoutName); err != nil {
 		return err
 	}
 
@@ -169,13 +169,18 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 
 // writeBootEntry creates a Type #2 boot loader entry file on the ESP.
 // Per the Boot Loader Specification, Type #2 entries go in $ESP/loader/entries/.
-// The entry references the root partition by UUID, so it is filesystem-agnostic.
-func writeBootEntry(helper, esp, rootUUID, kernel, initrd string) error {
+// The entry references the root partition by UUID. For btrfs subvolume layouts,
+// rootflags=subvol=@ is required so the kernel mounts the @ subvolume as root.
+func writeBootEntry(helper, esp, rootUUID, kernel, initrd, layoutName string) error {
+	options := "root=UUID=" + rootUUID + " rw"
+	if layoutName == "btrfs-subvolumes" {
+		options += " rootflags=subvol=@"
+	}
 	entryContent := fmt.Sprintf(`title   Aesthetic OS
 linux   /%s
 initrd  /%s
-options root=UUID=%s rw
-`, kernel, initrd, rootUUID)
+options %s
+`, kernel, initrd, options)
 
 	entryPath := esp + "/loader/entries/aesthetic-os.conf"
 
@@ -249,7 +254,7 @@ func verifyBootloaderInstallation(helper, esp string) error {
 
 	// Check 2: loader.conf exists
 	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "test -f "+esp+"/loader/loader.conf && echo OK || echo MISSING")
-	output, err = cmd.Output()
+	output, _ = cmd.Output()
 	if strings.TrimSpace(string(output)) != "OK" {
 		issues = append(issues, "loader.conf is MISSING")
 	}
@@ -257,7 +262,7 @@ func verifyBootloaderInstallation(helper, esp string) error {
 	// Check 3: boot entry file exists
 	entryPath := esp + "/loader/entries/aesthetic-os.conf"
 	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("test -f %s && echo OK || echo MISSING", entryPath))
-	output, err = cmd.Output()
+	output, _ = cmd.Output()
 	if strings.TrimSpace(string(output)) != "OK" {
 		issues = append(issues, "boot entry file is MISSING: "+entryPath)
 	} else {
