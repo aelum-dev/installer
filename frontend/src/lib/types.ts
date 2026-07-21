@@ -40,6 +40,18 @@ export interface DiskInfo {
 	mountpoint: string | null;
 	serial: string;
 	trans: string;
+	isRemovable: boolean;
+}
+
+// PartitionDetail represents a partition with full information for display.
+export interface PartitionDetail {
+	path: string;
+	name: string;
+	type: string;
+	size: string;
+	fstype: string | null;
+	uuid: string;
+	mountpoint: string | null;
 }
 
 // Format bytes to human-readable string.

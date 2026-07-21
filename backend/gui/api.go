@@ -14,6 +14,12 @@ func (a *App) GetDisks() ([]shared.DiskInfo, error) {
 	return shared.GetDisks()
 }
 
+// GetDiskPartitions returns detailed partition information for a disk.
+// Wails binding: frontend calls this when a disk is selected.
+func (a *App) GetDiskPartitions(diskPath string) ([]shared.PartitionDetail, error) {
+	return shared.GetDiskPartitions(diskPath)
+}
+
 
 
 // GetLanguages returns the list of available languages/regions.

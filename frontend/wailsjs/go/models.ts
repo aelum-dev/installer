@@ -36,6 +36,7 @@ export namespace shared {
 	    mountpoint: string;
 	    serial: string;
 	    trans: string;
+	    isRemovable: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new DiskInfo(source);
@@ -55,6 +56,7 @@ export namespace shared {
 	        this.mountpoint = source["mountpoint"];
 	        this.serial = source["serial"];
 	        this.trans = source["trans"];
+	        this.isRemovable = source["isRemovable"];
 	    }
 	}
 	export class DiskSelectionData {
@@ -83,6 +85,30 @@ export namespace shared {
 	        this.code = source["code"];
 	        this.name = source["name"];
 	        this.locale = source["locale"];
+	    }
+	}
+	export class PartitionDetail {
+	    path: string;
+	    name: string;
+	    type: string;
+	    size: string;
+	    fstype: string;
+	    uuid: string;
+	    mountpoint: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PartitionDetail(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.name = source["name"];
+	        this.type = source["type"];
+	        this.size = source["size"];
+	        this.fstype = source["fstype"];
+	        this.uuid = source["uuid"];
+	        this.mountpoint = source["mountpoint"];
 	    }
 	}
 	export class UserAccountData {

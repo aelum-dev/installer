@@ -31,16 +31,17 @@ type PartitionInfo struct {
 
 // DiskInfo represents a block device discovered on the system.
 type DiskInfo struct {
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	Size       string `json:"size"`
-	Type       string `json:"type"`
-	Model      string `json:"model"`
-	Vendor     string `json:"vendor"`
-	Rotational bool   `json:"rotational"`
-	Readonly   bool   `json:"ro"`
-	Fstype     string `json:"fstype"`
-	Mountpoint string `json:"mountpoint"`
-	Serial     string `json:"serial"`
-	Trans      string `json:"trans"`
+	Name         string `json:"name"`
+	Path         string `json:"path"`
+	Size         string `json:"size"`
+	Type         string `json:"type"`
+	Model        string `json:"model"`
+	Vendor       string `json:"vendor"`
+	Rotational   bool   `json:"rotational"`
+	Readonly     bool   `json:"ro"`
+	Fstype       string `json:"fstype"`
+	Mountpoint   string `json:"mountpoint"`
+	Serial       string `json:"serial"`
+	Trans        string `json:"trans"`
+	IsRemovable  bool   `json:"isRemovable"`
 }

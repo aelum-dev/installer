@@ -3,6 +3,7 @@ package steps
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"aesthetic-os-installer/backend/shared"
 )
@@ -66,6 +67,11 @@ func MountFilesystem(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
+	// Verify root mount
+	if err := verifyMount("/mnt", p.RootPart); err != nil {
+		return err
+	}
+
 	// Mount EFI partition at /mnt/boot (standard Arch: kernel files live here, on the ESP)
 	// This makes /mnt/boot the $BOOT partition for systemd-boot.
 	bootMount := "/mnt/boot"
@@ -88,5 +94,34 @@ func MountFilesystem(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
+	// Verify EFI mount
+	if err := verifyMount(bootMount, p.EFIPart); err != nil {
+		return err
+	}
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("All mounts verified successfully")
+	}
+	return nil
+}
+
+// verifyMount checks that a mountpoint is actually mounted and references the expected device.
+// Uses findmnt which is more reliable than mountpoint (works even if mountpoint package is absent).
+func verifyMount(mountpoint, expectedDevice string) error {
+	// Check that the mountpoint is mounted
+	cmd := exec.Command("findmnt", "-n", "-o", "SOURCE", mountpoint)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("mount verification failed: %s is not mounted", mountpoint)
+	}
+	mountedDevice := strings.TrimSpace(string(output))
+	if mountedDevice == "" {
+		return fmt.Errorf("mount verification failed: %s is not mounted", mountpoint)
+	}
+	// Verify it matches the expected device
+	if mountedDevice != expectedDevice {
+		return fmt.Errorf("mount verification failed: %s is mounted on %s, expected %s",
+			mountpoint, mountedDevice, expectedDevice)
+	}
 	return nil
 }

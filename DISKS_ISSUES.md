@@ -2,19 +2,23 @@
 
 ## Current Issues
 
-### 1. **No Device Filtering**
-The `GetDisks()` function returns ALL block devices including:
-- Loop devices (`loop0`, `loop1`, ...)
-- RAM disks (`ram0`, `ram1`, ...)
-- CD-ROMs (`sr0`, `sr1`, ...)
-- LVM volumes (`dm-*`)
-- Software RAID (`md*`)
-- Virtual devices
+### 1. ~~**No Device Filtering**~~ ✅ Fixed
 
-This could confuse users with irrelevant devices.
+> ~~The `GetDisks()` function returned ALL block devices including:~~
+> - ~~Loop devices (`loop0`, `loop1`, ...)`~~
+> - ~~RAM disks (`ram0`, `ram1`, ...)`~~
+> - ~~CD-ROMs (`sr0`, `sr1`, ...)`~~
+> - ~~LVM volumes (`dm-*`)`~~
+> - ~~Software RAID (`md*`)`~~
+> - ~~Virtual devices~~
 
-### 2. **No Partition Information Display**
-When a disk is selected, users don't see what partitions currently exist. The `DiskSelectionPage` shows `fstype` and `mountpoint` of the disk itself, but not its children.
+**Fix:** Added `isVirtualDevice()` filter in `GetDisks()` — excludes loop, ram, dm, md devices by name prefix. CD-ROMs (`sr*`) excluded by `Type != "disk"` check. Added `IsRemovable` field derived from transport (usb/sd/mmc).
+
+### 2. ~~**No Partition Information Display**~~ ✅ Fixed
+
+> ~~When a disk is selected, users don't see what partitions currently exist.~~
+
+**Fix:** Added `GetDiskPartitions()` in `backend/shared/disks.go` — queries `lsblk` for partition details (name, size, fstype, UUID, mountpoint). Exposed via Wails API. `DiskSelectionPage` now shows expandable partition list when a disk is selected, with mounted partitions highlighted in red.
 
 ### 3. **No Pre-flight Mount Check**
 `FormatDisk` unmounts partitions before formatting, but there's no GUI warning if the selected disk has mounted partitions.
@@ -35,8 +39,11 @@ No distinction between:
 - Removable media (USB, SD card)
 - Minimum size validation
 
-### 6. **No Mount Verification**
-After `mount` commands in `MountFilesystem`, there's no verification that the mount actually succeeded.
+### 6. ~~**No Mount Verification**~~ ✅ Fixed
+
+> ~~After `mount` commands in `MountFilesystem`, there was no verification that the mount actually succeeded.~~
+
+**Fix:** Added `verifyMount()` helper in `MountFilesystem` — uses `findmnt -n -o SOURCE` to confirm each mountpoint is mounted and references the expected device. Runs after both root and EFI mounts; returns a clear error if verification fails.
 
 ### 7. **No LUKS/LVM Detection**
 The system doesn't detect or warn about encrypted (LUKS) or logical volume (LVM) devices.
@@ -47,23 +54,23 @@ The system doesn't detect or warn about encrypted (LUKS) or logical volume (LVM)
 
 ### **High Priority**
 
-1. **Filter block devices in `GetDisks()`**
-   - Only show physical disks (`/dev/sd*`, `/dev/nvme*`, `/dev/vd*`)
-   - Exclude loop, ram, sr, dm, md devices
-   - Add a `IsRemovable` field to `DiskInfo`
+1. ~~**Filter block devices in `GetDisks()`**~~ ✅ Fixed
+   - ~~Only show physical disks (`/dev/sd*`, `/dev/nvme*`, `/dev/vd*`)~~
+   - ~~Exclude loop, ram, sr, dm, md devices~~
+   - ~~Add a `IsRemovable` field to `DiskInfo`~~
 
-2. **Show partition information**
-   - Add a helper command to list partitions with their types/sizes
-   - Display existing partitions in `DiskSelectionPage`
-   - Warn if disk has existing data
+2. ~~**Show partition information**~~ ✅ Fixed
+   - ~~Add a helper command to list partitions with their types/sizes~~
+   - ~~Display existing partitions in `DiskSelectionPage`~~
+   - ~~Warn if disk has existing data~~
 
 3. ~~**Fix partition path calculation**~~ ✅ Fixed
    - ~~Use `lsblk` to get actual partition paths instead of string concatenation~~
    - ~~Handle NVMe naming convention (`nvme0n1p1` not `nvme0n11`)~~
 
-4. **Add mount verification**
-   - After mounting, verify with `findmnt` or `mountpoint`
-   - Add error handling for failed mounts
+4. ~~**Add mount verification**~~ ✅ Fixed
+   - ~~After mounting, verify with `findmnt` or `mountpoint`~~
+   - ~~Add error handling for failed mounts~~
 
 ### **Medium Priority**
 

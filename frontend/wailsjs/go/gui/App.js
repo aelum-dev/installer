@@ -22,6 +22,10 @@ export function GetCurrentPage() {
   return window['go']['gui']['App']['GetCurrentPage']();
 }
 
+export function GetDiskPartitions(arg1) {
+  return window['go']['gui']['App']['GetDiskPartitions'](arg1);
+}
+
 export function GetDisks() {
   return window['go']['gui']['App']['GetDisks']();
 }

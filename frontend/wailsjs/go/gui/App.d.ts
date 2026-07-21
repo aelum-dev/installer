@@ -14,6 +14,8 @@ export function ClearStartPage():Promise<void>;
 
 export function GetCurrentPage():Promise<number>;
 
+export function GetDiskPartitions(arg1:string):Promise<Array<shared.PartitionDetail>>;
+
 export function GetDisks():Promise<Array<shared.DiskInfo>>;
 
 export function GetDryRun():Promise<boolean>;

@@ -130,21 +130,27 @@ func GetDisks() ([]DiskInfo, error) {
 			continue
 		}
 
+		// Filter out virtual/non-physical block devices
+		if isVirtualDevice(bd.Name) {
+			continue
+		}
+
 		rotational := bool(bd.Rota)
 
 		disk := DiskInfo{
-			Name:       bd.Name,
-			Path:       "/dev/" + bd.Name,
-			Size:       bd.Size.Value,
-			Type:       bd.Type,
-			Model:      strings.TrimSpace(bd.Model),
-			Vendor:     strings.TrimSpace(bd.Vendor),
-			Rotational: rotational,
-			Readonly:   bool(bd.Ro),
-			Fstype:     bd.Fstype,
-			Mountpoint: bd.Mountpoint,
-			Serial:     strings.TrimSpace(bd.Serial),
-			Trans:      bd.Trans,
+			Name:         bd.Name,
+			Path:         "/dev/" + bd.Name,
+			Size:         bd.Size.Value,
+			Type:         bd.Type,
+			Model:        strings.TrimSpace(bd.Model),
+			Vendor:       strings.TrimSpace(bd.Vendor),
+			Rotational:   rotational,
+			Readonly:     bool(bd.Ro),
+			Fstype:       bd.Fstype,
+			Mountpoint:   bd.Mountpoint,
+			Serial:       strings.TrimSpace(bd.Serial),
+			Trans:        bd.Trans,
+			IsRemovable:  isRemovable(bd.Trans),
 		}
 
 		if disk.Model == "" && disk.Vendor != "" {
@@ -158,6 +164,88 @@ func GetDisks() ([]DiskInfo, error) {
 	}
 
 	return disks, nil
+}
+
+// isVirtualDevice returns true if the device name corresponds to a virtual
+// block device that should not be shown to the user (loop, ram, dm, md).
+func isVirtualDevice(name string) bool {
+	// Strip /dev/ prefix if present
+	short := strings.TrimPrefix(name, "/dev/")
+
+	switch {
+	case strings.HasPrefix(short, "loop"): // loop0, loop1, ...
+		return true
+	case strings.HasPrefix(short, "ram"): // ram0, ram1, ...
+		return true
+	case strings.HasPrefix(short, "dm-"): // dm-0, dm-1 (LVM, etc.)
+		return true
+	case strings.HasPrefix(short, "md"): // md0, md1 (software RAID)
+		return true
+	}
+	return false
+}
+
+// isRemovable returns true if the transport indicates removable media.
+func isRemovable(trans string) bool {
+	switch trans {
+	case "usb", "sd", "mmc":
+		return true
+	}
+	return false
+}
+
+// PartitionDetail represents a partition with full information for display.
+type PartitionDetail struct {
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Size       string `json:"size"`
+	Fstype     string `json:"fstype"`
+	UUID       string `json:"uuid"`
+	Mountpoint string `json:"mountpoint"`
+}
+
+// GetDiskPartitions returns detailed partition information for a disk.
+// Uses lsblk directly (no root required) — safe to call from the GUI.
+func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
+	if !strings.HasPrefix(diskPath, "/dev/") {
+		diskPath = "/dev/" + diskPath
+	}
+
+	cmd := exec.Command("lsblk", "-b", "-J", "-o", "NAME,TYPE,SIZE,FSTYPE,UUID,MOUNTPOINT", diskPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run lsblk for %s: %w", diskPath, err)
+	}
+
+	var result struct {
+		Blockdevices []lsblkEntry `json:"blockdevices"`
+	}
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
+	}
+
+	if len(result.Blockdevices) == 0 {
+		return nil, nil // disk not found, not an error
+	}
+
+	var partitions []PartitionDetail
+	for _, child := range result.Blockdevices[0].Children {
+		if child.Type != "part" {
+			continue
+		}
+		partitions = append(partitions, PartitionDetail{
+			Path:       "/dev/" + child.Name,
+			Name:       child.Name,
+			Type:       child.Type,
+			Size:       child.Size.Value,
+			Fstype:     child.Fstype,
+			UUID:       child.UUID,
+			Mountpoint: child.Mountpoint,
+		})
+	}
+
+	return partitions, nil
 }
 
 // FormatPartitionSize converts a byte size string to human-readable format.
