@@ -614,8 +614,12 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 			logger.Info("Unmounting partition: %s (fstype: %s)", part.Path, part.Fstype)
 		}
 
-		// Always try to unmount — a partition can be mounted even without a recognized fstype
-		// (e.g. btrfs subvolume mounts show empty fstype on the parent partition)
+		// Only unmount if actually mounted
+		findCmd := exec.Command("sudo", helper, "run", "findmnt", "-n", "-o", "SOURCE", part.Path)
+		if findCmd.Run() != nil {
+			continue
+		}
+
 		cmd = exec.Command("sudo", helper, "umount", part.Path)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			// Ignore errors — partition may not be mounted
