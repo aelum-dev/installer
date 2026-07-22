@@ -34,3 +34,6 @@
 - **Verify Before Implementing:** Before implementing a feature listed in TODOs or issues, check if it's already done. Don't assume something is missing.
 - **Ask Before Adding UI:** When adding user-facing features, confirm the UI/UX with the user first. Don't add selectors or options the user didn't ask for.
 - **Embrace Corrections:** When the user corrects your architecture, they're usually right. Don't defend your implementation — fix it and learn.
+- **Keep It Simple:** Don't add abstractions unless the user explicitly asks for them. If you find yourself creating 5+ files for a "flexible" system when 2 would do, stop and ask.
+- **Clean Code:** Use only clean code patterns — no magic numbers, no hardcoded strings, no duplicated logic. Extract constants, use named functions, and keep everything DRY.
+- **Verify Each Change:** Build and test after every modification. Don't push 10 changes at once and hope they all work.
