@@ -3,7 +3,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-SHARED_DIR="/home/power007/Projects/shared"
+SHARED_DIR=$HOME"/Projects/shared"
 
 echo "=== Refreshing mirrorlists ==="
 go run ./backend/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
