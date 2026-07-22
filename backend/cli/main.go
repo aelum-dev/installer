@@ -44,8 +44,19 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
-	layoutFlag := flag.String("layout", shared.LayoutExt4, "Partition layout: ext4 or btrfs")
+	layoutFlag := flag.String("layout", "", "Partition layout: ext4 or btrfs (auto-detected from filesystem if empty)")
 	flag.Parse()
+
+	// Auto-detect layout from filesystem if not explicitly set
+	layout := *layoutFlag
+	if layout == "" {
+		switch *fileSystemFlag {
+		case "btrfs":
+			layout = shared.LayoutBtrfs
+		default:
+			layout = shared.LayoutExt4
+		}
+	}
 
 	// Determine which flag was provided (first one wins)
 	disk, stepName := resolveDiskAndStep(resolveFlags(
@@ -162,15 +173,17 @@ func resolveDiskAndStep(args ...string) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--dry-run]                    Full installation\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                Format disk partitions\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]           Mount partitions\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]             Install base system\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --generate-fstab <disk> [--dry-run]             Generate fstab\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --install-bootloader <disk> [--dry-run]         Install bootloader\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                Set up user accounts\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]           Configure system\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                        Format disk partitions\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                   Mount partitions\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                     Install base system\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --generate-fstab <disk> [--dry-run]                     Generate fstab\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install-bootloader <disk> [--dry-run]                 Install bootloader\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                        Set up user accounts\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
-	fmt.Fprintf(os.Stderr, "Example:\n")
+	fmt.Fprintf(os.Stderr, "Examples:\n")
+	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install-bootloader /dev/vda\n", os.Args[0])
 }
