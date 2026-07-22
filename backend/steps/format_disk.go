@@ -31,12 +31,17 @@ func FormatDisk(ctx *InstallContext) error {
 	// Determine layout
 	layoutName := ctx.LayoutName
 	if layoutName == "" {
-		layoutName = "ext4"
+		layoutName = shared.LayoutExt4
 	}
 
 	layout, err := shared.GetLayout(layoutName, fsType)
 	if err != nil {
 		return fmt.Errorf("failed to get layout: %w", err)
+	}
+
+	// Validate layout schema before proceeding
+	if err := layout.Validate(); err != nil {
+		return fmt.Errorf("invalid layout: %w", err)
 	}
 
 	if ctx.Logger != nil {
@@ -601,7 +606,7 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 	}
 
 	// First, try lazy recursive unmount of /mnt (covers nested mounts including subvolumes)
-	cmd := exec.Command("sudo", helper, "umount-recursive", "/mnt")
+	cmd := exec.Command("sudo", helper, "umount", "-R", "/mnt")
 	cmd.Run()
 
 	// Also unmount /mnt/boot if mounted

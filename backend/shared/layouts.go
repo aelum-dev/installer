@@ -1,5 +1,11 @@
 package shared
 
+// Layout names — used throughout the codebase, do not change without updating all references.
+const (
+	LayoutExt4     = "ext4"
+	LayoutBtrfs    = "btrfs"
+)
+
 // PartitionLayout defines the partition scheme for a disk.
 // Each layout specifies the number, size, filesystem, and purpose of partitions.
 // For btrfs layouts, Subvolumes defines the subvolume scheme (empty for ext4).
@@ -110,4 +116,62 @@ type LayoutError struct {
 
 func (e *LayoutError) Error() string {
 	return "layout error: " + e.Layout + " - " + e.Reason
+}
+
+// Validate checks that the layout schema is consistent.
+// Returns an error if the layout is invalid.
+func (l *PartitionLayout) Validate() error {
+	if l == nil {
+		return &LayoutError{Layout: "", Reason: "layout is nil"}
+	}
+
+	if l.Name == "" {
+		return &LayoutError{Layout: "", Reason: "layout name is empty"}
+	}
+
+	if len(l.Partitions) == 0 {
+		return &LayoutError{Layout: l.Name, Reason: "no partitions defined"}
+	}
+
+	// Check for duplicate partition names
+	partNames := make(map[string]bool)
+	for _, p := range l.Partitions {
+		if p.Name == "" {
+			return &LayoutError{Layout: l.Name, Reason: "partition name is empty"}
+		}
+		if partNames[p.Name] {
+			return &LayoutError{Layout: l.Name, Reason: "duplicate partition name: " + p.Name}
+		}
+		partNames[p.Name] = true
+	}
+
+	// For btrfs layouts, validate subvolumes
+	if len(l.Subvolumes) > 0 {
+		// Check that exactly one subvolume has MountPoint "/"
+		defaultCount := 0
+		mountPoints := make(map[string]bool)
+		for _, sv := range l.Subvolumes {
+			if sv.Name == "" {
+				return &LayoutError{Layout: l.Name, Reason: "subvolume name is empty"}
+			}
+			if sv.MountPoint == "" {
+				return &LayoutError{Layout: l.Name, Reason: "subvolume " + sv.Name + " has empty mount point"}
+			}
+			if sv.MountPoint == "/" {
+				defaultCount++
+			}
+			if mountPoints[sv.MountPoint] {
+				return &LayoutError{Layout: l.Name, Reason: "duplicate subvolume mount point: " + sv.MountPoint}
+			}
+			mountPoints[sv.MountPoint] = true
+		}
+		if defaultCount == 0 {
+			return &LayoutError{Layout: l.Name, Reason: "missing default subvolume (MountPoint '/')"}
+		}
+		if defaultCount > 1 {
+			return &LayoutError{Layout: l.Name, Reason: "multiple subvolumes with MountPoint '/'"}
+		}
+	}
+
+	return nil
 }

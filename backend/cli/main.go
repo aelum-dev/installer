@@ -44,7 +44,7 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
-	layoutFlag := flag.String("layout", "ext4", "Partition layout: ext4 or btrfs")
+	layoutFlag := flag.String("layout", shared.LayoutExt4, "Partition layout: ext4 or btrfs")
 	flag.Parse()
 
 	// Determine which flag was provided (first one wins)

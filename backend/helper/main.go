@@ -38,15 +38,9 @@ var commands = []HelperCommand{
 	},
 	{
 		Name:  "umount",
-		Usage: "umount <mountpoint>",
-		Help:  "Unmount a partition (lazy)",
+		Usage: "umount [-R] <mountpoint>",
+		Help:  "Unmount a partition (lazy). Use -R for recursive",
 		Run:   cmdUmount,
-	},
-	{
-		Name:  "umount-recursive",
-		Usage: "umount-recursive <mountpoint>",
-		Help:  "Unmount a partition and all its children (lazy recursive)",
-		Run:   cmdUmountRecursive,
 	},
 	{
 		Name:  "mountpoints",
@@ -255,18 +249,32 @@ func cmdMount(args []string) error {
 
 func cmdUmount(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: umount <mountpoint>")
+		return fmt.Errorf("usage: umount [-R] <mountpoint>")
 	}
-	// Use -l (lazy) to unmount even if busy
-	return runCommand("umount", "-l", args[0])
-}
 
-func cmdUmountRecursive(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: umount-recursive <mountpoint>")
+	// Parse flags
+	recursive := false
+	mountpoint := ""
+	for _, arg := range args {
+		if arg == "-R" {
+			recursive = true
+		} else {
+			mountpoint = arg
+		}
 	}
-	// Use -lR (lazy recursive) to unmount the mountpoint and all children
-	return runCommand("umount", "-lR", args[0])
+
+	if mountpoint == "" {
+		return fmt.Errorf("usage: umount [-R] <mountpoint>")
+	}
+
+	// Build umount arguments: -l (lazy) always, -R (recursive) if requested
+	umountArgs := []string{"-l"}
+	if recursive {
+		umountArgs = append(umountArgs, "-R")
+	}
+	umountArgs = append(umountArgs, mountpoint)
+
+	return runCommand("umount", umountArgs...)
 }
 
 func cmdMountpoints(args []string) error {

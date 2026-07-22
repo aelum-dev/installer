@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"aesthetic-os-installer/backend/core"
+	"aesthetic-os-installer/backend/shared"
 	"aesthetic-os-installer/backend/steps"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -49,11 +50,11 @@ func (a *App) StartInstallation() error {
 	if layout == "" {
 		switch a.fileSystem {
 		case "ext4":
-			layout = "ext4"
+			layout = shared.LayoutExt4
 		case "btrfs":
-			layout = "btrfs"
+			layout = shared.LayoutBtrfs
 		default:
-			layout = "ext4" // fallback
+			layout = shared.LayoutExt4 // fallback
 		}
 	}
 
