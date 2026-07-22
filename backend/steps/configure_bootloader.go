@@ -43,8 +43,8 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	if ctx.Partitions == nil {
 		return fmt.Errorf("partitions not initialized. Run --format-disk <disk> first")
 	}
-	if ctx.Layout.Name == "" {
-		return fmt.Errorf("layout not set. Run --format-disk <disk> first")
+	if ctx.FileSystem == "" {
+		return fmt.Errorf("filesystem not set. Run --format-disk <disk> first")
 	}
 	if ctx.Partitions.RootUUID == "" {
 		return fmt.Errorf("root UUID not set. FormatDisk may have failed")
@@ -73,7 +73,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Writing boot entry to %s/loader/entries/aesthetic-os.conf", esp)
 	}
-	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.Layout.Subvolumes); err != nil {
+	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.FileSystem); err != nil {
 		return err
 	}
 
@@ -173,17 +173,10 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 // Per the Boot Loader Specification, Type #2 entries go in $ESP/loader/entries/.
 // The entry references the root partition by UUID. For btrfs subvolume layouts,
 // rootflags=subvol=@ is required so the kernel mounts the @ subvolume as root.
-func writeBootEntry(helper, esp, rootUUID, kernel, initrd string, subvolumes []shared.BtrfsSubvol) error {
+func writeBootEntry(helper, esp, rootUUID, kernel, initrd, fsType string) error {
 	options := "root=UUID=" + rootUUID + " rw"
-	if len(subvolumes) > 0 {
-		defaultSubvol := "@"
-		for _, sv := range subvolumes {
-			if sv.MountPoint == "/" {
-				defaultSubvol = sv.Name
-				break
-			}
-		}
-		options += " rootflags=subvol=" + defaultSubvol
+	if fsType == "btrfs" {
+		options += " rootflags=subvol=@"
 	}
 	entryContent := fmt.Sprintf(`title   Aesthetic OS
 linux   /%s

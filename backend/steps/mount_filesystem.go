@@ -29,8 +29,8 @@ func MountFilesystem(ctx *InstallContext) error {
 	if ctx.Partitions == nil {
 		return fmt.Errorf("partitions not initialized. Run --format-disk <disk> first")
 	}
-	if ctx.Layout.Name == "" {
-		return fmt.Errorf("layout not set. Run --format-disk <disk> first")
+	if ctx.FileSystem == "" {
+		return fmt.Errorf("filesystem not set. Run --format-disk <disk> first")
 	}
 
 	// Validate that partitions exist (from FormatDisk) or can be derived
@@ -42,13 +42,10 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	// ── Mount root partition ──
 
-	// Find the subvolume with MountPoint "/" for btrfs layouts, otherwise mount raw.
-	var rootSubvol *shared.BtrfsSubvol
-	for i := range ctx.Layout.Subvolumes {
-		if ctx.Layout.Subvolumes[i].MountPoint == "/" {
-			rootSubvol = &ctx.Layout.Subvolumes[i]
-			break
-		}
+	// Find the subvolume with MountPoint "/" for btrfs, otherwise mount raw.
+	var rootSubvol *shared.BtrfsSubvolume
+	if ctx.FileSystem == "btrfs" {
+		rootSubvol = shared.FindSubvolumeByMountPoint(shared.GetBtrfsSubvolumes(), "/")
 	}
 
 	if rootSubvol != nil {
@@ -87,28 +84,30 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	// ── Mount additional subvolumes ──
 
-	for _, sv := range ctx.Layout.Subvolumes {
-		if sv.MountPoint == "/" {
-			continue // already mounted as root
-		}
+	if ctx.FileSystem == "btrfs" {
+		for _, sv := range shared.GetBtrfsSubvolumes() {
+			if sv.MountPoint == "/" {
+				continue // already mounted as root
+			}
 
-		// Create mount point directory
-		mountPath := "/mnt" + sv.MountPoint
-		cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", mountPath)
-		cmd.Run()
+			// Create mount point directory
+			mountPath := "/mnt" + sv.MountPoint
+			cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", mountPath)
+			cmd.Run()
 
-		// Mount subvolume with its properties
-		mountOpts := buildMountOpts(&sv)
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", sv.Name, mountPath, mountOpts)
-		}
-		cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, mountPath)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, mountPath, err, string(output))
-		}
-		if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
+			// Mount subvolume with its properties
+			mountOpts := buildMountOpts(&sv)
+			if ctx.Logger != nil {
+				ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", sv.Name, mountPath, mountOpts)
+			}
+			cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, mountPath)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, mountPath, err, string(output))
+			}
+			if ctx.Logger != nil && len(output) > 0 {
+				ctx.Logger.Command(string(output))
+			}
 		}
 	}
 
@@ -143,6 +142,16 @@ func MountFilesystem(ctx *InstallContext) error {
 		ctx.Logger.Info("All mounts verified successfully")
 	}
 	return nil
+}
+
+// buildMountOpts constructs mount options string from a BtrfsSubvolume's properties.
+// Returns "subvol=<name>,compress=<val>" or just "subvol=<name>" if no compression.
+func buildMountOpts(sv *shared.BtrfsSubvolume) string {
+	opts := "subvol=" + sv.Name
+	if sv.Compression != "" {
+		opts += ",compress=" + sv.Compression
+	}
+	return opts
 }
 
 // verifyMount checks that a mountpoint is actually mounted and references the expected device.

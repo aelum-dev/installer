@@ -23,8 +23,8 @@ func GenerateFstab(ctx *InstallContext) error {
 	if ctx.Partitions == nil {
 		return fmt.Errorf("partitions not initialized. Run --format-disk <disk> first")
 	}
-	if ctx.Layout.Name == "" {
-		return fmt.Errorf("layout not set. Run --format-disk <disk> first")
+	if ctx.FileSystem == "" {
+		return fmt.Errorf("filesystem not set. Run --format-disk <disk> first")
 	}
 	if ctx.Partitions.EFIUUID == "" || ctx.Partitions.RootUUID == "" {
 		return fmt.Errorf("partition UUIDs not set. FormatDisk may have failed")
@@ -32,8 +32,8 @@ func GenerateFstab(ctx *InstallContext) error {
 
 	p := ctx.Partitions
 
-	// For btrfs subvolume layouts, write custom fstab with subvolume entries
-	if len(ctx.Layout.Subvolumes) > 0 {
+	// For btrfs, write custom fstab with subvolume entries
+	if ctx.FileSystem == "btrfs" {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Generating custom fstab for btrfs subvolumes")
 		}
@@ -73,20 +73,23 @@ UUID=%s  /boot          vfat    umask=0077 0 2
 	return nil
 }
 
-// writeBtrfsFstab writes a custom fstab for btrfs subvolume layouts.
-// Iterates ctx.Layout.Subvolumes to generate one entry per subvolume.
+// writeBtrfsFstab writes a custom fstab for btrfs with subvolumes.
 // All subvolumes share the root partition UUID, with subvol=<name> in mount options.
 func writeBtrfsFstab(ctx *InstallContext) error {
 	p := ctx.Partitions
 
+	// Get subvolumes from shared definition
+	subvolumes := shared.GetBtrfsSubvolumes()
+
 	// Build fstab: one line per subvolume + EFI
-	// All subvolumes live on the same partition, so they all use RootUUID
-	// with subvol=<name> in mount options.
 	var lines []string
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
 
-	for _, sv := range ctx.Layout.Subvolumes {
-		opts := buildFstabOpts(&sv)
+	for _, sv := range subvolumes {
+		opts := fmt.Sprintf("subvol=%s,defaults,noatime,autodefrag", sv.Name)
+		if sv.Compression != "" {
+			opts += ",compress=" + sv.Compression
+		}
 		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
 	}
 
@@ -111,15 +114,6 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 	}
 
 	return nil
-}
-
-// buildFstabOpts constructs fstab mount options for a subvolume from its properties.
-func buildFstabOpts(sv *shared.BtrfsSubvol) string {
-	opts := fmt.Sprintf("subvol=%s,defaults,noatime,autodefrag", sv.Name)
-	if v, ok := sv.Properties["compression"]; ok && v != "" {
-		opts += ",compress=" + v
-	}
-	return opts
 }
 
 // verifyFstab reads /mnt/etc/fstab and verifies it contains the expected UUIDs.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"aesthetic-os-installer/backend/core"
-	"aesthetic-os-installer/backend/shared"
 	"aesthetic-os-installer/backend/steps"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -45,19 +44,6 @@ func (a *App) StartInstallation() error {
 		hostname = "aestheticos"
 	}
 
-	// Auto-determine layout based on filesystem type
-	layout := a.layout
-	if layout == "" {
-		switch a.fileSystem {
-		case "ext4":
-			layout = shared.LayoutExt4
-		case "btrfs":
-			layout = shared.LayoutBtrfs
-		default:
-			layout = shared.LayoutExt4 // fallback
-		}
-	}
-
 	installer := core.NewInstaller(
 		a.diskSelection.DiskID,
 		helper,
@@ -66,7 +52,6 @@ func (a *App) StartInstallation() error {
 		hostname,
 		a.region,
 		a.fileSystem,
-		layout,
 		a.dryRun,
 	)
 

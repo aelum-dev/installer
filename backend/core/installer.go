@@ -26,7 +26,6 @@ type Installer struct {
 	hostname   string
 	region     shared.Region
 	fileSystem string // root filesystem: "ext4" or "btrfs"
-	layoutName string // partition layout: "ext4" or "btrfs"
 	dryRun     bool
 	esp        string // ESP mount point (default: /mnt/boot)
 
@@ -40,7 +39,7 @@ type Installer struct {
 }
 
 // NewInstaller creates a new Installer instance.
-func NewInstaller(diskID, helperPath, username, password, hostname string, region shared.Region, fileSystem, layoutName string, dryRun bool) *Installer {
+func NewInstaller(diskID, helperPath, username, password, hostname string, region shared.Region, fileSystem string, dryRun bool) *Installer {
 	return &Installer{
 		diskID:     diskID,
 		helperPath: helperPath,
@@ -49,7 +48,6 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 		hostname:   hostname,
 		region:     region,
 		fileSystem: fileSystem,
-		layoutName: layoutName,
 		dryRun:     dryRun,
 		esp:        "/mnt/boot",
 		Logger:     &steps.ConsoleLogger{},
@@ -184,7 +182,6 @@ func (i *Installer) context() *steps.InstallContext {
 		Hostname:   i.hostname,
 		Region:     i.region,
 		FileSystem: i.fileSystem,
-		LayoutName: i.layoutName,
 		Logger:     i.Logger,
 	}
 }

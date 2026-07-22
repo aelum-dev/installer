@@ -44,19 +44,10 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
-	layoutFlag := flag.String("layout", "", "Partition layout: ext4 or btrfs (auto-detected from filesystem if empty)")
 	flag.Parse()
 
-	// Auto-detect layout from filesystem if not explicitly set
-	layout := *layoutFlag
-	if layout == "" {
-		switch *fileSystemFlag {
-		case "btrfs":
-			layout = shared.LayoutBtrfs
-		default:
-			layout = shared.LayoutExt4
-		}
-	}
+	// Layout is now determined by filesystem type (ext4 or btrfs)
+	// No separate layout flag needed
 
 	// Determine which flag was provided (first one wins)
 	disk, stepName := resolveDiskAndStep(resolveFlags(
@@ -103,7 +94,6 @@ func main() {
 		"aestheticos",             // hostname
 		shared.GetRegion("en_US"), // region (default)
 		*fileSystemFlag,
-		*layoutFlag,
 		*dryRun,
 	)
 
