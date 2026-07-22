@@ -19,12 +19,13 @@ type InstallContext struct {
 	DiskID      string
 	ESP         string // ESP mount point, e.g. "/mnt/boot"
 	Partitions  *shared.PartitionInfo
+	Layout      shared.PartitionLayout // full layout schema (partitions + subvolumes)
 	Helper      string
 	Username    string
 	Password    string
 	Hostname    string
 	Region      shared.Region
 	FileSystem  string // root filesystem: "ext4" or "btrfs"
-	LayoutName  string // partition layout name (e.g., "default", "btrfs-subvolumes")
+	LayoutName  string // partition layout name (e.g., "ext4", "btrfs")
 	Logger      Logger // injected by Installer; nil if not set
 }

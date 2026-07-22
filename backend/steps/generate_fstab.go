@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"aesthetic-os-installer/backend/shared"
 )
 
 // GenerateFstab generates the fstab file for the installed system using sudo.
@@ -20,8 +22,8 @@ func GenerateFstab(ctx *InstallContext) error {
 
 	p := ctx.Partitions
 
-	// For btrfs subvolume layouts, write custom fstab
-	if p.LayoutName == "btrfs-subvolumes" {
+	// For btrfs subvolume layouts, write custom fstab with subvolume entries
+	if len(ctx.Layout.Subvolumes) > 0 {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Generating custom fstab for btrfs subvolumes")
 		}
@@ -62,24 +64,26 @@ UUID=%s  /boot          vfat    umask=0077 0 2
 }
 
 // writeBtrfsFstab writes a custom fstab for btrfs subvolume layouts.
-// Uses UUIDs and subvolume mount options.
-//
-// Layout:
-//   - Root (@ subvolume): mounted with subvol=@, compress=zstd, autodefrag
-//   - ESP (/boot): mounted with umask=0077 for security
-//   - @home subvolume: mounted with subvol=@home, compress=zstd, autodefrag
-//
-// The @ subvolume was set as default in FormatDisk, but subvol=@ is specified
-// explicitly in fstab for clarity and resilience (if default changes, boot still works).
+// Iterates ctx.Layout.Subvolumes to generate one entry per subvolume.
+// All subvolumes share the root partition UUID, with subvol=<name> in mount options.
 func writeBtrfsFstab(ctx *InstallContext) error {
 	p := ctx.Partitions
 
-	// Build fstab content
-	fstabContent := fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>
-UUID=%s  /              btrfs   subvol=@,defaults,noatime,autodefrag,compress=zstd 0 0
-UUID=%s  /boot          vfat    umask=0077              0  2
-UUID=%s  /home          btrfs   subvol=@home,defaults,noatime,autodefrag,compress=zstd 0 0
-`, p.RootUUID, p.EFIUUID, p.RootUUID)
+	// Build fstab: one line per subvolume + EFI
+	// All subvolumes live on the same partition, so they all use RootUUID
+	// with subvol=<name> in mount options.
+	var lines []string
+	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
+
+	for _, sv := range ctx.Layout.Subvolumes {
+		opts := buildFstabOpts(&sv)
+		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
+	}
+
+	// EFI partition
+	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    umask=0077  0  2", p.EFIUUID))
+
+	fstabContent := strings.Join(lines, "\n") + "\n"
 
 	// Write fstab
 	cmd := exec.Command("sudo", ctx.Helper, "run", "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << 'EOF'\n%s\nEOF", fstabContent))
@@ -97,6 +101,15 @@ UUID=%s  /home          btrfs   subvol=@home,defaults,noatime,autodefrag,compres
 	}
 
 	return nil
+}
+
+// buildFstabOpts constructs fstab mount options for a subvolume from its properties.
+func buildFstabOpts(sv *shared.BtrfsSubvol) string {
+	opts := fmt.Sprintf("subvol=%s,defaults,noatime,autodefrag", sv.Name)
+	if v, ok := sv.Properties["compression"]; ok && v != "" {
+		opts += ",compress=" + v
+	}
+	return opts
 }
 
 // verifyFstab reads /mnt/etc/fstab and verifies it contains the expected UUIDs.

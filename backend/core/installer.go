@@ -26,7 +26,7 @@ type Installer struct {
 	hostname   string
 	region     shared.Region
 	fileSystem string // root filesystem: "ext4" or "btrfs"
-	layoutName string // partition layout: "default" or "btrfs-subvolumes"
+	layoutName string // partition layout: "ext4" or "btrfs"
 	dryRun     bool
 	esp        string // ESP mount point (default: /mnt/boot)
 

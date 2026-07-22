@@ -49,11 +49,11 @@ func (a *App) StartInstallation() error {
 	if layout == "" {
 		switch a.fileSystem {
 		case "ext4":
-			layout = "default"
+			layout = "ext4"
 		case "btrfs":
-			layout = "btrfs-subvolumes"
+			layout = "btrfs"
 		default:
-			layout = "default" // fallback
+			layout = "ext4" // fallback
 		}
 	}
 

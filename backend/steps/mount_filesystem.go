@@ -8,15 +8,15 @@ import (
 	"aesthetic-os-installer/backend/shared"
 )
 
-// MountFilesystem mounts the root and EFI partitions for the installation.
+// MountFilesystem mounts the root partition, any btrfs subvolumes, and the EFI partition.
 //
 // For standard layouts (ext4/default):
 //   - /mnt: root partition
 //   - /mnt/boot: EFI partition (ESP, where kernel/initrd live for systemd-boot)
 //
 // For btrfs subvolume layouts:
-//   - /mnt: @ subvolume (mounted with compress=zstd for transparent compression)
-//   - /mnt/home: @home subvolume (mounted with compress=zstd)
+//   - /mnt: subvolume with MountPoint "/" (e.g. @), with properties from layout
+//   - /mnt/<mountPoint>: each additional subvolume, with properties from layout
 //   - /mnt/boot: EFI partition (ESP)
 //
 // If ctx.Partitions is nil (standalone invocation), it derives partition paths
@@ -61,20 +61,25 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	// ── Mount root partition ──
 
-	// For btrfs subvolumes, mount the @ subvolume (not the top-level)
-	// with compress=zstd so pacstrap-installed files are compressed.
-	// The @ subvolume was set as default in FormatDisk, but we mount
-	// explicitly with subvol=@ for clarity and resilience.
-	if p.LayoutName == "btrfs-subvolumes" {
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Mounting btrfs @ subvolume → /mnt (compress=zstd)")
+	// Find the subvolume with MountPoint "/" for btrfs layouts, otherwise mount raw.
+	var rootSubvol *shared.BtrfsSubvol
+	for i := range ctx.Layout.Subvolumes {
+		if ctx.Layout.Subvolumes[i].MountPoint == "/" {
+			rootSubvol = &ctx.Layout.Subvolumes[i]
+			break
 		}
-		cmd := exec.Command("sudo", ctx.Helper, "mount",
-			"-o", "subvol=@,compress=zstd",
-			p.RootPart, "/mnt")
+	}
+
+	if rootSubvol != nil {
+		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd)
+		mountOpts := buildMountOpts(rootSubvol)
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Mounting btrfs %s subvolume → /mnt (%s)", rootSubvol.Name, mountOpts)
+		}
+		cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, "/mnt")
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("mount btrfs @ subvolume failed: %w: %s", err, string(output))
+			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
 		}
 		if ctx.Logger != nil && len(output) > 0 {
 			ctx.Logger.Command(string(output))
@@ -99,25 +104,27 @@ func MountFilesystem(ctx *InstallContext) error {
 		return err
 	}
 
-	// ── Mount btrfs subvolumes (if applicable) ──
+	// ── Mount additional subvolumes ──
 
-	if p.LayoutName == "btrfs-subvolumes" {
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Mounting btrfs @home subvolume → /mnt/home")
+	for _, sv := range ctx.Layout.Subvolumes {
+		if sv.MountPoint == "/" {
+			continue // already mounted as root
 		}
 
-		// Create /home mount point
-		cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", "/mnt/home")
+		// Create mount point directory
+		mountPath := "/mnt" + sv.MountPoint
+		cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", mountPath)
 		cmd.Run()
 
-		// Mount @home subvolume
-		homePart := p.RootPart // Same btrfs partition
-		cmd = exec.Command("sudo", ctx.Helper, "mount",
-			"-o", "subvol=@home,compress=zstd",
-			homePart, "/mnt/home")
+		// Mount subvolume with its properties
+		mountOpts := buildMountOpts(&sv)
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", sv.Name, mountPath, mountOpts)
+		}
+		cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, mountPath)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("mount @home subvolume failed: %w: %s", err, string(output))
+			return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, mountPath, err, string(output))
 		}
 		if ctx.Logger != nil && len(output) > 0 {
 			ctx.Logger.Command(string(output))

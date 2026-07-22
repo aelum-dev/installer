@@ -33,7 +33,7 @@ const minDiskSizeBytes = 8 * 1024 * 1024 * 1024
 
 // ValidateDiskSelection checks that a disk is selected, meets minimum size,
 // and has a valid filesystem type.
-// Layout is auto-determined based on filesystem (ext4→default, btrfs→btrfs-subvolumes).
+// Layout is auto-determined based on filesystem (ext4→ext4, btrfs→btrfs).
 // Shared by GUI and console installer.
 func ValidateDiskSelection(data DiskSelectionData) error {
 	if data.DiskID == "" {

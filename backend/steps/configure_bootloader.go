@@ -71,7 +71,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Writing boot entry to %s/loader/entries/aesthetic-os.conf", esp)
 	}
-	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.LayoutName); err != nil {
+	if err := writeBootEntry(helper, esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.Layout.Subvolumes); err != nil {
 		return err
 	}
 
@@ -171,10 +171,17 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 // Per the Boot Loader Specification, Type #2 entries go in $ESP/loader/entries/.
 // The entry references the root partition by UUID. For btrfs subvolume layouts,
 // rootflags=subvol=@ is required so the kernel mounts the @ subvolume as root.
-func writeBootEntry(helper, esp, rootUUID, kernel, initrd, layoutName string) error {
+func writeBootEntry(helper, esp, rootUUID, kernel, initrd string, subvolumes []shared.BtrfsSubvol) error {
 	options := "root=UUID=" + rootUUID + " rw"
-	if layoutName == "btrfs-subvolumes" {
-		options += " rootflags=subvol=@"
+	if len(subvolumes) > 0 {
+		defaultSubvol := "@"
+		for _, sv := range subvolumes {
+			if sv.MountPoint == "/" {
+				defaultSubvol = sv.Name
+				break
+			}
+		}
+		options += " rootflags=subvol=" + defaultSubvol
 	}
 	entryContent := fmt.Sprintf(`title   Aesthetic OS
 linux   /%s

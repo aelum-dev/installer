@@ -39,8 +39,14 @@ var commands = []HelperCommand{
 	{
 		Name:  "umount",
 		Usage: "umount <mountpoint>",
-		Help:  "Unmount a partition",
+		Help:  "Unmount a partition (lazy)",
 		Run:   cmdUmount,
+	},
+	{
+		Name:  "umount-recursive",
+		Usage: "umount-recursive <mountpoint>",
+		Help:  "Unmount a partition and all its children (lazy recursive)",
+		Run:   cmdUmountRecursive,
 	},
 	{
 		Name:  "mountpoints",
@@ -253,6 +259,14 @@ func cmdUmount(args []string) error {
 	}
 	// Use -l (lazy) to unmount even if busy
 	return runCommand("umount", "-l", args[0])
+}
+
+func cmdUmountRecursive(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: umount-recursive <mountpoint>")
+	}
+	// Use -lR (lazy recursive) to unmount the mountpoint and all children
+	return runCommand("umount", "-lR", args[0])
 }
 
 func cmdMountpoints(args []string) error {

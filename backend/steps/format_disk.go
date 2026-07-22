@@ -31,7 +31,7 @@ func FormatDisk(ctx *InstallContext) error {
 	// Determine layout
 	layoutName := ctx.LayoutName
 	if layoutName == "" {
-		layoutName = "default"
+		layoutName = "ext4"
 	}
 
 	layout, err := shared.GetLayout(layoutName, fsType)
@@ -73,8 +73,13 @@ func FormatDisk(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	// Force kernel to re-read partition table (more reliable than partprobe)
+	// Force kernel to re-read partition table. Try blockdev first, fall back to partprobe.
+	// This is critical — without it, the kernel keeps the old device nodes and the new
+	// partitions never get their device nodes, causing "device is mounted" errors.
 	refreshPartitionTable(ctx, diskID)
+
+	// Small delay to let the kernel fully process the partition table change
+	time.Sleep(1 * time.Second)
 
 	// GPT partition type GUIDs (per archinstall PartitionGUID enum)
 	// ESP: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
@@ -206,22 +211,20 @@ func FormatDisk(ctx *InstallContext) error {
 
 	// For btrfs subvolume layout, create subvolumes and configure defaults
 	// Mirrors archinstall's FilesystemHandler.create_btrfs_volumes():
-	//   1. Mount the btrfs partition
-	//   2. Create subvolumes with -p (parent reference) for efficiency
-	//   3. Set @ as default subvolume
-	//   4. Apply nodatacow to @home (for performance on user data)
-	//   5. Apply compress=zstd to @ and @home (for space savings)
-	//   6. Unmount
-	if layoutName == "btrfs-subvolumes" {
+	//   1. Mount the btrfs partition top-level subvolume
+	//   2. Create subvolumes defined in the layout schema
+	//   3. Set the subvolume with MountPoint "/" as default
+	//   4. Apply per-subvolume properties (compression, nodatacow, etc.)
+	//   5. Unmount
+	if len(layout.Subvolumes) > 0 {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Setting up btrfs subvolumes (@, @home with compression)")
+			ctx.Logger.Info("Setting up btrfs subvolumes: %v", subvolumeNames(layout.Subvolumes))
 		}
 
 		// Find root partition (the btrfs one)
 		rootPartPath := derivePartitionPath(diskID, 2)
 
 		// Step 1: Mount top-level subvolume (subvolid=5) to a temp location
-		// We use /tmp/btrfs-setup to avoid conflicting with /mnt
 		tmpMount := "/tmp/btrfs-setup"
 		cmd = exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", tmpMount)
 		cmd.Run()
@@ -231,68 +234,87 @@ func FormatDisk(ctx *InstallContext) error {
 			return fmt.Errorf("failed to mount btrfs top-level for subvolume creation: %w", err)
 		}
 
-		// Step 2: Create subvolumes: @ (root), @home
-		// Using -p (parent reference) mirrors archinstall's approach for efficiency
-		cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-create", tmpMount, "@", "@home")
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
-			return fmt.Errorf("failed to create btrfs subvolumes: %w: %s", err, string(output))
-		}
-		if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
+		// Step 2: Create subvolumes sorted by mount depth so parents exist before children
+		// Using -p (parent reference) for efficiency — mirrors archinstall's approach
+		sorted := sortSubvolumesByDepth(layout.Subvolumes)
+		for _, sv := range sorted {
+			var createArgs []string
+			if hasParentSV(sorted, sv) {
+				createArgs = []string{"-p", tmpMount + "/" + parentName(sorted, sv)}
+			} else {
+				createArgs = []string{tmpMount}
+			}
+			createArgs = append(createArgs, sv.Name)
+			cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-create")
+			cmd.Args = append(cmd.Args, createArgs...)
 
-		// Step 3: Set @ as the default subvolume
-		// This means mounting the partition without options will use @
-		cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-set-default", tmpMount, "@")
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
-			return fmt.Errorf("failed to set default btrfs subvolume: %w: %s", err, string(output))
-		}
-		if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
-
-		// Step 4: Set persistent compression on subvolumes using btrfs property
-		// Mirrors archinstall's chattr approach but uses the proper btrfs property API
-		// This applies regardless of mount options
-		for _, subvol := range []string{"@", "@home"} {
-			cmd = exec.Command("sudo", ctx.Helper, "btrfs-set-compression", tmpMount, subvol, "zstd")
 			output, err = cmd.CombinedOutput()
 			if err != nil {
-				if ctx.Logger != nil {
-					ctx.Logger.Error("Warning: failed to set compression on %s: %v", subvol, err)
-				}
-			} else if ctx.Logger != nil && len(output) > 0 {
+				exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
+				return fmt.Errorf("failed to create subvolume %s: %w: %s", sv.Name, err, string(output))
+			}
+			if ctx.Logger != nil && len(output) > 0 {
 				ctx.Logger.Command(string(output))
 			}
 		}
 
-		// Step 5: Set nodatacow on @home for performance
-		// Mirrors archinstall's BtrfsMountOption.nodatacow
-		// This disables copy-on-write for new data in @home, improving write performance
-		// for user data (documents, downloads, etc.)
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Setting nodatacow on @home subvolume")
+		// Step 3: Set default subvolume — the one with MountPoint "/"
+		// This means mounting the partition without options will use this subvolume
+		defaultName := "@"
+		for _, sv := range layout.Subvolumes {
+			if sv.MountPoint == "/" {
+				defaultName = sv.Name
+				break
+			}
 		}
-		cmd = exec.Command("sudo", ctx.Helper, "run", "chattr", "+C", tmpMount+"/@home")
+		cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-set-default", tmpMount, defaultName)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Warning: failed to set nodatacow on @home: %v", err)
-			}
-		} else if ctx.Logger != nil && len(output) > 0 {
+			exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
+			return fmt.Errorf("failed to set default btrfs subvolume (%s): %w: %s", defaultName, err, string(output))
+		}
+		if ctx.Logger != nil && len(output) > 0 {
 			ctx.Logger.Command(string(output))
 		}
 
-		// Step 6: Unmount temp location
+		// Step 4: Apply per-subvolume properties
+		// Mirrors archinstall's chattr approach but uses the proper btrfs property API
+		// where possible. Properties: "compression" → btrfs property set,
+		// "nodatacow" → chattr +C.
+		for _, sv := range layout.Subvolumes {
+			if v, ok := sv.Properties["compression"]; ok {
+				cmd = exec.Command("sudo", ctx.Helper, "btrfs-set-compression", tmpMount, sv.Name, v)
+				output, err = cmd.CombinedOutput()
+				if err != nil {
+					if ctx.Logger != nil {
+						ctx.Logger.Error("Warning: failed to set compression on %s: %v", sv.Name, err)
+					}
+				} else if ctx.Logger != nil && len(output) > 0 {
+					ctx.Logger.Command(string(output))
+				}
+			}
+			if _, ok := sv.Properties["nodatacow"]; ok {
+				if ctx.Logger != nil {
+					ctx.Logger.Info("Setting nodatacow on %s subvolume", sv.Name)
+				}
+				cmd = exec.Command("sudo", ctx.Helper, "run", "chattr", "+C", tmpMount+"/"+sv.Name)
+				output, err = cmd.CombinedOutput()
+				if err != nil {
+					if ctx.Logger != nil {
+						ctx.Logger.Error("Warning: failed to set nodatacow on %s: %v", sv.Name, err)
+					}
+				} else if ctx.Logger != nil && len(output) > 0 {
+					ctx.Logger.Command(string(output))
+				}
+			}
+		}
+
+		// Step 5: Unmount temp location
 		exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
 		exec.Command("sudo", ctx.Helper, "run", "rmdir", tmpMount).Run()
 
 		if ctx.Logger != nil {
-			ctx.Logger.Info("btrfs subvolumes configured: @ (default, compressed), @home (nodatacow + compressed)")
+			ctx.Logger.Info("btrfs subvolumes configured: %v", subvolumeDescriptions(layout.Subvolumes))
 		}
 	}
 
@@ -343,19 +365,26 @@ func FormatDisk(ctx *InstallContext) error {
 
 	// Build partition info
 	partitionInfo := &shared.PartitionInfo{
-		Disk:        diskID,
-		LayoutName:  layoutName,
-		EFIPart:     efiPart.Path,
-		EFIUUID:     efiPart.UUID,
-		RootPart:    rootPart.Path,
-		RootUUID:    rootPart.UUID,
-		MountPoints: make(map[string]string),
+		Disk:           diskID,
+		LayoutName:     layoutName,
+		EFIPart:        efiPart.Path,
+		EFIUUID:        efiPart.UUID,
+		RootPart:       rootPart.Path,
+		RootUUID:       rootPart.UUID,
+		MountPoints:    make(map[string]string),
 	}
 
-	// For btrfs subvolumes, root partition is used for all subvolume mounts
-	if layoutName == "btrfs-subvolumes" {
-		partitionInfo.MountPoints["/home"] = rootPart.Path
+	// For layouts with subvolumes, root partition serves all subvolume mount points
+	if len(layout.Subvolumes) > 0 {
+		for _, sv := range layout.Subvolumes {
+			if sv.MountPoint != "/" {
+				partitionInfo.MountPoints[sv.MountPoint] = rootPart.Path
+			}
+		}
 	}
+
+	// Store the full layout schema in context for downstream steps (e.g. mount)
+	ctx.Layout = layout
 
 	ctx.Partitions = partitionInfo
 	return nil
@@ -416,31 +445,141 @@ func readPartitionUUID(helper, partition string) (string, error) {
 }
 
 // refreshPartitionTable forces the kernel to re-read the partition table for a disk.
-// Uses blockdev --rereadpt which is more reliable than partprobe for ensuring
-// the kernel recognizes new partitions immediately. Includes a small delay
-// to allow the kernel to fully process the change.
+// Tries partprobe first (most reliable after sgdisk), then partx -a, then blockdev.
+// Includes a small delay to allow the kernel to fully process the change.
 func refreshPartitionTable(ctx *InstallContext, diskID string) {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Refreshing partition table for %s", diskID)
 	}
 
-	// First sync all pending writes
+	// Sync all pending writes first
 	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
 
-	// Use blockdev --rereadpt to force kernel re-read (more reliable than partprobe)
-	cmd := exec.Command("sudo", ctx.Helper, "run", "blockdev", "--rereadpt", diskID)
-	if err := cmd.Run(); err != nil {
+	// Try partprobe first — most reliable after sgdisk partitioning
+	cmd := exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID)
+	if output, err := cmd.CombinedOutput(); err != nil {
 		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: blockdev --rereadpt failed: %v (continuing)", err)
+			ctx.Logger.Error("Warning: partprobe failed: %v (trying partx -a)", err)
 		}
-		// Fallback to partprobe
-		cmd = exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID)
-		cmd.CombinedOutput()
+		// Fallback: partx -a adds new partitions to kernel
+		cmd = exec.Command("sudo", ctx.Helper, "run", "partx", "-a", diskID)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			if ctx.Logger != nil {
+				ctx.Logger.Error("Warning: partx -a also failed: %v (trying blockdev)", err)
+			}
+			// Last resort: blockdev --rereadpt
+			cmd = exec.Command("sudo", ctx.Helper, "run", "blockdev", "--rereadpt", diskID)
+			cmd.CombinedOutput()
+		} else if ctx.Logger != nil && len(output) > 0 {
+			ctx.Logger.Command(string(output))
+		}
+	} else if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
 	}
 
 	// Small delay to let the kernel fully process the partition table change
 	// This is critical — without it, subsequent operations may see "Device or resource busy"
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
+}
+
+// subvolumeNames returns a list of subvolume names for logging.
+func subvolumeNames(subvolumes []shared.BtrfsSubvol) []string {
+	names := make([]string, len(subvolumes))
+	for i, sv := range subvolumes {
+		names[i] = sv.Name
+	}
+	return names
+}
+
+// subvolumeDescriptions returns a human-readable description of subvolumes for logging.
+func subvolumeDescriptions(subvolumes []shared.BtrfsSubvol) string {
+	descs := make([]string, len(subvolumes))
+	for i, sv := range subvolumes {
+		desc := sv.Name
+		if sv.MountPoint != "/" {
+			desc += " → " + sv.MountPoint
+		}
+		for prop, val := range sv.Properties {
+			if val != "" {
+				desc += fmt.Sprintf(", %s=%s", prop, val)
+			} else {
+				desc += fmt.Sprintf(", %s", prop)
+			}
+		}
+		descs[i] = desc
+	}
+	return strings.Join(descs, ", ")
+}
+
+// sortSubvolumesByDepth sorts subvolumes by mount point depth (parents first).
+// This ensures parent subvolumes are created before children when using -p.
+func sortSubvolumesByDepth(subvolumes []shared.BtrfsSubvol) []shared.BtrfsSubvol {
+	sorted := make([]shared.BtrfsSubvol, len(subvolumes))
+	copy(sorted, subvolumes)
+	// Simple insertion sort by depth
+	for i := 1; i < len(sorted); i++ {
+		key := sorted[i]
+		j := i - 1
+		for j >= 0 && mountDepth(sorted[j].MountPoint) > mountDepth(key.MountPoint) {
+			sorted[j+1] = sorted[j]
+			j--
+		}
+		sorted[j+1] = key
+	}
+	return sorted
+}
+
+// mountDepth returns the depth of a mount point (e.g. "/" → 0, "/home" → 1, "/var/log" → 2).
+func mountDepth(mp string) int {
+	if mp == "/" {
+		return 0
+	}
+	count := 0
+	for _, c := range mp {
+		if c == '/' {
+			count++
+		}
+	}
+	return count
+}
+
+// hasParentSV checks if a subvolume has a parent subvolume in the list.
+// A parent exists if removing the first path component yields another subvolume name
+// (e.g. @home → @, @var/log → @var).
+func hasParentSV(subvolumes []shared.BtrfsSubvol, sv shared.BtrfsSubvol) bool {
+	parent := parentName(subvolumes, sv)
+	return parent != ""
+}
+
+// parentName returns the parent subvolume name if it exists in the list, else "".
+// Top-level subvolumes (@home, @root, @cache, etc.) have no parent.
+// Nested subvolumes (@var/cache) parent is the first path component (@var).
+func parentName(subvolumes []shared.BtrfsSubvol, sv shared.BtrfsSubvol) string {
+	name := sv.Name
+	if len(name) > 1 && name[0] == '@' {
+		rest := name[1:]
+		if idx := strings.Index(rest, "/"); idx >= 0 {
+			// Nested: @var/cache → parent is @var
+			candidate := "@" + rest[:idx]
+			for _, c := range subvolumes {
+				if c.Name == candidate {
+					return candidate
+				}
+			}
+		}
+		// Non-nested (@home, @root, @cache): no parent exists
+	}
+	return ""
+}
+
+// buildMountOpts constructs mount options string from a BtrfsSubvol's properties.
+// Returns "subvol=<name>,compress=<val>" or just "subvol=<name>" if no compression.
+func buildMountOpts(sv *shared.BtrfsSubvol) string {
+	opts := "subvol=" + sv.Name
+	if v, ok := sv.Properties["compression"]; ok && v != "" {
+		opts += ",compress=" + v
+	}
+	return opts
 }
 
 // unmountAllPartitions unmounts all partitions on a given disk device.
@@ -461,8 +600,12 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 		logger.Info("Found %d partitions on %s to unmount", len(partitions), diskID)
 	}
 
-	// First, try lazy recursive unmount of /mnt (covers nested mounts)
-	cmd := exec.Command("sudo", helper, "run", "umount", "-lR", "/mnt")
+	// First, try lazy recursive unmount of /mnt (covers nested mounts including subvolumes)
+	cmd := exec.Command("sudo", helper, "umount-recursive", "/mnt")
+	cmd.Run()
+
+	// Also unmount /mnt/boot if mounted
+	cmd = exec.Command("sudo", helper, "umount", "/mnt/boot")
 	cmd.Run()
 
 	// Then unmount each partition individually
@@ -471,14 +614,9 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 			logger.Info("Unmounting partition: %s (fstype: %s)", part.Path, part.Fstype)
 		}
 
-		// Skip if no fstype (partition may not have a filesystem yet)
-		if part.Fstype == "" {
-			continue
-		}
-
-		// For LUKS encrypted partitions, we'd need to lock them
-		// For now, use lazy unmount which handles all cases
-		cmd = exec.Command("sudo", helper, "umount", "-l", part.Path)
+		// Always try to unmount — a partition can be mounted even without a recognized fstype
+		// (e.g. btrfs subvolume mounts show empty fstype on the parent partition)
+		cmd = exec.Command("sudo", helper, "umount", part.Path)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			// Ignore errors — partition may not be mounted
 			if logger != nil {
