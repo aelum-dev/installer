@@ -135,6 +135,13 @@ func FormatDisk(ctx *InstallContext) error {
 		}
 	}
 
+	// Sync filesystem writes and re-read partition table before btrfs subvolume check
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Syncing filesystem and re-reading partition table")
+	}
+	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
+	exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID).Run()
+
 	// For btrfs subvolume layout, create subvolumes
 	if layoutName == "btrfs-subvolumes" {
 		if ctx.Logger != nil {
@@ -180,13 +187,6 @@ func FormatDisk(ctx *InstallContext) error {
 		// Unmount root
 		exec.Command("sudo", ctx.Helper, "umount", "/mnt").Run()
 	}
-
-	// Sync filesystem writes and re-read partition table
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Syncing filesystem and re-reading partition table")
-	}
-	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
-	exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID).Run()
 
 	// Discover partition paths via lsblk
 	if ctx.Logger != nil {

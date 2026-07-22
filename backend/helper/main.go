@@ -185,6 +185,11 @@ func cmdFormat(args []string) error {
 		return runCommand("mkfs.fat", "-F", "32", "-n", "EFI", partition)
 	}
 
+	// Root partition - wipe filesystem signatures before formatting
+	if err := runCommand("wipefs", "--all", partition); err != nil {
+		return fmt.Errorf("failed to wipe filesystem signatures: %w", err)
+	}
+
 	// Root partition - use specified filesystem type
 	switch fstype {
 	case "ext4":
@@ -198,9 +203,20 @@ func cmdFormat(args []string) error {
 
 func cmdMount(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: mount <disk> <mountpoint>")
+		return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
 	}
-	return runCommand("mount", args[0], args[1])
+	// Support optional -o options before device and mountpoint
+	cmdArgs := []string{"mount"}
+	i := 0
+	for i < len(args) && args[i] == "-o" {
+		cmdArgs = append(cmdArgs, args[i], args[i+1])
+		i += 2
+	}
+	if i+1 >= len(args) {
+		return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
+	}
+	cmdArgs = append(cmdArgs, args[i], args[i+1])
+	return runCommand(cmdArgs[0], cmdArgs[1:]...)
 }
 
 func cmdUmount(args []string) error {
