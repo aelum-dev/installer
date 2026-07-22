@@ -63,14 +63,22 @@ UUID=%s  /boot          vfat    umask=0077 0 2
 
 // writeBtrfsFstab writes a custom fstab for btrfs subvolume layouts.
 // Uses UUIDs and subvolume mount options.
+//
+// Layout:
+//   - Root (@ subvolume): mounted with subvol=@, compress=zstd, autodefrag
+//   - ESP (/boot): mounted with umask=0077 for security
+//   - @home subvolume: mounted with subvol=@home, compress=zstd, autodefrag
+//
+// The @ subvolume was set as default in FormatDisk, but subvol=@ is specified
+// explicitly in fstab for clarity and resilience (if default changes, boot still works).
 func writeBtrfsFstab(ctx *InstallContext) error {
 	p := ctx.Partitions
 
 	// Build fstab content
-	fstabContent := fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
-UUID=%s  /              btrfs   subvol=/@,defaults,noatime,autodefrag,compress=zstd 0 0
-UUID=%s  /boot          vfat    umask=0077 0 2
-UUID=%s  /home          btrfs   subvol=/@home,defaults,noatime,autodefrag,compress=zstd 0 0
+	fstabContent := fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>
+UUID=%s  /              btrfs   subvol=@,defaults,noatime,autodefrag,compress=zstd 0 0
+UUID=%s  /boot          vfat    umask=0077              0  2
+UUID=%s  /home          btrfs   subvol=@home,defaults,noatime,autodefrag,compress=zstd 0 0
 `, p.RootUUID, p.EFIUUID, p.RootUUID)
 
 	// Write fstab

@@ -26,8 +26,8 @@ var commands = []HelperCommand{
 	},
 	{
 		Name:  "format",
-		Usage: "format <partition> <fstype>",
-		Help:  "Format a partition (fstype: ext4, btrfs)",
+		Usage: "format <partition> <fstype> [options...]",
+		Help:  "Format a partition (fstype: vfat, ext4, btrfs)",
 		Run:   cmdFormat,
 	},
 	{
@@ -114,6 +114,24 @@ var commands = []HelperCommand{
 		Help:  "Create btrfs subvolumes (e.g., @ and @home)",
 		Run:   cmdBtrfsSubvolCreate,
 	},
+	{
+		Name:  "btrfs-subvol-set-default",
+		Usage: "btrfs-subvol-set-default <mountpoint> <subvol>",
+		Help:  "Set the default btrfs subvolume (e.g., @)",
+		Run:   cmdBtrfsSubvolSetDefault,
+	},
+	{
+		Name:  "btrfs-set-compression",
+		Usage: "btrfs-set-compression <mountpoint> <subvol> <algorithm>",
+		Help:  "Set persistent compression on a btrfs subvolume (e.g., zstd)",
+		Run:   cmdBtrfsSetCompression,
+	},
+	{
+		Name:  "udev-settle",
+		Usage: "udev-settle",
+		Help:  "Wait for udev to finish processing all events",
+		Run:   cmdUdevSettle,
+	},
 }
 
 func main() {
@@ -174,30 +192,40 @@ func cmdParted(args []string) error {
 
 func cmdFormat(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: format <partition> <fstype>")
+		return fmt.Errorf("usage: format <partition> <fstype> [options...]")
 	}
 	partition := args[0]
 	fstype := args[1]
 
-	// Determine filesystem based on partition name
-	if strings.HasSuffix(partition, "1") || strings.Contains(partition, "efi") || strings.Contains(partition, "EFI") {
-		// EFI partition - FAT32 (always)
-		return runCommand("mkfs.fat", "-F", "32", "-n", "EFI", partition)
-	}
+	// Collect any extra options from args[2:]
+	extraArgs := args[2:]
 
-	// Root partition - wipe filesystem signatures before formatting
-	if err := runCommand("wipefs", "--all", partition); err != nil {
+	// Wipe filesystem signatures before formatting
+	// Use -f (force) to bypass "device or resource busy" errors
+	// wipefs also calls BLKRRPART ioctl to notify kernel of changes
+	if err := runCommand("wipefs", "--all", "-f", partition); err != nil {
 		return fmt.Errorf("failed to wipe filesystem signatures: %w", err)
 	}
 
-	// Root partition - use specified filesystem type
+	// Format based on the fstype argument — trust the caller, don't guess from partition name
 	switch fstype {
+	case "vfat":
+		cmdArgs := []string{"-F", "32", "-n", "EFI"}
+		cmdArgs = append(cmdArgs, extraArgs...)
+		cmdArgs = append(cmdArgs, partition)
+		return runCommand("mkfs.fat", cmdArgs...)
 	case "ext4":
-		return runCommand("mkfs.ext4", "-F", "-L", "aestheticos", partition)
+		cmdArgs := []string{"-F", "-L", "aestheticos"}
+		cmdArgs = append(cmdArgs, extraArgs...)
+		cmdArgs = append(cmdArgs, partition)
+		return runCommand("mkfs.ext4", cmdArgs...)
 	case "btrfs":
-		return runCommand("mkfs.btrfs", "-f", "-L", "aestheticos", partition)
+		cmdArgs := []string{"-f", "-L", "aestheticos"}
+		cmdArgs = append(cmdArgs, extraArgs...)
+		cmdArgs = append(cmdArgs, partition)
+		return runCommand("mkfs.btrfs", cmdArgs...)
 	default:
-		return fmt.Errorf("unsupported filesystem: %s (supported: ext4, btrfs)", fstype)
+		return fmt.Errorf("unsupported filesystem: %s (supported: vfat, ext4, btrfs)", fstype)
 	}
 }
 
@@ -397,7 +425,9 @@ func cmdBtrfsSubvolCreate(args []string) error {
 
 	for _, subvol := range subvols {
 		// Create subvolume (e.g., "@" or "@home")
-		cmd := exec.Command("btrfs", "subvolume", "create", mountpoint+"/"+subvol)
+		// Using -p (parent reference) for efficiency — mirrors archinstall's approach
+		// This creates the subvolume as a copy of its parent, which is faster
+		cmd := exec.Command("btrfs", "subvolume", "create", "-p", mountpoint+"/"+subvol)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
@@ -406,4 +436,77 @@ func cmdBtrfsSubvolCreate(args []string) error {
 		fmt.Printf("Created subvolume: %s/%s\n", mountpoint, subvol)
 	}
 	return nil
+}
+
+func cmdBtrfsSubvolSetDefault(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: btrfs-subvol-set-default <mountpoint> <subvol>")
+	}
+	mountpoint := args[0]
+	subvol := args[1]
+
+	// Find the subvolume ID by listing and matching the name
+	cmd := exec.Command("btrfs", "subvolume", "list", mountpoint)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to list subvolumes: %w", err)
+	}
+
+	// Parse output to find the subvolume ID
+	// Format: ID 258 gen 12345 top level 5 path @
+	var targetID string
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 5 && fields[len(fields)-1] == subvol {
+			// fields[1] is the ID
+			for i, f := range fields {
+				if f == "path" && i+1 < len(fields) && fields[i+1] == subvol {
+					targetID = fields[1]
+					break
+				}
+			}
+		}
+	}
+
+	if targetID == "" {
+		return fmt.Errorf("subvolume %s not found in %s", subvol, mountpoint)
+	}
+
+	// Set as default subvolume
+	cmd = exec.Command("btrfs", "subvolume", "set-default", targetID, mountpoint)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to set default subvolume %s (ID %s): %w", subvol, targetID, err)
+	}
+	fmt.Printf("Set default subvolume: %s (ID %s)\n", subvol, targetID)
+	return nil
+}
+
+func cmdBtrfsSetCompression(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: btrfs-set-compression <mountpoint> <subvol> <algorithm>")
+	}
+	mountpoint := args[0]
+	subvol := args[1]
+	algorithm := args[2] // e.g., "zstd"
+
+	// Set compression property on the subvolume
+	// This persists regardless of mount options
+	cmd := exec.Command("btrfs", "property", "set", mountpoint+"/"+subvol, "compression", algorithm)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to set compression on %s/%s: %w", mountpoint, subvol, err)
+	}
+	fmt.Printf("Set compression on %s/%s: %s\n", mountpoint, subvol, algorithm)
+	return nil
+}
+
+func cmdUdevSettle(args []string) error {
+	// Wait for udev to finish processing all pending events.
+	// This ensures the kernel has fully registered new partition device nodes
+	// before subsequent operations (like mkfs) try to access them.
+	// This is the standard approach used by archinstall and other installers.
+	return runCommand("udevadm", "settle")
 }

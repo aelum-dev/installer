@@ -58,7 +58,7 @@ func GetBtrfsSubvolumeLayout() PartitionLayout {
 				SizeMB:     0, // Rest of disk
 				Fstype:     "btrfs",
 				MountPoint: "/",
-				Options:    "-f", // Force format (btrfs refuses non-empty devices without -f)
+				// Options empty — cmdFormat adds -f for btrfs automatically
 			},
 		},
 		// Note: Subvolumes (@ and @home) are created after formatting, not as separate partitions
