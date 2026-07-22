@@ -36,16 +36,18 @@ func ConfigureBootloader(ctx *InstallContext) error {
 		return err
 	}
 
-	// Auto-discover partitions if FormatDisk hasn't run yet (standalone bootloader install)
+	// Validate preconditions
+	if ctx.DiskID == "" {
+		return fmt.Errorf("disk ID not set. Run --format-disk <disk> first")
+	}
 	if ctx.Partitions == nil {
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Auto-discovering partitions for bootloader")
-		}
-		partitions, err := discoverPartitions(ctx.Helper, esp)
-		if err != nil {
-			return fmt.Errorf("failed to discover partitions: %w", err)
-		}
-		ctx.Partitions = partitions
+		return fmt.Errorf("partitions not initialized. Run --format-disk <disk> first")
+	}
+	if ctx.Layout.Name == "" {
+		return fmt.Errorf("layout not set. Run --format-disk <disk> first")
+	}
+	if ctx.Partitions.RootUUID == "" {
+		return fmt.Errorf("root UUID not set. FormatDisk may have failed")
 	}
 
 	helper := ctx.Helper

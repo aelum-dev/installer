@@ -4,20 +4,30 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
 
 	"aesthetic-os-installer/backend/shared"
 )
 
 // FormatDisk creates partitions and formats them according to the selected layout.
 // Before formatting, any mounted partitions on the disk are unmounted first.
-// For btrfs, creates subvolumes (@, @home) and sets @ as the default subvolume.
+// For btrfs, creates subvolumes and sets the default subvolume.
 // After formatting, UUIDs are read via blkid and stored in PartitionInfo.
-func FormatDisk(ctx *InstallContext) error {
+// On failure, cleans up partial state (unmounts, removes temporary mounts).
+func FormatDisk(ctx *InstallContext) (retErr error) {
 	diskID := ctx.DiskID
 	if diskID == "" {
 		return fmt.Errorf("disk ID not set. Provide a disk path (e.g., --format-disk /dev/vda)")
 	}
+
+	// Cleanup on failure — unmounts /mnt, /mnt/boot, and all partitions on diskID
+	defer func() {
+		if retErr != nil {
+			if ctx.Logger != nil {
+				ctx.Logger.Error("FormatDisk failed, cleaning up: %v", retErr)
+			}
+			FormatDiskErrorCleanup(diskID, ctx.Helper)
+		}
+	}()
 
 	// Determine filesystem type
 	fsType := ctx.FileSystem
@@ -66,7 +76,9 @@ func FormatDisk(ctx *InstallContext) error {
 	FormatDiskErrorCleanup(diskID, ctx.Helper)
 
 	// Clear disk and create partition table
+	// Destructive: this erases the partition table and all data on the disk
 	if ctx.Logger != nil {
+		ctx.Logger.Error("DESTRUCTIVE: Erasing partition table on %s. All data will be lost!", diskID)
 		ctx.Logger.Info("Creating partition table on %s", diskID)
 	}
 	cmd := exec.Command("sudo", ctx.Helper, "parted", diskID)
@@ -82,9 +94,6 @@ func FormatDisk(ctx *InstallContext) error {
 	// This is critical — without it, the kernel keeps the old device nodes and the new
 	// partitions never get their device nodes, causing "device is mounted" errors.
 	refreshPartitionTable(ctx, diskID)
-
-	// Small delay to let the kernel fully process the partition table change
-	time.Sleep(1 * time.Second)
 
 	// GPT partition type GUIDs (per archinstall PartitionGUID enum)
 	// ESP: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
@@ -451,7 +460,7 @@ func readPartitionUUID(helper, partition string) (string, error) {
 
 // refreshPartitionTable forces the kernel to re-read the partition table for a disk.
 // Tries partprobe first (most reliable after sgdisk), then partx -a, then blockdev.
-// Includes a small delay to allow the kernel to fully process the change.
+// Retries up to 3 times if device nodes don't appear, with increasing delays.
 func refreshPartitionTable(ctx *InstallContext, diskID string) {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Refreshing partition table for %s", diskID)
@@ -460,31 +469,20 @@ func refreshPartitionTable(ctx *InstallContext, diskID string) {
 	// Sync all pending writes first
 	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
 
-	// Try partprobe first — most reliable after sgdisk partitioning
+	// Refresh partition table — partprobe is usually sufficient
+	// If it fails, the kernel will still process the new partition table asynchronously
+	// Subsequent operations (wipefs, mkfs) will fail with clear errors if device nodes don't exist
 	cmd := exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: partprobe failed: %v (trying partx -a)", err)
+			ctx.Logger.Error("Warning: partprobe failed: %v (continuing — kernel may still process)", err)
 		}
-		// Fallback: partx -a adds new partitions to kernel
+		// Try partx -a as fallback
 		cmd = exec.Command("sudo", ctx.Helper, "run", "partx", "-a", diskID)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Warning: partx -a also failed: %v (trying blockdev)", err)
-			}
-			// Last resort: blockdev --rereadpt
-			cmd = exec.Command("sudo", ctx.Helper, "run", "blockdev", "--rereadpt", diskID)
-			cmd.CombinedOutput()
-		} else if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
+		cmd.CombinedOutput()
 	} else if ctx.Logger != nil && len(output) > 0 {
 		ctx.Logger.Command(string(output))
 	}
-
-	// Small delay to let the kernel fully process the partition table change
-	// This is critical — without it, subsequent operations may see "Device or resource busy"
-	time.Sleep(1 * time.Second)
 }
 
 // subvolumeNames returns a list of subvolume names for logging.

@@ -22,41 +22,22 @@ import (
 // If ctx.Partitions is nil (standalone invocation), it derives partition paths
 // from the disk ID. This matches the layout created by FormatDisk.
 func MountFilesystem(ctx *InstallContext) error {
-	// Validate that partitions exist (from FormatDisk) or can be derived
-	if ctx.Partitions == nil {
-		if ctx.DiskID == "" {
-			return fmt.Errorf("disk ID not set. Provide a disk path (e.g., --mount-filesystem /dev/vda)")
-		}
-		// Discover partition paths via lsblk (handles NVMe naming correctly)
-		partitions, err := shared.GetPartitions(ctx.DiskID)
-		if err != nil {
-			return fmt.Errorf("failed to discover partitions: %w", err)
-		}
-
-		// Find EFI and root partitions — try fstype first, fall back to partition index.
-		efiPart, rootPart := findPartitionsByFstype(partitions)
-		if efiPart == nil || rootPart == nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Info("FSTYPE not available, falling back to partition index (1=EFI, 2=root)")
-			}
-			efiPart, rootPart = findPartitionsByIndex(partitions)
-		}
-
-		if efiPart == nil {
-			return fmt.Errorf("could not find EFI partition on %s (got %d partitions)", ctx.DiskID, len(partitions))
-		}
-		if rootPart == nil {
-			return fmt.Errorf("could not find root partition on %s (got %d partitions)", ctx.DiskID, len(partitions))
-		}
-		ctx.Partitions = &shared.PartitionInfo{
-			Disk:        ctx.DiskID,
-			EFIPart:     efiPart.Path,
-			EFIUUID:     efiPart.UUID,
-			RootPart:    rootPart.Path,
-			RootUUID:    rootPart.UUID,
-			MountPoints: make(map[string]string),
-		}
+	// Validate preconditions
+	if ctx.DiskID == "" {
+		return fmt.Errorf("disk ID not set. Run --format-disk <disk> first")
 	}
+	if ctx.Partitions == nil {
+		return fmt.Errorf("partitions not initialized. Run --format-disk <disk> first")
+	}
+	if ctx.Layout.Name == "" {
+		return fmt.Errorf("layout not set. Run --format-disk <disk> first")
+	}
+
+	// Validate that partitions exist (from FormatDisk) or can be derived
+	if ctx.Partitions.EFIPart == "" || ctx.Partitions.RootPart == "" {
+		return fmt.Errorf("partition paths not set. FormatDisk may have failed")
+	}
+
 	p := ctx.Partitions
 
 	// ── Mount root partition ──

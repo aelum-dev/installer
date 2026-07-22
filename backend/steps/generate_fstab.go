@@ -16,8 +16,18 @@ func GenerateFstab(ctx *InstallContext) error {
 		return err
 	}
 
+	// Validate preconditions
+	if ctx.DiskID == "" {
+		return fmt.Errorf("disk ID not set. Run --format-disk <disk> first")
+	}
 	if ctx.Partitions == nil {
-		return fmt.Errorf("partition info not available. Run --format-disk <disk> first")
+		return fmt.Errorf("partitions not initialized. Run --format-disk <disk> first")
+	}
+	if ctx.Layout.Name == "" {
+		return fmt.Errorf("layout not set. Run --format-disk <disk> first")
+	}
+	if ctx.Partitions.EFIUUID == "" || ctx.Partitions.RootUUID == "" {
+		return fmt.Errorf("partition UUIDs not set. FormatDisk may have failed")
 	}
 
 	p := ctx.Partitions

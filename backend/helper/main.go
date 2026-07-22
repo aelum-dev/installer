@@ -197,6 +197,16 @@ func cmdFormat(args []string) error {
 	partition := args[0]
 	fstype := args[1]
 
+	// Validate partition path
+	if partition == "" || !(strings.HasPrefix(partition, "/dev/") || strings.HasPrefix(partition, "/mnt/")) {
+		return fmt.Errorf("invalid partition path: %s", partition)
+	}
+
+	// Validate fstype
+	if fstype != "vfat" && fstype != "ext4" && fstype != "btrfs" {
+		return fmt.Errorf("unsupported filesystem: %s (supported: vfat, ext4, btrfs)", fstype)
+	}
+
 	// Collect any extra options from args[2:]
 	extraArgs := args[2:]
 
@@ -233,17 +243,51 @@ func cmdMount(args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
 	}
-	// Support optional -o options before device and mountpoint
-	cmdArgs := []string{"mount"}
+
+	// Parse and validate arguments
+	var options []string
+	device := ""
+	mountpoint := ""
 	i := 0
-	for i < len(args) && args[i] == "-o" {
-		cmdArgs = append(cmdArgs, args[i], args[i+1])
-		i += 2
+	for i < len(args) {
+		if args[i] == "-o" {
+			if i+1 >= len(args) {
+				return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
+			}
+			options = append(options, args[i+1])
+			i += 2
+		} else {
+			if device == "" {
+				device = args[i]
+			} else if mountpoint == "" {
+				mountpoint = args[i]
+				i++
+				break
+			} else {
+				return fmt.Errorf("too many arguments")
+			}
+			i++
+		}
 	}
-	if i+1 >= len(args) {
+
+	if device == "" || mountpoint == "" {
 		return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
 	}
-	cmdArgs = append(cmdArgs, args[i], args[i+1])
+
+	// Validate paths
+	if !strings.HasPrefix(device, "/dev/") {
+		return fmt.Errorf("invalid device path: %s", device)
+	}
+	if !strings.HasPrefix(mountpoint, "/") {
+		return fmt.Errorf("invalid mountpoint: %s", mountpoint)
+	}
+
+	// Build mount command
+	cmdArgs := []string{"mount"}
+	if len(options) > 0 {
+		cmdArgs = append(cmdArgs, "-o", strings.Join(options, ","))
+	}
+	cmdArgs = append(cmdArgs, device, mountpoint)
 	return runCommand(cmdArgs[0], cmdArgs[1:]...)
 }
 
