@@ -36,8 +36,6 @@ func main() {
 
 	// Create an instance of the app structure
 	app := gui.NewApp(dryRun)
-	// Starting page for debug purposes
-	app.SetStartPage(gui.PageUserAccount)
 
 	// Create application with options
 	err := wails.Run(&options.App{

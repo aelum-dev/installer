@@ -1,4 +1,4 @@
-package steps
+package install
 
 import (
 	"fmt"
@@ -175,7 +175,7 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 // rootflags=subvol=@ is required so the kernel mounts the @ subvolume as root.
 func writeBootEntry(helper, esp, rootUUID, kernel, initrd, fsType string) error {
 	options := "root=UUID=" + rootUUID + " rw"
-	if fsType == FileSystemBtrfs {
+	if fsType == shared.FileSystemBtrfs {
 		options += " rootflags=subvol=@"
 	}
 	entryContent := fmt.Sprintf("title   %s\nlinux   /%s\ninitrd  /%s\noptions %s\n", BootEntryTitle, kernel, initrd, options)
@@ -318,7 +318,7 @@ func discoverPartitions(helper, espPath string) (*shared.PartitionInfo, error) {
 	}
 
 	// Find the root partition mounted at /mnt
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", "findmnt -n -o SOURCE "+MountRoot+" 2>/dev/null")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", "findmnt -n -o SOURCE "+shared.MountRoot+" 2>/dev/null")
 	output, err = cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find root partition mounted at /mnt: %w", err)

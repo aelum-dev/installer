@@ -31,7 +31,7 @@ type Installer struct {
 	esp        string // ESP mount point (default: /mnt/boot)
 
 	// Logger for step output (injected by CLI/GUI; default is ConsoleLogger)
-	Logger steps.Logger
+	Logger install.Logger
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
@@ -51,7 +51,7 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 		fileSystem: fileSystem,
 		dryRun:     dryRun,
 		esp:        "/mnt/boot",
-		Logger:     &steps.ConsoleLogger{},
+		Logger:     &install.ConsoleLogger{},
 	}
 }
 
@@ -111,20 +111,20 @@ func (inst *Installer) Install() error {
 type installationStep struct {
 	name  string // programmatic name, e.g. "format_disk"
 	label string // human-readable label, e.g. "Formatting disk"
-	run   func(ctx *steps.InstallContext) error
+	run   func(ctx *install.InstallContext) error
 }
 
 // stepDefinitions is the canonical list of installation steps.
 // Accessible without instantiating an Installer.
 var stepDefinitions = []installationStep{
-	{name: "format_disk", label: "Formatting disk", run: steps.FormatDisk},
-	{name: "mount_filesystem", label: "Mounting filesystem", run: steps.MountFilesystem},
-	{name: "install", label: "Installing base system", run: steps.Install},
-	{name: "regenerate_initramfs", label: "Regenerating initramfs", run: steps.RegenerateInitramfs},
-	{name: "generate_fstab", label: "Generating fstab", run: steps.GenerateFstab},
-	{name: "configure_bootloader", label: "Configuring bootloader", run: steps.ConfigureBootloader},
-	{name: "setup_users", label: "Setting up users", run: steps.SetupUsers},
-	{name: "configure_system", label: "Configuring system", run: steps.ConfigureSystem},
+	{name: "format_disk", label: "Formatting disk", run: install.FormatDisk},
+	{name: "mount_filesystem", label: "Mounting filesystem", run: install.MountFilesystem},
+	{name: "install", label: "Installing base system", run: install.Install},
+	{name: "regenerate_initramfs", label: "Regenerating initramfs", run: install.RegenerateInitramfs},
+	{name: "generate_fstab", label: "Generating fstab", run: install.GenerateFstab},
+	{name: "configure_bootloader", label: "Configuring bootloader", run: install.ConfigureBootloader},
+	{name: "setup_users", label: "Setting up users", run: install.SetupUsers},
+	{name: "configure_system", label: "Configuring system", run: install.ConfigureSystem},
 }
 
 // installationSteps returns the list of installation steps.
@@ -180,8 +180,8 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 }
 
 // context creates an InstallContext for this installer.
-func (i *Installer) context() *steps.InstallContext {
-	return &steps.InstallContext{
+func (i *Installer) context() *install.InstallContext {
+	return &install.InstallContext{
 		DiskID:     i.diskID,
 		ESP:        i.esp,
 		Helper:     i.helperPath,
@@ -225,7 +225,7 @@ func (i *Installer) logError(format string, args ...interface{}) {
 // simulateStep simulates a step by sleeping for a short duration.
 // Used in dry-run mode to give the user a sense of progress.
 func simulateStep() error {
-	time.Sleep(time.Duration(steps.SimulateStepSleepDuration) * time.Millisecond)
+	time.Sleep(time.Duration(install.SimulateStepSleepDuration) * time.Millisecond)
 	return nil
 }
 

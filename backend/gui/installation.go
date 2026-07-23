@@ -34,7 +34,7 @@ func (a *App) StartInstallation() error {
 	helper := core.FindHelper()
 
 	// Cleanup leftover mounts before starting
-	if err := steps.CleanupMounts(helper); err != nil {
+	if err := install.CleanupMounts(helper); err != nil {
 		wailsRuntime.LogWarning(a.ctx, fmt.Sprintf("Failed to cleanup mounts: %v", err))
 	}
 

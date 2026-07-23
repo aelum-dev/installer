@@ -1,8 +1,10 @@
-package steps
+package install
 
 import (
 	"fmt"
 	"os/exec"
+
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // RegenerateInitramfs loads the vfat kernel module and regenerates the initramfs.
@@ -27,7 +29,7 @@ func RegenerateInitramfs(ctx *InstallContext) error {
 
 	// Load vfat module inside the installed system
 	// This ensures autodetect (or explicit inclusion) picks it up
-	cmd := exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, MountRoot, "modprobe", "vfat")
+	cmd := exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot, "modprobe", "vfat")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Log warning but continue — modprobe might succeed silently or module might already be loaded
@@ -40,7 +42,7 @@ func RegenerateInitramfs(ctx *InstallContext) error {
 
 	// Regenerate initramfs with vfat included
 	// Using the linux-lts preset (matches the kernel package installed)
-	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, MountRoot, "mkinitcpio", "-p", KernelPresetName)
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot, "mkinitcpio", "-p", KernelPresetName)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to regenerate initramfs: %w: %s", err, string(output))

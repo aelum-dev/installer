@@ -1,4 +1,4 @@
-package steps
+package install
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 	// Use printf with positional args to avoid shell interpolation of hostname
 	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		"printf '%s\\n' \"$1\" > \"$2\"", "--", ctx.Hostname, MountRoot+"/etc/hostname")
+		"printf '%s\\n' \"$1\" > \"$2\"", "--", ctx.Hostname, shared.MountRoot+"/etc/hostname")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set hostname: %w: %s", err, string(output))
@@ -46,7 +46,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting timezone to %s", region.Timezone)
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("ln -sf /usr/share/zoneinfo/%s %s/etc/localtime", region.Timezone, MountRoot))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("ln -sf /usr/share/zoneinfo/%s %s/etc/localtime", region.Timezone, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %w: %s", err, string(output))
@@ -57,7 +57,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Configuring locale: %s", region.Locale)
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("sed -i 's/^#%s/%s/' %s/etc/locale.gen", region.Locale, region.Locale, MountRoot))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("sed -i 's/^#%s/%s/' %s/etc/locale.gen", region.Locale, region.Locale, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to configure locale: %w: %s", err, string(output))
@@ -67,7 +67,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Generating locale")
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, MountRoot, "locale-gen")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot, "locale-gen")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
@@ -77,7 +77,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Write locale.conf
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'LANG=%s' > %s/etc/locale.conf", region.Locale, MountRoot))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'LANG=%s' > %s/etc/locale.conf", region.Locale, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write locale.conf: %w: %s", err, string(output))
@@ -87,7 +87,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting console keymap to %s", region.Keymap)
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > %s/etc/vconsole.conf", region.Keymap, MountRoot))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > %s/etc/vconsole.conf", region.Keymap, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set keymap: %w: %s", err, string(output))
@@ -121,7 +121,7 @@ func copyMirrorList(helper, regionCode string) error {
 	content := uncommentMirrors(string(rawContent))
 
 	// Write to target mirrorlist
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > %s/etc/pacman.d/mirrorlist << '%s'\n%s\n%s", MountRoot, FstabHeredocDelimiter, content, FstabHeredocDelimiter))
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > %s/etc/pacman.d/mirrorlist << '%s'\n%s\n%s", shared.MountRoot, FstabHeredocDelimiter, content, FstabHeredocDelimiter))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write mirror list: %w: %s", err, strings.TrimSpace(string(output)))
@@ -134,8 +134,8 @@ func copyMirrorList(helper, regionCode string) error {
 func uncommentMirrors(content string) string {
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
-		if strings.HasPrefix(line, MirrorListCommentedServerPrefix) {
-			lines[i] = MirrorListServerPrefix + strings.TrimPrefix(line, MirrorListCommentedServerPrefix)
+		if strings.HasPrefix(line, shared.MirrorListCommentedServerPrefix) {
+			lines[i] = shared.MirrorListServerPrefix + strings.TrimPrefix(line, shared.MirrorListCommentedServerPrefix)
 		}
 	}
 	return strings.Join(lines, "\n")

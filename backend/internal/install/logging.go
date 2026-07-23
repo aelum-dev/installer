@@ -1,4 +1,4 @@
-package steps
+package install
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func (l *ConsoleLogger) getLogFile() *os.File {
 		return l.logFile
 	}
 	logPath := shared.GetLogPath()
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, LogFileMode)
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, shared.LogFileMode)
 	if err != nil {
 		return nil
 	}
@@ -47,7 +47,7 @@ func (l *ConsoleLogger) startWriter() {
 			return
 		}
 		for msg := range l.logChan {
-			timestamp := time.Now().Format(TimestampFormatFull)
+			timestamp := time.Now().Format(shared.TimestampFormatFull)
 			f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 		}
 		f.Close()
@@ -91,20 +91,20 @@ func (l *ConsoleLogger) writeToFile(msg string) {
 	// Channel consistently full — write synchronously as last resort
 	f := l.getLogFile()
 	if f != nil {
-		timestamp := time.Now().Format(TimestampFormatFull)
+		timestamp := time.Now().Format(shared.TimestampFormatFull)
 		f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 	}
 }
 
 func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(TimestampFormatShort), msg)
+	fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
 	l.writeToFile(msg)
 }
 
 func (l *ConsoleLogger) Error(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, "[%s] %s%s\n", time.Now().Format(TimestampFormatShort), ErrorPrefix, msg)
+	fmt.Fprintf(os.Stderr, "[%s] %s%s\n", time.Now().Format(shared.TimestampFormatShort), ErrorPrefix, msg)
 	l.writeToFile(ErrorPrefix + msg)
 }
 

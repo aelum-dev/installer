@@ -1,4 +1,4 @@
-package steps
+package install
 
 // ============================================================================
 // Installer Configuration Constants
@@ -8,42 +8,20 @@ package steps
 
 // --- Paths -------------------------------------------------------------------
 
-// MountRoot is the root mount point for the installed system.
-const MountRoot = "/mnt"
-
 // BootMountPoint is the EFI System Partition (ESP) mount point.
 const BootMountPoint = "/mnt/boot"
+// Note: MountRoot is defined in shared/config.go
 
 // --- Filesystem types --------------------------------------------------------
 
-// Supported root filesystem types.
+// Supported root filesystem types (Vfat is install-specific; Ext4/Btrfs are in shared/config.go).
 const (
-	FileSystemExt4  = "ext4"
-	FileSystemBtrfs = "btrfs"
-	FileSystemVfat  = "vfat"
+	FileSystemVfat = "vfat"
 )
 
-// DefaultFileSystem is the default root filesystem when none is specified.
-const DefaultFileSystem = FileSystemExt4
-
 // --- EFI / GPT ---------------------------------------------------------------
-
-// EFIPartitionSizeMB is the EFI partition size in megabytes.
-const EFIPartitionSizeMB = 128
-
-// GPTPartitionStartSector is the first usable sector on a GPT disk (1 MiB).
-const GPTPartitionStartSector = 2048
-
-// GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
-var GPTTypeGUIDs = struct {
-	ESP                  string
-	LinuxRootX86_64      string
-	LinuxFilesystemGeneric string
-}{
-	ESP:                  "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
-	LinuxRootX86_64:      "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
-	LinuxFilesystemGeneric: "8300",
-}
+// Note: EFIPartitionSizeMB, GPTPartitionStartSector, and GPTTypeGUIDs
+// are defined in shared/config.go — imported via shared.GPTTypeGUIDs etc.
 
 // --- Partition layout --------------------------------------------------------
 
@@ -143,19 +121,11 @@ const PacstrapMountPoint = "/mnt"
 
 // --- Time formats ------------------------------------------------------------
 
-// TimestampFormatFull is the full timestamp format used in log files.
-const TimestampFormatFull = "2006-01-02 15:04:05"
-
-// TimestampFormatShort is the short timestamp format used in console output.
-const TimestampFormatShort = "15:04:05"
+// Note: TimestampFormatFull and TimestampFormatShort are defined in shared/config.go
 
 // --- Mirrorlist --------------------------------------------------------------
 
-// MirrorListCommentedServerPrefix is the prefix for a commented-out mirror server line.
-const MirrorListCommentedServerPrefix = "#Server = "
-
-// MirrorListServerPrefix is the prefix for an active mirror server line.
-const MirrorListServerPrefix = "Server = "
+// Note: MirrorListCommentedServerPrefix and MirrorListServerPrefix are defined in shared/config.go
 
 // --- Mount options -----------------------------------------------------------
 
@@ -173,13 +143,7 @@ const BtrfsAutodefragOption = "autodefrag"
 
 // --- File permissions --------------------------------------------------------
 
-// SudoersFileMode is the permission mode for sudoers drop-in files.
-const SudoersFileMode = 0440
-
-// --- Fstab -------------------------------------------------------------------
-
-// MinFstabContentLengthBytes is the minimum expected fstab content length.
-const MinFstabContentLengthBytes = 50
+// Note: SudoersFileMode and MinFstabContentLengthBytes are defined in shared/config.go
 
 // --- Chroot commands ---------------------------------------------------------
 
@@ -256,8 +220,7 @@ const BtrfsSetupTmpMount = "/tmp/btrfs-setup"
 
 // --- Logging -----------------------------------------------------------------
 
-// LogFileMode is the permission mode for the installation log file.
-const LogFileMode = 0644
+// Note: LogFileMode is defined in shared/config.go.
 
 // LogChannelBufferSize is the buffer size for the async log channel.
 const LogChannelBufferSize = 1000

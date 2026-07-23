@@ -1,4 +1,4 @@
-package steps
+package install
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ func GenerateFstab(ctx *InstallContext) error {
 	p := ctx.Partitions
 
 	// For btrfs, write custom fstab with subvolume entries
-	if ctx.FileSystem == "btrfs" {
+	if ctx.FileSystem == shared.FileSystemBtrfs {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Generating custom fstab for btrfs subvolumes")
 		}
@@ -139,7 +139,7 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 	}
 
 	content := string(output)
-	if len(content) == 0 || len(content) < MinFstabContentLengthBytes {
+	if len(content) == 0 || len(content) < shared.MinFstabContentLengthBytes {
 		return fmt.Errorf("fstab is empty or too short (%d bytes)", len(content))
 	}
 

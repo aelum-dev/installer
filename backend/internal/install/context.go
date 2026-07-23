@@ -1,4 +1,4 @@
-package steps
+package install
 
 import "aesthetic-os-installer/backend/internal/shared"
 

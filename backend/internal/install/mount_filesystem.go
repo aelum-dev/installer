@@ -1,4 +1,4 @@
-package steps
+package install
 
 import (
 	"fmt"
@@ -44,7 +44,7 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	// Find the subvolume with MountPoint "/" for btrfs, otherwise mount raw.
 	var rootSubvol *shared.BtrfsSubvolume
-	if ctx.FileSystem == FileSystemBtrfs {
+	if ctx.FileSystem == shared.FileSystemBtrfs {
 		rootSubvol = shared.FindSubvolumeByMountPoint(shared.GetBtrfsSubvolumes(), "/")
 	}
 
@@ -52,9 +52,9 @@ func MountFilesystem(ctx *InstallContext) error {
 		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd)
 		mountOpts := buildMountOpts(rootSubvol)
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", rootSubvol.Name, MountRoot, mountOpts)
+			ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", rootSubvol.Name, shared.MountRoot, mountOpts)
 		}
-		cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, MountRoot)
+		cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
@@ -67,7 +67,7 @@ func MountFilesystem(ctx *InstallContext) error {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Mounting root partition (%s) → /mnt", p.RootPart)
 		}
-		cmd := exec.Command("sudo", ctx.Helper, "mount", p.RootPart, MountRoot)
+		cmd := exec.Command("sudo", ctx.Helper, "mount", p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))
@@ -78,20 +78,20 @@ func MountFilesystem(ctx *InstallContext) error {
 	}
 
 	// Verify root mount
-	if err := verifyMount(ctx.Helper, MountRoot, p.RootPart); err != nil {
+	if err := verifyMount(ctx.Helper, shared.MountRoot, p.RootPart); err != nil {
 		return err
 	}
 
 	// ── Mount additional subvolumes ──
 
-	if ctx.FileSystem == FileSystemBtrfs {
+	if ctx.FileSystem == shared.FileSystemBtrfs {
 		for _, sv := range shared.GetBtrfsSubvolumes() {
 			if sv.MountPoint == "/" {
 				continue // already mounted as root
 			}
 
 			// Create mount point directory
-			mountPath := MountRoot + sv.MountPoint
+			mountPath := shared.MountRoot + sv.MountPoint
 			cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", mountPath)
 			cmd.Run()
 

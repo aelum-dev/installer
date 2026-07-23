@@ -1,4 +1,4 @@
-package steps
+package install
 
 import (
 	"fmt"
@@ -32,9 +32,9 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	// Determine filesystem type
 	fsType := ctx.FileSystem
 	if fsType == "" {
-		fsType = DefaultFileSystem
+		fsType = shared.DefaultFileSystem
 	}
-	if fsType != FileSystemExt4 && fsType != FileSystemBtrfs {
+	if fsType != shared.FileSystemExt4 && fsType != shared.FileSystemBtrfs {
 		return fmt.Errorf("unsupported filesystem type: %s (supported: ext4, btrfs)", fsType)
 	}
 
@@ -50,8 +50,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		Fstype     string
 		MountPoint string
 	}{
-		{Name: PartitionLayoutEFI, SizeMB: EFIPartitionSizeMB, Fstype: FileSystemVfat, MountPoint: BootMountPoint},
-		{Name: PartitionLayoutRoot, SizeMB: 0, Fstype: fsType, MountPoint: MountRoot},
+		{Name: PartitionLayoutEFI, SizeMB: shared.EFIPartitionSizeMB, Fstype: FileSystemVfat, MountPoint: BootMountPoint},
+		{Name: PartitionLayoutRoot, SizeMB: 0, Fstype: fsType, MountPoint: shared.MountRoot},
 	}
 
 	// Define btrfs subvolumes (only for btrfs filesystem)
@@ -99,8 +99,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 
 	// GPT partition type GUIDs (per archinstall PartitionGUID enum)
 	var gptESP, gptLinuxRootX86_64 string
-	gptESP = GPTTypeGUIDs.ESP
-	gptLinuxRootX86_64 = GPTTypeGUIDs.LinuxRootX86_64
+	gptESP = shared.GPTTypeGUIDs.ESP
+	gptLinuxRootX86_64 = shared.GPTTypeGUIDs.LinuxRootX86_64
 
 	// Create partitions
 	for i, part := range layoutPartitions {
@@ -113,7 +113,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		var sgdiskArgs []string
 		if part.SizeMB > 0 {
 			// Fixed size: start at 1MiB, end at +SizeMB
-			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:+%dm", partNum, GPTPartitionStartSector, part.SizeMB)}
+			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:+%dm", partNum, shared.GPTPartitionStartSector, part.SizeMB)}
 		} else {
 			// Use rest of disk
 			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:0:0", partNum)}
@@ -123,11 +123,11 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		switch part.Fstype {
 		case FileSystemVfat:
 			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, gptESP))
-		case FileSystemExt4, FileSystemBtrfs:
+		case shared.FileSystemExt4, shared.FileSystemBtrfs:
 			// Use Linux root GUID for root partitions (more specific than generic)
 			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, gptLinuxRootX86_64))
 		default:
-			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, GPTTypeGUIDs.LinuxFilesystemGeneric))
+			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, shared.GPTTypeGUIDs.LinuxFilesystemGeneric))
 		}
 
 		// Set partition name
@@ -393,7 +393,7 @@ func findPartitionsByFstype(partitions []shared.PartitionEntry) (*shared.Partiti
 			if efi == nil {
 				efi = &partitions[i]
 			}
-		case FileSystemExt4, FileSystemBtrfs:
+		case shared.FileSystemExt4, shared.FileSystemBtrfs:
 			if root == nil {
 				root = &partitions[i]
 			}
@@ -478,7 +478,7 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 	}
 
 	// First, try lazy recursive unmount of /mnt (covers nested mounts including subvolumes)
-	cmd := exec.Command("sudo", helper, HelperCmdUmount, UmountRecursiveFlag, MountRoot)
+	cmd := exec.Command("sudo", helper, HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot)
 	cmd.Run()
 
 	// Also unmount /mnt/boot if mounted
