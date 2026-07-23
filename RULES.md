@@ -17,6 +17,7 @@
   1. Check `man` pages or `--help` flags
   2. If no documentation available, **ask the user** for documentation on the specific tool
 - Never assume behavior of external tools (parted, bootctl, pacstrap, etc.) without verifying
+- **Prefer standard tools over custom implementations.** Before writing custom logic for something a well-known tool already handles (e.g., `arch-chroot` instead of manual `/proc` mounting), proactively suggest the standard tool and explain why it's better. Don't just patch within existing patterns — step back and consider if there's a better established approach first.
 
 ## Testing Environments
 - **Host machine** = main development system (where you develop the installer)
