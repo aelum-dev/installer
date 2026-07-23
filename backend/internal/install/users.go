@@ -78,10 +78,8 @@ func SetupUsers(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Configuring sudoers for wheel group")
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf(
-		"chroot %s bash -c 'mkdir -p /etc/sudoers.d && echo \"%%wheel ALL=(ALL:ALL) ALL\" > /etc/sudoers.d/wheel && chmod %o /etc/sudoers.d/wheel'",
-		MountRoot, SudoersFileMode,
-	))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+		"mkdir -p /etc/sudoers.d && echo \"%wheel ALL=(ALL:ALL) ALL\" > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to configure sudoers: %w: %s", err, string(output))

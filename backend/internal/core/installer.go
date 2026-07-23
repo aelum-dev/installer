@@ -10,9 +10,6 @@ import (
 	"aesthetic-os-installer/backend/internal/install"
 )
 
-// SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode.
-const SimulateStepSleepDuration = 200
-
 // InstallationProgress is emitted as an event to the frontend.
 type InstallationProgress struct {
 	Label   string `json:"label"`
@@ -228,7 +225,7 @@ func (i *Installer) logError(format string, args ...interface{}) {
 // simulateStep simulates a step by sleeping for a short duration.
 // Used in dry-run mode to give the user a sense of progress.
 func simulateStep() error {
-	time.Sleep(time.Duration(SimulateStepSleepDuration) * time.Millisecond)
+	time.Sleep(time.Duration(steps.SimulateStepSleepDuration) * time.Millisecond)
 	return nil
 }
 

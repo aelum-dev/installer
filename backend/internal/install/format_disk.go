@@ -80,7 +80,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	// Clear disk and create partition table
 	// Destructive: this erases the partition table and all data on the disk
 	if ctx.Logger != nil {
-		ctx.Logger.Error("DESTRUCTIVE: Erasing partition table on %s. All data will be lost!", diskID)
+		ctx.Logger.Info("DESTRUCTIVE: Erasing partition table on %s. All data will be lost!", diskID)
 		ctx.Logger.Info("Creating partition table on %s", diskID)
 	}
 	cmd := exec.Command("sudo", ctx.Helper, "parted", diskID)

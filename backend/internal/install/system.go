@@ -34,7 +34,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting hostname to '%s'", ctx.Hostname)
 	}
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo '%s' > %s/etc/hostname", ctx.Hostname, MountRoot))
+	// Use printf with positional args to avoid shell interpolation of hostname
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+		"printf '%s\\n' \"$1\" > \"$2\"", "--", ctx.Hostname, MountRoot+"/etc/hostname")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set hostname: %w: %s", err, string(output))
