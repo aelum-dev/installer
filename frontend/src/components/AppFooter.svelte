@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from '$components/Button.svelte';
-	import { PAGE_IDS } from '$lib/types';
+	import { PAGE_IDS, MIN_DISK_SIZE_BYTES } from '$lib/types';
 	import { diskSelectionData } from '$lib/state.svelte';
 
 	let { currentPage }: { currentPage: number } = $props();
@@ -10,7 +10,6 @@
 	const isInstallationPage = $derived(currentPage === PAGE_IDS.INSTALLATION);
 	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage && !isInstallationPage);
 	const showNext = $derived(!isLastPage && !isWelcomePage && !isInstallationPage);
-	const MIN_DISK_SIZE_BYTES = 8 * 1024 * 1024 * 1024;
 	const diskSizeOk = $derived.by(() => {
 		if (!diskSelectionData.disk) return false;
 		const size = parseInt(diskSelectionData.disk.size, 10);

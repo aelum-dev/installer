@@ -244,12 +244,6 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 	return partitions, nil
 }
 
-// FormatPartitionSize converts a byte size string to human-readable format.
-// Convenience wrapper around FormatSize for partition data.
-func FormatPartitionSize(byteStr string) string {
-	return FormatSize(byteStr)
-}
-
 // FormatSize converts byte size to human-readable format.
 // Shared by GUI and console installer.
 func FormatSize(byteStr string) string {

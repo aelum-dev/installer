@@ -26,6 +26,10 @@ export const PAGES_NO_NAV = new Set<PageID>();
 // Pages that require validation before advancing
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
 
+// MinDiskSizeBytes is the minimum disk size in bytes (8 GiB).
+// Mirrors the backend constant in shared/config.go.
+export const MIN_DISK_SIZE_BYTES = 8 * 1024 * 1024 * 1024;
+
 // DiskInfo represents a block device discovered on the system.
 export interface DiskInfo {
 	name: string;
@@ -65,6 +69,9 @@ export interface PartitionDetail {
 }
 
 // Format bytes to human-readable string.
+// NOTE: A Go equivalent exists in backend/internal/shared/disks.go::FormatSize.
+// Both serve their respective layers (frontend display vs backend struct tags),
+// but the logic is intentionally kept separate to avoid cross-language coupling.
 export function formatSize(bytes: string): string {
 	const n = parseInt(bytes, 10);
 	if (isNaN(n) || n <= 0) return '0 B';

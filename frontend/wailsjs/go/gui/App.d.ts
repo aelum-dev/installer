@@ -4,10 +4,6 @@ import {core} from '../models';
 import {shared} from '../models';
 import {gui} from '../models';
 
-export function CanGoBack():Promise<boolean>;
-
-export function CanGoNext():Promise<boolean>;
-
 export function CheckRoot():Promise<core.RootCheckResult>;
 
 export function ClearStartPage():Promise<void>;

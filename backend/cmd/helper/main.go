@@ -536,7 +536,7 @@ func cmdBtrfsSubvolSetDefault(args []string) error {
 }
 
 func cmdBtrfsSetCompression(args []string) error {
-	if len(args) < 2 {
+	if len(args) < 3 {
 		return fmt.Errorf("usage: btrfs-set-compression <mountpoint> <subvol> <algorithm>")
 	}
 	mountpoint := args[0]

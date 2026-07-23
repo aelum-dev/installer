@@ -3,7 +3,6 @@ package gui
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -11,7 +10,7 @@ import (
 
 // WriteErrorLog writes installation error details to the log file and returns the log path.
 func WriteErrorLog(stepLabel, errMsg string) string {
-	logPath := filepath.Join(filepath.Dir(getExePath()), "installation.log")
+	logPath := shared.GetLogPath()
 
 	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, shared.LogFileMode)
 	if err != nil {
@@ -34,11 +33,4 @@ func WriteErrorLog(stepLabel, errMsg string) string {
 	return logPath
 }
 
-// getExePath returns the executable path (internal helper).
-func getExePath() string {
-	exe, err := os.Executable()
-	if err != nil {
-		return ""
-	}
-	return exe
-}
+

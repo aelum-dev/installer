@@ -44,11 +44,3 @@ func GetRegion(code string) Region {
 	return Region{}
 }
 
-// ListRegionCodes returns all available region codes.
-func ListRegionCodes() []string {
-	codes := make([]string, 0, len(Regions))
-	for code := range Regions {
-		codes = append(codes, code)
-	}
-	return codes
-}

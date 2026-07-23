@@ -1,8 +1,6 @@
 package gui
 
 import (
-	"fmt"
-
 	"aestheticos-installer/backend/internal/shared"
 )
 
@@ -37,9 +35,6 @@ func (a *App) GetSelectedLanguage() string {
 func (a *App) SetSelectedLanguage(code string) error {
 	a.selectedLanguage = code
 	a.region = shared.GetRegion(code)
-	if shared.FindLanguage(code) == nil {
-		return fmt.Errorf("unknown language code: %s", code)
-	}
 	return nil
 }
 

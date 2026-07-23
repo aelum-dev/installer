@@ -97,6 +97,7 @@ const MkfsExt4LabelValue = "aestheticos"
 const MkfsBtrfsForceFlag = "-f"
 
 // MkfsBtrfsLabelFlag sets the filesystem label.
+// NOTE: Same label as MkfsExt4LabelValue. Both filesystems get labeled "aestheticos".
 const MkfsBtrfsLabelValue = "aestheticos"
 
 // --- Umount arguments --------------------------------------------------------
@@ -193,12 +194,15 @@ const InitrdFileExtension = ".img"
 const KernelPresetName = "linux-lts"
 
 // BootEntryFileName is the name of the systemd-boot entry file (without .conf).
+// NOTE: This is hardcoded. If the user customizes their installation name,
+// the boot entry file and menu entries will still say "aestheticos".
 const BootEntryFileName = "aestheticos"
 
 // BootEntryTitle is the human-readable title shown in the boot menu.
 const BootEntryTitle = "Aesthetic OS"
 
 // BootOptionDescription is the custom description passed to bootctl install.
+// NOTE: This is hardcoded. Matches BootEntryTitle by convention.
 const BootOptionDescription = "Aesthetic OS"
 
 // BootLoaderEntriesDir is the subdirectory under the ESP for boot entries.
@@ -225,9 +229,14 @@ const BtrfsSetupTmpMount = "/tmp/btrfs-setup"
 // Note: LogFileMode is defined in shared/config.go.
 
 // LogChannelBufferSize is the buffer size for the async log channel.
+// 1000 entries provides ample headroom — install steps are short-lived and
+// log writes are infrequent. Larger values waste memory; smaller ones risk
+// blocking on a full channel during a burst of output.
 const LogChannelBufferSize = 1000
 
 // LogWriteRetries is the number of retries before falling back to synchronous write.
+// 3 retries with 1ms backoff handles transient channel congestion without
+// adding noticeable latency to the installation pipeline.
 const LogWriteRetries = 3
 
 // LogWriteBackoffMs is the backoff duration between retry attempts (ms).
@@ -245,5 +254,6 @@ const ErrorPrefix = "ERROR: "
 
 // --- Simulate ---------------------------------------------------------------
 
-// SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode.
+// SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode (milliseconds).
+// Short enough to feel responsive during testing, long enough to be visible in logs.
 const SimulateStepSleepDuration = 200

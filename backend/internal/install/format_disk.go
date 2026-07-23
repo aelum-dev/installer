@@ -69,13 +69,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		ctx.Logger.Info("Unmounting existing partitions on %s", diskID)
 	}
 	if err := unmountAllPartitions(diskID, ctx.Helper, ctx.Logger); err != nil {
-		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: failed to unmount all partitions: %v (continuing)", err)
-		}
-		// Best effort — continue, FormatDiskErrorCleanup below handles /mnt
+		return fmt.Errorf("failed to unmount all partitions on %s: %w", diskID, err)
 	}
-	// Also unmount /mnt and /mnt/boot (may have leftover mounts)
-	FormatDiskErrorCleanup(diskID, ctx.Helper)
 
 	// Clear disk and create partition table
 	// Destructive: this erases the partition table and all data on the disk
@@ -377,7 +372,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 // derivePartitionPath constructs a partition path from a disk ID and partition number.
 // Handles all naming conventions: /dev/sda → /dev/sda1, /dev/nvme0n1 → /dev/nvme0n1p1
 func derivePartitionPath(diskID string, partNum int) string {
-	if strings.Contains(diskID, "nvme") {
+	if strings.HasPrefix(diskID, "/dev/nvme") {
 		return fmt.Sprintf("%sp%d", diskID, partNum)
 	}
 	return fmt.Sprintf("%s%d", diskID, partNum)

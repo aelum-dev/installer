@@ -12,6 +12,9 @@ func GetLanguages() []Language {
 
 // FindLanguage finds a language by code. Returns nil if not found.
 // Shared by GUI and console installer.
+// NOTE: The returned pointer points into a slice that is recreated on each
+// GetLanguages() call. The pointer is only valid until the next GetLanguages()
+// call — do not store it long-term.
 func FindLanguage(code string) *Language {
 	langs := GetLanguages()
 	for i := range langs {

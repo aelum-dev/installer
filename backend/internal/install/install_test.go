@@ -29,12 +29,6 @@ func TestPartitionToDisk(t *testing.T) {
 	}
 }
 
-func TestDiscoverKernelFiles(t *testing.T) {
-	// This test requires a real /mnt/boot directory with kernel files
-	// Skip if not in a test environment with mounted system
-	t.Skip("Requires mounted system with kernel files")
-}
-
 func TestFormatDisk_PartitionLayout(t *testing.T) {
 	// Test that FormatDisk creates the expected partition layout
 	// This is a logic test, not an execution test
@@ -45,33 +39,6 @@ func TestFormatDisk_PartitionLayout(t *testing.T) {
 	// Verify the context is set up correctly
 	if ctx.DiskID != "/dev/vda" {
 		t.Errorf("expected disk ID /dev/vda, got %s", ctx.DiskID)
-	}
-}
-
-func TestMountFilesystem_AutoDiscover(t *testing.T) {
-	// Test that MountFilesystem can auto-discover partitions from disk ID
-	ctx := &InstallContext{
-		DiskID: "/dev/vda",
-	}
-
-	// Simulate the auto-discovery logic from MountFilesystem
-	if ctx.Partitions == nil {
-		disk := ctx.DiskID
-		if disk == "" {
-			disk = "/dev/sda"
-		}
-		ctx.Partitions = &shared.PartitionInfo{
-			Disk:     disk,
-			EFIPart:  disk + "1",
-			RootPart: disk + "2",
-		}
-	}
-
-	if ctx.Partitions.EFIPart != "/dev/vda1" {
-		t.Errorf("expected EFI part /dev/vda1, got %s", ctx.Partitions.EFIPart)
-	}
-	if ctx.Partitions.RootPart != "/dev/vda2" {
-		t.Errorf("expected root part /dev/vda2, got %s", ctx.Partitions.RootPart)
 	}
 }
 

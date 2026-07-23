@@ -93,6 +93,8 @@ const MirrorListServerPrefix = "Server = "
 // --- Fstab -------------------------------------------------------------------
 
 // MinFstabContentLengthBytes is the minimum expected fstab content length.
+// A minimal fstab with one root entry is ~80 bytes; 50 is a lenient lower bound
+// to catch truly empty or corrupted output without rejecting valid fstabs.
 const MinFstabContentLengthBytes = 50
 
 // --- Region defaults ---------------------------------------------------------
@@ -119,7 +121,7 @@ var GPTTypeGUIDs = struct {
 }{
 	ESP:                 "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
 	LinuxRootX86_64:     "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
-	LinuxFilesystemGeneric: "8300",
+	LinuxFilesystemGeneric: "8300", // GPT type code for Linux filesystem (standard)
 }
 
 // --- Virtual device filters --------------------------------------------------

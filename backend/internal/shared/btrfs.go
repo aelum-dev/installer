@@ -24,30 +24,8 @@ var btrfsSubvolumes = []BtrfsSubvolume{
 
 // GetBtrfsSubvolumes returns the standard btrfs subvolume scheme.
 // Used by format_disk.go and generate_fstab.go to ensure consistency.
-// Returns a copy to prevent external mutation of the canonical list.
 func GetBtrfsSubvolumes() []BtrfsSubvolume {
-	result := make([]BtrfsSubvolume, len(btrfsSubvolumes))
-	copy(result, btrfsSubvolumes)
-	return result
-}
-
-// GetSubvolumeMountPoints returns all mount points for the given subvolumes.
-func GetSubvolumeMountPoints(subvolumes []BtrfsSubvolume) []string {
-	mounts := make([]string, len(subvolumes))
-	for i, sv := range subvolumes {
-		mounts[i] = sv.MountPoint
-	}
-	return mounts
-}
-
-// HasSubvolumeWithMountPoint checks if any subvolume has the given mount point.
-func HasSubvolumeWithMountPoint(subvolumes []BtrfsSubvolume, mountPoint string) bool {
-	for _, sv := range subvolumes {
-		if sv.MountPoint == mountPoint {
-			return true
-		}
-	}
-	return false
+	return btrfsSubvolumes
 }
 
 // FindSubvolumeByMountPoint finds a subvolume by its mount point.

@@ -143,9 +143,6 @@ func validStepNames() []string {
 // RunStep runs a single named installation step.
 // Returns the step label, the percentage (0-100, always 100 for single step), and any error.
 func (i *Installer) RunStep(stepName string) (label string, percent int, err error) {
-	// Clear previous log for standalone step runs
-	logPath := shared.GetLogPath()
-	os.WriteFile(logPath, nil, shared.LogFileMode)
 	allSteps := i.installationSteps()
 	for _, s := range allSteps {
 		if s.name == stepName {
