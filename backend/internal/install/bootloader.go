@@ -182,8 +182,11 @@ func writeBootEntry(helper, esp, rootUUID, kernel, initrd, fsType string) error 
 
 	entryPath := esp + "/" + BootLoaderEntriesDir + "/" + BootEntryFileName + ".conf"
 
-	// Write via tee to avoid heredoc fragility — the content is passed via stdin.
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("mkdir -p %s/loader/entries && printf '%%s' %q > %s", esp, entryContent, entryPath))
+	// Write boot entry using bash heredoc to preserve actual newlines.
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+		fmt.Sprintf(`mkdir -p %s/loader/entries && cat > %s << 'BOOTEOF'
+%s
+BOOTEOF`, esp, entryPath, entryContent))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write boot entry to %s: %w: %s", entryPath, err, string(output))

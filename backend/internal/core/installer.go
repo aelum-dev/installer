@@ -120,7 +120,6 @@ var stepDefinitions = []installationStep{
 	{name: "format_disk", label: "Formatting disk", run: install.FormatDisk},
 	{name: "mount_filesystem", label: "Mounting filesystem", run: install.MountFilesystem},
 	{name: "install", label: "Installing base system", run: install.Install},
-	{name: "regenerate_initramfs", label: "Regenerating initramfs", run: install.RegenerateInitramfs},
 	{name: "generate_fstab", label: "Generating fstab", run: install.GenerateFstab},
 	{name: "configure_bootloader", label: "Configuring bootloader", run: install.ConfigureBootloader},
 	{name: "setup_users", label: "Setting up users", run: install.SetupUsers},

@@ -10,6 +10,7 @@ package install
 
 // BootMountPoint is the EFI System Partition (ESP) mount point.
 const BootMountPoint = "/mnt/boot"
+
 // Note: MountRoot is defined in shared/config.go
 
 // --- Filesystem types --------------------------------------------------------
@@ -35,16 +36,16 @@ const PartitionLayoutRoot = "Root"
 
 // HelperCommand names as registered in the aestheticos-helper.
 const (
-	HelperCmdParted              = "parted"
-	HelperCmdFormat              = "format"
-	HelperCmdMount               = "mount"
-	HelperCmdUmount              = "umount"
-	HelperCmdRun                 = "run"
-	HelperCmdReboot              = "reboot"
-	HelperCmdUdevSettle          = "udev-settle"
-	HelperCmdBtrfsSubvolCreate   = "btrfs-subvol-create"
+	HelperCmdParted                = "parted"
+	HelperCmdFormat                = "format"
+	HelperCmdMount                 = "mount"
+	HelperCmdUmount                = "umount"
+	HelperCmdRun                   = "run"
+	HelperCmdReboot                = "reboot"
+	HelperCmdUdevSettle            = "udev-settle"
+	HelperCmdBtrfsSubvolCreate     = "btrfs-subvol-create"
 	HelperCmdBtrfsSubvolSetDefault = "btrfs-subvol-set-default"
-	HelperCmdBtrfsSetCompression = "btrfs-set-compression"
+	HelperCmdBtrfsSetCompression   = "btrfs-set-compression"
 )
 
 // --- Sgdisk arguments --------------------------------------------------------
@@ -192,7 +193,7 @@ const InitrdFileExtension = ".img"
 const KernelPresetName = "linux-lts"
 
 // BootEntryFileName is the name of the systemd-boot entry file (without .conf).
-const BootEntryFileName = "aesthetic-os"
+const BootEntryFileName = "aestheticos"
 
 // BootEntryTitle is the human-readable title shown in the boot menu.
 const BootEntryTitle = "Aesthetic OS"
