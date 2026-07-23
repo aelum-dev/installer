@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"aesthetic-os-installer/backend/internal/shared"
-	"aesthetic-os-installer/backend/internal/install"
+	"aestheticos-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/install"
 )
 
 // InstallationProgress is emitted as an event to the frontend.
@@ -50,7 +50,7 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 		region:     region,
 		fileSystem: fileSystem,
 		dryRun:     dryRun,
-		esp:        "/mnt/boot",
+		esp:        install.BootMountPoint,
 		Logger:     &install.ConsoleLogger{},
 	}
 }

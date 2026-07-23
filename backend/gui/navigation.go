@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // PageID represents a page in the installer wizard.

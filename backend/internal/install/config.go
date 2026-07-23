@@ -148,7 +148,8 @@ const BtrfsAutodefragOption = "autodefrag"
 // --- Chroot commands ---------------------------------------------------------
 
 // ChrootCommand is the command used to run commands inside the installed system.
-const ChrootCommand = "chroot"
+// arch-chroot auto-mounts /proc, /sys, /dev (from arch-install-scripts on the live ISO).
+const ChrootCommand = "arch-chroot"
 
 // --- Bootctl arguments -------------------------------------------------------
 

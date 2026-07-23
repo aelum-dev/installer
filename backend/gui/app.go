@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"aesthetic-os-installer/backend/internal/core"
+	"aestheticos-installer/backend/internal/core"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )

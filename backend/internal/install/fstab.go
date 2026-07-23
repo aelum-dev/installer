@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // GenerateFstab generates the fstab file for the installed system using sudo.

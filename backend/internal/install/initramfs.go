@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // RegenerateInitramfs loads the vfat kernel module and regenerates the initramfs.

@@ -3,8 +3,8 @@ package gui
 import (
 	"fmt"
 
-	"aesthetic-os-installer/backend/internal/core"
-	"aesthetic-os-installer/backend/internal/install"
+	"aestheticos-installer/backend/internal/core"
+	"aestheticos-installer/backend/internal/install"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )

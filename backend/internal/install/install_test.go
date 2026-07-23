@@ -3,7 +3,7 @@ package install
 import (
 	"testing"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 func TestPartitionToDisk(t *testing.T) {

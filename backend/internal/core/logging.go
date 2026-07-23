@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // WriteLog writes a message to the installation log file.

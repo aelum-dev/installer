@@ -3,7 +3,7 @@ package gui
 import (
 	"fmt"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // --- GUI methods (delegate to shared package) ---

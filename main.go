@@ -7,7 +7,7 @@ import (
 
 	"embed"
 
-	"aesthetic-os-installer/backend/gui"
+	"aestheticos-installer/backend/gui"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"

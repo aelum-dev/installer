@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // WriteErrorLog writes installation error details to the log file and returns the log path.

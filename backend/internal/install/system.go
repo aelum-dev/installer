@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // ConfigureSystem sets up system configuration in the installed system via chroot.

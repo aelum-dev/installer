@@ -3,7 +3,7 @@ package gui
 import (
 	"testing"
 
-	"aesthetic-os-installer/backend/internal/core"
+	"aestheticos-installer/backend/internal/core"
 )
 
 func TestRootCheckResult_Structure(t *testing.T) {

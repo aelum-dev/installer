@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // SetupUsers creates user accounts using sudo.
@@ -24,10 +26,9 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	// Create user inside chroot (skip if already exists)
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
-		"chroot /mnt bash -c 'if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi'",
-		ctx.Username, ctx.Username,
-	))
+	cmd := exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
+		"bash", "-c", fmt.Sprintf("if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi",
+			ctx.Username, ctx.Username))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
@@ -41,10 +42,8 @@ func SetupUsers(ctx *InstallContext) error {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Setting password for user '%s'", ctx.Username)
 		}
-		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
-			"chroot /mnt bash -c \"echo '%s:%s' | chpasswd\"",
-			ctx.Username, ctx.Password,
-		))
+		cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
+			"bash", "-c", fmt.Sprintf("echo '%s:%s' | chpasswd", ctx.Username, ctx.Password))
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("passwd failed: %w: %s", err, string(output))

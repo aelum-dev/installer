@@ -3,7 +3,7 @@ package install
 import (
 	"os/exec"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // CleanupMounts unmounts common installation mountpoints.
@@ -26,7 +26,7 @@ func CleanupMounts(helper string) error {
 // Used before formatting to ensure no partitions are mounted.
 func FormatDiskErrorCleanup(disk, helper string) error {
 	// Use recursive lazy unmount to handle nested mounts (e.g., /mnt/boot inside /mnt)
-	cmd := exec.Command("sudo", helper, "run", "umount", "-lR", "/mnt")
+	cmd := exec.Command("sudo", helper, "run", "umount", "-lR", shared.MountRoot)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		// Ignore errors: nothing may be mounted
 		_ = out

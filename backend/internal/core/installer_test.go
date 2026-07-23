@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 func TestInstaller_StepNames(t *testing.T) {

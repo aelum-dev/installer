@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"aesthetic-os-installer/backend/internal/shared"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // ConsoleLogger writes logs to the terminal AND to installation.log.
