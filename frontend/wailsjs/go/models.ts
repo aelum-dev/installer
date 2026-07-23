@@ -21,6 +21,23 @@ export namespace core {
 
 }
 
+export namespace gui {
+	
+	export class PageID {
+	    Value: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PageID(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Value = source["Value"];
+	    }
+	}
+
+}
+
 export namespace shared {
 	
 	export class DiskInfo {

@@ -25,8 +25,8 @@ func (a *App) StartUp(ctx context.Context) {
 
 // SetStartPage sets the page to start on (bypasses welcome page).
 func (a *App) SetStartPage(pageID PageID) error {
-	if pageID < PageWelcome || pageID > PageFinish {
-		return fmt.Errorf("invalid start page ID: %d", pageID)
+	if pageID.Value < PageWelcome.Value || pageID.Value > PageFinish.Value {
+		return fmt.Errorf("invalid start page ID: %d", pageID.Value)
 	}
 	a.startPage = pageID
 	return nil
@@ -37,7 +37,7 @@ func (a *App) GetStartPage() int {
 	if a.startPage == PageWelcome {
 		return -1
 	}
-	return int(a.startPage)
+	return a.startPage.Value
 }
 
 // ClearStartPage clears the start page so it won't be used again.
