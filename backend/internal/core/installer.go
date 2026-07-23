@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"aesthetic-os-installer/backend/shared"
-	"aesthetic-os-installer/backend/steps"
+	"aesthetic-os-installer/backend/internal/shared"
+	"aesthetic-os-installer/backend/internal/install"
 )
 
 // InstallationProgress is emitted as an event to the frontend.
@@ -116,6 +116,7 @@ func (i *Installer) installationSteps() []installationStep {
 		{name: "format_disk", label: "Formatting disk", run: steps.FormatDisk},
 		{name: "mount_filesystem", label: "Mounting filesystem", run: steps.MountFilesystem},
 		{name: "install", label: "Installing base system", run: steps.Install},
+		{name: "regenerate_initramfs", label: "Regenerating initramfs", run: steps.RegenerateInitramfs},
 		{name: "generate_fstab", label: "Generating fstab", run: steps.GenerateFstab},
 		{name: "configure_bootloader", label: "Configuring bootloader", run: steps.ConfigureBootloader},
 		{name: "setup_users", label: "Setting up users", run: steps.SetupUsers},

@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"aesthetic-os-installer/backend/shared"
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // FormatDisk creates partitions and formats them according to the filesystem type.

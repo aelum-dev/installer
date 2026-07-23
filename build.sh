@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 SHARED_DIR=$HOME"/Projects/shared"
 
 echo "=== Refreshing mirrorlists ==="
-go run ./backend/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
+go run ./backend/internal/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
 
 echo "=== Building frontend ==="
 if [ ! -d "frontend/node_modules" ]; then
@@ -19,10 +19,10 @@ echo "=== Building Go binaries with Wails ==="
 wails build -clean -tags webkit2_41
 
 echo "=== Building aestheticos-helper ==="
-go build -o build/bin/aestheticos-helper ./backend/helper
+go build -o build/bin/aestheticos-helper ./backend/cmd/helper
 
 echo "=== Building aestheticos-installer-cli ==="
-go build -o build/bin/aestheticos-installer-cli ./backend/cli
+go build -o build/bin/aestheticos-installer-cli ./backend/cmd/installer-cli
 
 echo "=== Copying executables to ${SHARED_DIR} ==="
 mkdir -p "$SHARED_DIR"

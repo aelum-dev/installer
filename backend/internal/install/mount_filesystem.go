@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"aesthetic-os-installer/backend/shared"
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // MountFilesystem mounts the root partition, any btrfs subvolumes, and the EFI partition.

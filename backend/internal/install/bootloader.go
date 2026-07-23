@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"aesthetic-os-installer/backend/shared"
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // ConfigureBootloader installs systemd-boot and writes the boot entry configuration.

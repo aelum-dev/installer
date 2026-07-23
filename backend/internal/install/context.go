@@ -1,6 +1,6 @@
 package steps
 
-import "aesthetic-os-installer/backend/shared"
+import "aesthetic-os-installer/backend/internal/shared"
 
 // Logger is the shared logging interface used by installation steps.
 // Both CLI and GUI provide implementations that write to the console.

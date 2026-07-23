@@ -20,36 +20,48 @@ aesthetic-os-installer/
 ├── wails.json              # Wails config (900×600, fixed size)
 │
 ├── backend/
-│   ├── cli/main.go         # CLI entry point (single/full step execution)
-│   ├── helper/main.go      # Privileged helper (runs via sudo)
-│   ├── core/
-│   │   └── installer.go    # Core orchestrator — shared by CLI & GUI
-│   ├── gui/
+│   ├── cmd/
+│   │   ├── installer-cli/  # CLI binary entry point
+│   │   │   └── main.go
+│   │   └── helper/         # Privileged helper binary (runs via sudo)
+│   │       └── main.go
+│   │
+│   ├── gui/                # Wails GUI layer (public — imported by root main.go)
 │   │   ├── app.go          # Wails app struct + state
 │   │   ├── pages.go        # Page management (6 pages)
 │   │   ├── api.go          # Wails API bindings
 │   │   ├── validation.go   # Form validation
-│   │   └── root_check.go   # Sudo/root privilege check
-│   ├── steps/              # Installation step implementations
-│   │   ├── format_disk.go
-│   │   ├── mount_filesystem.go
-│   │   ├── install.go
-│   │   ├── generate_fstab.go
-│   │   ├── configure_bootloader.go
-│   │   ├── setup_users.go
-│   │   ├── configure_system.go
-│   │   ├── cleanup.go
-│   │   ├── validation.go
-│   │   ├── context.go      # InstallContext (shared state)
-│   │   └── logger.go
-│   └── shared/
-│       ├── types.go        # Go types (DiskInfo, PartitionInfo, etc.)
-│       ├── validators.go   # Input validation
-│       ├── disks.go        # Disk discovery
-│       ├── languages.go    # Language list
-│       ├── regions.go      # Timezone regions
-│       ├── mirrorlist.go   # Mirrorlist management
-│       └── mirrorlist_gen.go # Mirrorlist generator
+│   │   ├── root_check.go   # Sudo/root privilege check
+│   │   ├── installation.go # Installation flow orchestration
+│   │   └── logger.go       # Error log writer
+│   │
+│   └── internal/           # Private packages (not exported)
+│       ├── core/
+│       │   ├── installer.go    # Core orchestrator — shared by CLI & GUI
+│       │   ├── logger.go
+│       │   └── root_check.go
+│       ├── steps/              # Installation step implementations
+│       │   ├── format_disk.go
+│       │   ├── mount_filesystem.go
+│       │   ├── install.go
+│       │   ├── generate_fstab.go
+│       │   ├── configure_bootloader.go
+│       │   ├── setup_users.go
+│       │   ├── configure_system.go
+│       │   ├── cleanup.go
+│       │   ├── validation.go
+│       │   ├── context.go      # InstallContext (shared state)
+│       │   ├── initramfs.go
+│       │   └── logger.go
+│       └── shared/
+│           ├── types.go        # Go types (DiskInfo, PartitionInfo, etc.)
+│           ├── validators.go   # Input validation
+│           ├── disks.go        # Disk discovery
+│           ├── languages.go    # Language list
+│           ├── regions.go      # Timezone regions
+│           ├── mirrorlist.go   # Mirrorlist management
+│           ├── mirrorlist_gen.go # Mirrorlist generator
+│           └── btrfs.go
 │
 └── frontend/              # Svelte + TypeScript (Wails frontend)
     ├── src/
@@ -75,11 +87,11 @@ aesthetic-os-installer/
 
 | Component | Role |
 |-----------|------|
-| **`backend/core/installer.go`** | Single source of truth — orchestrates all 7 installation steps. Used by both GUI and CLI. |
-| **`backend/helper/main.go`** | Privileged helper binary (runs via sudo) — wraps low-level commands: `sgdisk`, `mkfs.fat/ext4`, `pacstrap`, `bootctl`, `passwd`, `useradd`, `efibootmgr`, etc. |
+| **`backend/internal/core/installer.go`** | Single source of truth — orchestrates all 7 installation steps. Used by both GUI and CLI. |
+| **`backend/cmd/helper/main.go`** | Privileged helper binary (runs via sudo) — wraps low-level commands: `sgdisk`, `mkfs.fat/ext4`, `pacstrap`, `bootctl`, `passwd`, `useradd`, `efibootmgr`, etc. |
 | **`backend/gui/`** | Wails app — manages 6-page wizard state, validation, navigation |
-| **`backend/cli/main.go`** | CLI tool — supports `--install` (full) or individual step flags |
-| **`backend/steps/`** | 7 installation steps: Format → Mount → Install → fstab → Bootloader → Users → Configure |
+| **`backend/cmd/installer-cli/main.go`** | CLI tool — supports `--install` (full) or individual step flags |
+| **`backend/internal/steps/`** | 7 installation steps: Format → Mount → Pacstrap → fstab → Bootloader → Users → Configure |
 | **`frontend/`** | Svelte 5 + TypeScript frontend, fixed 900×600 window |
 
 ---

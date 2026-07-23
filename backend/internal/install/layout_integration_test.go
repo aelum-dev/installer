@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"aesthetic-os-installer/backend/shared"
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // TestLayoutIntegration verifies the full format → mount → fstab chain

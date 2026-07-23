@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"aesthetic-os-installer/backend/shared"
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 func TestInstaller_StepNames(t *testing.T) {
@@ -14,6 +14,7 @@ func TestInstaller_StepNames(t *testing.T) {
 		"format_disk",
 		"mount_filesystem",
 		"install",
+		"regenerate_initramfs",
 		"generate_fstab",
 		"configure_bootloader",
 		"setup_users",
@@ -76,13 +77,14 @@ func TestValidStepNames(t *testing.T) {
 
 	// Check that all expected names are present
 	expected := map[string]bool{
-		"format_disk":          false,
-		"mount_filesystem":     false,
-		"install":              false,
-		"generate_fstab":       false,
-		"configure_bootloader": false,
-		"setup_users":          false,
-		"configure_system":     false,
+		"format_disk":            false,
+		"mount_filesystem":       false,
+		"install":                false,
+		"regenerate_initramfs":   false,
+		"generate_fstab":         false,
+		"configure_bootloader":   false,
+		"setup_users":            false,
+		"configure_system":       false,
 	}
 
 	for _, name := range names {
