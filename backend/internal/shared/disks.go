@@ -167,29 +167,25 @@ func GetDisks() ([]DiskInfo, error) {
 }
 
 // isVirtualDevice returns true if the device name corresponds to a virtual
-// block device that should not be shown to the user (loop, ram, dm, md).
+// block device that should not be shown to the user.
 func isVirtualDevice(name string) bool {
 	// Strip /dev/ prefix if present
 	short := strings.TrimPrefix(name, "/dev/")
 
-	switch {
-	case strings.HasPrefix(short, "loop"): // loop0, loop1, ...
-		return true
-	case strings.HasPrefix(short, "ram"): // ram0, ram1, ...
-		return true
-	case strings.HasPrefix(short, "dm-"): // dm-0, dm-1 (LVM, etc.)
-		return true
-	case strings.HasPrefix(short, "md"): // md0, md1 (software RAID)
-		return true
+	for _, prefix := range VirtualDevicePrefixes {
+		if strings.HasPrefix(short, prefix) {
+			return true
+		}
 	}
 	return false
 }
 
 // isRemovable returns true if the transport indicates removable media.
 func isRemovable(trans string) bool {
-	switch trans {
-	case "usb", "sd", "mmc":
-		return true
+	for _, t := range RemovableTransportTypes {
+		if t == trans {
+			return true
+		}
 	}
 	return false
 }

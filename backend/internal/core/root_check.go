@@ -18,10 +18,7 @@ type RootCheckResult struct {
 // CheckRoot verifies that the aestheticos-helper can be executed via sudo without a password.
 // This is used by both CLI and GUI to ensure proper setup before installation.
 func CheckRoot(helperPath string) RootCheckResult {
-	fmt.Printf("[DEBUG] CheckRoot called with helperPath: %s\n", helperPath)
-
 	if helperPath == "" {
-		fmt.Printf("[DEBUG] CheckRoot: helperPath is empty\n")
 		return RootCheckResult{
 			Authorized: false,
 			Error:      "helper_not_found",
@@ -32,7 +29,6 @@ func CheckRoot(helperPath string) RootCheckResult {
 	// Check if helper binary exists and is executable
 	info, err := os.Stat(helperPath)
 	if os.IsNotExist(err) {
-		fmt.Printf("[DEBUG] CheckRoot: helper not found at %s: %v\n", helperPath, err)
 		return RootCheckResult{
 			Authorized: false,
 			Error:      "helper_not_found",
@@ -40,7 +36,6 @@ func CheckRoot(helperPath string) RootCheckResult {
 		}
 	}
 	if err != nil {
-		fmt.Printf("[DEBUG] CheckRoot: error stat'ing helper: %v\n", err)
 		return RootCheckResult{
 			Authorized: false,
 			Error:      "helper_not_found",
@@ -50,22 +45,17 @@ func CheckRoot(helperPath string) RootCheckResult {
 
 	// Check if helper is executable
 	if info.Mode()&0111 == 0 {
-		fmt.Printf("[DEBUG] CheckRoot: helper not executable, mode: %o\n", info.Mode().Perm())
 		return RootCheckResult{
 			Authorized: false,
 			Error:      "helper_not_executable",
 			Message:    "Helper program is not executable. Please check file permissions.",
 		}
 	}
-	fmt.Printf("[DEBUG] CheckRoot: helper found and executable at %s\n", helperPath)
 
 	// Test if sudo can run the helper without a password prompt
 	cmd := exec.Command("sudo", "-n", helperPath, "run", "id")
-	fmt.Printf("[DEBUG] CheckRoot: running command: %v\n", cmd.Args)
 	output, err := cmd.CombinedOutput()
 	outputStr := string(output)
-	fmt.Printf("[DEBUG] CheckRoot: command output: %q\n", outputStr)
-	fmt.Printf("[DEBUG] CheckRoot: command error: %v\n", err)
 
 	// If command succeeded, sudo is configured correctly
 	if err == nil {
@@ -79,7 +69,6 @@ func CheckRoot(helperPath string) RootCheckResult {
 	// Command failed - check if it's a password prompt issue
 	if strings.Contains(outputStr, "a password is required") ||
 		strings.Contains(outputStr, "sorry, a password is required") {
-		fmt.Printf("[DEBUG] CheckRoot: password required detected\n")
 		return RootCheckResult{
 			Authorized: false,
 			Error:      "sudo_password_required",
@@ -88,7 +77,6 @@ func CheckRoot(helperPath string) RootCheckResult {
 	}
 
 	// Other error
-	fmt.Printf("[DEBUG] CheckRoot: other error\n")
 	return RootCheckResult{
 		Authorized: false,
 		Error:      "sudo_failed",

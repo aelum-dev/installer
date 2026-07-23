@@ -21,17 +21,16 @@ const (
 
 // App struct
 type App struct {
-	ctx             context.Context
-	currentPage     PageID
-	startPage       PageID
-	dryRun          bool
-	userAccount     shared.UserAccountData
-	diskSelection   shared.DiskSelectionData
-	hostname        string
+	ctx              context.Context
+	currentPage      PageID
+	startPage        PageID
+	dryRun           bool
+	userAccount      shared.UserAccountData
+	diskSelection    shared.DiskSelectionData
+	hostname         string
 	selectedLanguage string
-	region          shared.Region
-	fileSystem      string // root filesystem: "ext4" or "btrfs"
-	layout          string // partition layout: "ext4" or "btrfs"
+	region           shared.Region
+	fileSystem       string // root filesystem: "ext4" or "btrfs"
 }
 
 // GetCurrentPage returns the current page index (0-based).

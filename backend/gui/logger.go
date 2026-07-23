@@ -5,19 +5,21 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // WriteErrorLog writes installation error details to the log file and returns the log path.
 func WriteErrorLog(stepLabel, errMsg string) string {
 	logPath := filepath.Join(filepath.Dir(getExePath()), "installation.log")
 
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, shared.LogFileMode)
 	if err != nil {
 		return logPath
 	}
 	defer f.Close()
 
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	timestamp := time.Now().Format(shared.TimestampFormatFull)
 	header := fmt.Sprintf("\n=== INSTALLATION ERROR at %s ===\n", timestamp)
 	stepInfo := fmt.Sprintf("Step: %s\n", stepLabel)
 	errorMsg := fmt.Sprintf("Error: %s\n", errMsg)

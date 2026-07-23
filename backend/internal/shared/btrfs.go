@@ -10,18 +10,25 @@ type BtrfsSubvolume struct {
 	NoDataCow   bool
 }
 
+// btrfsSubvolumes is the canonical btrfs subvolume scheme.
+// Used by format_disk.go and generate_fstab.go to ensure consistency.
+var btrfsSubvolumes = []BtrfsSubvolume{
+	{Name: "@", MountPoint: "/", Compression: "zstd", NoDataCow: false},
+	{Name: "@home", MountPoint: "/home", Compression: "zstd", NoDataCow: true},
+	{Name: "@root", MountPoint: "/root", Compression: "zstd", NoDataCow: false},
+	{Name: "@srv", MountPoint: "/srv", Compression: "zstd", NoDataCow: false},
+	{Name: "@cache", MountPoint: "/var/cache", Compression: "zstd", NoDataCow: true},
+	{Name: "@tmp", MountPoint: "/var/tmp", Compression: "zstd", NoDataCow: true},
+	{Name: "@log", MountPoint: "/var/log", Compression: "", NoDataCow: true},
+}
+
 // GetBtrfsSubvolumes returns the standard btrfs subvolume scheme.
 // Used by format_disk.go and generate_fstab.go to ensure consistency.
+// Returns a copy to prevent external mutation of the canonical list.
 func GetBtrfsSubvolumes() []BtrfsSubvolume {
-	return []BtrfsSubvolume{
-		{Name: "@", MountPoint: "/", Compression: "zstd", NoDataCow: false},
-		{Name: "@home", MountPoint: "/home", Compression: "zstd", NoDataCow: true},
-		{Name: "@root", MountPoint: "/root", Compression: "zstd", NoDataCow: false},
-		{Name: "@srv", MountPoint: "/srv", Compression: "zstd", NoDataCow: false},
-		{Name: "@cache", MountPoint: "/var/cache", Compression: "zstd", NoDataCow: true},
-		{Name: "@tmp", MountPoint: "/var/tmp", Compression: "zstd", NoDataCow: true},
-		{Name: "@log", MountPoint: "/var/log", Compression: "", NoDataCow: true},
-	}
+	result := make([]BtrfsSubvolume, len(btrfsSubvolumes))
+	copy(result, btrfsSubvolumes)
+	return result
 }
 
 // GetSubvolumeMountPoints returns all mount points for the given subvolumes.

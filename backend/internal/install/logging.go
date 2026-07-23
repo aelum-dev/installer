@@ -3,10 +3,11 @@ package steps
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"aesthetic-os-installer/backend/internal/shared"
 )
 
 // ConsoleLogger writes logs to the terminal AND to installation.log.
@@ -19,26 +20,12 @@ type ConsoleLogger struct {
 	done     chan struct{}
 }
 
-// GetLogPath returns the path to the installation log file.
-func GetLogPath() string {
-	exe, err := os.Executable()
-	if err == nil {
-		dir := filepath.Dir(exe)
-		return filepath.Join(dir, "installation.log")
-	}
-	home, err := os.UserHomeDir()
-	if err == nil {
-		return filepath.Join(home, "installation.log")
-	}
-	return "installation.log"
-}
-
 func (l *ConsoleLogger) getLogFile() *os.File {
 	if l.logFile != nil {
 		return l.logFile
 	}
-	logPath := GetLogPath()
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logPath := shared.GetLogPath()
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, LogFileMode)
 	if err != nil {
 		return nil
 	}
@@ -50,7 +37,7 @@ func (l *ConsoleLogger) startWriter() {
 	if l.logChan != nil {
 		return // already started
 	}
-	l.logChan = make(chan string, 1000)
+	l.logChan = make(chan string, LogChannelBufferSize)
 	l.done = make(chan struct{})
 
 	go func() {
@@ -60,12 +47,25 @@ func (l *ConsoleLogger) startWriter() {
 			return
 		}
 		for msg := range l.logChan {
-			timestamp := time.Now().Format("2006-01-02 15:04:05")
+			timestamp := time.Now().Format(TimestampFormatFull)
 			f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 		}
 		f.Close()
 		close(l.done)
 	}()
+}
+
+// Close flushes any remaining log messages and closes the log file.
+// Safe to call multiple times. Idempotent.
+func (l *ConsoleLogger) Close() {
+	l.mu.Lock()
+	ch := l.logChan
+	l.mu.Unlock()
+
+	if ch != nil {
+		close(ch)
+		<-l.done // wait for writer goroutine to finish
+	}
 }
 
 func (l *ConsoleLogger) writeToFile(msg string) {
@@ -76,37 +76,45 @@ func (l *ConsoleLogger) writeToFile(msg string) {
 	ch := l.logChan
 	l.mu.Unlock()
 
-	select {
-	case ch <- msg:
-	default:
-		// Channel full, write synchronously as fallback
-		f := l.getLogFile()
-		if f != nil {
-			timestamp := time.Now().Format("2006-01-02 15:04:05")
-			f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
+	// Use non-blocking send with a small retry loop to avoid dropping messages.
+	// If the channel is consistently full, fall back to synchronous write.
+	for retries := 0; retries < LogWriteRetries; retries++ {
+		select {
+		case ch <- msg:
+			return
+		default:
+			// Channel full — small backoff before retry
+			time.Sleep(time.Duration(LogWriteBackoffMs) * time.Millisecond)
 		}
+	}
+
+	// Channel consistently full — write synchronously as last resort
+	f := l.getLogFile()
+	if f != nil {
+		timestamp := time.Now().Format(TimestampFormatFull)
+		f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 	}
 }
 
 func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format("15:04:05"), msg)
+	fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(TimestampFormatShort), msg)
 	l.writeToFile(msg)
 }
 
 func (l *ConsoleLogger) Error(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, "[%s] ERROR: %s\n", time.Now().Format("15:04:05"), msg)
-	l.writeToFile("ERROR: " + msg)
+	fmt.Fprintf(os.Stderr, "[%s] %s%s\n", time.Now().Format(TimestampFormatShort), ErrorPrefix, msg)
+	l.writeToFile(ErrorPrefix + msg)
 }
 
 func (l *ConsoleLogger) Command(line string) {
 	if line == "" {
 		return
 	}
-	// Prefix each line with "  > " to indicate it's command output
+	// Prefix each line with CommandOutputPrefix to indicate it's command output
 	for _, line := range strings.Split(strings.TrimRight(line, "\n"), "\n") {
-		fmt.Fprintf(os.Stdout, "  > %s\n", line)
-		l.writeToFile("  > " + line)
+		fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
+		l.writeToFile(CommandOutputPrefix + line)
 	}
 }

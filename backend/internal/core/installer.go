@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"aesthetic-os-installer/backend/internal/shared"
 	"aesthetic-os-installer/backend/internal/install"
 )
+
+// SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode.
+const SimulateStepSleepDuration = 200
 
 // InstallationProgress is emitted as an event to the frontend.
 type InstallationProgress struct {
@@ -60,10 +64,13 @@ func (inst *Installer) Install() error {
 	if inst.diskID == "" {
 		return fmt.Errorf("disk ID is required")
 	}
+	if inst.region.Code == "" {
+		return fmt.Errorf("region not set")
+	}
 
 	// Clear previous log
-	logPath := GetLogPath()
-	os.WriteFile(logPath, nil, 0644)
+	logPath := shared.GetLogPath()
+	os.WriteFile(logPath, nil, shared.LogFileMode)
 
 	ctx := inst.context()
 
@@ -110,25 +117,28 @@ type installationStep struct {
 	run   func(ctx *steps.InstallContext) error
 }
 
+// stepDefinitions is the canonical list of installation steps.
+// Accessible without instantiating an Installer.
+var stepDefinitions = []installationStep{
+	{name: "format_disk", label: "Formatting disk", run: steps.FormatDisk},
+	{name: "mount_filesystem", label: "Mounting filesystem", run: steps.MountFilesystem},
+	{name: "install", label: "Installing base system", run: steps.Install},
+	{name: "regenerate_initramfs", label: "Regenerating initramfs", run: steps.RegenerateInitramfs},
+	{name: "generate_fstab", label: "Generating fstab", run: steps.GenerateFstab},
+	{name: "configure_bootloader", label: "Configuring bootloader", run: steps.ConfigureBootloader},
+	{name: "setup_users", label: "Setting up users", run: steps.SetupUsers},
+	{name: "configure_system", label: "Configuring system", run: steps.ConfigureSystem},
+}
+
 // installationSteps returns the list of installation steps.
 func (i *Installer) installationSteps() []installationStep {
-	return []installationStep{
-		{name: "format_disk", label: "Formatting disk", run: steps.FormatDisk},
-		{name: "mount_filesystem", label: "Mounting filesystem", run: steps.MountFilesystem},
-		{name: "install", label: "Installing base system", run: steps.Install},
-		{name: "regenerate_initramfs", label: "Regenerating initramfs", run: steps.RegenerateInitramfs},
-		{name: "generate_fstab", label: "Generating fstab", run: steps.GenerateFstab},
-		{name: "configure_bootloader", label: "Configuring bootloader", run: steps.ConfigureBootloader},
-		{name: "setup_users", label: "Setting up users", run: steps.SetupUsers},
-		{name: "configure_system", label: "Configuring system", run: steps.ConfigureSystem},
-	}
+	return stepDefinitions
 }
 
 // validStepNames returns the list of valid step names for error messages.
 func validStepNames() []string {
-	steps := (&Installer{}).installationSteps()
-	names := make([]string, len(steps))
-	for i, s := range steps {
+	names := make([]string, len(stepDefinitions))
+	for i, s := range stepDefinitions {
 		names[i] = s.name
 	}
 	return names
@@ -138,8 +148,8 @@ func validStepNames() []string {
 // Returns the step label, the percentage (0-100, always 100 for single step), and any error.
 func (i *Installer) RunStep(stepName string) (label string, percent int, err error) {
 	// Clear previous log for standalone step runs
-	logPath := GetLogPath()
-	os.WriteFile(logPath, nil, 0644)
+	logPath := shared.GetLogPath()
+	os.WriteFile(logPath, nil, shared.LogFileMode)
 	allSteps := i.installationSteps()
 	for _, s := range allSteps {
 		if s.name == stepName {
@@ -215,9 +225,10 @@ func (i *Installer) logError(format string, args ...interface{}) {
 	}
 }
 
-// simulateStep simulates a step by sleeping for a random duration.
+// simulateStep simulates a step by sleeping for a short duration.
+// Used in dry-run mode to give the user a sense of progress.
 func simulateStep() error {
-	// Not used anymore — kept for compatibility
+	time.Sleep(time.Duration(SimulateStepSleepDuration) * time.Millisecond)
 	return nil
 }
 

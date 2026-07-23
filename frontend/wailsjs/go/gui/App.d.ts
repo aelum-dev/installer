@@ -26,8 +26,6 @@ export function GetHostname():Promise<string>;
 
 export function GetLanguages():Promise<Array<shared.Language>>;
 
-export function GetLayout():Promise<string>;
-
 export function GetSelectedLanguage():Promise<string>;
 
 export function GetStartPage():Promise<number>;

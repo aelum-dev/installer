@@ -31,9 +31,9 @@ func Install(ctx *InstallContext) error {
 		ctx.Logger.Info("Installing %d packages via pacstrap", len(packages))
 	}
 
-	args := []string{"/mnt"}
+	args := []string{PacstrapMountPoint}
 	args = append(args, packages...)
-	cmd := exec.Command("sudo", append([]string{ctx.Helper, "pacstrap"}, args...)...)
+	cmd := exec.Command("sudo", append([]string{ctx.Helper, HelperCmdRun, "pacstrap"}, args...)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("pacstrap failed: %w: %s", err, string(output))

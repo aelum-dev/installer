@@ -32,9 +32,9 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	// Determine filesystem type
 	fsType := ctx.FileSystem
 	if fsType == "" {
-		fsType = "ext4" // default fallback
+		fsType = DefaultFileSystem
 	}
-	if fsType != "ext4" && fsType != "btrfs" {
+	if fsType != FileSystemExt4 && fsType != FileSystemBtrfs {
 		return fmt.Errorf("unsupported filesystem type: %s (supported: ext4, btrfs)", fsType)
 	}
 
@@ -50,8 +50,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		Fstype     string
 		MountPoint string
 	}{
-		{"EFI", 128, "vfat", "/boot"},
-		{"Root", 0, fsType, "/"},
+		{Name: PartitionLayoutEFI, SizeMB: EFIPartitionSizeMB, Fstype: FileSystemVfat, MountPoint: BootMountPoint},
+		{Name: PartitionLayoutRoot, SizeMB: 0, Fstype: fsType, MountPoint: MountRoot},
 	}
 
 	// Define btrfs subvolumes (only for btrfs filesystem)
@@ -98,14 +98,9 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	refreshPartitionTable(ctx, diskID)
 
 	// GPT partition type GUIDs (per archinstall PartitionGUID enum)
-	// ESP: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-	// Linux filesystem (generic): 8300
-	// Linux root (x86-64): 4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709
-	// Linux home (x86-64): 4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709 + linux-home flag
-	const (
-		gptESP              = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
-		gptLinuxRootX86_64  = "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709"
-	)
+	var gptESP, gptLinuxRootX86_64 string
+	gptESP = GPTTypeGUIDs.ESP
+	gptLinuxRootX86_64 = GPTTypeGUIDs.LinuxRootX86_64
 
 	// Create partitions
 	for i, part := range layoutPartitions {
@@ -117,28 +112,28 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		// Calculate sgdisk parameters
 		var sgdiskArgs []string
 		if part.SizeMB > 0 {
-			// Fixed size: start at 1MiB (2048 sectors), end at +SizeMB
-			sgdiskArgs = []string{"-n", fmt.Sprintf("%d:2048:+%dm", partNum, part.SizeMB)}
+			// Fixed size: start at 1MiB, end at +SizeMB
+			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:+%dm", partNum, GPTPartitionStartSector, part.SizeMB)}
 		} else {
 			// Use rest of disk
-			sgdiskArgs = []string{"-n", fmt.Sprintf("%d:0:0", partNum)}
+			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:0:0", partNum)}
 		}
 
 		// Set partition type GUID (per archinstall PartitionGUID values)
 		switch part.Fstype {
-		case "vfat":
-			sgdiskArgs = append(sgdiskArgs, "-t", fmt.Sprintf("%d:%s", partNum, gptESP))
-		case "ext4", "btrfs":
-			// Use Linux root GUID for root partitions (more specific than generic 8300)
-			sgdiskArgs = append(sgdiskArgs, "-t", fmt.Sprintf("%d:%s", partNum, gptLinuxRootX86_64))
+		case FileSystemVfat:
+			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, gptESP))
+		case FileSystemExt4, FileSystemBtrfs:
+			// Use Linux root GUID for root partitions (more specific than generic)
+			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, gptLinuxRootX86_64))
 		default:
-			sgdiskArgs = append(sgdiskArgs, "-t", fmt.Sprintf("%d:8300", partNum))
+			sgdiskArgs = append(sgdiskArgs, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", partNum, GPTTypeGUIDs.LinuxFilesystemGeneric))
 		}
 
 		// Set partition name
-		sgdiskArgs = append(sgdiskArgs, "-c", fmt.Sprintf("%d:%s", partNum, part.Name))
+		sgdiskArgs = append(sgdiskArgs, SgdiskSetNameFlag, fmt.Sprintf("%d:%s", partNum, part.Name))
 
-		cmd = exec.Command("sudo", ctx.Helper, "run", "sgdisk")
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "sgdisk")
 		cmd.Args = append(cmd.Args, sgdiskArgs...)
 		cmd.Args = append(cmd.Args, diskID)
 		output, err = cmd.CombinedOutput()
@@ -164,7 +159,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	for i := range layoutPartitions {
 		partNum := i + 1
 		partPath := derivePartitionPath(diskID, partNum)
-		cmd = exec.Command("sudo", ctx.Helper, "run", "wipefs", "--all", "-f", partPath)
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "wipefs", WipefsAllFlag, WipefsForceFlag, partPath)
 		if output, err := cmd.CombinedOutput(); err != nil {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("Warning: wipefs failed for %s: %v", partPath, err)
@@ -193,7 +188,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		// Build format command: format <partition> <fstype>
 		formatArgs := []string{partPath, part.Fstype}
 
-		cmd = exec.Command("sudo", ctx.Helper, "format")
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdFormat)
 		cmd.Args = append(cmd.Args, formatArgs...)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -216,7 +211,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Waiting for udev to settle after formatting")
 	}
-	cmd = exec.Command("sudo", ctx.Helper, "udev-settle")
+	cmd = exec.Command("sudo", ctx.Helper, HelperCmdUdevSettle)
 	cmd.Run()
 
 	// Force kernel to re-read partition table after formatting
@@ -238,18 +233,18 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		rootPartPath := derivePartitionPath(diskID, 2)
 
 		// Step 1: Mount top-level subvolume (subvolid=5) to a temp location
-		tmpMount := "/tmp/btrfs-setup"
-		cmd = exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", tmpMount)
+		tmpMount := BtrfsSetupTmpMount
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", tmpMount)
 		cmd.Run()
 
-		cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", "subvolid=5", rootPartPath, tmpMount)
+		cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", fmt.Sprintf("subvolid=%d", BtrfsTopLevelSubvolumeID), rootPartPath, tmpMount)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to mount btrfs top-level for subvolume creation: %w", err)
 		}
 
 		// Step 2: Create subvolumes
 		for _, sv := range subvolumes {
-			cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-create", tmpMount, sv.Name)
+			cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSubvolCreate, tmpMount, sv.Name)
 			output, err = cmd.CombinedOutput()
 			if err != nil {
 				exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
@@ -262,7 +257,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 
 		// Step 3: Set @ as the default subvolume
 		// This means mounting the partition without options will use @
-		cmd = exec.Command("sudo", ctx.Helper, "btrfs-subvol-set-default", tmpMount, "@")
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSubvolSetDefault, tmpMount, "@")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
@@ -276,7 +271,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		// compression → btrfs property set, nodatacow → chattr +C
 		for _, sv := range subvolumes {
 			if sv.Compression != "" {
-				cmd = exec.Command("sudo", ctx.Helper, "btrfs-set-compression", tmpMount, sv.Name, sv.Compression)
+				cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSetCompression, tmpMount, sv.Name, sv.Compression)
 				output, err = cmd.CombinedOutput()
 				if err != nil {
 					if ctx.Logger != nil {
@@ -303,8 +298,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		}
 
 		// Step 5: Unmount temp location
-		exec.Command("sudo", ctx.Helper, "umount", "-l", tmpMount).Run()
-		exec.Command("sudo", ctx.Helper, "run", "rmdir", tmpMount).Run()
+		exec.Command("sudo", ctx.Helper, HelperCmdUmount, UmountLazyFlag, tmpMount).Run()
+		exec.Command("sudo", ctx.Helper, HelperCmdRun, "rmdir", tmpMount).Run()
 
 		if ctx.Logger != nil {
 			ctx.Logger.Info("btrfs subvolumes configured: @ (default, compressed), @home (nodatacow + compressed), @root, @srv, @cache (nodatacow), @tmp (nodatacow), @log (nodatacow)")
@@ -394,11 +389,11 @@ func findPartitionsByFstype(partitions []shared.PartitionEntry) (*shared.Partiti
 	var efi, root *shared.PartitionEntry
 	for i := range partitions {
 		switch partitions[i].Fstype {
-		case "vfat":
+		case FileSystemVfat:
 			if efi == nil {
 				efi = &partitions[i]
 			}
-		case "ext4", "btrfs":
+		case FileSystemExt4, FileSystemBtrfs:
 			if root == nil {
 				root = &partitions[i]
 			}
@@ -434,27 +429,31 @@ func readPartitionUUID(helper, partition string) (string, error) {
 }
 
 // refreshPartitionTable forces the kernel to re-read the partition table for a disk.
-// Tries partprobe first (most reliable after sgdisk), then partx -a, then blockdev.
-// Retries up to 3 times if device nodes don't appear, with increasing delays.
+// Tries partprobe first (most reliable after sgdisk), then partx -a.
+// If both fail, logs a warning but continues — the kernel may still process asynchronously.
 func refreshPartitionTable(ctx *InstallContext, diskID string) {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Refreshing partition table for %s", diskID)
 	}
 
 	// Sync all pending writes first
-	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
+	exec.Command("sudo", ctx.Helper, HelperCmdRun, "sync").Run()
 
 	// Refresh partition table — partprobe is usually sufficient
-	// If it fails, the kernel will still process the new partition table asynchronously
-	// Subsequent operations (wipefs, mkfs) will fail with clear errors if device nodes don't exist
-	cmd := exec.Command("sudo", ctx.Helper, "run", "partprobe", diskID)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "partprobe", diskID)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: partprobe failed: %v (continuing — kernel may still process)", err)
+			ctx.Logger.Error("Warning: partprobe failed: %v (trying partx fallback)", err)
 		}
 		// Try partx -a as fallback
-		cmd = exec.Command("sudo", ctx.Helper, "run", "partx", "-a", diskID)
-		cmd.CombinedOutput()
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "partx", "-a", diskID)
+		if partxOut, partxErr := cmd.CombinedOutput(); partxErr != nil {
+			if ctx.Logger != nil {
+				ctx.Logger.Error("Warning: partx also failed: %v (kernel may still process)", partxErr)
+			}
+		} else if ctx.Logger != nil && len(partxOut) > 0 {
+			ctx.Logger.Command(string(partxOut))
+		}
 	} else if ctx.Logger != nil && len(output) > 0 {
 		ctx.Logger.Command(string(output))
 	}
@@ -479,11 +478,11 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 	}
 
 	// First, try lazy recursive unmount of /mnt (covers nested mounts including subvolumes)
-	cmd := exec.Command("sudo", helper, "umount", "-R", "/mnt")
+	cmd := exec.Command("sudo", helper, HelperCmdUmount, UmountRecursiveFlag, MountRoot)
 	cmd.Run()
 
 	// Also unmount /mnt/boot if mounted
-	cmd = exec.Command("sudo", helper, "umount", "/mnt/boot")
+	cmd = exec.Command("sudo", helper, HelperCmdUmount, BootMountPoint)
 	cmd.Run()
 
 	// Then unmount each partition individually
@@ -498,7 +497,7 @@ func unmountAllPartitions(diskID, helper string, logger Logger) error {
 			continue
 		}
 
-		cmd = exec.Command("sudo", helper, "umount", part.Path)
+		cmd = exec.Command("sudo", helper, HelperCmdUmount, part.Path)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			// Ignore errors — partition may not be mounted
 			if logger != nil {

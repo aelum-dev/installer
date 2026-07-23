@@ -198,10 +198,6 @@ func TestValidateDiskSelection_SavesOnSuccess(t *testing.T) {
 	if app.fileSystem != "ext4" {
 		t.Errorf("expected fileSystem to be saved as 'ext4', got %q", app.fileSystem)
 	}
-	// Layout is NOT set by validation — it's determined in StartInstallation
-	if app.layout != "" {
-		t.Errorf("expected layout to NOT be set by validation, got %q", app.layout)
-	}
 }
 
 func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
@@ -228,9 +224,5 @@ func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
 	}
 	if app.fileSystem != "ext4" {
 		t.Errorf("expected saved fileSystem to still be 'ext4', got %q", app.fileSystem)
-	}
-	// Layout should still be empty (determined in StartInstallation)
-	if app.layout != "" {
-		t.Errorf("expected layout to still be empty, got %q", app.layout)
 	}
 }

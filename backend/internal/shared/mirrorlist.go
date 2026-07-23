@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	mirrorListURL     = "https://archlinux.org/mirrorlist/all/https/"
-	rawMirrorlistFile = "all_https.txt"
-	mirrorListsDir    = "mirrorlist" // relative to this file (backend/shared/mirrorlist/)
+	mirrorListURL     = MirrorListURL
+	rawMirrorlistFile = RawMirrorlistFileName
+	mirrorListsDir    = MirrorListsRelativeDir // relative to this file (backend/shared/mirrorlist/)
 )
 
 //go:embed mirrorlist/*.list
@@ -103,7 +103,7 @@ func downloadMirrorList(path string) error {
 		return fmt.Errorf("mirrorlist URL returned status %d", resp.StatusCode)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), MirrorListDirMode); err != nil {
 		return err
 	}
 
@@ -143,7 +143,7 @@ func parseMirrorList(path string) ([]mirrorSection, []string, error) {
 		line := scanner.Text()
 
 		// Check for country header
-		if strings.HasPrefix(line, "## ") {
+		if strings.HasPrefix(line, MirrorListCountryHeaderPrefix) {
 			// Process previous section if any
 			if currentCountry != "" {
 				if strings.EqualFold(currentCountry, "Worldwide") {
@@ -153,7 +153,7 @@ func parseMirrorList(path string) ([]mirrorSection, []string, error) {
 				}
 			}
 
-			country := strings.TrimPrefix(line, "## ")
+			country := strings.TrimPrefix(line, MirrorListCountryHeaderPrefix)
 			country = strings.TrimSpace(country)
 			currentCountry = country
 			currentServers = nil
@@ -161,7 +161,7 @@ func parseMirrorList(path string) ([]mirrorSection, []string, error) {
 		}
 
 		// Skip empty lines and non-server lines
-		if line == "" || !strings.HasPrefix(line, "#Server = ") {
+		if line == "" || !strings.HasPrefix(line, MirrorListCommentedServerPrefix) {
 			continue
 		}
 

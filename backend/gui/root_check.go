@@ -13,13 +13,10 @@ import (
 // before allowing installation to proceed.
 func (a *App) CheckRoot() core.RootCheckResult {
 	helper := core.FindHelper()
-	
-	fmt.Printf("[DEBUG GUI] CheckRoot: FindHelper() returned: %s\n", helper)
-	wailsRuntime.LogInfo(a.ctx, fmt.Sprintf("Checking root privileges with helper: %s", helper))
+
+	wailsRuntime.LogInfo(a.ctx, "Checking root privileges with helper: "+helper)
 	result := core.CheckRoot(helper)
-	
-	fmt.Printf("[DEBUG GUI] CheckRoot: result authorized=%v, error=%s, message=%s\n", result.Authorized, result.Error, result.Message)
-	
+
 	if result.Authorized {
 		wailsRuntime.LogInfo(a.ctx, "Root check passed: sudo can run helper without password")
 	} else {

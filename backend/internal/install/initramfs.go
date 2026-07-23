@@ -27,7 +27,7 @@ func RegenerateInitramfs(ctx *InstallContext) error {
 
 	// Load vfat module inside the installed system
 	// This ensures autodetect (or explicit inclusion) picks it up
-	cmd := exec.Command("sudo", helper, "run", "chroot", "/mnt", "modprobe", "vfat")
+	cmd := exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, MountRoot, "modprobe", "vfat")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Log warning but continue — modprobe might succeed silently or module might already be loaded
@@ -40,7 +40,7 @@ func RegenerateInitramfs(ctx *InstallContext) error {
 
 	// Regenerate initramfs with vfat included
 	// Using the linux-lts preset (matches the kernel package installed)
-	cmd = exec.Command("sudo", helper, "run", "chroot", "/mnt", "mkinitcpio", "-p", "linux-lts")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, MountRoot, "mkinitcpio", "-p", KernelPresetName)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to regenerate initramfs: %w: %s", err, string(output))

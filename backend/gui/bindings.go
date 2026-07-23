@@ -47,8 +47,3 @@ func (a *App) SetSelectedLanguage(code string) error {
 func (a *App) GetFileSystem() string {
 	return a.fileSystem
 }
-
-// GetLayout returns the currently selected partition layout.
-func (a *App) GetLayout() string {
-	return a.layout
-}

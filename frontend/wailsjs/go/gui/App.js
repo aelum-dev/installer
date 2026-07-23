@@ -46,10 +46,6 @@ export function GetLanguages() {
   return window['go']['gui']['App']['GetLanguages']();
 }
 
-export function GetLayout() {
-  return window['go']['gui']['App']['GetLayout']();
-}
-
 export function GetSelectedLanguage() {
   return window['go']['gui']['App']['GetSelectedLanguage']();
 }

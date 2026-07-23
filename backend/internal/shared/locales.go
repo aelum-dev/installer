@@ -13,9 +13,10 @@ func GetLanguages() []Language {
 // FindLanguage finds a language by code. Returns nil if not found.
 // Shared by GUI and console installer.
 func FindLanguage(code string) *Language {
-	for _, lang := range GetLanguages() {
-		if lang.Code == code {
-			return &lang
+	langs := GetLanguages()
+	for i := range langs {
+		if langs[i].Code == code {
+			return &langs[i]
 		}
 	}
 	return nil

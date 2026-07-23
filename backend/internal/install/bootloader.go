@@ -28,7 +28,7 @@ import (
 func ConfigureBootloader(ctx *InstallContext) error {
 	esp := ctx.ESP
 	if esp == "" {
-		esp = "/mnt/boot"
+		esp = BootMountPoint
 	}
 
 	// Check that /mnt is mounted (system must be installed and mounted)
@@ -79,9 +79,9 @@ func ConfigureBootloader(ctx *InstallContext) error {
 
 	// Step 4: Set as default boot entry
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting default boot entry to aesthetic-os.conf")
+		ctx.Logger.Info("Setting default boot entry to %s.conf", BootEntryFileName)
 	}
-	if err := setDefaultBootEntry(helper, "aesthetic-os.conf"); err != nil {
+	if err := setDefaultBootEntry(helper, BootEntryFileName+".conf"); err != nil {
 		return err
 	}
 
@@ -120,10 +120,10 @@ func ConfigureBootloader(ctx *InstallContext) error {
 //
 // Uses a custom boot option description so entries can be identified later.
 func installSystemdBoot(helper, esp string) error {
-	cmd := exec.Command("sudo", helper, "run", "bootctl", "install",
-		"--esp-path="+esp,
-		"--graceful",
-		"--efi-boot-option-description=Aesthetic OS",
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bootctl", BootctlInstallFlag,
+		BootctlEspPathFlag+esp,
+		BootctlGracefulFlag,
+		"--efi-boot-option-description="+BootOptionDescription,
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -137,32 +137,32 @@ func installSystemdBoot(helper, esp string) error {
 // Works regardless of kernel flavor (linux, linux-lts, linux-zen, etc.).
 func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 	// List files in /mnt/boot/ matching vmlinuz-* and initramfs-*
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", "ls /mnt/boot/vmlinuz-* 2>/dev/null")
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("ls %s/%s* 2>/dev/null", BootMountPoint, KernelFilePrefix))
 	output, err := cmd.Output()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to list kernel files in /mnt/boot: %w", err)
+		return "", "", fmt.Errorf("failed to list kernel files in %s: %w", BootMountPoint, err)
 	}
 
 	files := strings.TrimSpace(string(output))
 	if files == "" {
-		return "", "", fmt.Errorf("no vmlinuz-* files found in /mnt/boot/")
+		return "", "", fmt.Errorf("no %s* files found in %s", KernelFilePrefix, BootMountPoint)
 	}
 
 	// Take the first (and typically only) match
 	kernel = filepath.Base(strings.Split(files, "\n")[0])
 
 	// Find matching initrd — same base name with .img extension
-	base := strings.TrimPrefix(kernel, "vmlinuz-")
-	initrd = "initramfs-" + base + ".img"
+	base := strings.TrimPrefix(kernel, KernelFilePrefix)
+	initrd = InitrdFilePrefix + base + InitrdFileExtension
 
 	// Verify initrd exists
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("test -f /mnt/boot/%s", initrd))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s/%s", BootMountPoint, initrd))
 	if err := cmd.Run(); err != nil {
 		// Try the fallback naming: initramfs-<kernel>.img
-		initrd = "initramfs-" + kernel + ".img"
-		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("test -f /mnt/boot/%s", initrd))
+		initrd = InitrdFilePrefix + kernel + InitrdFileExtension
+		cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s/%s", BootMountPoint, initrd))
 		if err := cmd.Run(); err != nil {
-			return "", "", fmt.Errorf("no initrd found in /mnt/boot/ for kernel %s", kernel)
+			return "", "", fmt.Errorf("no initrd found in %s for kernel %s", BootMountPoint, kernel)
 		}
 	}
 
@@ -175,18 +175,15 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 // rootflags=subvol=@ is required so the kernel mounts the @ subvolume as root.
 func writeBootEntry(helper, esp, rootUUID, kernel, initrd, fsType string) error {
 	options := "root=UUID=" + rootUUID + " rw"
-	if fsType == "btrfs" {
+	if fsType == FileSystemBtrfs {
 		options += " rootflags=subvol=@"
 	}
-	entryContent := fmt.Sprintf(`title   Aesthetic OS
-linux   /%s
-initrd  /%s
-options %s
-`, kernel, initrd, options)
+	entryContent := fmt.Sprintf("title   %s\nlinux   /%s\ninitrd  /%s\noptions %s\n", BootEntryTitle, kernel, initrd, options)
 
-	entryPath := esp + "/loader/entries/aesthetic-os.conf"
+	entryPath := esp + "/" + BootLoaderEntriesDir + "/" + BootEntryFileName + ".conf"
 
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("mkdir -p %s/loader/entries && cat > %s << 'BOOTEOF'\n%s\nBOOTEOF", esp, entryPath, entryContent))
+	// Write via tee to avoid heredoc fragility — the content is passed via stdin.
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("mkdir -p %s/loader/entries && printf '%%s' %q > %s", esp, entryContent, entryPath))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write boot entry to %s: %w: %s", entryPath, err, string(output))
@@ -201,9 +198,9 @@ options %s
 // Per the bootctl man page: "Removes files from the ESP and XBOOTLDR partitions that
 // belong to the entry token but are not referenced in any boot loader entries."
 func cleanupEsp(helper, esp string) error {
-	cmd := exec.Command("sudo", helper, "run", "bootctl", "cleanup",
-		"--esp-path="+esp,
-		"--graceful",
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bootctl", BootctlCleanupFlag,
+		BootctlEspPathFlag+esp,
+		BootctlGracefulFlag,
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -217,8 +214,8 @@ func cleanupEsp(helper, esp string) error {
 // Partition (ESP), for use by the systemd-boot boot loader."
 // The seed is credited to the kernel's entropy pool during early boot.
 func generateRandomSeed(helper, esp string) error {
-	cmd := exec.Command("sudo", helper, "run", "bootctl", "random-seed",
-		"--esp-path="+esp,
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bootctl", BootctlRandomSeedFlag,
+		BootctlEspPathFlag+esp,
 	)
 	if err := cmd.Run(); err != nil {
 		// Not fatal — entropy generation is a best-effort improvement
@@ -231,7 +228,7 @@ func generateRandomSeed(helper, esp string) error {
 // setDefaultBootEntry sets the default boot entry using bootctl.
 // Per the bootctl man page: "set-default ID — Sets the default boot loader entry."
 func setDefaultBootEntry(helper, entryID string) error {
-	cmd := exec.Command("sudo", helper, "run", "bootctl", "set-default", entryID)
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bootctl", BootctlSetDefaultFlag, entryID)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("bootctl set-default failed: %w: %s", err, string(output))
@@ -248,22 +245,22 @@ func verifyBootloaderInstallation(helper, esp string) error {
 	var info []string
 
 	// Check 1: bootctl is-installed
-	cmd := exec.Command("sudo", helper, "run", "bootctl", "is-installed", "--esp-path="+esp)
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bootctl", BootctlIsInstalledFlag, BootctlEspPathFlag+esp)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		issues = append(issues, fmt.Sprintf("bootctl is-installed failed: %s", strings.TrimSpace(string(output))))
 	}
 
 	// Check 2: loader.conf exists
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "test -f "+esp+"/loader/loader.conf && echo OK || echo MISSING")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s/loader/loader.conf && echo OK || echo MISSING", esp))
 	output, _ = cmd.Output()
 	if strings.TrimSpace(string(output)) != "OK" {
 		issues = append(issues, "loader.conf is MISSING")
 	}
 
 	// Check 3: boot entry file exists
-	entryPath := esp + "/loader/entries/aesthetic-os.conf"
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("test -f %s && echo OK || echo MISSING", entryPath))
+	entryPath := esp + "/" + BootLoaderEntriesDir + "/" + BootEntryFileName + ".conf"
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s && echo OK || echo MISSING", entryPath))
 	output, _ = cmd.Output()
 	if strings.TrimSpace(string(output)) != "OK" {
 		issues = append(issues, "boot entry file is MISSING: "+entryPath)
@@ -277,14 +274,14 @@ func verifyBootloaderInstallation(helper, esp string) error {
 	}
 
 	// Check 4: loader directory structure
-	cmd = exec.Command("sudo", helper, "run", "find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
 	output, err = cmd.Output()
 	if err == nil {
 		info = append(info, "ESP files: "+strings.TrimSpace(string(output)))
 	}
 
 	// Check 5: bootctl status
-	cmd = exec.Command("sudo", helper, "run", "bootctl", "status", "--esp-path="+esp)
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bootctl", BootctlStatusFlag, BootctlEspPathFlag+esp)
 	output, err = cmd.CombinedOutput()
 	if err == nil {
 		info = append(info, "bootctl status:\n"+strings.TrimSpace(string(output)))
@@ -310,7 +307,7 @@ func discoverPartitions(helper, espPath string) (*shared.PartitionInfo, error) {
 	esp := strings.TrimRight(espPath, "/")
 
 	// Find which partition the ESP is mounted on
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("findmnt -n -o SOURCE %s 2>/dev/null", esp))
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("findmnt -n -o SOURCE %s 2>/dev/null", esp))
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find ESP mount point for %s: %w", esp, err)
@@ -321,7 +318,7 @@ func discoverPartitions(helper, espPath string) (*shared.PartitionInfo, error) {
 	}
 
 	// Find the root partition mounted at /mnt
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", "findmnt -n -o SOURCE /mnt 2>/dev/null")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", "findmnt -n -o SOURCE "+MountRoot+" 2>/dev/null")
 	output, err = cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find root partition mounted at /mnt: %w", err)

@@ -89,10 +89,10 @@ func main() {
 	installer := core.NewInstaller(
 		disk,
 		helper,
-		"aesthetic",               // username
-		"aesthetic",               // password
-		"aestheticos",             // hostname
-		shared.GetRegion("en_US"), // region (default)
+		shared.DefaultCLIUsername,   // username
+		shared.DefaultCLIPassword,   // password
+		shared.DefaultHostname,      // hostname
+		shared.GetRegion(shared.DefaultLanguageCode), // region (default)
 		*fileSystemFlag,
 		*dryRun,
 	)

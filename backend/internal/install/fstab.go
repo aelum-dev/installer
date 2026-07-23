@@ -52,11 +52,11 @@ func GenerateFstab(ctx *InstallContext) error {
 		rootFstype = ctx.FileSystem
 	}
 	fstabContent := fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
-UUID=%s  /              %s    defaults,noatime        0  1
-UUID=%s  /boot          vfat    umask=0077 0 2
-`, p.RootUUID, rootFstype, p.EFIUUID)
+UUID=%s  /              %s    %s        0  1
+UUID=%s  /boot          vfat    %s 0 2
+`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask)
 
-	cmd := exec.Command("sudo", ctx.Helper, "run", "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << 'EOF'\n%s\nEOF", fstabContent))
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << '%s'\n%s\n%s", FstabHeredocDelimiter, fstabContent, FstabHeredocDelimiter))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write fstab: %w: %s", err, string(output))
@@ -86,7 +86,7 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
 
 	for _, sv := range subvolumes {
-		opts := fmt.Sprintf("subvol=%s,defaults,noatime,autodefrag", sv.Name)
+		opts := fmt.Sprintf("%s%s,%s,%s", BtrfsSubvolumeMountPrefix, sv.Name, DefaultMountOptions, BtrfsAutodefragOption)
 		if sv.Compression != "" {
 			opts += ",compress=" + sv.Compression
 		}
@@ -94,12 +94,12 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 	}
 
 	// EFI partition
-	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    umask=0077  0  2", p.EFIUUID))
+	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, EfiPartitionUmask))
 
 	fstabContent := strings.Join(lines, "\n") + "\n"
 
 	// Write fstab
-	cmd := exec.Command("sudo", ctx.Helper, "run", "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << 'EOF'\n%s\nEOF", fstabContent))
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << '%s'\n%s\n%s", FstabHeredocDelimiter, fstabContent, FstabHeredocDelimiter))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write fstab: %w: %s", err, string(output))
@@ -139,7 +139,7 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 	}
 
 	content := string(output)
-	if len(content) == 0 || len(content) < 50 {
+	if len(content) == 0 || len(content) < MinFstabContentLengthBytes {
 		return fmt.Errorf("fstab is empty or too short (%d bytes)", len(content))
 	}
 

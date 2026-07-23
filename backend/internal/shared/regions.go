@@ -31,7 +31,7 @@ var Regions = map[string]Region{
 		Code:     "uk_UA",
 		Name:     "Українська (Україна)",
 		Locale:   "uk_UA.UTF-8",
-		Timezone: "Europe/Kiev",
+		Timezone: "Europe/Kyiv",
 		Keymap:   "ua",
 	},
 }

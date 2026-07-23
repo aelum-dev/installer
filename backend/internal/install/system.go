@@ -34,7 +34,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting hostname to '%s'", ctx.Hostname)
 	}
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("echo '%s' > /mnt/etc/hostname", ctx.Hostname))
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo '%s' > %s/etc/hostname", ctx.Hostname, MountRoot))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set hostname: %w: %s", err, string(output))
@@ -44,7 +44,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting timezone to %s", region.Timezone)
 	}
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("ln -sf /usr/share/zoneinfo/%s /mnt/etc/localtime", region.Timezone))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("ln -sf /usr/share/zoneinfo/%s %s/etc/localtime", region.Timezone, MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %w: %s", err, string(output))
@@ -55,7 +55,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Configuring locale: %s", region.Locale)
 	}
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("sed -i 's/^#%s/%s/' /mnt/etc/locale.gen", region.Locale, region.Locale))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("sed -i 's/^#%s/%s/' %s/etc/locale.gen", region.Locale, region.Locale, MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to configure locale: %w: %s", err, string(output))
@@ -65,7 +65,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Generating locale")
 	}
-	cmd = exec.Command("sudo", helper, "run", "chroot", "/mnt", "locale-gen")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, MountRoot, "locale-gen")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
@@ -75,7 +75,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Write locale.conf
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("echo 'LANG=%s' > /mnt/etc/locale.conf", region.Locale))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'LANG=%s' > %s/etc/locale.conf", region.Locale, MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write locale.conf: %w: %s", err, string(output))
@@ -85,7 +85,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting console keymap to %s", region.Keymap)
 	}
-	cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > /mnt/etc/vconsole.conf", region.Keymap))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > %s/etc/vconsole.conf", region.Keymap, MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set keymap: %w: %s", err, string(output))
@@ -119,7 +119,7 @@ func copyMirrorList(helper, regionCode string) error {
 	content := uncommentMirrors(string(rawContent))
 
 	// Write to target mirrorlist
-	cmd := exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf("cat > /mnt/etc/pacman.d/mirrorlist << 'EOF'\n%s\nEOF", content))
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > %s/etc/pacman.d/mirrorlist << '%s'\n%s\n%s", MountRoot, FstabHeredocDelimiter, content, FstabHeredocDelimiter))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to write mirror list: %w: %s", err, strings.TrimSpace(string(output)))
@@ -132,8 +132,8 @@ func copyMirrorList(helper, regionCode string) error {
 func uncommentMirrors(content string) string {
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
-		if strings.HasPrefix(line, "#Server = ") {
-			lines[i] = "Server = " + strings.TrimPrefix(line, "#Server = ")
+		if strings.HasPrefix(line, MirrorListCommentedServerPrefix) {
+			lines[i] = MirrorListServerPrefix + strings.TrimPrefix(line, MirrorListCommentedServerPrefix)
 		}
 	}
 	return strings.Join(lines, "\n")
