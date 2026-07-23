@@ -44,6 +44,7 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
+	passwordFlag := flag.String("password", "", "User password (required)")
 	flag.Parse()
 
 	// Layout is now determined by filesystem type (ext4 or btrfs)
@@ -63,6 +64,11 @@ func main() {
 
 	if disk == "" {
 		printUsage()
+		os.Exit(1)
+	}
+
+	if *passwordFlag == "" {
+		fmt.Fprintf(os.Stderr, "Error: --password is required\n")
 		os.Exit(1)
 	}
 
@@ -90,7 +96,7 @@ func main() {
 		disk,
 		helper,
 		shared.DefaultCLIUsername,   // username
-		shared.DefaultCLIPassword,   // password
+		*passwordFlag,              // password (required via --password)
 		shared.DefaultHostname,      // hostname
 		shared.GetRegion(shared.DefaultLanguageCode), // region (default)
 		*fileSystemFlag,

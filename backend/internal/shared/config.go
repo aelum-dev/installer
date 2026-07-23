@@ -103,10 +103,6 @@ const DefaultHostname = "aestheticos"
 // DefaultCLIUsername is the default CLI installer username (test only).
 const DefaultCLIUsername = "aesthetic"
 
-// DefaultCLIPassword is the default CLI installer password (test only).
-// CHANGE THIS before any production use.
-const DefaultCLIPassword = "aesthetic"
-
 // --- EFI / GPT ---------------------------------------------------------------
 
 // EFIPartitionSizeMB is the EFI partition size in megabytes.

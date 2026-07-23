@@ -8,12 +8,8 @@ Removed `CanGoNext()` from backend, frontend, and test mocks. The frontend valid
 ### 2. ~~`CanGoBack()` — unused~~ — **DEAD CODE**
 Imported in `navigation.ts` but never called. The `goBack()` function calls `SetCurrentPage` directly without checking. Removed from backend, frontend, and test mocks.
 
-### 3. `DefaultCLIPassword` is a hardcoded plaintext password
-**File:** `backend/internal/shared/config.go:111`
-```go
-const DefaultCLIPassword = "aesthetic"  // CHANGE THIS before any production use.
-```
-Still has the default password. The comment says "CHANGE THIS" but it hasn't been changed.
+### 3. ~~`DefaultCLIPassword` is a hardcoded plaintext password~~ — **RESOLVED**
+Removed `DefaultCLIPassword` from `shared/config.go`. CLI now requires `--password` flag — no default password.
 
 ---
 
@@ -134,7 +130,7 @@ The `gui/logger.go` version should use `shared.GetLogPath()` instead of reimplem
 
 | Category | Count |
 |----------|-------|
-| Critical bugs | 1 |
+| Critical bugs | 0 |
 | Bugs | 6 |
 | Dead code | 8 |
 | Magic numbers / hardcoded strings | 7 |
