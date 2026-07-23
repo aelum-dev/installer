@@ -73,12 +73,6 @@ var commands = []HelperCommand{
 		Run:   cmdBootctlInstall,
 	},
 	{
-		Name:  "bootctl-set-default",
-		Usage: "bootctl-set-default <entry>",
-		Help:  "Set default boot entry",
-		Run:   cmdBootctlSetDefault,
-	},
-	{
 		Name:  "passwd",
 		Usage: "passwd <username>",
 		Help:  "Set user password",
@@ -393,14 +387,6 @@ func cmdBootctlInstall(args []string) error {
 	// Install systemd-boot to the EFI System Partition.
 	// Per bootctl(1): "--esp-path= Path to the EFI System Partition (ESP)."
 	return runCommand("bootctl", "install", "--esp-path="+args[0])
-}
-
-func cmdBootctlSetDefault(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: bootctl-set-default <esp> <entry-id>")
-	}
-	// Per bootctl(1): "set-default ID — Sets the default boot loader entry."
-	return runCommand("bootctl", "set-default", "--esp-path="+args[0], args[1])
 }
 
 func cmdPasswd(args []string) error {
