@@ -6,29 +6,6 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
-func TestPartitionToDisk(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"/dev/sda1", "/dev/sda"},
-		{"/dev/sda", "/dev/sda"},
-		{"/dev/nvme0n1p1", "/dev/nvme0n1"},
-		{"/dev/nvme0n1", "/dev/nvme0n1"},
-		{"/dev/vda1", "/dev/vda"},
-		{"/dev/xvda2", "/dev/xvda"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := partitionToDisk(tt.input)
-			if result != tt.expected {
-				t.Errorf("partitionToDisk(%q) = %q, want %q", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestFormatDisk_PartitionLayout(t *testing.T) {
 	// Test that FormatDisk creates the expected partition layout
 	// This is a logic test, not an execution test
@@ -39,27 +16,6 @@ func TestFormatDisk_PartitionLayout(t *testing.T) {
 	// Verify the context is set up correctly
 	if ctx.DiskID != "/dev/vda" {
 		t.Errorf("expected disk ID /dev/vda, got %s", ctx.DiskID)
-	}
-}
-
-func TestConfigureBootloader_AutoDiscover(t *testing.T) {
-	// Test that ConfigureBootloader can auto-discover partitions
-	// This test verifies the logic without actually running bootctl
-	ctx := &InstallContext{}
-
-	// Simulate auto-discovery (in real code, this calls discoverPartitions)
-	if ctx.Partitions == nil {
-		// In real scenario, discoverPartitions would use findmnt to find mounted ESP/root
-		// For this test, we just verify the context is ready
-		ctx.Partitions = &shared.PartitionInfo{
-			Disk:     "/dev/vda",
-			EFIPart:  "/dev/vda1",
-			RootPart: "/dev/vda2",
-		}
-	}
-
-	if ctx.Partitions == nil {
-		t.Error("expected partitions to be discovered")
 	}
 }
 

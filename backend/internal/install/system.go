@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -57,7 +58,9 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Configuring locale: %s", region.Locale)
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("sed -i 's/^#%s/%s/' %s/etc/locale.gen", region.Locale, region.Locale, shared.MountRoot))
+	// Use fixed-string grep replacement to avoid regex metacharacters in locale names (e.g. ".")
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+		fmt.Sprintf("sed -i 's/^#%s/%s/' %s/etc/locale.gen", regexp.QuoteMeta(region.Locale), region.Locale, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to configure locale: %w: %s", err, string(output))

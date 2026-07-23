@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"aestheticos-installer/backend/internal/shared"
 )
@@ -145,27 +146,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	// partition device nodes before we try to format them.
 	refreshPartitionTable(ctx, diskID)
 
-	// Wipe filesystem signatures from newly created partitions
-	// Mirrors archinstall's partition() → wipefs --all on filtered_part
-	// This prevents "signature detected" errors during mkfs
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Wiping filesystem signatures from new partitions")
-	}
-	for i := range layoutPartitions {
-		partNum := i + 1
-		partPath := derivePartitionPath(diskID, partNum)
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "wipefs", WipefsAllFlag, WipefsForceFlag, partPath)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Warning: wipefs failed for %s: %v", partPath, err)
-			}
-		} else if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
-	}
-
-	// Sync to ensure wipefs writes are flushed
-	exec.Command("sudo", ctx.Helper, "run", "sync").Run()
+	// Note: wipefs is NOT called here — the format helper (cmdFormat) already runs
+	// wipefs --all -f internally before each mkfs call. Calling it twice is redundant.
 
 	// Format each partition
 	// Mirrors archinstall's FilesystemHandler._format_partitions():
@@ -424,8 +406,8 @@ func readPartitionUUID(helper, partition string) (string, error) {
 }
 
 // refreshPartitionTable forces the kernel to re-read the partition table for a disk.
-// Tries partprobe first (most reliable after sgdisk), then partx -a.
-// If both fail, logs a warning but continues — the kernel may still process asynchronously.
+// Retries partprobe up to PartprobeMaxRetries times with PartprobeRetryDelayMs delay,
+// then falls back to partx -a with the same retry logic.
 func refreshPartitionTable(ctx *InstallContext, diskID string) {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Refreshing partition table for %s", diskID)
@@ -434,24 +416,59 @@ func refreshPartitionTable(ctx *InstallContext, diskID string) {
 	// Sync all pending writes first
 	exec.Command("sudo", ctx.Helper, HelperCmdRun, "sync").Run()
 
-	// Refresh partition table — partprobe is usually sufficient
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "partprobe", diskID)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: partprobe failed: %v (trying partx fallback)", err)
+	// Retry partprobe with backoff
+	if !retryWithDelay(func() error {
+		cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "partprobe", diskID)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
 		}
-		// Try partx -a as fallback
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "partx", "-a", diskID)
-		if partxOut, partxErr := cmd.CombinedOutput(); partxErr != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Warning: partx also failed: %v (kernel may still process)", partxErr)
-			}
-		} else if ctx.Logger != nil && len(partxOut) > 0 {
+		if ctx.Logger != nil && len(output) > 0 {
+			ctx.Logger.Command(string(output))
+		}
+		return nil
+	}) {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("partprobe succeeded")
+			return
+		}
+	}
+
+	// Fall back to partx -a with retry
+	if !retryWithDelay(func() error {
+		cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "partx", "-a", diskID)
+		partxOut, partxErr := cmd.CombinedOutput()
+		if partxErr != nil {
+			return partxErr
+		}
+		if ctx.Logger != nil && len(partxOut) > 0 {
 			ctx.Logger.Command(string(partxOut))
 		}
-	} else if ctx.Logger != nil && len(output) > 0 {
-		ctx.Logger.Command(string(output))
+		return nil
+	}) {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("partx -a succeeded")
+			return
+		}
 	}
+
+	if ctx.Logger != nil {
+		ctx.Logger.Error("Warning: both partprobe and partx failed after retries (kernel may still process)")
+	}
+}
+
+// retryWithDelay retries the given function up to PartprobeMaxRetries times with
+// PartprobeRetryDelayMs delay between attempts. Returns true on first success.
+func retryWithDelay(fn func() error) bool {
+	for i := 0; i < PartprobeMaxRetries; i++ {
+		if err := fn(); err == nil {
+			return true
+		}
+		if i < PartprobeMaxRetries-1 {
+			time.Sleep(time.Duration(PartprobeRetryDelayMs) * time.Millisecond)
+		}
+	}
+	return false
 }
 
 // unmountAllPartitions unmounts all partitions on a given disk device.

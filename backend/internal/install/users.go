@@ -37,13 +37,14 @@ func SetupUsers(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	// Set password inside chroot
+	// Set password inside chroot (via stdin to avoid shell interpolation of special chars)
 	if ctx.Password != "" {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Setting password for user '%s'", ctx.Username)
 		}
 		cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
-			"bash", "-c", fmt.Sprintf("echo '%s:%s' | chpasswd", ctx.Username, ctx.Password))
+			"bash", "-c", "read -r pass && echo \"$1:$pass\" | chpasswd", "--", ctx.Username)
+		cmd.Stdin = strings.NewReader(ctx.Password + "\n")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("passwd failed: %w: %s", err, string(output))
@@ -74,11 +75,13 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	// Configure sudoers: wheel group requires password for sudo
+	// Write directly to /mnt/etc/sudoers.d/wheel (the mounted installed system),
+	// NOT /etc/sudoers.d/wheel which is on the live ISO.
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Configuring sudoers for wheel group")
 	}
 	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		"mkdir -p /etc/sudoers.d && echo \"%wheel ALL=(ALL:ALL) ALL\" > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel")
+		"mkdir -p /mnt/etc/sudoers.d && echo \"%wheel ALL=(ALL:ALL) ALL\" > /mnt/etc/sudoers.d/wheel && chmod 0440 /mnt/etc/sudoers.d/wheel")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to configure sudoers: %w: %s", err, string(output))

@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -155,15 +154,15 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 	base := strings.TrimPrefix(kernel, KernelFilePrefix)
 	initrd = InitrdFilePrefix + base + InitrdFileExtension
 
-	// Verify initrd exists
+	// Verify initrd exists; if not, try the fallback initrd (initramfs-<base>-fallback.img)
 	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s/%s", BootMountPoint, initrd))
 	if err := cmd.Run(); err != nil {
-		// Try the fallback naming: initramfs-<kernel>.img
-		initrd = InitrdFilePrefix + kernel + InitrdFileExtension
-		cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s/%s", BootMountPoint, initrd))
+		initrdFallback := InitrdFilePrefix + base + "-fallback" + InitrdFileExtension
+		cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("test -f %s/%s", BootMountPoint, initrdFallback))
 		if err := cmd.Run(); err != nil {
-			return "", "", fmt.Errorf("no initrd found in %s for kernel %s", BootMountPoint, kernel)
+			return "", "", fmt.Errorf("no initrd found in %s for kernel %s (tried %s and %s)", BootMountPoint, kernel, initrd, initrdFallback)
 		}
+		initrd = initrdFallback
 	}
 
 	return kernel, initrd, nil
@@ -302,73 +301,4 @@ func verifyBootloaderInstallation(helper, esp string) error {
 	return nil
 }
 
-// discoverPartitions finds the ESP and root partition from a running system.
-// It looks for the ESP at the given espPath, then finds the root partition
-// mounted at /mnt. UUIDs are read via blkid.
-// This enables standalone bootloader installation without running FormatDisk first.
-func discoverPartitions(helper, espPath string) (*shared.PartitionInfo, error) {
-	esp := strings.TrimRight(espPath, "/")
 
-	// Find which partition the ESP is mounted on
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("findmnt -n -o SOURCE %s 2>/dev/null", esp))
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to find ESP mount point for %s: %w", esp, err)
-	}
-	espDevice := strings.TrimSpace(string(output))
-	if espDevice == "" {
-		return nil, fmt.Errorf("ESP not found mounted at %s", esp)
-	}
-
-	// Find the root partition mounted at /mnt
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", "findmnt -n -o SOURCE "+shared.MountRoot+" 2>/dev/null")
-	output, err = cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to find root partition mounted at /mnt: %w", err)
-	}
-	rootDevice := strings.TrimSpace(string(output))
-	if rootDevice == "" {
-		return nil, fmt.Errorf("root partition not found mounted at /mnt")
-	}
-
-	// Derive disk path from partition (e.g., /dev/sda1 -> /dev/sda)
-	disk := partitionToDisk(espDevice)
-
-	// Read UUIDs via blkid
-	espUUID, err := readPartitionUUID(helper, espDevice)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read ESP UUID: %w", err)
-	}
-
-	rootUUID, err := readPartitionUUID(helper, rootDevice)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read root UUID: %w", err)
-	}
-
-	return &shared.PartitionInfo{
-		Disk:     disk,
-		EFIPart:  espDevice,
-		EFIUUID:  espUUID,
-		RootPart: rootDevice,
-		RootUUID: rootUUID,
-	}, nil
-}
-
-// partitionToDisk extracts the disk device from a partition path.
-// e.g., /dev/sda1 -> /dev/sda, /dev/nvme0n1p1 -> /dev/nvme0n1
-func partitionToDisk(partition string) string {
-	// Handle nvme: /dev/nvme0n1p1 -> /dev/nvme0n1
-	// NVMe partitions have format: nvmeXnYpZ (controller, namespace, partition)
-	// We need to strip only the "p<digit>" suffix, not digits in the disk name
-	if strings.HasPrefix(partition, "/dev/nvme") {
-		if idx := strings.LastIndex(partition, "p"); idx != -1 {
-			// Make sure it's followed by a digit (real partition)
-			if idx+1 < len(partition) && partition[idx+1] >= '0' && partition[idx+1] <= '9' {
-				return partition[:idx]
-			}
-		}
-		return partition
-	}
-	// Handle sd/vd/xvd: /dev/sda1 -> /dev/sda
-	return regexp.MustCompile(`[0-9]+$`).ReplaceAllString(partition, "")
-}
