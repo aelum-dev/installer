@@ -3,8 +3,8 @@ import { userAccountData, diskSelectionData } from '$lib/state.svelte';
 
 // Mock Wails Go bindings
 vi.mock('@wails/go/gui/App.js', () => ({
-	CanGoNext: vi.fn(() => Promise.resolve(true)),
-	CanGoBack: vi.fn(() => Promise.resolve(true)),
+
+
 	SetCurrentPage: vi.fn(() => Promise.resolve()),
 	ValidateUserAccount: vi.fn(() => Promise.resolve()),
 	SaveUserAccount: vi.fn(() => Promise.resolve()),

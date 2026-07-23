@@ -47,17 +47,6 @@ func (a *App) SetCurrentPage(pageID PageID) error {
 	return nil
 }
 
-// CanGoNext checks if the user can proceed to the next page.
-// TODO: Re-enable validation once UI forms are implemented.
-func (a *App) CanGoNext() bool {
-	return a.currentPage < PageFinish
-}
-
-// CanGoBack checks if the user can go back to the previous page.
-func (a *App) CanGoBack() bool {
-	return a.currentPage > PageWelcome
-}
-
 // SetHostname sets the system hostname.
 func (a *App) SetHostname(hostname string) {
 	a.hostname = hostname
