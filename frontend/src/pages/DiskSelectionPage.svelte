@@ -248,6 +248,9 @@
 		flex-direction: column;
 		gap: 16px;
 		width: 100%;
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	/* ── Filesystem bar ── */
@@ -297,11 +300,14 @@
 		color: white;
 	}
 
-	/* ── Disk list ── */
+	/* ── Disk list (scrollable) ── */
 	.disk-list {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
 	}
 
 	/* ── Disk card ── */
