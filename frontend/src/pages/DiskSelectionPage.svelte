@@ -68,7 +68,7 @@
 	});
 </script>
 
-<PageLayout title="Select Installation Disk">
+<PageLayout title="Select Installation Disk" stretch={true}>
 	<p class="hint">Choose a disk to install AestheticOS. All data on the selected disk will be erased.</p>
 
 	{#if loading}
@@ -218,8 +218,8 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 12px;
-		padding: 48px 0;
+		gap: var(--spacing-md);
+		padding: calc(var(--spacing-xl) * 2) 0;
 		color: var(--color-text-muted);
 		font-size: 0.95rem;
 		text-align: center;
@@ -248,6 +248,10 @@
 		flex-direction: column;
 		gap: 16px;
 		width: 100%;
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+		padding-top: var(--spacing-sm);
 	}
 
 	/* ── Filesystem bar ── */
@@ -269,7 +273,7 @@
 
 	.fs-pills {
 		display: flex;
-		gap: 4px;
+		gap: var(--spacing-xs);
 	}
 
 	.fs-pill {
@@ -301,8 +305,9 @@
 	.disk-list {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		max-height: calc(100vh - 180px);
+		gap: var(--spacing-sm);
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
 	}
 
@@ -403,12 +408,12 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 5px;
-		margin-top: 8px;
+		margin-top: var(--spacing-sm);
 	}
 
 	.tag {
 		font-size: 0.68rem;
-		padding: 2px 8px;
+		padding: 2px var(--spacing-sm);
 		border-radius: 4px;
 		font-weight: 500;
 		background: var(--color-bg-light);
@@ -452,7 +457,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		color: var(--color-text-muted);
-		padding: 4px 6px;
+		padding: var(--spacing-xs) 6px;
 		border-bottom: 1px solid var(--color-border-light);
 	}
 

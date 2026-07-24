@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	let { title, children }: { title: string; children: Snippet } = $props();
+	let { title, children, stretch = false }: { title: string; children: Snippet; stretch?: boolean } = $props();
+
+	const contentClass = $derived(stretch ? 'stretch' : 'center');
 </script>
 
 <div class="page-layout">
 	<h2 class="page-title">{title}</h2>
-	<div class="page-content">
+	<div class={['page-content', contentClass]}>
 		{@render children()}
 	</div>
 </div>
@@ -34,10 +36,17 @@
 		min-height: 0;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
 		gap: var(--spacing-xl, 24px);
 		width: 100%;
 		max-width: 520px;
 		margin: 0 auto;
+	}
+
+	.page-content.center {
+		justify-content: center;
+	}
+
+	.page-content.stretch {
+		justify-content: flex-start;
 	}
 </style>
