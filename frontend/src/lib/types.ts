@@ -30,6 +30,14 @@ export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, 
 // Mirrors the backend constant in shared/config.go.
 export const MIN_DISK_SIZE_BYTES = 8 * 1024 * 1024 * 1024;
 
+// MinUsernameLength is the minimum allowed username length.
+// Mirrors the backend constant in shared/config.go.
+export const MIN_USERNAME_LENGTH = 3;
+
+// MinPasswordLength is the minimum allowed password length.
+// Mirrors the backend constant in shared/config.go.
+export const MIN_PASSWORD_LENGTH = 6;
+
 // DiskInfo represents a block device discovered on the system.
 export interface DiskInfo {
 	name: string;

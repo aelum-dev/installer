@@ -9,6 +9,7 @@
 	}
 	import { userAccountData, pageValid } from '$lib/state.svelte';
 	import { validateUserAccount } from '$lib/validate';
+	import { MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH } from '$lib/types';
 
 	let username = $state('');
 	let password = $state('');
@@ -27,8 +28,8 @@
 
 	$effect(() => {
 		// Update pageValid: button enabled when all required fields are filled
-		const usernameOk = username.trim().length >= 3;
-		const passwordOk = password.length >= 6;
+		const usernameOk = username.trim().length >= MIN_USERNAME_LENGTH;
+		const passwordOk = password.length >= MIN_PASSWORD_LENGTH;
 		const confirmPasswordOk = confirmPassword === password && confirmPassword.length > 0;
 		pageValid.value = usernameOk && passwordOk && confirmPasswordOk;
 	});
