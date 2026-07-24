@@ -248,9 +248,6 @@
 		flex-direction: column;
 		gap: 16px;
 		width: 100%;
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
 	}
 
 	/* ── Filesystem bar ── */
@@ -305,8 +302,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		flex: 1;
-		min-height: 0;
+		max-height: calc(100vh - 180px);
 		overflow-y: auto;
 	}
 
