@@ -13,7 +13,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-lg) calc(var(--spacing-xl) + var(--spacing-md));
+		padding: var(--spacing-md) var(--spacing-xl) var(--spacing-md) calc(var(--spacing-xl) + var(--spacing-md));
+		min-height: var(--header-height);
 		background-color: var(--color-bg-header);
 	}
 

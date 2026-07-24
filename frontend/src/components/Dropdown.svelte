@@ -21,6 +21,7 @@
 	let isOpen = $state(false);
 	let listEl: HTMLUListElement | null = null;
 	let buttonEl: HTMLButtonElement | null = null;
+	let listPosition = $state({ top: 0, left: 0, width: 0 });
 
 	let selectedLabel = $derived.by(() => {
 		const found = options.find((o) => o.value === selectedValue);
@@ -29,6 +30,14 @@
 
 	function toggle(): void {
 		isOpen = !isOpen;
+		if (isOpen && buttonEl) {
+			const rect = buttonEl.getBoundingClientRect();
+			listPosition = {
+				top: rect.bottom + 4,
+				left: rect.left,
+				width: rect.width,
+			};
+		}
 	}
 
 	function select(value: string): void {
@@ -124,6 +133,9 @@
 			class="dropdown-list"
 			role="listbox"
 			aria-label={placeholder}
+			style:top={listPosition.top + 'px'};
+			style:left={listPosition.left + 'px'};
+			style:width={listPosition.width + 'px'};
 			{@attach (el) => { listEl = el; }}
 		>
 			{#each options as option, i (option.value)}
@@ -201,12 +213,9 @@
 	}
 
 	.dropdown-list {
-		position: absolute;
-		top: calc(100% + var(--spacing-xs));
-		left: 0;
+		position: fixed;
 		max-height: 200px;
 		overflow-y: auto;
-		min-width: 100%;
 		background-color: var(--color-bg-white);
 		border: 1px solid var(--color-border-light);
 		border-radius: var(--radius-sm);
