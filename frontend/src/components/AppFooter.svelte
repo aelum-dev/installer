@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Button from '$components/Button.svelte';
 	import { PAGE_IDS, MIN_DISK_SIZE_BYTES } from '$lib/types';
-	import { diskSelectionData } from '$lib/state.svelte';
+	import { diskSelectionData, pageValid } from '$lib/state.svelte';
 
 	let { currentPage }: { currentPage: number } = $props();
 
@@ -15,7 +15,7 @@
 		const size = parseInt(diskSelectionData.disk.size, 10);
 		return !isNaN(size) && size >= MIN_DISK_SIZE_BYTES;
 	});
-	const nextDisabled = $derived(currentPage === PAGE_IDS.CONFIRMATION && !diskSizeOk);
+	const nextDisabled = $derived(currentPage === PAGE_IDS.CONFIRMATION ? !diskSizeOk : !pageValid.value);
 
 	const buttonHandler = $derived(isLastPage ? () => {
 		document.dispatchEvent(new CustomEvent('finish', { cancelable: true }));

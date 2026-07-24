@@ -6,6 +6,7 @@
 	import Button from '$components/Button.svelte';
 	import Dropdown from '$components/Dropdown.svelte';
 	import PageLayout from '$components/PageLayout.svelte';
+	import { pageValid } from '$lib/state.svelte';
 
 	interface Language {
 		code: string;
@@ -41,6 +42,11 @@
 	}
 
 	const dropdownOptions = $derived(languages.map(l => ({ value: l.code, label: l.name })));
+
+	// Update pageValid based on language selection
+	$effect(() => {
+		pageValid.value = !!selectedCode;
+	});
 
 	loadLanguages();
 </script>

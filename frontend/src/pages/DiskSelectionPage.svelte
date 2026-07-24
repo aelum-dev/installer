@@ -10,7 +10,7 @@
 	}
 	import PageLayout from '$components/PageLayout.svelte';
 	import Button from '$components/Button.svelte';
-	import { diskSelectionData } from '$lib/state.svelte';
+	import { diskSelectionData, pageValid } from '$lib/state.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
 	import { formatSize, FILESYSTEMS } from '$lib/types';
 
@@ -56,6 +56,11 @@
 	}
 
 	loadDisks();
+
+	// Update pageValid based on selection
+	$effect(() => {
+		pageValid.value = !!diskSelectionData.diskId && !!diskSelectionData.fileSystem;
+	});
 
 	// Sync to store when requested (before validation)
 	$effect(() => {

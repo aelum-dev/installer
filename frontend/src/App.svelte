@@ -4,7 +4,7 @@
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import ErrorBanner from '$components/ErrorBanner.svelte';
+	import ErrorBanner from '$components/ErrorBanner.svelte'; // kept for now
 
 	import WelcomePage from '$pages/WelcomePage.svelte';
 	import UserAccountPage from '$pages/UserAccountPage.svelte';
@@ -24,29 +24,9 @@
 
 	// State
 	let currentPage = $state(0);
-	let errorMessage = $state<string | null>(null);
 	let direction = $state<'forward' | 'backward'>('forward');
 
 	// Note: userAccountData, diskSelectionData imported from '$lib/state.svelte'
-
-	// Auto-dismiss error banner after 5 seconds
-	let dismissTimer: ReturnType<typeof setTimeout> | null = null;
-
-	// Start auto-dismiss timer for new error messages
-	$effect(() => {
-		if (!errorMessage) return;
-		if (dismissTimer) clearTimeout(dismissTimer);
-		dismissTimer = setTimeout(() => {
-			errorMessage = null;
-			dismissTimer = null;
-		}, 5000);
-		return () => {
-			if (dismissTimer) {
-				clearTimeout(dismissTimer);
-				dismissTimer = null;
-			}
-		};
-	});
 
 	// Jump to start page on init if configured
 	async function initStartPage(): Promise<void> {
@@ -64,13 +44,6 @@
 	initStartPage();
 
 	async function handleNext(e?: Event) {
-		// Clear any existing error before showing new one
-		errorMessage = null;
-		if (dismissTimer) {
-			clearTimeout(dismissTimer);
-			dismissTimer = null;
-		}
-
 		// Sync store NOW (before validation) - will be committed after backend confirms
 		if (currentPage === PAGE_IDS.USER_ACCOUNT) {
 			document.dispatchEvent(new CustomEvent('sync-to-store'));
@@ -79,7 +52,7 @@
 		// Run validation (reads from store)
 		const error = await goNext(currentPage);
 		if (error) {
-			errorMessage = error;
+			console.error(`[App] Validation failed: ${error}`);
 			return;
 		}
 
@@ -96,16 +69,9 @@
 	async function handleBack() {
 		if (currentPage === PAGE_IDS.WELCOME) return;
 
-		// Clear any existing error before showing new one
-		errorMessage = null;
-		if (dismissTimer) {
-			clearTimeout(dismissTimer);
-			dismissTimer = null;
-		}
-
 		const error = await goBack(currentPage);
 		if (error) {
-			errorMessage = error;
+			console.error(`[App] Back navigation failed: ${error}`);
 			return;
 		}
 
@@ -118,14 +84,10 @@
 	}
 
 	async function handleFinish() {
-		// Clear any existing error before showing new one
-		errorMessage = null;
-		if (dismissTimer) {
-			clearTimeout(dismissTimer);
-			dismissTimer = null;
+		const error = await finish();
+		if (error) {
+			console.error(`[App] Finish failed: ${error}`);
 		}
-
-		errorMessage = await finish();
 	}
 
 	// Subscribe to navigation events from footer and pages
@@ -150,13 +112,6 @@
 	<AppHeader {currentPage} />
 
 	<main class="content-area">
-		{#if errorMessage}
-			<div class="error-banner-wrapper">
-				<div class="error-banner-fixed">
-					<ErrorBanner message={errorMessage} />
-				</div>
-			</div>
-		{/if}
 		{#key currentPage}
 			<div class="page-content" transition:fly={{ x: direction === 'forward' ? -40 : 40, duration: 250, easing: quadOut }}>
 				{#if currentPage === PAGE_IDS.WELCOME}
@@ -197,28 +152,6 @@
 		position: relative;
 		overflow: hidden;
 		background-color: var(--color-bg-light);
-	}
-
-	.error-banner-wrapper {
-		position: absolute;
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 50;
-		width: 100%;
-		max-width: 520px;
-		padding: 8px 16px 0;
-		box-sizing: border-box;
-	}
-
-	.error-banner-fixed {
-		animation: shake 0.5s ease-in-out;
-	}
-
-	@keyframes shake {
-		0%, 100% { transform: translateX(0); }
-		10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-		20%, 40%, 60%, 80% { transform: translateX(4px); }
 	}
 
 	.page-content {

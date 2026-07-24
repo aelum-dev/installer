@@ -7,7 +7,7 @@
 	function logInfo(msg: string): void {
 		try { WailsLogInfo(msg); } catch { /* dev mode: no Wails runtime */ }
 	}
-	import { userAccountData } from '$lib/state.svelte';
+	import { userAccountData, pageValid } from '$lib/state.svelte';
 	import { validateUserAccount } from '$lib/validate';
 
 	let username = $state('');
@@ -24,6 +24,14 @@
 			confirmPasswordTouched,
 		})
 	);
+
+	$effect(() => {
+		// Update pageValid: button enabled when all required fields are filled
+		const usernameOk = username.trim().length >= 3;
+		const passwordOk = password.length >= 6;
+		const confirmPasswordOk = confirmPassword === password && confirmPassword.length > 0;
+		pageValid.value = usernameOk && passwordOk && confirmPasswordOk;
+	});
 
 	// Sync to store when requested (before validation)
 	$effect(() => {
