@@ -23,9 +23,19 @@ var mirrorListFS embed.FS
 // countryNameToLocale maps Arch Linux mirrorlist country names to locale codes.
 // These locale codes correspond to Region.Code values.
 var countryNameToLocale = map[string]string{
+	"Germany":       "de_DE",
 	"United States": "en_US",
+	"Spain":         "es_ES",
+	"France":        "fr_FR",
+	"Italy":         "it_IT",
+	"Japan":         "ja_JP",
+	"South Korea":   "ko_KR",
+	"Poland":        "pl_PL",
+	"Brazil":        "pt_BR",
 	"Russia":        "ru_RU",
+	"Turkey":        "tr_TR",
 	"Ukraine":       "uk_UA",
+	"China":         "zh_CN",
 }
 
 // mirrorSection represents a parsed country section from the mirrorlist.
