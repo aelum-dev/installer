@@ -12,10 +12,9 @@
 	.header {
 		display: flex;
 		align-items: center;
-		padding: var(--spacing-sm) var(--spacing-xl);
-		background-color: var(--color-bg-header);
-		border-bottom: 1px solid var(--color-border-light);
-		min-height: var(--header-height);
+		justify-content: space-between;
+		padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-lg) calc(var(--spacing-xl) + var(--spacing-md));
+		background-color: var(--color-bg-light);
 	}
 
 	.brand {

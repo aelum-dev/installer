@@ -44,10 +44,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--spacing-sm) var(--spacing-xl);
-		background-color: var(--color-bg-footer);
-		border-top: 1px solid var(--color-border-light);
-		min-height: var(--footer-height);
+		padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-lg) var(--spacing-xl);
+		background-color: var(--color-bg-light);
 	}
 
 	.footer-left,
