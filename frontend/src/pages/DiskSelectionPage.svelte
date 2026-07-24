@@ -91,8 +91,10 @@
 			<p class="empty-text">No storage devices found.</p>
 		</div>
 	{:else}
-		<!-- Filesystem selector -->
-		<div class="fs-section">
+		<!-- FS selector (pinned) and disk list (scrollable) -->
+		<div class="disk-page-content">
+			<!-- Filesystem selector (pinned) -->
+			<div class="fs-section">
 			<h3 class="fs-title">Root Filesystem</h3>
 			<p class="fs-hint">Choose the filesystem for the root partition. This cannot be changed after installation.</p>
 			<div class="fs-options">
@@ -118,7 +120,7 @@
 			</div>
 		</div>
 
-		<!-- Disk list -->
+		<!-- Disk list (scrollable) -->
 		<div class="disk-list">
 			{#each disks as disk (disk.path)}
 				<button
@@ -201,6 +203,7 @@
 				</button>
 			{/each}
 		</div>
+		</div>
 	{/if}
 </PageLayout>
 
@@ -222,9 +225,17 @@
 	}
 
 	/* ── Filesystem Selector ── */
+	.disk-page-content {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		height: 100%;
+		overflow: hidden;
+	}
+
 	.fs-section {
+		flex-shrink: 0;
 		text-align: center;
-		margin-bottom: 4px;
 	}
 
 	.fs-title {
@@ -351,7 +362,8 @@
 		flex-direction: column;
 		gap: 6px;
 		width: 100%;
-		max-height: 320px;
+		height: 0;
+		flex: 1;
 		overflow-y: auto;
 		padding-right: 4px;
 	}
