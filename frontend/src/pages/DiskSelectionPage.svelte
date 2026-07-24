@@ -69,7 +69,7 @@
 </script>
 
 <PageLayout title="Select Installation Disk" stretch={true}>
-	<p class="hint">Choose a disk to install AestheticOS. All data on the selected disk will be erased.</p>
+	<p class="hint">Choose a disk and filesystem to install AestheticOS.</p>
 
 	{#if loading}
 		<div class="state-message">
@@ -248,9 +248,10 @@
 		flex-direction: column;
 		gap: 16px;
 		width: 100%;
-		flex: 1;
+		max-height: 60vh;
 		min-height: 0;
 		overflow: hidden;
+		margin: auto 0;
 		padding-top: var(--spacing-sm);
 	}
 
