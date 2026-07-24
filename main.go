@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -17,15 +16,12 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func main() {
-	// Parse command-line flags
-	flag.Parse()
-	dryRun := false
-	if f := flag.Lookup("dry-run"); f != nil && f.Value.String() == "true" {
-		dryRun = true
-	}
+// StartPage is the page to start on (0=Welcome, 1=User Account, 2=Disk Selection, etc.)
+// Set to -1 to start on Welcome page (default behavior)
+const StartPage = 2
 
-	// Also check environment variable (set by run.sh for wails dev)
+func main() {
+	dryRun := false
 	if os.Getenv("AESTHETIC_DRY_RUN") == "1" {
 		dryRun = true
 	}
@@ -36,6 +32,15 @@ func main() {
 
 	// Create an instance of the app structure
 	app := gui.NewApp(dryRun)
+
+	// Set start page if configured (>= 0)
+	if StartPage >= 0 {
+		if err := app.SetStartPage(gui.PageID{Value: StartPage}); err != nil {
+			fmt.Printf("Warning: invalid start page %d: %v\n", StartPage, err)
+		} else {
+			fmt.Printf("[START PAGE] Starting on page %d\n", StartPage)
+		}
+	}
 
 	// Create application with options
 	err := wails.Run(&options.App{

@@ -239,7 +239,7 @@
 
 	.fs-options {
 		display: flex;
-		gap: 8px;
+		gap: 6px;
 		width: 100%;
 	}
 
@@ -248,8 +248,8 @@
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 6px;
-		padding: 14px 16px;
+		gap: 4px;
+		padding: 10px 12px;
 		background-color: var(--color-bg-white);
 		border: 1.5px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
@@ -274,18 +274,18 @@
 	.fs-option-main {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: 8px;
 	}
 
 	.fs-radio {
-		width: 20px;
-		height: 20px;
+		width: 18px;
+		height: 18px;
 		flex-shrink: 0;
 	}
 
 	.radio-dot {
-		width: 20px;
-		height: 20px;
+		width: 18px;
+		height: 18px;
 		border: 2px solid var(--color-border-light);
 		border-radius: 50%;
 		display: flex;
@@ -300,23 +300,23 @@
 	}
 
 	.radio-dot-inner {
-		width: 8px;
-		height: 8px;
+		width: 6px;
+		height: 6px;
 		background-color: white;
 		border-radius: 50%;
 	}
 
 	.fs-name {
-		font-size: 1rem;
+		font-size: 0.95rem;
 		font-weight: 600;
 		color: var(--color-text);
 		font-family: var(--font-mono);
 	}
 
 	.fs-desc {
-		font-size: 0.78rem;
+		font-size: 0.72rem;
 		color: var(--color-text-muted);
-		line-height: 1.4;
+		line-height: 1.3;
 		margin: 0;
 	}
 
@@ -344,8 +344,11 @@
 	.disk-list {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 6px;
 		width: 100%;
+		max-height: 320px;
+		overflow-y: auto;
+		padding-right: 4px;
 	}
 
 	.disk-card {
@@ -353,7 +356,7 @@
 		background-color: var(--color-bg-white);
 		border: 1.5px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
-		padding: 14px 16px;
+		padding: 10px 12px;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		text-align: left;
@@ -376,13 +379,13 @@
 	.disk-main {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 10px;
 	}
 
 	.disk-icon {
-		font-size: 1.5rem;
-		width: 36px;
-		height: 36px;
+		font-size: 1.3rem;
+		width: 32px;
+		height: 32px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -401,7 +404,7 @@
 	}
 
 	.disk-name {
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		font-weight: 600;
 		color: var(--color-text);
 		white-space: nowrap;
@@ -410,9 +413,9 @@
 	}
 
 	.disk-details {
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		color: var(--color-text-muted);
-		margin-top: 2px;
+		margin-top: 1px;
 		display: flex;
 		align-items: center;
 		gap: 4px;
