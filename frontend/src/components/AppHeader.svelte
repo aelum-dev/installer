@@ -14,7 +14,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-lg) calc(var(--spacing-xl) + var(--spacing-md));
-		background-color: var(--color-bg-light);
+		background-color: var(--color-bg-header);
 	}
 
 	.brand {
