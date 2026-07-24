@@ -3,8 +3,8 @@ package shared
 // GetLanguages returns the list of available languages/regions.
 func GetLanguages() []Language {
 	return []Language{
-		{Code: "de_DE", Name: "Deutsch (Deutschland)", Locale: "de_DE.UTF-8"},
 		{Code: "en_US", Name: "English (United States)", Locale: "en_US.UTF-8"},
+		{Code: "de_DE", Name: "Deutsch (Deutschland)", Locale: "de_DE.UTF-8"},
 		{Code: "es_ES", Name: "Español (España)", Locale: "es_ES.UTF-8"},
 		{Code: "fr_FR", Name: "Français (France)", Locale: "fr_FR.UTF-8"},
 		{Code: "it_IT", Name: "Italiano (Italia)", Locale: "it_IT.UTF-8"},
