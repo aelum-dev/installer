@@ -206,8 +206,8 @@ The installed system includes:
 | ja_JP | 日本語 (日本) | ja_JP.UTF-8 | Asia/Tokyo | jp |
 | ko_KR | 한국어 (대한민국) | ko_KR.UTF-8 | Asia/Seoul | kr |
 | vi_VN | Tiếng Việt (Việt Nam) | vi_VN.UTF-8 | Asia/Ho_Chi_Minh | vn |
-| zh_Hans | 中文 (简体) | zh_Hans.UTF-8 | Asia/Shanghai | cn |
-| zh_Hant | 中文 (繁體) | zh_Hant.UTF-8 | Asia/Taipei | cn |
+| zh_CN | 中文 (简体) | zh_CN.UTF-8 | Asia/Shanghai | us |
+| zh_TW | 中文 (繁體) | zh_TW.UTF-8 | Asia/Taipei | us |
 
 Each region has an embedded mirrorlist file for pacman.
 

@@ -1,0 +1,10 @@
+##
+## Arch Linux mirrorlist for zh_TW
+##
+
+#Server = https://mirror.archlinux.tw/ArchLinux/$repo/os/$arch
+#Server = https://archlinux.ccns.ncku.edu.tw/archlinux/$repo/os/$arch
+#Server = https://tw.mirrors.cicku.me/archlinux/$repo/os/$arch
+#Server = https://taipei.mirror.pkgbuild.com/$repo/os/$arch
+#Server = https://archlinux.cs.nycu.edu.tw/$repo/os/$arch
+#Server = https://mirror.twds.com.tw/archlinux/$repo/os/$arch

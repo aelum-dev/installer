@@ -3,11 +3,11 @@ package shared
 // Region represents a regional configuration that maps language to all
 // regional parameters: locale, timezone, keyboard layout, and mirrors.
 type Region struct {
-	Code     string   // e.g., "en_US", "ru_RU", "uk_UA"
-	Name     string   // e.g., "English (United States)"
-	Locale   string   // e.g., "en_US.UTF-8"
-	Timezone string   // e.g., "America/New_York"
-	Keymap   string   // e.g., "us"
+	Code     string // e.g., "en_US", "ru_RU", "uk_UA"
+	Name     string // e.g., "English (United States)"
+	Locale   string // e.g., "en_US.UTF-8"
+	Timezone string // e.g., "America/New_York"
+	Keymap   string // e.g., "us"
 }
 
 // Regions provides access to predefined regional configurations.
@@ -24,7 +24,7 @@ var Regions = map[string]Region{
 		Name:     "Български (България)",
 		Locale:   "bg_BG.UTF-8",
 		Timezone: "Europe/Sofia",
-		Keymap:   "bg",
+		Keymap:   "us",
 	},
 	"ca_ES": {
 		Code:     "ca_ES",
@@ -33,26 +33,26 @@ var Regions = map[string]Region{
 		Timezone: "Europe/Madrid",
 		Keymap:   "es",
 	},
-	"zh_Hans": {
-		Code:     "zh_Hans",
+	"zh_CN": {
+		Code:     "zh_CN",
 		Name:     "中文 (简体)",
-		Locale:   "zh_Hans.UTF-8",
+		Locale:   "zh_CN.UTF-8",
 		Timezone: "Asia/Shanghai",
-		Keymap:   "cn",
+		Keymap:   "us",
 	},
-	"zh_Hant": {
-		Code:     "zh_Hant",
+	"zh_TW": {
+		Code:     "zh_TW",
 		Name:     "中文 (繁體)",
-		Locale:   "zh_Hant.UTF-8",
+		Locale:   "zh_TW.UTF-8",
 		Timezone: "Asia/Taipei",
-		Keymap:   "cn",
+		Keymap:   "us",
 	},
 	"nl_NL": {
 		Code:     "nl_NL",
 		Name:     "Nederlands (Nederland)",
 		Locale:   "nl_NL.UTF-8",
 		Timezone: "Europe/Amsterdam",
-		Keymap:   "nl",
+		Keymap:   "us",
 	},
 	"eo": {
 		Code:     "eo",
@@ -80,7 +80,7 @@ var Regions = map[string]Region{
 		Name:     "Ελληνικά (Ελλάδα)",
 		Locale:   "el_GR.UTF-8",
 		Timezone: "Europe/Athens",
-		Keymap:   "gr",
+		Keymap:   "us",
 	},
 	"hu_HU": {
 		Code:     "hu_HU",
@@ -94,21 +94,21 @@ var Regions = map[string]Region{
 		Name:     "Bahasa Indonesia (Indonesia)",
 		Locale:   "id_ID.UTF-8",
 		Timezone: "Asia/Jakarta",
-		Keymap:   "id",
+		Keymap:   "us",
 	},
 	"ja_JP": {
 		Code:     "ja_JP",
 		Name:     "日本語 (日本)",
 		Locale:   "ja_JP.UTF-8",
 		Timezone: "Asia/Tokyo",
-		Keymap:   "jp",
+		Keymap:   "jp106",
 	},
 	"ko_KR": {
 		Code:     "ko_KR",
 		Name:     "한국어 (대한민국)",
 		Locale:   "ko_KR.UTF-8",
 		Timezone: "Asia/Seoul",
-		Keymap:   "kr",
+		Keymap:   "us",
 	},
 	"nb_NO": {
 		Code:     "nb_NO",
@@ -122,7 +122,7 @@ var Regions = map[string]Region{
 		Name:     "فارسی (ایران)",
 		Locale:   "fa_IR.UTF-8",
 		Timezone: "Asia/Tehran",
-		Keymap:   "ir",
+		Keymap:   "us",
 	},
 	"pl_PL": {
 		Code:     "pl_PL",
@@ -143,7 +143,7 @@ var Regions = map[string]Region{
 		Name:     "Русский (Россия)",
 		Locale:   "ru_RU.UTF-8",
 		Timezone: "Europe/Moscow",
-		Keymap:   "ru",
+		Keymap:   "us",
 	},
 	"es_ES": {
 		Code:     "es_ES",
@@ -157,42 +157,42 @@ var Regions = map[string]Region{
 		Name:     "Svenska (Sverige)",
 		Locale:   "sv_SE.UTF-8",
 		Timezone: "Europe/Stockholm",
-		Keymap:   "sv",
+		Keymap:   "sv-latin1",
 	},
 	"tr_TR": {
 		Code:     "tr_TR",
 		Name:     "Türkçe (Türkiye)",
 		Locale:   "tr_TR.UTF-8",
 		Timezone: "Europe/Istanbul",
-		Keymap:   "tr",
+		Keymap:   "trq",
 	},
 	"vi_VN": {
 		Code:     "vi_VN",
 		Name:     "Tiếng Việt (Việt Nam)",
 		Locale:   "vi_VN.UTF-8",
 		Timezone: "Asia/Ho_Chi_Minh",
-		Keymap:   "vn",
+		Keymap:   "us",
 	},
-	"ar": {
-		Code:     "ar",
-		Name:     "العربية",
-		Locale:   "ar.UTF-8",
-		Timezone: "Asia/Baghdad",
-		Keymap:   "ar",
+	"ar_SA": {
+		Code:     "ar_SA",
+		Name:     "العربية (السعودية)",
+		Locale:   "ar_SA.UTF-8",
+		Timezone: "Asia/Riyadh",
+		Keymap:   "us",
 	},
 	"de_DE": {
 		Code:     "de_DE",
 		Name:     "Deutsch (Deutschland)",
 		Locale:   "de_DE.UTF-8",
 		Timezone: "Europe/Berlin",
-		Keymap:   "de",
+		Keymap:   "de-latin1",
 	},
 	"he_IL": {
 		Code:     "he_IL",
 		Name:     "עברית (ישראל)",
 		Locale:   "he_IL.UTF-8",
 		Timezone: "Asia/Jerusalem",
-		Keymap:   "il",
+		Keymap:   "us",
 	},
 	"it_IT": {
 		Code:     "it_IT",
@@ -206,7 +206,7 @@ var Regions = map[string]Region{
 		Name:     "Українська (Україна)",
 		Locale:   "uk_UA.UTF-8",
 		Timezone: "Europe/Kyiv",
-		Keymap:   "ua",
+		Keymap:   "us",
 	},
 }
 
@@ -217,4 +217,3 @@ func GetRegion(code string) Region {
 	}
 	return Region{}
 }
-

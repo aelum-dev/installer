@@ -22,15 +22,15 @@ func GetLanguages() []Language {
 		{Code: "uk_UA", Name: "Українська (Україна)", Locale: "uk_UA.UTF-8"},
 		{Code: "bg_BG", Name: "Български (България)", Locale: "bg_BG.UTF-8"},
 		{Code: "ca_ES", Name: "Català (Catalunya)", Locale: "ca_ES.UTF-8"},
-		{Code: "ar", Name: "العربية", Locale: "ar.UTF-8"},
+		{Code: "ar_SA", Name: "العربية (السعودية)", Locale: "ar_SA.UTF-8"},
 		{Code: "fa_IR", Name: "فارسی (ایران)", Locale: "fa_IR.UTF-8"},
 		{Code: "he_IL", Name: "עברית (ישראל)", Locale: "he_IL.UTF-8"},
 		{Code: "id_ID", Name: "Bahasa Indonesia (Indonesia)", Locale: "id_ID.UTF-8"},
 		{Code: "ja_JP", Name: "日本語 (日本)", Locale: "ja_JP.UTF-8"},
 		{Code: "ko_KR", Name: "한국어 (대한민국)", Locale: "ko_KR.UTF-8"},
 		{Code: "vi_VN", Name: "Tiếng Việt (Việt Nam)", Locale: "vi_VN.UTF-8"},
-		{Code: "zh_Hans", Name: "中文 (简体)", Locale: "zh_Hans.UTF-8"},
-		{Code: "zh_Hant", Name: "中文 (繁體)", Locale: "zh_Hant.UTF-8"},
+		{Code: "zh_CN", Name: "中文 (简体)", Locale: "zh_CN.UTF-8"},
+		{Code: "zh_TW", Name: "中文 (繁體)", Locale: "zh_TW.UTF-8"},
 	}
 }
 
