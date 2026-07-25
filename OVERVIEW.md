@@ -99,7 +99,7 @@ The `core.Installer.Install()` method orchestrates these steps in order:
 | 4 | **GenerateFstab** | `install.GenerateFstab` | Writes `/etc/fstab` with UUID-based entries. For btrfs, includes per-subvolume mount options. |
 | 5 | **ConfigureBootloader** | `install.ConfigureBootloader` | Installs systemd-boot via `bootctl install`, writes boot entry referencing kernel/initrd by filename (flavor-agnostic), sets default entry, cleans orphaned ESP files. |
 | 6 | **SetupUsers** | `install.SetupUsers` | Creates user account via `arch-chroot useradd`, sets password, configures sudoers for wheel group, sets root password. |
-| 7 | **ConfigureSystem** | `install.ConfigureSystem` | Sets hostname, timezone, locale, console keymap (defaults to us), copies region-specific mirrorlist. |}, {
+| 7 | **ConfigureSystem** | `install.ConfigureSystem` | Sets hostname, timezone, locale, console keymap, copies region-specific mirrorlist. |
 
 ---
 
@@ -178,36 +178,36 @@ The installed system includes:
 
 ## Regions / Languages
 
-| Code | Name | Locale | Timezone |
-|------|------|--------|----------|
-| en_US | English (United States) | en_US.UTF-8 | America/New_York |
-| de_DE | Deutsch (Deutschland) | de_DE.UTF-8 | Europe/Berlin |
-| el_GR | Ελληνικά (Ελλάδα) | el_GR.UTF-8 | Europe/Athens |
-| eo | Esperanto | eo.UTF-8 | Europe/Berlin |
-| es_ES | Español (España) | es_ES.UTF-8 | Europe/Madrid |
-| fi_FI | Suomi (Suomi) | fi_FI.UTF-8 | Europe/Helsinki |
-| fr_FR | Français (France) | fr_FR.UTF-8 | Europe/Paris |
-| hu_HU | Magyar (Magyarország) | hu_HU.UTF-8 | Europe/Budapest |
-| it_IT | Italiano (Italia) | it_IT.UTF-8 | Europe/Rome |
-| nb_NO | Norsk bokmål (Norge) | nb_NO.UTF-8 | Europe/Oslo |
-| nl_NL | Nederlands (Nederland) | nl_NL.UTF-8 | Europe/Amsterdam |
-| pl_PL | Polski (Polska) | pl_PL.UTF-8 | Europe/Warsaw |
-| pt_BR | Português (Brasil) | pt_BR.UTF-8 | America/Sao_Paulo |
-| ru_RU | Русский (Россия) | ru_RU.UTF-8 | Europe/Moscow |
-| sv_SE | Svenska (Sverige) | sv_SE.UTF-8 | Europe/Stockholm |
-| tr_TR | Türkçe (Türkiye) | tr_TR.UTF-8 | Europe/Istanbul |
-| uk_UA | Українська (Україна) | uk_UA.UTF-8 | Europe/Kyiv |
-| bg_BG | Български (България) | bg_BG.UTF-8 | Europe/Sofia |
-| ca_ES | Català (Catalunya) | ca_ES.UTF-8 | Europe/Madrid |
-| ar | العربية | ar.UTF-8 | Asia/Baghdad |
-| fa_IR | فارسی (ایران) | fa_IR.UTF-8 | Asia/Tehran |
-| he_IL | עברית (ישראל) | he_IL.UTF-8 | Asia/Jerusalem |
-| id_ID | Bahasa Indonesia (Indonesia) | id_ID.UTF-8 | Asia/Jakarta |
-| ja_JP | 日本語 (日本) | ja_JP.UTF-8 | Asia/Tokyo |
-| ko_KR | 한국어 (대한민국) | ko_KR.UTF-8 | Asia/Seoul |
-| vi_VN | Tiếng Việt (Việt Nam) | vi_VN.UTF-8 | Asia/Ho_Chi_Minh |
-| zh_Hans | 中文 (简体) | zh_Hans.UTF-8 | Asia/Shanghai |
-| zh_Hant | 中文 (繁體) | zh_Hant.UTF-8 | Asia/Taipei |
+| Code | Name | Locale | Timezone | Keymap |
+|------|------|--------|----------|--------|
+| en_US | English (United States) | en_US.UTF-8 | America/New_York | us |
+| de_DE | Deutsch (Deutschland) | de_DE.UTF-8 | Europe/Berlin | de |
+| el_GR | Ελληνικά (Ελλάδα) | el_GR.UTF-8 | Europe/Athens | gr |
+| eo | Esperanto | eo.UTF-8 | Europe/Berlin | us |
+| es_ES | Español (España) | es_ES.UTF-8 | Europe/Madrid | es |
+| fi_FI | Suomi (Suomi) | fi_FI.UTF-8 | Europe/Helsinki | fi |
+| fr_FR | Français (France) | fr_FR.UTF-8 | Europe/Paris | fr |
+| hu_HU | Magyar (Magyarország) | hu_HU.UTF-8 | Europe/Budapest | hu |
+| it_IT | Italiano (Italia) | it_IT.UTF-8 | Europe/Rome | it |
+| nb_NO | Norsk bokmål (Norge) | nb_NO.UTF-8 | Europe/Oslo | no |
+| nl_NL | Nederlands (Nederland) | nl_NL.UTF-8 | Europe/Amsterdam | nl |
+| pl_PL | Polski (Polska) | pl_PL.UTF-8 | Europe/Warsaw | pl |
+| pt_BR | Português (Brasil) | pt_BR.UTF-8 | America/Sao_Paulo | br-abnt2 |
+| ru_RU | Русский (Россия) | ru_RU.UTF-8 | Europe/Moscow | ru |
+| sv_SE | Svenska (Sverige) | sv_SE.UTF-8 | Europe/Stockholm | sv |
+| tr_TR | Türkçe (Türkiye) | tr_TR.UTF-8 | Europe/Istanbul | tr |
+| uk_UA | Українська (Україна) | uk_UA.UTF-8 | Europe/Kyiv | ua |
+| bg_BG | Български (България) | bg_BG.UTF-8 | Europe/Sofia | bg |
+| ca_ES | Català (Catalunya) | ca_ES.UTF-8 | Europe/Madrid | es |
+| ar | العربية | ar.UTF-8 | Asia/Baghdad | ar |
+| fa_IR | فارسی (ایران) | fa_IR.UTF-8 | Asia/Tehran | ir |
+| he_IL | עברית (ישראל) | he_IL.UTF-8 | Asia/Jerusalem | il |
+| id_ID | Bahasa Indonesia (Indonesia) | id_ID.UTF-8 | Asia/Jakarta | id |
+| ja_JP | 日本語 (日本) | ja_JP.UTF-8 | Asia/Tokyo | jp |
+| ko_KR | 한국어 (대한민국) | ko_KR.UTF-8 | Asia/Seoul | kr |
+| vi_VN | Tiếng Việt (Việt Nam) | vi_VN.UTF-8 | Asia/Ho_Chi_Minh | vn |
+| zh_Hans | 中文 (简体) | zh_Hans.UTF-8 | Asia/Shanghai | cn |
+| zh_Hant | 中文 (繁體) | zh_Hant.UTF-8 | Asia/Taipei | cn |
 
 Each region has an embedded mirrorlist file for pacman.
 

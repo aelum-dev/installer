@@ -10,7 +10,7 @@ import (
 )
 
 // ConfigureSystem sets up system configuration in the installed system via chroot.
-// Configures: hostname, timezone, locale, keymap (defaults to us).
+// Configures: hostname, timezone, locale, keymap — all from region data.
 func ConfigureSystem(ctx *InstallContext) error {
 	if err := validateMountedSystem(ctx); err != nil {
 		return err
@@ -85,11 +85,11 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return fmt.Errorf("failed to write locale.conf: %w: %s", err, string(output))
 	}
 
-	// Step 4: Set console keymap (defaults to us)
+	// Step 4: Set console keymap from region
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting console keymap to us")
+		ctx.Logger.Info("Setting console keymap to %s", region.Keymap)
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("printf 'KEYMAP=us\nFONT=ter-132n\n' > %s/etc/vconsole.conf", shared.MountRoot))
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > %s/etc/vconsole.conf", region.Keymap, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set keymap: %w: %s", err, string(output))
