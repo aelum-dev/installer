@@ -89,10 +89,17 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Setting console keymap to %s", region.Keymap)
 	}
+	// Write KEYMAP line
 	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > %s/etc/vconsole.conf", region.Keymap, shared.MountRoot))
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set keymap: %w: %s", err, string(output))
+	}
+	// Write FONT line
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'FONT=ter-132n' >> %s/etc/vconsole.conf", shared.MountRoot))
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to set font: %w: %s", err, string(output))
 	}
 
 	// Step 5: Copy mirror list for region
