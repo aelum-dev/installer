@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"aestheticos-installer/backend/internal/shared"
 	"aestheticos-installer/backend/internal/install"
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // InstallationProgress is emitted as an event to the frontend.
@@ -228,8 +228,8 @@ func simulateStep() error {
 // FindHelper finds the aestheticos-helper binary.
 func FindHelper() string {
 	// Try /shared first (testing/live ISO)
-	if _, err := os.Stat("/shared/aestheticos-helper"); err == nil {
-		return "/shared/aestheticos-helper"
+	if _, err := os.Stat("/usr/local/bin/aestheticos-installer-helper"); err == nil {
+		return "/usr/local/bin/aestheticos-installer-helper"
 	}
 	// Fallback: next to the main executable
 	exe, err := os.Executable()

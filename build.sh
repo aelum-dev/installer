@@ -4,6 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 SHARED_DIR=$HOME"/Projects/shared"
+DISTO_DIR=$HOME"/Projects/AestheticOS/airootfs/usr/local/bin"
 
 echo "=== Refreshing mirrorlists ==="
 go run ./backend/internal/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
@@ -30,6 +31,10 @@ cp build/bin/aestheticos-installer "$SHARED_DIR/"
 cp build/bin/aestheticos-helper "$SHARED_DIR/"
 cp build/bin/aestheticos-installer-cli "$SHARED_DIR/"
 chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-installer-cli"
+
+cp build/bin/aestheticos-installer "$DISTO_DIR/"
+cp build/bin/aestheticos-helper "$DISTO_DIR/"
+cp build/bin/aestheticos-installer-cli "$DISTO_DIR/"
 
 echo "Done! Executables built:"
 echo "  GUI:     build/bin/aestheticos-installer"
