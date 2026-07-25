@@ -2,6 +2,7 @@
 
 ## Git & Commits
 - **Do not auto-commit changes.** Always ask for approval before committing.
+- **Don't overthink.** You're thinking budget is limited.
 - Binaries go in `build/bin/` — never in project root.
 
 ## Building
