@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for bg_BG
+##
+
+#Server = https://mirror.telepoint.bg/archlinux/$repo/os/$arch
+#Server = https://mirrors.uni-plovdiv.net/archlinux/$repo/os/$arch

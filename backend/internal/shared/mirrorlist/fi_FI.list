@@ -1,0 +1,13 @@
+##
+## Arch Linux mirrorlist for fi_FI
+##
+
+#Server = https://archlinux.doridian.net/$repo/os/$arch
+#Server = https://cdnmirror.com/archlinux/$repo/os/$arch
+#Server = https://dornogal.falcao.org/archlinux/$repo/os/$arch
+#Server = https://mirror.falcao.org/archlinux/$repo/os/$arch
+#Server = https://mirror.5i.fi/archlinux/$repo/os/$arch
+#Server = https://fi.arch.niranjan.co/$repo/os/$arch
+#Server = https://mirror.srv.fail/archlinux/$repo/os/$arch
+#Server = https://mirror.wuki.li/archlinux/$repo/os/$arch
+#Server = https://arch.yhtez.xyz/$repo/os/$arch

@@ -1,0 +1,5 @@
+##
+## Arch Linux mirrorlist for el_GR
+##
+
+#Server = https://repo.greeklug.gr/data/pub/linux/archlinux/$repo/os/$arch

@@ -181,7 +181,32 @@ The installed system includes:
 | Code | Name | Locale | Timezone | Keymap |
 |------|------|--------|----------|--------|
 | en_US | English (United States) | en_US.UTF-8 | America/New_York | us |
+| bg_BG | Български (България) | bg_BG.UTF-8 | Europe/Sofia | bg |
+| ca_ES | Català (Catalunya) | ca_ES.UTF-8 | Europe/Madrid | es |
+| zh_Hans | 中文 (简体) | zh_Hans.UTF-8 | Asia/Shanghai | cn |
+| zh_Hant | 中文 (繁體) | zh_Hant.UTF-8 | Asia/Taipei | cn |
+| nl_NL | Nederlands (Nederland) | nl_NL.UTF-8 | Europe/Amsterdam | nl |
+| eo | Esperanto | eo.UTF-8 | Europe/Berlin | us |
+| fi_FI | Suomi (Suomi) | fi_FI.UTF-8 | Europe/Helsinki | fi |
+| fr_FR | Français (France) | fr_FR.UTF-8 | Europe/Paris | fr |
+| el_GR | Ελληνικά (Ελλάδα) | el_GR.UTF-8 | Europe/Athens | gr |
+| hu_HU | Magyar (Magyarország) | hu_HU.UTF-8 | Europe/Budapest | hu |
+| id_ID | Bahasa Indonesia (Indonesia) | id_ID.UTF-8 | Asia/Jakarta | id |
+| ja_JP | 日本語 (日本) | ja_JP.UTF-8 | Asia/Tokyo | jp |
+| ko_KR | 한국어 (대한민국) | ko_KR.UTF-8 | Asia/Seoul | kr |
+| nb_NO | Norsk bokmål (Norge) | nb_NO.UTF-8 | Europe/Oslo | no |
+| fa_IR | فارسی (ایران) | fa_IR.UTF-8 | Asia/Tehran | ir |
+| pl_PL | Polski (Polska) | pl_PL.UTF-8 | Europe/Warsaw | pl |
+| pt_BR | Português (Brasil) | pt_BR.UTF-8 | America/Sao_Paulo | br-abnt2 |
 | ru_RU | Русский (Россия) | ru_RU.UTF-8 | Europe/Moscow | ru |
+| es_ES | Español (España) | es_ES.UTF-8 | Europe/Madrid | es |
+| sv_SE | Svenska (Sverige) | sv_SE.UTF-8 | Europe/Stockholm | sv |
+| tr_TR | Türkçe (Türkiye) | tr_TR.UTF-8 | Europe/Istanbul | tr |
+| vi_VN | Tiếng Việt (Việt Nam) | vi_VN.UTF-8 | Asia/Ho_Chi_Minh | vn |
+| ar | العربية | ar.UTF-8 | Asia/Baghdad | ar |
+| de_DE | Deutsch (Deutschland) | de_DE.UTF-8 | Europe/Berlin | de |
+| he_IL | עברית (ישראל) | he_IL.UTF-8 | Asia/Jerusalem | il |
+| it_IT | Italiano (Italia) | it_IT.UTF-8 | Europe/Rome | it |
 | uk_UA | Українська (Україна) | uk_UA.UTF-8 | Europe/Kyiv | ua |
 
 Each region has an embedded mirrorlist file for pacman.
@@ -199,7 +224,7 @@ Each region has an embedded mirrorlist file for pacman.
 | `backend/gui/root_check_test.go` | Root privilege checking |
 | `backend/internal/core/installer_test.go` | Installer orchestration |
 | `backend/internal/install/install_test.go` | Installation step tests |
-| `backend/internal/install/layout_integration_test.go` | Full pipeline integration |
+
 
 ### TypeScript Tests
 | File | Coverage |
@@ -237,8 +262,8 @@ Each region has an embedded mirrorlist file for pacman.
 │       │   └── root_check.go        # Root check implementation
 │       ├── install/
 │       │   ├── install.go           # pacstrap installation
-│       │   ├── format_disk.go       # Partitioning & formatting
-│       │   ├── mount_filesystem.go  # Mount management
+│       │   ├── format.go            # Partitioning & formatting
+│       │   ├── mount.go           # Mount management
 │       │   ├── fstab.go             # fstab generation
 │       │   ├── bootloader.go        # systemd-boot configuration
 │       │   ├── system.go            # System configuration (hostname, locale, etc.)
@@ -248,7 +273,8 @@ Each region has an embedded mirrorlist file for pacman.
 │       │   ├── config.go            # Install step constants
 │       │   ├── context.go           # InstallContext & Logger interface
 │       │   ├── logging.go           # ConsoleLogger implementation
-│       │   └── packages.x86_64      # Package list
+│       │   ├── data/
+│       │   │   └── packages.x86_64  # Package list
 │       └── shared/
 │           ├── types.go             # Data types (DiskInfo, etc.)
 │           ├── config.go            # Constants & defaults

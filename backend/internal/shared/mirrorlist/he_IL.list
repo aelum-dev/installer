@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for he_IL
+##
+
+#Server = https://archlinux.interhost.co.il/$repo/os/$arch
+#Server = https://mirror.isoc.org.il/pub/archlinux/$repo/os/$arch

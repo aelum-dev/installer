@@ -1,0 +1,24 @@
+##
+## Arch Linux mirrorlist for nl_NL
+##
+
+#Server = https://ams.nl.mirrors.bjg.at/arch/$repo/os/$arch
+#Server = https://mirror.bouwhuis.network/archlinux/$repo/os/$arch
+#Server = https://mirror.nl.cdn-perfprod.com/archlinux/$repo/os/$arch
+#Server = https://nl.mirrors.cicku.me/archlinux/$repo/os/$arch
+#Server = https://mirror.cj2.nl/archlinux/$repo/os/$arch
+#Server = https://nl.mirror.flokinet.net/archlinux/$repo/os/$arch
+#Server = https://mirror.iusearchbtw.nl/$repo/os/$arch
+#Server = https://mirror.koddos.net/archlinux/$repo/os/$arch
+#Server = https://arch.mirrors.lavatech.top/$repo/os/$arch
+#Server = https://mirror.ams1.nl.leaseweb.net/archlinux/$repo/os/$arch
+#Server = https://archlinux.mirror.liteserver.nl/$repo/os/$arch
+#Server = https://mirror.lyrahosting.com/archlinux/$repo/os/$arch
+#Server = https://mirror.mijn.host/archlinux/$repo/os/$arch
+#Server = https://nl.mirror.cx/archlinux/$repo/os/$arch
+#Server = https://nl.mirrors.mk/archlinux/$repo/os/$arch
+#Server = https://nl.arch.niranjan.co/$repo/os/$arch
+#Server = https://mirror.nyaa.vc/archlinux/$repo/os/$arch
+#Server = https://mirror.serverion.com/archlinux/$repo/os/$arch
+#Server = https://archlinux.mirror.wearetriple.com/$repo/os/$arch
+#Server = https://mirrors.xtom.nl/archlinux/$repo/os/$arch

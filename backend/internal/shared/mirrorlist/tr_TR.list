@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for tr_TR
+##
+
+#Server = https://tr.arch.niranjan.co/$repo/os/$arch
+#Server = https://mirror.timtal.com.tr/archlinux/$repo/os/$arch

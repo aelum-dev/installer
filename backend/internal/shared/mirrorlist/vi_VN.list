@@ -1,0 +1,8 @@
+##
+## Arch Linux mirrorlist for vi_VN
+##
+
+#Server = https://mirrors.huongnguyen.dev/arch/$repo/os/$arch
+#Server = https://mirror.khoinet.dpdns.org/Arch/$repo/os/$arch
+#Server = https://mirror.meowsmp.net/arch/$repo/os/$arch
+#Server = https://mirrors.nguyenhoang.cloud/archlinux/$repo/os/$arch

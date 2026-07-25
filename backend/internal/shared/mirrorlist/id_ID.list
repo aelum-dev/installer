@@ -1,0 +1,10 @@
+##
+## Arch Linux mirrorlist for id_ID
+##
+
+#Server = https://mirror.citrahost.com/archlinux/$repo/os/$arch
+#Server = https://mirror.gi.co.id/archlinux/$repo/os/$arch
+#Server = https://mirror.ditatompel.com/archlinux/$repo/os/$arch
+#Server = https://mirror.papua.go.id/archlinux/$repo/os/$arch
+#Server = https://mirror.repository.id/archlinux/$repo/os/$arch
+#Server = https://kacabenggala.uny.ac.id/archlinux/$repo/os/$arch

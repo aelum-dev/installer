@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -110,14 +109,10 @@ func ConfigureSystem(ctx *InstallContext) error {
 // copyMirrorList copies the region-specific mirror list to /etc/pacman.d/mirrorlist.
 func copyMirrorList(helper, regionCode string) error {
 	// Read from embedded mirrorlist (baked into binary)
+	// Falls back to default (worldwide) if region-specific file doesn't exist
 	rawContent, err := shared.GetEmbeddedMirrorList(regionCode)
 	if err != nil {
-		// Fallback to default mirrorlist
-		rawContent, err = shared.GetEmbeddedMirrorList("default")
-		if err != nil {
-			return fmt.Errorf("no mirror list found for region %q and no default available: %w", regionCode, err)
-		}
-		fmt.Fprintf(os.Stderr, "Warning: no mirror list for %q, using default\n", regionCode)
+		return fmt.Errorf("no mirror list available for region %q: %w", regionCode, err)
 	}
 
 	// Uncomment mirror lines (strip leading # from #Server = ...)

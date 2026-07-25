@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for fa_IR
+##
+
+#Server = https://mirror.arvancloud.ir/archlinux/$repo/os/$arch
+#Server = https://mirror.mobinhost.com/archlinux/$repo/os/$arch

@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for hu_HU
+##
+
+#Server = https://ftp.ek-cer.hu/pub/mirrors/ftp.archlinux.org/$repo/os/$arch
+#Server = https://hu.mirror.frigyes.dev/archlinux/$repo/os/$arch

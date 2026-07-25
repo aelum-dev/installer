@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-//go:embed packages.x86_64
+//go:embed data/packages.x86_64
 var packagesFile string
 
 // Install installs the Arch Linux base system via pacstrap.

@@ -23,19 +23,32 @@ var mirrorListFS embed.FS
 // countryNameToLocale maps Arch Linux mirrorlist country names to locale codes.
 // These locale codes correspond to Region.Code values.
 var countryNameToLocale = map[string]string{
-	"Germany":       "de_DE",
-	"United States": "en_US",
-	"Spain":         "es_ES",
-	"France":        "fr_FR",
-	"Italy":         "it_IT",
-	"Japan":         "ja_JP",
-	"South Korea":   "ko_KR",
-	"Poland":        "pl_PL",
-	"Brazil":        "pt_BR",
-	"Russia":        "ru_RU",
-	"Turkey":        "tr_TR",
-	"Ukraine":       "uk_UA",
-	"China":         "zh_CN",
+	"United States":   "en_US",
+	"Bulgaria":        "bg_BG",
+	"Catalonia":      "ca_ES",
+	"China":          "zh_Hans",
+	"Taiwan":         "zh_Hant",
+	"Netherlands":    "nl_NL",
+	"Finland":        "fi_FI",
+	"France":         "fr_FR",
+	"Greece":         "el_GR",
+	"Hungary":        "hu_HU",
+	"Indonesia":      "id_ID",
+	"Japan":          "ja_JP",
+	"South Korea":    "ko_KR",
+	"Norway":         "nb_NO",
+	"Iran":           "fa_IR",
+	"Poland":         "pl_PL",
+	"Brazil":         "pt_BR",
+	"Russia":         "ru_RU",
+	"Spain":          "es_ES",
+	"Sweden":         "sv_SE",
+	"Türkiye":        "tr_TR",
+	"Vietnam":        "vi_VN",
+	"Germany":        "de_DE",
+	"Israel":         "he_IL",
+	"Italy":          "it_IT",
+	"Ukraine":        "uk_UA",
 }
 
 // mirrorSection represents a parsed country section from the mirrorlist.
@@ -46,11 +59,16 @@ type mirrorSection struct {
 }
 
 // GetEmbeddedMirrorList returns the content of a region's mirror list from the embedded filesystem.
+// Falls back to "default" (worldwide mirrors) if the region-specific file doesn't exist.
 func GetEmbeddedMirrorList(locale string) ([]byte, error) {
 	path := filepath.Join("mirrorlist", locale+".list")
 	data, err := mirrorListFS.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("mirror list for %q not found in embedded filesystem: %w", locale, err)
+		// Fallback to worldwide mirrors
+		data, err = mirrorListFS.ReadFile("mirrorlist/default.list")
+		if err != nil {
+			return nil, fmt.Errorf("no mirror list found for %q and no default available: %w", locale, err)
+		}
 	}
 	return data, nil
 }
