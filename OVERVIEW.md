@@ -268,6 +268,7 @@ Each region has an embedded mirrorlist file for pacman.
 │       │   ├── bootloader.go        # systemd-boot configuration
 │       │   ├── system.go            # System configuration (hostname, locale, etc.)
 │       │   ├── users.go             # User account creation
+│       │   ├── greetd.go            # greetd + DMS greeter setup
 │       │   ├── cleanup.go           # Mount cleanup
 │       │   ├── checks.go            # Prerequisite validation
 │       │   ├── config.go            # Install step constants

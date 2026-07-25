@@ -13,6 +13,7 @@
 //	./aestheticos-installer-cli --install-bootloader /dev/vda
 //	./aestheticos-installer-cli --setup-users /dev/vda
 //	./aestheticos-installer-cli --configure-system /dev/vda
+//	./aestheticos-installer-cli --configure-greetd /dev/vda
 package main
 
 import (
@@ -41,6 +42,7 @@ func main() {
 	bootloaderFlag := flag.String("install-bootloader", "", "Disk to install bootloader on")
 	setupUsersFlag := flag.String("setup-users", "", "Disk to set up users on")
 	configureSysFlag := flag.String("configure-system", "", "Disk to configure system on")
+	configureGreetdFlag := flag.String("configure-greetd", "", "Disk to configure greetd on")
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
@@ -60,6 +62,7 @@ func main() {
 		bootloaderFlag, "configure_bootloader",
 		setupUsersFlag, "setup_users",
 		configureSysFlag, "configure_system",
+		configureGreetdFlag, "configure_greetd",
 	)...)
 
 	if disk == "" {
@@ -177,6 +180,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --install-bootloader <disk> [--dry-run]                 Install bootloader\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                        Set up user accounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --configure-greetd <disk> [--dry-run]                   Configure greetd + DMS greeter\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
