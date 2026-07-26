@@ -25,11 +25,21 @@ func SetupUsers(ctx *InstallContext) error {
 		ctx.Logger.Info("Creating user account '%s' with wheel group", ctx.Username)
 	}
 
+	// Copy ISO skel to installed system so useradd -m picks up DMS configs
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Copying ISO skel to installed system")
+	}
+	cmd := exec.Command("sudo", helper, HelperCmdRun, "cp", "-a", "/etc/skel/.", "/mnt/etc/skel/")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy skel: %w: %s", err, string(output))
+	}
+
 	// Create user inside chroot (skip if already exists)
-	cmd := exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
 		"bash", "-c", fmt.Sprintf("if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi",
 			ctx.Username, ctx.Username))
-	output, err := cmd.CombinedOutput()
+	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
 	}

@@ -56,7 +56,7 @@ UUID=%s  /              %s    %s        0  1
 UUID=%s  /boot          vfat    %s 0 2
 `, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask)
 
-	if err := writeFile(ctx, "/mnt/etc/fstab", fstabContent); err != nil {
+	if err := writeFile(ctx, "/etc/fstab", fstabContent); err != nil {
 		return err
 	}
 
@@ -94,7 +94,7 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 	fstabContent := strings.Join(lines, "\n") + "\n"
 
 	// Write fstab
-	if err := writeFile(ctx, "/mnt/etc/fstab", fstabContent); err != nil {
+	if err := writeFile(ctx, "/etc/fstab", fstabContent); err != nil {
 		return err
 	}
 

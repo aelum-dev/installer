@@ -22,8 +22,8 @@ const GreetdPackage = "greetd-dms-greeter-bin"
 //  3. Write /etc/greetd/config.toml (avoids dms greeter enable root check)
 //  4. Enable greetd.service
 //
-// Note: DMS Hyprland configs are deployed via /etc/skel on the ISO,
-// so they're automatically copied to the user's home when useradd -m runs.
+// Note: ISO /etc/skel is copied to /mnt/etc/skel in SetupUsers before useradd,
+// so DMS Hyprland configs are automatically copied to the user's home.
 func ConfigureGreetd(ctx *InstallContext) error {
 	if err := validateMountedSystem(ctx); err != nil {
 		return err
