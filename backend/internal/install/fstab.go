@@ -56,13 +56,8 @@ UUID=%s  /              %s    %s        0  1
 UUID=%s  /boot          vfat    %s 0 2
 `, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask)
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << '%s'\n%s\n%s", FstabHeredocDelimiter, fstabContent, FstabHeredocDelimiter))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to write fstab: %w: %s", err, string(output))
-	}
-	if ctx.Logger != nil && len(output) > 0 {
-		ctx.Logger.Command(string(output))
+	if err := writeFile(ctx, "/mnt/etc/fstab", fstabContent); err != nil {
+		return err
 	}
 
 	// Verify fstab was written correctly
@@ -99,13 +94,8 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 	fstabContent := strings.Join(lines, "\n") + "\n"
 
 	// Write fstab
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > /mnt/etc/fstab << '%s'\n%s\n%s", FstabHeredocDelimiter, fstabContent, FstabHeredocDelimiter))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to write fstab: %w: %s", err, string(output))
-	}
-	if ctx.Logger != nil && len(output) > 0 {
-		ctx.Logger.Command(string(output))
+	if err := writeFile(ctx, "/mnt/etc/fstab", fstabContent); err != nil {
+		return err
 	}
 
 	// Verify fstab was written correctly

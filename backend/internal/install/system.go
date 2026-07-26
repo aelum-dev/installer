@@ -106,7 +106,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Copying mirror list for region %s", region.Code)
 	}
-	if err := copyMirrorList(helper, region.Code); err != nil {
+	if err := copyMirrorList(ctx, region.Code); err != nil {
 		return err
 	}
 
@@ -114,7 +114,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 }
 
 // copyMirrorList copies the region-specific mirror list to /etc/pacman.d/mirrorlist.
-func copyMirrorList(helper, regionCode string) error {
+func copyMirrorList(ctx *InstallContext, regionCode string) error {
 	// Read from embedded mirrorlist (baked into binary)
 	// Falls back to default (worldwide) if region-specific file doesn't exist
 	rawContent, err := shared.GetEmbeddedMirrorList(regionCode)
@@ -126,10 +126,8 @@ func copyMirrorList(helper, regionCode string) error {
 	content := uncommentMirrors(string(rawContent))
 
 	// Write to target mirrorlist
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cat > %s/etc/pacman.d/mirrorlist << '%s'\n%s\n%s", shared.MountRoot, FstabHeredocDelimiter, content, FstabHeredocDelimiter))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to write mirror list: %w: %s", err, strings.TrimSpace(string(output)))
+	if err := writeFile(ctx, "/etc/pacman.d/mirrorlist", content); err != nil {
+		return err
 	}
 
 	return nil
