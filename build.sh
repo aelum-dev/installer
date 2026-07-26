@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 SHARED_DIR=$HOME"/Projects/shared"
-DISTO_DIR=$HOME"/Projects/AestheticOS/airootfs/usr/local/bin"
+BIN_DIR=$HOME"/Projects/AestheticOS/airootfs/usr/local/bin"
 
 echo "=== Refreshing mirrorlists ==="
 go run ./backend/internal/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
@@ -32,11 +32,10 @@ cp build/bin/aestheticos-helper "$SHARED_DIR/"
 cp build/bin/aestheticos-installer-cli "$SHARED_DIR/"
 chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-installer-cli"
 
-cp build/bin/aestheticos-installer "$DISTO_DIR/"
-cp build/bin/aestheticos-helper "$DISTO_DIR/"
-cp build/bin/aestheticos-installer-cli "$DISTO_DIR/"
+echo "=== Copying executables to distro ${BIN_DIR} ==="
+mkdir -p "$BIN_DIR"
+cp build/bin/aestheticos-installer "$BIN_DIR/"
+cp build/bin/aestheticos-helper "$BIN_DIR/"
+cp build/bin/aestheticos-installer-cli "$BIN_DIR/"
 
-echo "Done! Executables built:"
-echo "  GUI:     build/bin/aestheticos-installer"
-echo "  Helper:  build/bin/aestheticos-helper"
-echo "  CLI:     build/bin/aestheticos-installer-cli"
+echo "=== Done! ==="
