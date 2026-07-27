@@ -15,8 +15,8 @@ var greetdConfigToml string
 //
 //	1. Create greeter user and dirs via systemd-sysusers/tmpfiles
 //	2. Write /etc/greetd/config.toml (avoids dms greeter enable root check)
-//	3. Enable greetd.service
 //
+// Note: greetd.service is enabled by EnableServices() in services.go.
 // Note: The greetd-dms-greeter-bin package is installed during the desktop
 // environment step. ISO /etc/skel is copied to /mnt/etc/skel in SetupUsers
 // before useradd, so DMS Hyprland configs are automatically copied to the
@@ -71,15 +71,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 
 	if err := writeFile(ctx, "/etc/greetd/config.toml", greetdConfigToml); err != nil {
 		return err
-	}
-
-	// Step 3: Enable greetd.service
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Enabling greetd service")
-	}
-	output, err = runChroot(ctx, "systemctl", "enable", "greetd")
-	if err != nil {
-		return fmt.Errorf("failed to enable greetd.service: %w: %s", err, string(output))
 	}
 
 	return nil

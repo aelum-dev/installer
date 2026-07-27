@@ -126,6 +126,7 @@ var stepDefinitions = []installationStep{
 	{name: "setup_users", label: "Setting up users", run: install.SetupUsers},
 	{name: "configure_system", label: "Configuring system", run: install.ConfigureSystem},
 	{name: "configure_greetd", label: "Configuring login manager", run: install.ConfigureGreetd},
+	{name: "enable_services", label: "Enabling services", run: install.EnableServices},
 }
 
 // installationSteps returns the list of installation steps.
