@@ -11,7 +11,7 @@ import (
 
 // FormatDisk creates partitions and formats them according to the filesystem type.
 // Before formatting, any mounted partitions on the disk are unmounted first.
-// For btrfs, creates subvolumes (@, @home, @root, @srv, @cache, @tmp, @log) and sets @ as default.
+// For btrfs, creates subvolumes (@, @home, @srv, @cache, @tmp, @log, @swap) and sets @ as default.
 // After formatting, UUIDs are read via blkid and stored in PartitionInfo.
 // On failure, cleans up partial state (unmounts, removes temporary mounts).
 func FormatDisk(ctx *InstallContext) (retErr error) {

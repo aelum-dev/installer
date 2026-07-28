@@ -15,7 +15,6 @@ type BtrfsSubvolume struct {
 var btrfsSubvolumes = []BtrfsSubvolume{
 	{Name: "@", MountPoint: "/", Compression: "zstd", NoDataCow: false},
 	{Name: "@home", MountPoint: "/home", Compression: "zstd", NoDataCow: true},
-	{Name: "@root", MountPoint: "/root", Compression: "zstd", NoDataCow: false},
 	{Name: "@srv", MountPoint: "/srv", Compression: "zstd", NoDataCow: false},
 	{Name: "@cache", MountPoint: "/var/cache", Compression: "zstd", NoDataCow: true},
 	{Name: "@tmp", MountPoint: "/var/tmp", Compression: "zstd", NoDataCow: true},
