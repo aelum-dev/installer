@@ -14,11 +14,11 @@ type BtrfsSubvolume struct {
 // Used by format_disk.go and generate_fstab.go to ensure consistency.
 var btrfsSubvolumes = []BtrfsSubvolume{
 	{Name: "@", MountPoint: "/", Compression: "zstd", NoDataCow: false},
-	{Name: "@home", MountPoint: "/home", Compression: "zstd", NoDataCow: true},
+	{Name: "@home", MountPoint: "/home", Compression: "zstd", NoDataCow: false},
 	{Name: "@srv", MountPoint: "/srv", Compression: "zstd", NoDataCow: false},
-	{Name: "@cache", MountPoint: "/var/cache", Compression: "zstd", NoDataCow: true},
-	{Name: "@tmp", MountPoint: "/var/tmp", Compression: "zstd", NoDataCow: true},
-	{Name: "@log", MountPoint: "/var/log", Compression: "", NoDataCow: true},
+	{Name: "@cache", MountPoint: "/var/cache", Compression: "", NoDataCow: true},
+	{Name: "@tmp", MountPoint: "/var/tmp", Compression: "", NoDataCow: true},
+	{Name: "@log", MountPoint: "/var/log", Compression: "zstd", NoDataCow: false},
 	{Name: "@swap", MountPoint: "/swap", Compression: "", NoDataCow: true},
 }
 
