@@ -70,9 +70,9 @@ func (inst *Installer) Install() error {
 	os.WriteFile(logPath, nil, shared.LogFileMode)
 
 	ctx := inst.context()
-	totalSteps := len(stepDefinitions)
 
 	stepList := inst.installationSteps()
+	percentages := cumulativePercentages(stepList)
 
 	for idx, step := range stepList {
 		label := step.label
@@ -80,8 +80,8 @@ func (inst *Installer) Install() error {
 			label = "[DRY RUN] " + label
 		}
 
-		startPercent := int(float64(idx) / float64(totalSteps) * 100)
-		endPercent := int(float64(idx+1) / float64(totalSteps) * 100)
+		startPercent := percentages[idx]
+		endPercent := percentages[idx+1]
 
 		// Wire progress callback so the tick goroutine can update the UI.
 		ctx.ProgressCallback = func(percent int) {
@@ -178,6 +178,44 @@ var stepDefinitions = []installationStep{
 	{name: "configure_system", label: "Configuring system", run: install.ConfigureSystem},
 	{name: "configure_greetd", label: "Configuring login manager", run: install.ConfigureGreetd},
 	{name: "enable_services", label: "Enabling services", run: install.EnableServices},
+}
+
+// stepWeights assigns relative weight to each step for progress bar calculation.
+// The two pacstrap steps (base + desktop) together account for ~80% of total
+// installation time, so they receive proportionally higher weights.
+var stepWeights = []int{
+	3,  // format_disk
+	2,  // mount_filesystem
+	45, // install (base pacstrap — longest step)
+	35, // install_desktop (desktop pacstrap — second longest)
+	2,  // create_swap
+	2,  // generate_fstab
+	3,  // configure_bootloader
+	2,  // setup_users
+	2,  // configure_system
+	2,  // configure_greetd
+	2,  // enable_services
+}
+
+// cumulativePercentages calculates the cumulative percentage at each step boundary
+// based on step weights. Returns a slice of length len(steps)+1, where result[0] = 0
+// and result[len] = 100.
+func cumulativePercentages(steps []installationStep) []int {
+	totalWeight := 0
+	for _, w := range stepWeights {
+		totalWeight += w
+	}
+
+	result := make([]int, len(steps)+1)
+	result[0] = 0
+	cumulativeWeight := 0
+	for i := range steps {
+		if i < len(stepWeights) {
+			cumulativeWeight += stepWeights[i]
+			result[i+1] = int(float64(cumulativeWeight) / float64(totalWeight) * 100)
+		}
+	}
+	return result
 }
 
 // installationSteps returns the list of installation steps.
