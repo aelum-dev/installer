@@ -92,7 +92,7 @@ func MountFilesystem(ctx *InstallContext) error {
 
 			// Create mount point directory
 			mountPath := shared.MountRoot + sv.MountPoint
-			cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", mountPath)
+			cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", mountPath)
 			cmd.Run()
 
 			// Mount subvolume with its properties
@@ -118,7 +118,7 @@ func MountFilesystem(ctx *InstallContext) error {
 		ctx.Logger.Info("Mounting EFI partition (%s) → %s", p.EFIPart, bootMount)
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, "run", "mkdir", "-p", bootMount)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", bootMount)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
@@ -145,11 +145,14 @@ func MountFilesystem(ctx *InstallContext) error {
 }
 
 // buildMountOpts constructs mount options string from a BtrfsSubvolume's properties.
-// Returns "subvol=<name>,compress=<val>" or just "subvol=<name>" if no compression.
+// Returns "subvol=<name>,compress=<val>,nodatacow" or similar based on properties.
 func buildMountOpts(sv *shared.BtrfsSubvolume) string {
 	opts := BtrfsSubvolumeMountPrefix + sv.Name
 	if sv.Compression != "" {
 		opts += ",compress=" + sv.Compression
+	}
+	if sv.NoDataCow {
+		opts += ",nodatacow"
 	}
 	return opts
 }

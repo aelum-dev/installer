@@ -202,8 +202,12 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	//   4. Apply per-subvolume properties (compression, nodatacow, etc.)
 	//   5. Unmount
 	if fsType == "btrfs" {
+		subvolumeNames := make([]string, len(subvolumes))
+		for i, sv := range subvolumes {
+			subvolumeNames[i] = sv.Name
+		}
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Setting up btrfs subvolumes: @, @home, @root, @srv, @cache, @tmp, @log")
+			ctx.Logger.Info("Setting up btrfs subvolumes: %s", strings.Join(subvolumeNames, ", "))
 		}
 
 		// Find root partition (the btrfs one)
@@ -244,8 +248,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 			ctx.Logger.Command(string(output))
 		}
 
-		// Step 4: Apply per-subvolume properties
-		// compression → btrfs property set, nodatacow → chattr +C
+		// Step 4: Apply per-subvolume compression properties
+		// nodatacow is applied at mount time via mount options
 		for _, sv := range subvolumes {
 			if sv.Compression != "" {
 				cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSetCompression, tmpMount, sv.Name, sv.Compression)
@@ -258,20 +262,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 					ctx.Logger.Command(string(output))
 				}
 			}
-			if sv.NoDataCow {
-				if ctx.Logger != nil {
-					ctx.Logger.Info("Setting nodatacow on %s subvolume", sv.Name)
-				}
-				cmd = exec.Command("sudo", ctx.Helper, "run", "chattr", "+C", shared.SubvolumePath(tmpMount, sv.Name))
-				output, err = cmd.CombinedOutput()
-				if err != nil {
-					if ctx.Logger != nil {
-						ctx.Logger.Error("Warning: failed to set nodatacow on %s: %v", sv.Name, err)
-					}
-				} else if ctx.Logger != nil && len(output) > 0 {
-					ctx.Logger.Command(string(output))
-				}
-			}
 		}
 
 		// Step 5: Unmount temp location
@@ -279,7 +269,22 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		exec.Command("sudo", ctx.Helper, HelperCmdRun, "rmdir", tmpMount).Run()
 
 		if ctx.Logger != nil {
-			ctx.Logger.Info("btrfs subvolumes configured: @ (default, compressed), @home (nodatacow + compressed), @root, @srv, @cache (nodatacow), @tmp (nodatacow), @log (nodatacow)")
+			// Build summary: subvolume (properties)
+			var summaries []string
+			for _, sv := range subvolumes {
+				var props []string
+				if sv.Name == "@" {
+					props = append(props, "default")
+				}
+				if sv.Compression != "" {
+					props = append(props, "compressed")
+				}
+				if sv.NoDataCow {
+					props = append(props, "nodatacow")
+				}
+				summaries = append(summaries, sv.Name+" ("+strings.Join(props, ", ")+")")
+			}
+			ctx.Logger.Info("btrfs subvolumes configured: %s", strings.Join(summaries, ", "))
 		}
 	}
 

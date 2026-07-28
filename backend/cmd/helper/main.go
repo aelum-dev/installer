@@ -126,6 +126,30 @@ var commands = []HelperCommand{
 		Help:  "Wait for udev to finish processing all events",
 		Run:   cmdUdevSettle,
 	},
+	{
+		Name:  "mkswap",
+		Usage: "mkswap <device-or-file>",
+		Help:  "Create a swap area on a device or file",
+		Run:   cmdMkswap,
+	},
+	{
+		Name:  "swapon",
+		Usage: "swapon <device-or-file>",
+		Help:  "Enable a device or file for swapping",
+		Run:   cmdSwapon,
+	},
+	{
+		Name:  "chattr",
+		Usage: "chattr <flags> <path>",
+		Help:  "Change file attributes (e.g., +C for nodatacow on btrfs)",
+		Run:   cmdChattr,
+	},
+	{
+		Name:  "btrfs-mkswapfile",
+		Usage: "btrfs-mkswapfile <path> <size>",
+		Help:  "Create a btrfs swap file with proper CoW handling (e.g., btrfs-mkswapfile /swapfile 4G)",
+		Run:   cmdBtrfsMkswapfile,
+	},
 }
 
 func main() {
@@ -561,4 +585,36 @@ func cmdUdevSettle(args []string) error {
 	// before subsequent operations (like mkfs) try to access them.
 	// This is the standard approach used by archinstall and other installers.
 	return runCommand("udevadm", "settle")
+}
+
+func cmdMkswap(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: mkswap <device-or-file>")
+	}
+	return runCommand("mkswap", args[0])
+}
+
+func cmdSwapon(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: swapon <device-or-file>")
+	}
+	return runCommand("swapon", args[0])
+}
+
+func cmdChattr(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: chattr <flags> <path>")
+	}
+	flags := args[0]
+	path := args[1]
+	return runCommand("chattr", flags, path)
+}
+
+func cmdBtrfsMkswapfile(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: btrfs-mkswapfile <path> <size>")
+	}
+	path := args[0]
+	size := args[1] // e.g., "4G", "2G", "512M"
+	return runCommand("btrfs", "filesystem", "mkswapfile", "--size", size, path)
 }

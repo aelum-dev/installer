@@ -46,6 +46,10 @@ const (
 	HelperCmdBtrfsSubvolCreate     = "btrfs-subvol-create"
 	HelperCmdBtrfsSubvolSetDefault = "btrfs-subvol-set-default"
 	HelperCmdBtrfsSetCompression   = "btrfs-set-compression"
+	HelperCmdBtrfsMkswapfile       = "btrfs-mkswapfile"
+	HelperCmdMkswap                = "mkswap"
+	HelperCmdSwapon                = "swapon"
+	HelperCmdChattr                = "chattr"
 )
 
 // --- Sgdisk arguments --------------------------------------------------------

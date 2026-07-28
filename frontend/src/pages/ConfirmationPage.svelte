@@ -145,7 +145,7 @@
 							<p class="disk-extra">Serial: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
 						{/if}
 						{#if !isDiskSizeSufficient}
-							<p class="disk-extra disk-size-error">⚠ Disk too small — minimum 8 GB required</p>
+							<p class="disk-extra disk-size-error">⚠ Disk too small — minimum 16 GB required</p>
 						{/if}
 					</div>
 				{:else}

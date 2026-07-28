@@ -26,9 +26,10 @@ export const PAGES_NO_NAV = new Set<PageID>();
 // Pages that require validation before advancing
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
 
-// MinDiskSizeBytes is the minimum disk size in bytes (8 GiB).
+// MinDiskSizeBytes is the minimum disk size in bytes (16 GiB).
 // Mirrors the backend constant in shared/config.go.
-export const MIN_DISK_SIZE_BYTES = 8 * 1024 * 1024 * 1024;
+// Accounts for: base system (~1.5GB) + desktop packages (~4GB) + swap (4GB) + overhead (~1GB)
+export const MIN_DISK_SIZE_BYTES = 16 * 1024 * 1024 * 1024;
 
 // MinUsernameLength is the minimum allowed username length.
 // Mirrors the backend constant in shared/config.go.

@@ -14,9 +14,9 @@ const MinUsernameLength = 3
 // MinPasswordLength is the minimum allowed password length.
 const MinPasswordLength = 6
 
-// MinDiskSizeBytes is the minimum disk size in bytes (8 GiB).
-// Arch Linux requires at least ~4 GiB; we set 8 GiB for safety.
-const MinDiskSizeBytes = 8 * 1024 * 1024 * 1024
+// MinDiskSizeBytes is the minimum disk size in bytes (16 GiB).
+// Accounts for: base system (~1.5GB) + desktop packages (~4GB) + swap (4GB) + overhead (~1GB).
+const MinDiskSizeBytes = 16 * 1024 * 1024 * 1024
 
 // --- Filesystem types --------------------------------------------------------
 

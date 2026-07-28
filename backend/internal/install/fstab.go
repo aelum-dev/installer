@@ -54,7 +54,8 @@ func GenerateFstab(ctx *InstallContext) error {
 	fstabContent := fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
 UUID=%s  /              %s    %s        0  1
 UUID=%s  /boot          vfat    %s 0 2
-`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask)
+%s
+`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask, GetSwapFstabEntry(ctx))
 
 	if err := writeFile(ctx, "/etc/fstab", fstabContent); err != nil {
 		return err
@@ -90,6 +91,9 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 
 	// EFI partition
 	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, EfiPartitionUmask))
+
+	// Swap
+	lines = append(lines, GetSwapFstabEntry(ctx))
 
 	fstabContent := strings.Join(lines, "\n") + "\n"
 
