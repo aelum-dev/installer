@@ -70,6 +70,7 @@ func (inst *Installer) Install() error {
 	os.WriteFile(logPath, nil, shared.LogFileMode)
 
 	ctx := inst.context()
+	totalSteps := len(stepDefinitions)
 
 	stepList := inst.installationSteps()
 
@@ -79,9 +80,22 @@ func (inst *Installer) Install() error {
 			label = "[DRY RUN] " + label
 		}
 
-		inst.emitProgress(label, int(float64(idx)/float64(len(stepList))*100), "running")
+		startPercent := int(float64(idx) / float64(totalSteps) * 100)
+		endPercent := int(float64(idx+1) / float64(totalSteps) * 100)
+
+		// Wire progress callback so the tick goroutine can update the UI.
+		ctx.ProgressCallback = func(percent int) {
+			inst.emitProgress(label, percent, "running")
+		}
+
+		inst.emitProgress(label, startPercent, "running")
 		inst.logInfo("Starting step: %s", step.label)
 		WriteLog("Starting step: %s", step.label)
+
+		// Launch tick goroutine: slowly advances percentage during long steps.
+		// Fast steps (format, mount) finish before the first tick fires.
+		stopTick := make(chan struct{})
+		go inst.tickProgress(startPercent, endPercent, stopTick)
 
 		var err error
 		if inst.dryRun {
@@ -89,6 +103,7 @@ func (inst *Installer) Install() error {
 		} else {
 			err = step.run(ctx)
 		}
+		close(stopTick) // stop the tick goroutine
 
 		if err != nil {
 			inst.logError("Step failed: %s - %v", step.label, err)
@@ -99,12 +114,47 @@ func (inst *Installer) Install() error {
 
 		inst.logInfo("Step completed: %s", step.label)
 		WriteLog("Step completed: %s", step.label)
-		percent := int(float64(idx+1) / float64(len(stepList)) * 100)
-		inst.emitProgress(label, percent, "done")
+		inst.emitProgress(label, endPercent, "done")
 	}
 
 	WriteLog("Installation completed successfully")
 	return nil
+}
+
+// tickProgress slowly advances the percentage from start to end, emitting
+// progress events at regular intervals. Used to keep the UI feeling alive
+// during long-running steps (e.g. pacstrap). Stops when stopTick is closed.
+func (inst *Installer) tickProgress(start, end int, stopTick chan struct{}) {
+	if start >= end {
+		return
+	}
+
+	// Initial delay — fast steps finish before the first tick fires.
+	select {
+	case <-time.After(time.Duration(install.ProgressTickDelayMs) * time.Millisecond):
+	case <-stopTick:
+		return
+	}
+
+	current := start
+	ticker := time.NewTicker(time.Duration(install.ProgressTickIntervalMs) * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			current++
+			if current > end {
+				current = end
+			}
+			inst.emitProgress("", current, "running")
+			if current >= end {
+				return
+			}
+		case <-stopTick:
+			return
+		}
+	}
 }
 
 // installationStep defines a single step in the installation process.

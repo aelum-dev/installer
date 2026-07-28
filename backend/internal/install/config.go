@@ -261,3 +261,18 @@ const ErrorPrefix = "ERROR: "
 // SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode (milliseconds).
 // Short enough to feel responsive during testing, long enough to be visible in logs.
 const SimulateStepSleepDuration = 200
+
+// --- Progress tick ----------------------------------------------------------
+
+// ProgressTickDelayMs is the initial delay before the progress tick starts.
+// Fast steps (format, mount) finish before the first tick fires, avoiding
+// unnecessary UI flicker.
+const ProgressTickDelayMs = 2000
+
+// ProgressTickIntervalMs is the interval between progress increments during
+// a long-running step. Each tick advances the percentage by 1.
+const ProgressTickIntervalMs = 4000
+
+// ProgressTickMaxPercent is the maximum percentage the tick goroutine will
+// reach. The step's final emit always overrides this value.
+const ProgressTickMaxPercent = 99
