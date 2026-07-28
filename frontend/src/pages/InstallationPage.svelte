@@ -128,6 +128,7 @@
 			<div class="progress-container">
 			<div class="progress-bar-bg">
 				<div
+					class:running={isRunning}
 					class="progress-bar-fill"
 					style="--progress: {progress}%"
 				></div>
@@ -192,6 +193,29 @@
 		background: linear-gradient(90deg, var(--color-primary), var(--color-sky));
 		border-radius: 999px;
 		transition: width 0.5s ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Sliding highlight — active while a step is running */
+	.progress-bar-fill.running::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -40%;
+		width: 40%;
+		height: 100%;
+		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+		animation: slide 1.8s ease-in-out infinite;
+	}
+
+	@keyframes slide {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	.progress-info {
