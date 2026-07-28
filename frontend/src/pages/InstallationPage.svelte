@@ -38,9 +38,10 @@
 	// Listen for installation events from the backend
 	$effect(() => {
 		const handleProgress = (data: { label: string; percent: number; phase: string }) => {
-			currentStepLabel = data.label;
+			if (data.label) currentStepLabel = data.label;
 			if (data.phase === 'running') {
 				currentStep = data.percent;
+				progress = data.percent;
 				errorMessage = '';
 			} else if (data.phase === 'done') {
 				currentStep = data.percent;

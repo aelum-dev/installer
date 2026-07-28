@@ -95,7 +95,7 @@ func (inst *Installer) Install() error {
 		// Launch tick goroutine: slowly advances percentage during long steps.
 		// Fast steps (format, mount) finish before the first tick fires.
 		stopTick := make(chan struct{})
-		go inst.tickProgress(startPercent, endPercent, stopTick)
+		go inst.tickProgress(label, startPercent, endPercent, stopTick)
 
 		var err error
 		if inst.dryRun {
@@ -124,7 +124,7 @@ func (inst *Installer) Install() error {
 // tickProgress slowly advances the percentage from start to end, emitting
 // progress events at regular intervals. Used to keep the UI feeling alive
 // during long-running steps (e.g. pacstrap). Stops when stopTick is closed.
-func (inst *Installer) tickProgress(start, end int, stopTick chan struct{}) {
+func (inst *Installer) tickProgress(label string, start, end int, stopTick chan struct{}) {
 	if start >= end {
 		return
 	}
@@ -147,7 +147,7 @@ func (inst *Installer) tickProgress(start, end int, stopTick chan struct{}) {
 			if current > end {
 				current = end
 			}
-			inst.emitProgress("", current, "running")
+			inst.emitProgress(label, current, "running")
 			if current >= end {
 				return
 			}
