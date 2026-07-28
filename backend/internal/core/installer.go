@@ -85,7 +85,9 @@ func (inst *Installer) Install() error {
 
 		// Wire progress callback so the tick goroutine can update the UI.
 		ctx.ProgressCallback = func(percent int) {
-			inst.emitProgress(label, percent, "running")
+			// Convert step-relative percentage (0-100) to absolute percentage (startPercent-endPercent)
+			absPercent := int(float64(startPercent) + (float64(percent) * float64(endPercent-startPercent) / 100.0))
+			inst.emitProgress(label, absPercent, "running")
 		}
 
 		inst.emitProgress(label, startPercent, "running")

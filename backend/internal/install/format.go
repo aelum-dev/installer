@@ -55,6 +55,9 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		{Name: PartitionLayoutRoot, SizeMB: 0, Fstype: fsType, MountPoint: shared.MountRoot},
 	}
 
+	// Track the next available sector to ensure partitions are contiguous and don't overlap.
+	currentSector := int64(shared.GPTPartitionStartSector)
+
 	// Define btrfs subvolumes (only for btrfs filesystem)
 	var subvolumes []shared.BtrfsSubvolume
 	if fsType == "btrfs" {
@@ -108,11 +111,16 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		// Calculate sgdisk parameters
 		var sgdiskArgs []string
 		if part.SizeMB > 0 {
-			// Fixed size: start at 1MiB, end at +SizeMB
-			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:+%dm", partNum, shared.GPTPartitionStartSector, part.SizeMB)}
+			// Fixed size: start at currentSector, end at +SizeMB
+			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:+%dm", partNum, currentSector, part.SizeMB)}
+
+			// Update currentSector for the next partition.
+			// 1 MB = 1024 * 1024 bytes. Assuming 512-byte sectors.
+			sectors := (part.SizeMB * 1024 * 1024) / 512
+			currentSector += sectors
 		} else {
-			// Use rest of disk
-			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:0:0", partNum)}
+			// Use rest of disk: start at currentSector, end at 0 (end of disk)
+			sgdiskArgs = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:0", partNum, currentSector)}
 		}
 
 		// Set partition type GUID (per archinstall PartitionGUID values)
