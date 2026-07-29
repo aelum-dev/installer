@@ -132,6 +132,12 @@ func parsePacstrapProgressPair(line string) (int, int) {
 // Pacstrap outputs progress in phases (checking keys, installing packages, hooks),
 // each with their own (N/M) counter. This tracker sums denominators across phases
 // to calculate overall progress.
+//
+// Key design: when a phase ends (M changes), we credit currentPhaseCurrent
+// (the highest N actually observed) rather than currentPhaseTotal (M), because
+// pacstrap may jump to the next phase before outputting all N/M lines.
+// Crediting M would overstate completed work and cause the progress bar to
+// jump ahead of reality.
 type pacstrapProgressTracker struct {
 	completedPhasesTotal int
 	currentPhaseTotal    int
@@ -147,12 +153,20 @@ func (t *pacstrapProgressTracker) update(n, m int) int {
 	// Detect phase boundary: M changed means we're in a new phase.
 	if m != t.currentPhaseTotal {
 		if t.currentPhaseTotal > 0 {
-			t.completedPhasesTotal += t.currentPhaseTotal
+			// Phase ended — credit the highest N actually observed in this phase,
+			// not M. M is the assumed total and may overstate actual completion
+			// if pacstrap jumped to the next phase before finishing all items.
+			t.completedPhasesTotal += t.currentPhaseCurrent
 		}
 		t.currentPhaseTotal = m
 		t.currentPhaseCurrent = 0
 	}
-	t.currentPhaseCurrent = n
+
+	// Track the highest N seen in this phase. N should be monotonically
+	// increasing, but be defensive against out-of-order output.
+	if n > t.currentPhaseCurrent {
+		t.currentPhaseCurrent = n
+	}
 
 	overallTotal := t.completedPhasesTotal + t.currentPhaseTotal
 	overallCurrent := t.completedPhasesTotal + t.currentPhaseCurrent
@@ -160,5 +174,9 @@ func (t *pacstrapProgressTracker) update(n, m int) int {
 	if overallTotal == 0 {
 		return 0
 	}
-	return int(float64(overallCurrent) / float64(overallTotal) * 100)
+	pct := int(float64(overallCurrent) / float64(overallTotal) * 100)
+	if pct > 100 {
+		pct = 100
+	}
+	return pct
 }

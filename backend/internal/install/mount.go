@@ -85,25 +85,43 @@ func MountFilesystem(ctx *InstallContext) error {
 	// ── Mount additional subvolumes ──
 
 	if ctx.FileSystem == shared.FileSystemBtrfs {
-		for _, sv := range shared.GetBtrfsSubvolumes() {
-			if sv.MountPoint == "/" {
-				continue // already mounted as root
+		// Use MountPoints map (populated by FormatDisk) to mount additional subvolumes.
+		// Each entry maps a mount point (e.g., "/home") to the root partition path.
+		for mountPath, _ := range p.MountPoints {
+			// Skip root mount point — already mounted above
+			if mountPath == "/" {
+				continue
+			}
+
+			// Find the subvolume definition for this mount point to get its options
+			var sv *shared.BtrfsSubvolume
+			for _, candidate := range shared.GetBtrfsSubvolumes() {
+				if candidate.MountPoint == mountPath {
+					sv = &candidate
+					break
+				}
+			}
+			if sv == nil {
+				if ctx.Logger != nil {
+					ctx.Logger.Info("No subvolume definition for mount point %s, skipping", mountPath)
+				}
+				continue
 			}
 
 			// Create mount point directory
-			mountPath := shared.MountRoot + sv.MountPoint
-			cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", mountPath)
+			fullPath := shared.MountRoot + mountPath
+			cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", fullPath)
 			cmd.Run()
 
 			// Mount subvolume with its properties
-			mountOpts := buildMountOpts(&sv)
+			mountOpts := buildMountOpts(sv)
 			if ctx.Logger != nil {
-				ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", sv.Name, mountPath, mountOpts)
+				ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", sv.Name, fullPath, mountOpts)
 			}
-			cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, mountPath)
+			cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, fullPath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
-				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, mountPath, err, string(output))
+				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(output))
 			}
 			if ctx.Logger != nil && len(output) > 0 {
 				ctx.Logger.Command(string(output))

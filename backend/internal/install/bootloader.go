@@ -98,7 +98,9 @@ func ConfigureBootloader(ctx *InstallContext) error {
 		ctx.Logger.Info("Generating random seed for entropy pool")
 	}
 	if err := generateRandomSeed(helper, esp); err != nil {
-		return err
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Warning: random seed generation failed (non-fatal): %v", err)
+		}
 	}
 
 	// Step 7: Verify installation
@@ -222,7 +224,7 @@ func generateRandomSeed(helper, esp string) error {
 	if err := cmd.Run(); err != nil {
 		// Not fatal — entropy generation is a best-effort improvement
 		fmt.Fprintf(os.Stderr, "Warning: failed to generate random seed: %v\n", err)
-		return nil
+		return fmt.Errorf("failed to generate random seed (non-fatal): %w", err)
 	}
 	return nil
 }

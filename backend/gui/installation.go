@@ -34,9 +34,7 @@ func (a *App) StartInstallation() error {
 	helper := core.FindHelper()
 
 	// Cleanup leftover mounts before starting
-	if err := install.CleanupMounts(helper); err != nil {
-		wailsRuntime.LogWarning(a.ctx, fmt.Sprintf("Failed to cleanup mounts: %v", err))
-	}
+	install.CleanupMounts(helper)
 
 	// Use provided hostname or fall back to default
 	hostname := a.hostname
@@ -80,6 +78,9 @@ func (a *App) StartInstallation() error {
 		if err != nil {
 			return
 		}
+
+		// Unmount everything after successful install
+		install.CleanupMounts(helper)
 
 		// Report completion
 		label := "Installation completed!"

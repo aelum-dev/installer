@@ -74,7 +74,7 @@ export interface PartitionDetail {
 	size: string;
 	fstype: string | null;
 	uuid: string;
-	mountpoint: string | null;
+	mountpoints: string[];
 }
 
 // Format bytes to human-readable string.

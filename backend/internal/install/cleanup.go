@@ -6,33 +6,19 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
-// CleanupMounts unmounts common installation mountpoints.
-// Used to clean up leftover mounts from previous failed installation attempts.
-// Safe to call even if mounts don't exist (errors are ignored).
-func CleanupMounts(helper string) error {
-	for _, mp := range []string{shared.MountRoot, BootMountPoint} {
-		cmd := exec.Command("sudo", helper, "umount", mp)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			// Ignore errors: mountpoint may not exist
-			_ = out
-			_ = err
-			continue
-		}
-	}
-	return nil
+// CleanupMounts unmounts everything after install: swap and all mounts under /mnt
+// (including /mnt/boot, btrfs subvolumes, etc.). Uses lazy recursive unmount so
+// it works even with nested mounts or lingering references. Safe to call when
+// nothing is mounted — errors are ignored.
+func CleanupMounts(helper string) {
+	exec.Command("sudo", helper, HelperCmdRun, "swapoff", "-a").Run()
+	cmd := exec.Command("sudo", helper, HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot)
+	cmd.Run()
 }
 
-// FormatDiskErrorCleanup unmounts all partitions on a disk.
-// Used before formatting to ensure no partitions are mounted.
-func FormatDiskErrorCleanup(disk, helper string) error {
-	// Use recursive lazy unmount to handle nested mounts (e.g., /mnt/boot inside /mnt)
-	cmd := exec.Command("sudo", helper, "run", "umount", "-lR", shared.MountRoot)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		// Ignore errors: nothing may be mounted
-		_ = out
-		_ = err
-	}
-	return nil
+// FormatDiskErrorCleanup tears down mounts left over from a failed FormatDisk.
+func FormatDiskErrorCleanup(disk, helper string) {
+	exec.Command("sudo", helper, HelperCmdRun, "swapoff", "-a").Run()
+	cmd := exec.Command("sudo", helper, HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot)
+	cmd.Run()
 }
-
-

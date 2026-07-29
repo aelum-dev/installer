@@ -115,7 +115,7 @@ export namespace shared {
 	    size: string;
 	    fstype: string;
 	    uuid: string;
-	    mountpoint: string;
+	    mountpoints: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new PartitionDetail(source);
@@ -129,7 +129,7 @@ export namespace shared {
 	        this.size = source["size"];
 	        this.fstype = source["fstype"];
 	        this.uuid = source["uuid"];
-	        this.mountpoint = source["mountpoint"];
+	        this.mountpoints = source["mountpoints"];
 	    }
 	}
 	export class UserAccountData {

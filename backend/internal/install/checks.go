@@ -26,10 +26,4 @@ func validateMountedSystem(ctx *InstallContext) error {
 	return nil
 }
 
-// validatePartitionsExist checks that partition info is available (from FormatDisk).
-func validatePartitionsExist(ctx *InstallContext) error {
-	if ctx.Partitions == nil {
-		return fmt.Errorf("partition info not available. Run --format-disk <disk> first to create partitions")
-	}
-	return nil
-}
+

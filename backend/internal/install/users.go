@@ -73,9 +73,12 @@ func SetupUsers(ctx *InstallContext) error {
 		}
 		hash := strings.TrimSpace(string(hashOutput))
 
-		// Update root entry in /mnt/etc/shadow (use | as delimiter since hash contains /)
+		// Update root entry in /mnt/etc/shadow, preserving remaining fields
+		// (last_change, min_age, max_age, warn_age, inactive, expiry).
+		// Using | as sed delimiter since $hash contains /. Replaces only the
+		// second field (the hash) while keeping everything after it intact.
 		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
-			"sed -i 's|^root:.*|root:%s|' /mnt/etc/shadow",
+			"sed -i 's|^root:[^:]*|root:%s|' /mnt/etc/shadow",
 			hash,
 		))
 		output, err = cmd.CombinedOutput()

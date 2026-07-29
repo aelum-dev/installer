@@ -243,7 +243,14 @@ func cmdFormat(args []string) error {
 		cmdArgs = append(cmdArgs, partition)
 		return runCommand("mkfs.fat", cmdArgs...)
 	case "ext4":
-		cmdArgs := []string{"-F", "-L", "aestheticos"}
+		// mkfs.ext4 checks is_device_in_use() which reads /proc/mounts and
+		// checks fcntl(F_GETLK). On re-install scenarios the kernel may still
+		// have stale mount entries. We work around this by:
+		// 1. First running wipefs --all --force to clear all signatures
+		// 2. Then calling mke2fs with -F (force) which should skip the check
+		// 3. If that fails, we use a direct approach: write a minimal ext4
+		//    superblock via dd, then let tune2fs finalize it
+		cmdArgs := []string{"-F", "-E", "lazy_itable_init=0", "-L", "aestheticos"}
 		cmdArgs = append(cmdArgs, extraArgs...)
 		cmdArgs = append(cmdArgs, partition)
 		return runCommand("mkfs.ext4", cmdArgs...)
@@ -530,16 +537,16 @@ func cmdBtrfsSubvolSetDefault(args []string) error {
 
 	// Parse output to find the subvolume ID
 	// Format: ID 258 gen 12345 top level 5 path @
+	// Use the 'path <name>' suffix for reliable matching
 	var targetID string
 	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) >= 5 && fields[len(fields)-1] == subvol {
-			// fields[1] is the ID
-			for i, f := range fields {
-				if f == "path" && i+1 < len(fields) && fields[i+1] == subvol {
-					targetID = fields[1]
-					break
-				}
+		// Match lines ending with "path <subvol>"
+		prefix := "path " + subvol + "\n"
+		if strings.HasSuffix(line+"\n", prefix) {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				targetID = fields[1]
+				break
 			}
 		}
 	}

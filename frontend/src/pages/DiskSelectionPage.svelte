@@ -40,14 +40,17 @@
 		logInfo(`[DiskSelectionPage] Selected: ${disk.path} (${formatSize(disk.size)})`);
 
 		partitionsLoading = true;
+		logInfo(`[DiskSelectionPage] Calling GetDiskPartitions for ${disk.path}`);
 		partitions = [];
 		try {
 			const parts = await GetDiskPartitions(disk.path);
+			logInfo(`[DiskSelectionPage] Got ${parts?.length ?? 0} partitions:`, JSON.stringify(parts));
 			partitions = parts ?? [];
 		} catch (err) {
 			logInfo(`[DiskSelectionPage] Failed to load partitions: ${err}`);
 		} finally {
 			partitionsLoading = false;
+			logInfo(`[DiskSelectionPage] partitionsLoading=false, partitions.length=${partitions.length}`);
 		}
 	}
 
@@ -210,8 +213,8 @@
 													</td>
 													<td class="text-right">{formatSize(part.size)}</td>
 													<td class="text-right">
-														{#if part.mountpoint}
-															<span class="part-mount">{part.mountpoint}</span>
+														{#if part.mountpoints && part.mountpoints.length > 0}
+															<span class="part-mount">{part.mountpoints.join(', ')}</span>
 														{:else}
 															<span class="part-empty">—</span>
 														{/if}

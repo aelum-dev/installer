@@ -2,8 +2,6 @@ package install
 
 import (
 	"testing"
-
-	"aestheticos-installer/backend/internal/shared"
 )
 
 func TestFormatDisk_PartitionLayout(t *testing.T) {
@@ -59,29 +57,107 @@ func TestValidateMountedSystem_NoHelper(t *testing.T) {
 	}
 }
 
-func TestValidatePartitionsExist_Nil(t *testing.T) {
-	ctx := &InstallContext{}
+func TestPacstrapProgressTracker_BasicProgress(t *testing.T) {
+	tr := newPacstrapProgressTracker()
 
-	err := validatePartitionsExist(ctx)
-	if err == nil {
-		t.Error("expected error for nil partitions, got nil")
+	// Single phase: (1/5), (2/5), (3/5), (4/5), (5/5)
+	tests := []struct {
+		n, m     int
+		wantPct  int
+	}{
+		{1, 5, 20},
+		{2, 5, 40},
+		{3, 5, 60},
+		{4, 5, 80},
+		{5, 5, 100},
+	}
+
+	for _, tt := range tests {
+		got := tr.update(tt.n, tt.m)
+		if got != tt.wantPct {
+			t.Errorf("update(%d, %d) = %d, want %d", tt.n, tt.m, got, tt.wantPct)
+		}
 	}
 }
 
-func TestValidatePartitionsExist_Set(t *testing.T) {
-	ctx := &InstallContext{
-		Partitions: &shared.PartitionInfo{
-			Disk:     "/dev/vda",
-			EFIPart:  "/dev/vda1",
-			RootPart: "/dev/vda2",
-		},
-	}
+func TestPacstrapProgressTracker_PhaseTransition(t *testing.T) {
+	tr := newPacstrapProgressTracker()
 
-	err := validatePartitionsExist(ctx)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	// Phase 1: checking keys (3 items total)
+	// Pacstrap outputs: (1/3), (2/3), (3/3) — phase completes fully
+	tr.update(1, 3)
+	tr.update(2, 3)
+	tr.update(3, 3)
+
+	// Phase 2: installing packages (10 items total)
+	// (1/10), (2/10), (3/10)
+	tr.update(1, 10)
+	tr.update(2, 10)
+	tr.update(3, 10)
+
+	// After phase 1 completed fully (3/3) and phase 2 at 3/10:
+	// completedPhasesTotal=3, currentPhaseTotal=10, currentPhaseCurrent=3
+	// overall: (3+3)/(3+10) = 46%
+	got := tr.update(3, 10)
+	want := 46
+	if got != want {
+		t.Errorf("after phase transition: got %d%%, want %d%%", got, want)
 	}
 }
+
+func TestPacstrapProgressTracker_PhaseJump(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+
+	// Phase 1: checking keys (5 items total)
+	// Pacstrap only outputs up to (3/5) before jumping to next phase
+	tr.update(1, 5)
+	tr.update(2, 5)
+	tr.update(3, 5)
+
+	// Phase 2: installing packages (20 items total)
+	// Pacstrap jumps here without finishing phase 1
+	tr.update(1, 20)
+	tr.update(2, 20)
+
+	// OLD BUG: completedPhasesTotal would be 5 (M of phase 1),
+	// giving (5+2)/(5+20) = 28%
+	// FIX: completedPhasesTotal is 3 (highest N observed in phase 1),
+	// giving (3+2)/(3+20) = 21%
+	got := tr.update(2, 20)
+	if got != 21 {
+		t.Errorf("phase jump: got %d%%, want 21%% (bug would give 28%%)", got)
+	}
+}
+
+func TestPacstrapProgressTracker_NoOvershoot(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+
+	// Normal single phase
+	for i := 1; i <= 10; i++ {
+		got := tr.update(i, 10)
+		if got < 0 || got > 100 {
+			t.Errorf("update(%d, 10) = %d, out of range [0, 100]", i, got)
+		}
+	}
+}
+
+func TestPacstrapProgressTracker_DefensiveN(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+
+	// N goes backward (shouldn't happen, but be defensive)
+	tr.update(5, 10)
+	tr.update(3, 10) // N decreased
+	tr.update(7, 10) // N increased past previous max
+
+	// completed=0, currentTotal=10, currentCurrent=7
+	// overall: (0+7)/(0+10) = 70%
+	got := tr.update(7, 10)
+	want := 70
+	if got != want {
+		t.Errorf("defensive N: got %d%%, want %d%%", got, want)
+	}
+}
+
 
 // Note: Full integration tests for each step would require:
 // 1. A real aestheticos-helper binary (or a more sophisticated mock)

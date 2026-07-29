@@ -112,14 +112,6 @@ const UmountLazyFlag = "-l"
 // UmountRecursiveFlag unmounts recursively.
 const UmountRecursiveFlag = "-R"
 
-// --- Partprobe / partition refresh -------------------------------------------
-
-// PartprobeMaxRetries is the maximum number of retries when refreshing partition table.
-const PartprobeMaxRetries = 3
-
-// PartprobeRetryDelayMs is the delay between partition table refresh retries (ms).
-const PartprobeRetryDelayMs = 500
-
 // --- Pacstrap ----------------------------------------------------------------
 
 // PacstrapMountPoint is the target mount point for pacstrap.
