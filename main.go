@@ -18,7 +18,7 @@ var assets embed.FS
 
 // StartPage is the page to start on (0=Welcome, 1=User Account, 2=Disk Selection, etc.)
 // Set to -1 to start on Welcome page (default behavior)
-const StartPage = 2
+const StartPage = -1
 
 func main() {
 	dryRun := false

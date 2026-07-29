@@ -159,6 +159,135 @@ func TestPacstrapProgressTracker_DefensiveN(t *testing.T) {
 }
 
 
+func TestPacstrapProgressTracker_PackagesCount(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+
+	// "Packages (190)" sets the total.
+	got := tr.processLine(":: Packages (190) acl-2.4.0-1 ...")
+	if got != 0 {
+		t.Errorf("after Packages line: got %d%%, want 0%%", got)
+	}
+	if tr.totalPackages != 190 {
+		t.Errorf("totalPackages = %d, want 190", tr.totalPackages)
+	}
+}
+
+func TestPacstrapProgressTracker_DownloadPhase(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+	tr.totalPackages = 4 // known from Packages (N)
+
+	// 4 packages downloading.
+	tr.processLine("  linux-lts downloading...")
+	tr.processLine("  bash downloading...")
+	tr.processLine("  sudo downloading...")
+	tr.processLine("  vim downloading...")
+
+	// After all 4 downloads: downloaded=4
+	// totalUnits = 4*2 (download+install) + 0 (verify) + 0 (hooks) = 8
+	// currentUnits = 4
+	// pct = 4/8 * 100 = 50
+	got := tr.calculatePercent()
+	if got != 50 {
+		t.Errorf("after all downloads: got %d%%, want 50%%", got)
+	}
+}
+
+func TestPacstrapProgressTracker_VerifyPhase(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+	tr.totalPackages = 4
+
+	// Verification lines.
+	tr.processLine("checking keyring...")
+	tr.processLine("checking package integrity...")
+	tr.processLine("loading package files...")
+	tr.processLine("checking for file conflicts...")
+
+	// verified=4, totalUnits = 4*2 (download+install) + 4 (verify) + 0 (hooks) = 12
+	// currentUnits = 0 + 4 + 0 + 0 = 4
+	// pct = 4/12 * 100 = 33
+	got := tr.calculatePercent()
+	if got != 33 {
+		t.Errorf("after verification: got %d%%, want 33%%", got)
+	}
+}
+
+func TestPacstrapProgressTracker_InstallPhase(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+	tr.totalPackages = 3
+
+	// Simulate full flow: Packages → download 3 → verify 4 → install 2 of 3
+	tr.processLine(":: Packages (3) pkg1 pkg2 pkg3")
+	tr.processLine("  pkg1 downloading...")
+	tr.processLine("  pkg2 downloading...")
+	tr.processLine("  pkg3 downloading...")
+	tr.processLine("checking keyring...")
+	tr.processLine("checking package integrity...")
+	tr.processLine("loading package files...")
+	tr.processLine("checking for file conflicts...")
+	tr.processLine("installing pkg1...")
+	tr.processLine("installing pkg2...")
+
+	// downloaded=3, verified=5 (4 check + 1 processing), installed=2
+	// totalUnits = 3*2 (download+install) + 5 (verify) + 0 (hooks) = 11
+	// currentUnits = 3 + 5 + 2 + 0 = 10
+	// pct = 10/11 * 100 = 90
+	got := tr.calculatePercent()
+	if got != 90 {
+		t.Errorf("after 2/3 installs: got %d%%, want 90%%", got)
+	}
+}
+
+func TestPacstrapProgressTracker_FullFlow(t *testing.T) {
+	tr := newPacstrapProgressTracker()
+
+	// Simulate a realistic base install: 3 packages, 4 verify steps, 3 installs, 2 hooks.
+	lines := []string{
+		":: Packages (3) pkg1 pkg2 pkg3",
+		"  pkg1 downloading...",
+		"  pkg2 downloading...",
+		"  pkg3 downloading...",
+		"checking keyring...",
+		"checking package integrity...",
+		"loading package files...",
+		"checking for file conflicts...",
+		":: Processing package changes...",
+		"installing pkg1...",
+		"installing pkg2...",
+		"installing pkg3...",
+		"( 1/2) Running post-transaction hook 1...",
+		"( 2/2) Running post-transaction hook 2...",
+	}
+
+	for _, line := range lines {
+		tr.processLine(line)
+	}
+
+	// downloaded=3, verified=5 (4 check + 1 processing), installed=3
+	// hook: completed=0, currentTotal=2, currentCurrent=2
+	// totalUnits = 3*2 (download+install) + 5 (verify) + 2 (hooks) = 13
+	// currentUnits = 3 + 5 + 3 + 2 = 13
+	// pct = 13/13 * 100 = 100
+	got := tr.calculatePercent()
+	if got != 100 {
+		t.Errorf("full flow complete: got %d%%, want 100%%", got)
+	}
+}
+
+func TestPacstrapProgressTracker_NoRegression(t *testing.T) {
+	// Ensure processLine with (N/M) still works like update().
+	tr := newPacstrapProgressTracker()
+
+	// Pure hook-only scenario (no packages/download/install lines).
+	tr.processLine("( 1/5) hook 1")
+	tr.processLine("( 3/5) hook 2")
+	tr.processLine("( 5/5) hook 3")
+
+	got := tr.calculatePercent()
+	if got != 100 {
+		t.Errorf("pure hooks 5/5: got %d%%, want 100%%", got)
+	}
+}
+
 // Note: Full integration tests for each step would require:
 // 1. A real aestheticos-helper binary (or a more sophisticated mock)
 // 2. A real disk device (or a loopback device with a disk image)

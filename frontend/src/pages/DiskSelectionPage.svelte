@@ -477,8 +477,8 @@
 	}
 
 	.tag.mounted {
-		background: rgba(64, 160, 43, 0.1);
-		color: #3a8a25;
+		background: rgba(192, 57, 43, 0.1);
+		color: #c0392b;
 	}
 
 	/* ── Partition section ── */
@@ -554,7 +554,7 @@
 	}
 
 	.part-mount {
-		color: #3a8a25;
+		color: #c0392b;
 		font-weight: 500;
 	}
 </style>

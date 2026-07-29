@@ -13,9 +13,9 @@ func TestInstaller_StepNames(t *testing.T) {
 	expectedSteps := []string{
 		"format_disk",
 		"mount_filesystem",
+		"create_swap",
 		"install",
 		"install_desktop",
-		"create_swap",
 		"generate_fstab",
 		"configure_bootloader",
 		"setup_users",

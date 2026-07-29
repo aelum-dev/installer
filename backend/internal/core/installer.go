@@ -171,9 +171,9 @@ type installationStep struct {
 var stepDefinitions = []installationStep{
 	{name: "format_disk", label: "Formatting disk", run: install.FormatDisk},
 	{name: "mount_filesystem", label: "Mounting filesystem", run: install.MountFilesystem},
+	{name: "create_swap", label: "Creating swap", run: install.CreateSwap},
 	{name: "install", label: "Installing base system", run: install.Install},
 	{name: "install_desktop", label: "Installing desktop environment", run: install.InstallDesktop},
-	{name: "create_swap", label: "Creating swap", run: install.CreateSwap},
 	{name: "generate_fstab", label: "Generating fstab", run: install.GenerateFstab},
 	{name: "configure_bootloader", label: "Configuring bootloader", run: install.ConfigureBootloader},
 	{name: "setup_users", label: "Setting up users", run: install.SetupUsers},
@@ -188,9 +188,9 @@ var stepDefinitions = []installationStep{
 var stepWeights = []int{
 	3,  // format_disk
 	2,  // mount_filesystem
+	2,  // create_swap
 	45, // install (base pacstrap — longest step)
 	35, // install_desktop (desktop pacstrap — second longest)
-	2,  // create_swap
 	2,  // generate_fstab
 	3,  // configure_bootloader
 	2,  // setup_users

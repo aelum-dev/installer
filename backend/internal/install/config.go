@@ -265,7 +265,7 @@ const ProgressTickDelayMs = 2000
 // a long-running step. Each tick advances the percentage by 1.
 // Set higher (7s) so the tick animation better matches pacstrap's actual
 // duration — base pacstrap (45 ticks) takes ~5min, desktop (35 ticks) ~4min.
-const ProgressTickIntervalMs = 7000
+const ProgressTickIntervalMs = 8000
 
 // ProgressTickMaxPercent is the maximum percentage the tick goroutine will
 // reach. The step's final emit always overrides this value.
