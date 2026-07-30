@@ -27,6 +27,7 @@ var basePackages = []string{
 	// System
 	"sudo",
 	"networkmanager",
+	"bluez",
 
 	// Editor
 	"vim",

@@ -10,18 +10,6 @@ import (
 //go:embed data/greetd/config.toml
 var greetdConfigToml string
 
-//go:embed data/greetd/session.json
-var sessionJsonTemplate string
-
-//go:embed data/greetd/settings.json
-var defaultSettingsJson string
-
-//go:embed data/greetd/dms-colors.json
-var defaultColorsJson string
-
-//go:embed data/greetd/wallpaper.jpg
-var defaultWallpaperJpg string
-
 //go:embed data/greetd/memory.json
 var defaultMemoryJson string
 
@@ -137,13 +125,23 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	username := ctx.Username
 	home := filepath.Join("/home", username)
 
-	// 1. Add user to the greeter group
+	// 1. Add user and greeter daemon to the greeter group
+	// Group membership lets the greeter process read synced config files via
+	// group ACLs (g:greeter:rX) on the user's home directories.
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Adding user '%s' to greeter group", username)
 	}
 	output, err := runChroot(ctx, "usermod", "-aG", "greeter", username)
 	if err != nil {
 		return fmt.Errorf("failed to add %s to greeter group: %w: %s", username, err, string(output))
+	}
+	// Also add the greeter daemon user so the greeter process can read synced files
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Adding greeter daemon to greeter group")
+	}
+	output, err = runChroot(ctx, "usermod", "-aG", "greeter", "greeter")
+	if err != nil {
+		return fmt.Errorf("failed to add greeter user to greeter group: %w: %s", err, string(output))
 	}
 
 	// 2. Set ACLs on parent directories so the greeter user can traverse and read
@@ -154,13 +152,16 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		ctx.Logger.Info("Setting ACLs for greeter on user home directories")
 	}
 	aclDirs := []string{home, filepath.Join(home, ".config"), filepath.Join(home, ".local"),
-		filepath.Join(home, ".cache"), filepath.Join(home, ".local", "state")}
+		filepath.Join(home, ".cache"), filepath.Join(home, ".local", "state"),
+		filepath.Join(home, ".local", "share")}
 	for _, dir := range aclDirs {
 		// Create dir if it doesn't exist
 		if _, err := runChroot(ctx, "mkdir", "-p", dir); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
-		output, err = runChroot(ctx, "setfacl", "-m", fmt.Sprintf("u:greeter:rx"), dir)
+		// Use group-based ACL (g:greeter:rX) — covers the greeter daemon user
+		// regardless of its username (e.g. greetd on Fedora vs greeter on Arch).
+		output, err = runChroot(ctx, "setfacl", "-m", "g:greeter:rX", dir)
 		if err != nil {
 			return fmt.Errorf("failed to set ACL on %s: %w: %s", dir, err, string(output))
 		}
@@ -174,7 +175,11 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	dmsConfigDirs := []string{
 		filepath.Join(home, ".config", "DankMaterialShell"),
 		filepath.Join(home, ".local", "state", "DankMaterialShell"),
+		filepath.Join(home, ".cache", "DankMaterialShell"),
 		filepath.Join(home, ".cache", "quickshell"),
+		filepath.Join(home, ".config", "quickshell"),
+		filepath.Join(home, ".local", "share", "wayland-sessions"),
+		filepath.Join(home, ".local", "share", "xsessions"),
 	}
 	for _, dir := range dmsConfigDirs {
 		// chgrp -R greeter <dir> && chmod -R g+rX <dir>
@@ -196,38 +201,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		}
 	}
 
-	// 4. Write embedded wallpaper to greeter cache
-	// The wallpaper is embedded in the installer binary, not shipped in ISO skel.
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Writing embedded wallpaper to greeter cache")
-	}
-	cacheDir := "/var/cache/dms-greeter"
-	cacheWallpaperPath := filepath.Join(cacheDir, "wallpaper.jpg")
-
-	// Write embedded wallpaper directly to cache
-	if err := writeFile(ctx, cacheWallpaperPath, defaultWallpaperJpg); err != nil {
-		return fmt.Errorf("failed to write wallpaper to cache: %w", err)
-	}
-
-	// Write session.json to user's home with the cache wallpaper path
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Writing session.json to user home")
-	}
-	sessionContent := strings.ReplaceAll(sessionJsonTemplate, "{{WALLPAPER_PATH}}", cacheWallpaperPath)
-	sessionPath := filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json")
-	if err := writeFile(ctx, sessionPath, sessionContent); err != nil {
-		return fmt.Errorf("failed to write session.json: %w", err)
-	}
-
-	// Fix ownership: user must own their config files (not root)
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Fixing ownership of user config files")
-	}
-	if err := fixUserConfigOwnership(ctx, username, home); err != nil {
-		return err
-	}
-
-	// 5. Create runtime subdirs in cache (.local/state for memory.json, .local/share, .cache)
+	// 4. Create greeter cache runtime subdirs
 	// These are required by dms-greeter's EnsureGreeterCacheDir and used for:
 	//   - .local/state/memory.json: auto-login state (last user, last session)
 	//   - .local/share: runtime data
@@ -235,6 +209,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Creating greeter cache runtime subdirs")
 	}
+	cacheDir := "/var/cache/dms-greeter"
 	runtimeSubdirs := []string{
 		filepath.Join(cacheDir, ".local"),
 		filepath.Join(cacheDir, ".local", "state"),
@@ -259,11 +234,8 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	}
 
 	// 6. Create symlinks from /var/cache/dms-greeter/ → user's DMS config files
-	// These are the main config files the greeter reads:
-	//   settings.json  — theme, clock, weather, fonts
-	//   session.json   — wallpaper configuration (symlink to user's home)
-	//   colors.json    — color scheme (from DMS cache)
-	// If source files don't exist, create empty {} (like dms-greeter sync does).
+	// Configs are shipped in ISO /etc/skel, so they already exist in user's home.
+	// These symlinks let the greeter (running as greeter user) read them.
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Creating greeter cache symlinks")
 	}
@@ -276,24 +248,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		// Remove existing symlink/file first
 		if _, err := runChroot(ctx, "rm", "-f", link); err != nil {
 			return fmt.Errorf("failed to remove existing file %s: %w", link, err)
-		}
-
-		// Create source file if it doesn't exist (use embedded defaults)
-		output, err = runChroot(ctx, "test", "-f", target)
-		if err != nil {
-			// File doesn't exist, create from embedded default
-			var defaultContent string
-			switch target {
-			case filepath.Join(home, ".config", "DankMaterialShell", "settings.json"):
-				defaultContent = defaultSettingsJson
-			case filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"):
-				defaultContent = defaultColorsJson
-			default:
-				defaultContent = "{}"
-			}
-			if err := writeFile(ctx, target, defaultContent); err != nil {
-				return fmt.Errorf("failed to create default file %s: %w", target, err)
-			}
 		}
 
 		// Create the symlink
@@ -309,18 +263,25 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Writing greeter memory.json")
 	}
-	memoryPath := filepath.Join(cacheDir, ".local", "state", "memory.json")
+	stateMemoryPath := filepath.Join(cacheDir, ".local", "state", "memory.json")
 	memoryContent := strings.ReplaceAll(defaultMemoryJson, "{{USERNAME}}", username)
-	if err := writeFile(ctx, memoryPath, memoryContent); err != nil {
+	if err := writeFile(ctx, stateMemoryPath, memoryContent); err != nil {
 		return fmt.Errorf("failed to write memory.json: %w", err)
 	}
-	output, err = runChroot(ctx, "chown", "greeter:greeter", memoryPath)
+	output, err = runChroot(ctx, "chown", "greeter:greeter", stateMemoryPath)
 	if err != nil {
 		return fmt.Errorf("failed to chown memory.json: %w: %s", err, string(output))
 	}
-	output, err = runChroot(ctx, "chmod", "0664", memoryPath)
+	output, err = runChroot(ctx, "chmod", "0664", stateMemoryPath)
 	if err != nil {
 		return fmt.Errorf("failed to chmod memory.json: %w: %s", err, string(output))
+	}
+	// Legacy compat symlink: memory.json -> .local/state/memory.json
+	// Older dms-greeter versions stored memory.json at the cache root.
+	legacyMemoryPath := filepath.Join(cacheDir, "memory.json")
+	output, err = runChroot(ctx, "ln", "-sfn", stateMemoryPath, legacyMemoryPath)
+	if err != nil {
+		return fmt.Errorf("failed to create legacy memory symlink: %w: %s", err, string(output))
 	}
 
 	// 8. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
@@ -334,34 +295,19 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		return fmt.Errorf("failed to create user slot dir: %w: %s", err, string(output))
 	}
 
-	// Copy the user's DMS config files into their slot
-	// wallpaper.jpg is copied to cache root; also copy to user slot for picker
-	userSlotFiles := map[string]string{
-		"settings.json": filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
-		"session.json":  sessionPath,
-		"wallpaper.jpg": cacheWallpaperPath,
-		"colors.json":   filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"),
+	// Copy the user's DMS config files into their slot for the login picker
+	userSlotFiles := []string{
+		filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
+		filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json"),
+		filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"),
 	}
-	for slotFile, source := range userSlotFiles {
-		output, err = runChroot(ctx, "cp", "-f", source, filepath.Join(userSlot, slotFile))
+	for _, source := range userSlotFiles {
+		filename := filepath.Base(source)
+		output, err = runChroot(ctx, "cp", "-f", source, filepath.Join(userSlot, filename))
 		if err != nil {
 			if ctx.Logger != nil {
-				ctx.Logger.Error("Failed to copy %s to user slot: %v", slotFile, err)
+				ctx.Logger.Error("Failed to copy %s to user slot: %v", filename, err)
 			}
-		}
-	}
-
-	// Also copy profile photo if it exists in skel
-	for _, ext := range []string{"jpg", "jpeg", "png", "webp"} {
-		photoSrc := filepath.Join(home, ".config", "DankMaterialShell", fmt.Sprintf("profile.%s", ext))
-		photoDst := filepath.Join(userSlot, "profile.jpg")
-		if _, err := runChroot(ctx, "test", "-f", photoSrc); err == nil {
-			if _, err := runChroot(ctx, "cp", "-f", photoSrc, photoDst); err != nil {
-				if ctx.Logger != nil {
-					ctx.Logger.Error("Failed to copy profile photo: %v", err)
-				}
-			}
-			break
 		}
 	}
 
@@ -371,29 +317,5 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		return fmt.Errorf("failed to set user slot ownership: %w: %s", err, string(output))
 	}
 
-	// Fix ownership of any config files created by writeFile in this function
-	// (writeFile runs as root via tee; must chown to user after creation)
-	if err := fixUserConfigOwnership(ctx, username, home); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// fixUserConfigOwnership ensures the user owns their .config, .local, and .cache
-// directories recursively. Used after writeFile calls (which run as root via tee)
-// to transfer ownership to the target user.
-func fixUserConfigOwnership(ctx *InstallContext, username, home string) error {
-	dirs := []string{
-		filepath.Join(home, ".config"),
-		filepath.Join(home, ".local"),
-		filepath.Join(home, ".cache"),
-	}
-	for _, dir := range dirs {
-		output, err := runChroot(ctx, "chown", "-R", username+":"+username, dir)
-		if err != nil {
-			return fmt.Errorf("failed to chown %s to %s: %w: %s", dir, username, err, string(output))
-		}
-	}
 	return nil
 }

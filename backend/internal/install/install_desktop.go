@@ -17,16 +17,18 @@ var desktopPackages = []string{
 	"cava",
 	"dgop",
 	"matugen",
-	"dsearch-bin",
 	"dankcalendar-bin",
 	"qt6ct-kde",
 	"nautilus",
 	"firefox",
+	"mpv",
+	"imv",
 
 	// Terminal & UI
 	"alacritty",
 	"adwaita-cursors",
 	"webkit2gtk-4.1",
+	"adw-gtk-theme",
 
 	// Utilities
 	"btop",

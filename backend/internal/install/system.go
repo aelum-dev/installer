@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -110,6 +111,14 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return err
 	}
 
+	// Step 6: Fix qt6ct.conf template (replace {{USERNAME}} with actual username)
+	if err := fixQt6ctConfig(ctx); err != nil {
+		// Log but don't fail — Qt theming is nice-to-have
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Failed to fix qt6ct.conf: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -142,4 +151,33 @@ func uncommentMirrors(content string) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// fixQt6ctConfig replaces {{USERNAME}} placeholder in qt6ct.conf with the actual username.
+// The template is shipped in ISO /etc/skel, so this runs after useradd copies skel to home.
+func fixQt6ctConfig(ctx *InstallContext) error {
+	qt6ctPath := filepath.Join("/home", ctx.Username, ".config", "qt6ct", "qt6ct.conf")
+	if _, err := runChroot(ctx, "test", "-f", qt6ctPath); err != nil {
+		// File doesn't exist — that's ok, skip it
+		return nil
+	}
+
+	// Read the file
+	output, err := runChroot(ctx, "cat", qt6ctPath)
+	if err != nil {
+		return fmt.Errorf("failed to read qt6ct.conf: %w: %s", err, string(output))
+	}
+
+	// Replace {{USERNAME}} with actual username
+	content := strings.ReplaceAll(string(output), "{{USERNAME}}", ctx.Username)
+
+	// Write back
+	if err := writeFile(ctx, qt6ctPath, content); err != nil {
+		return fmt.Errorf("failed to write qt6ct.conf: %w", err)
+	}
+
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Fixed qt6ct.conf for user '%s'", ctx.Username)
+	}
+	return nil
 }

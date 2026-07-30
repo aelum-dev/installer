@@ -11,12 +11,11 @@ import "fmt"
 // These are essential for a functional desktop environment:
 //   - NetworkManager: network connectivity
 //   - greetd: login manager / display manager session
-//   - pipewire: audio/video server
-//   - pipewire-pulse: PulseAudio compatibility layer
-//   - wireplumber: WirePlumber session manager for pipewire
+//   - bluetooth: Bluetooth stack
 var servicesToEnable = []string{
 	"NetworkManager",
 	"greetd",
+	"bluetooth",
 }
 
 // EnableServices enables all essential systemd services in the installed system.
