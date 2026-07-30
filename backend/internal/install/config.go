@@ -254,6 +254,13 @@ const ErrorPrefix = "ERROR: "
 // Short enough to feel responsive during testing, long enough to be visible in logs.
 const SimulateStepSleepDuration = 200
 
+// --- DMS Greeter -------------------------------------------------------------
+
+// Note: The XDG Pictures directory path is queried at install time via
+// `xdg-user-dir PICTURES` in greetd.go, which respects locale (e.g.,
+// "Картинки" for Russian). The wallpaper must be shipped in ISO /etc/skel
+// under the localized Pictures directory.
+
 // --- Progress tick ----------------------------------------------------------
 
 // ProgressTickDelayMs is the initial delay before the progress tick starts.

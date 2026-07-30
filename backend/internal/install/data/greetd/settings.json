@@ -1,0 +1,20 @@
+{
+  "configVersion": 3,
+  "theme": "light",
+  "themeMode": "auto",
+  "clockFormat": "24h",
+  "weatherLocation": "",
+  "weatherCoordinates": "55.7558,37.6173",
+  "weatherUnit": "celsius",
+  "dockPosition": "bottom",
+  "dockSize": 48,
+  "barPosition": "top",
+  "showSeconds": false,
+  "nightModeEnabled": false,
+  "nightModeTemperature": 4500,
+  "nightModeAutoEnabled": false,
+  "nightModeStartHour": 18,
+  "nightModeEndHour": 6,
+  "launcherLastMode": "all",
+  "showThirdPartyPlugins": false
+}
