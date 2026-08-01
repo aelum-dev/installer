@@ -3,7 +3,6 @@ package install
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -143,55 +142,4 @@ func uncommentMirrors(content string) string {
 		}
 	}
 	return strings.Join(lines, "\n")
-}
-
-// CopyConfigs copies configuration files from the live ISO to the target system.
-// Reads file paths from ctx.ConfigFiles (set by the Installer before this step runs).
-// Each file is copied to the same relative path in the target system (e.g., /etc/foo -> /mnt/etc/foo).
-func CopyConfigs(ctx *InstallContext) error {
-	if err := validateMountedSystem(ctx); err != nil {
-		return err
-	}
-
-	if len(ctx.ConfigFiles) == 0 {
-		if ctx.Logger != nil {
-			ctx.Logger.Info("No configuration files to copy")
-		}
-		return nil
-	}
-
-	helper := ctx.Helper
-
-	for _, srcPath := range ctx.ConfigFiles {
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Copying %s to target system", srcPath)
-		}
-
-		// Calculate destination path: strip leading / and prepend MountRoot
-		// e.g., /etc/pacman.d/mirrorlist -> /mnt/etc/pacman.d/mirrorlist
-		dstPath := shared.MountRoot + srcPath
-
-		// Ensure parent directory exists in target system
-		dstDir := filepath.Dir(dstPath)
-		mkdirCmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-			fmt.Sprintf("mkdir -p '%s'", dstDir))
-		output, err := mkdirCmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to create directory %s: %w: %s", dstDir, err, string(output))
-		}
-
-		// Copy the file
-		cpCmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-			fmt.Sprintf("cp -f '%s' '%s'", srcPath, dstPath))
-		output, err = cpCmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to copy %s to %s: %w: %s", srcPath, dstPath, err, string(output))
-		}
-	}
-
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Successfully copied %d configuration file(s)", len(ctx.ConfigFiles))
-	}
-
-	return nil
 }
