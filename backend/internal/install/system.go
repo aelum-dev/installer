@@ -102,7 +102,18 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return fmt.Errorf("failed to set font: %w: %s", err, string(output))
 	}
 
-	// Step 5: Copy mirror list for region
+	// Step 5: Enable NTP via systemd-timesyncd
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Enabling NTP")
+	}
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
+		"systemctl", "enable", "systemd-timesyncd")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to enable NTP: %w: %s", err, string(output))
+	}
+
+	// Step 6: Copy mirror list for region
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Copying mirror list for region %s", region.Code)
 	}
