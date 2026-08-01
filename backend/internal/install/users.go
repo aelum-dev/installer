@@ -35,6 +35,18 @@ func SetupUsers(ctx *InstallContext) error {
 		return fmt.Errorf("failed to copy skel: %w: %s", err, string(output))
 	}
 
+	// Copy DMS wallpaper from live ISO to installed system
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Copying DMS wallpaper to installed system")
+	}
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+		fmt.Sprintf("mkdir -p %s && cp %s %s", 
+			"/mnt/usr/share/DankMaterialShell", DmsWallpaperSource, DmsWallpaperDest))
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy wallpaper: %w: %s", err, string(output))
+	}
+
 	// Create user inside chroot (skip if already exists)
 	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
 		"bash", "-c", fmt.Sprintf("if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi",

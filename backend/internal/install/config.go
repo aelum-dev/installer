@@ -256,10 +256,12 @@ const SimulateStepSleepDuration = 200
 
 // --- DMS Greeter -------------------------------------------------------------
 
-// Note: The XDG Pictures directory path is queried at install time via
-// `xdg-user-dir PICTURES` in greetd.go, which respects locale (e.g.,
-// "Картинки" for Russian). The wallpaper must be shipped in ISO /etc/skel
-// under the localized Pictures directory.
+// DmsWallpaperSource is the wallpaper file path on the live ISO.
+const DmsWallpaperSource = "/usr/share/DankMaterialShell/wallpaper.jpg"
+
+// DmsWallpaperDest is the destination path for the wallpaper inside the
+// installed system's DMS configuration directory.
+const DmsWallpaperDest = "/mnt/usr/share/DankMaterialShell/wallpaper.jpg"
 
 // --- Progress tick ----------------------------------------------------------
 
