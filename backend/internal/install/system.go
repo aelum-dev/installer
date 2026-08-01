@@ -111,14 +111,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return err
 	}
 
-	// Step 6: Fix qt6ct.conf template (replace {{USERNAME}} with actual username)
-	if err := fixQt6ctConfig(ctx); err != nil {
-		// Log but don't fail — Qt theming is nice-to-have
-		if ctx.Logger != nil {
-			ctx.Logger.Error("Failed to fix qt6ct.conf: %v", err)
-		}
-	}
-
 	return nil
 }
 
@@ -153,31 +145,53 @@ func uncommentMirrors(content string) string {
 	return strings.Join(lines, "\n")
 }
 
-// fixQt6ctConfig replaces {{USERNAME}} placeholder in qt6ct.conf with the actual username.
-// The template is shipped in ISO /etc/skel, so this runs after useradd copies skel to home.
-func fixQt6ctConfig(ctx *InstallContext) error {
-	qt6ctPath := filepath.Join("/home", ctx.Username, ".config", "qt6ct", "qt6ct.conf")
-	if _, err := runChroot(ctx, "test", "-f", qt6ctPath); err != nil {
-		// File doesn't exist — that's ok, skip it
+// CopyConfigs copies configuration files from the live ISO to the target system.
+// Reads file paths from ctx.ConfigFiles (set by the Installer before this step runs).
+// Each file is copied to the same relative path in the target system (e.g., /etc/foo -> /mnt/etc/foo).
+func CopyConfigs(ctx *InstallContext) error {
+	if err := validateMountedSystem(ctx); err != nil {
+		return err
+	}
+
+	if len(ctx.ConfigFiles) == 0 {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("No configuration files to copy")
+		}
 		return nil
 	}
 
-	// Read the file
-	output, err := runChroot(ctx, "cat", qt6ctPath)
-	if err != nil {
-		return fmt.Errorf("failed to read qt6ct.conf: %w: %s", err, string(output))
-	}
+	helper := ctx.Helper
 
-	// Replace {{USERNAME}} with actual username
-	content := strings.ReplaceAll(string(output), "{{USERNAME}}", ctx.Username)
+	for _, srcPath := range ctx.ConfigFiles {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Copying %s to target system", srcPath)
+		}
 
-	// Write back
-	if err := writeFile(ctx, qt6ctPath, content); err != nil {
-		return fmt.Errorf("failed to write qt6ct.conf: %w", err)
+		// Calculate destination path: strip leading / and prepend MountRoot
+		// e.g., /etc/pacman.d/mirrorlist -> /mnt/etc/pacman.d/mirrorlist
+		dstPath := shared.MountRoot + srcPath
+
+		// Ensure parent directory exists in target system
+		dstDir := filepath.Dir(dstPath)
+		mkdirCmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+			fmt.Sprintf("mkdir -p '%s'", dstDir))
+		output, err := mkdirCmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s: %w: %s", dstDir, err, string(output))
+		}
+
+		// Copy the file
+		cpCmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+			fmt.Sprintf("cp -f '%s' '%s'", srcPath, dstPath))
+		output, err = cpCmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w: %s", srcPath, dstPath, err, string(output))
+		}
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Fixed qt6ct.conf for user '%s'", ctx.Username)
+		ctx.Logger.Info("Successfully copied %d configuration file(s)", len(ctx.ConfigFiles))
 	}
+
 	return nil
 }

@@ -87,7 +87,7 @@ func MountFilesystem(ctx *InstallContext) error {
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		// Use MountPoints map (populated by FormatDisk) to mount additional subvolumes.
 		// Each entry maps a mount point (e.g., "/home") to the root partition path.
-		for mountPath, _ := range p.MountPoints {
+		for mountPath := range p.MountPoints {
 			// Skip root mount point — already mounted above
 			if mountPath == "/" {
 				continue

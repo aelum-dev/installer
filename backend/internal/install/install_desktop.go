@@ -23,12 +23,15 @@ var desktopPackages = []string{
 	"firefox",
 	"mpv",
 	"imv",
+	"gnome-text-editor",
 
 	// Terminal & UI
 	"alacritty",
 	"adwaita-cursors",
 	"webkit2gtk-4.1",
 	"adw-gtk-theme",
+	"fluent-icon-theme-git",
+	"breeze",
 
 	// Utilities
 	"btop",
