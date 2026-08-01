@@ -56,8 +56,8 @@ var commands = []HelperCommand{
 	},
 	{
 		Name:  "pacstrap",
-		Usage: "pacstrap <mountpoint> <packages...>",
-		Help:  "Install base packages with pacstrap",
+		Usage: "pacstrap [-K] <mountpoint> <packages...>",
+		Help:  "Install packages with pacstrap (-K copies keyring from live ISO)",
 		Run:   cmdPacstrap,
 	},
 	{
@@ -398,9 +398,15 @@ func cmdLsblkPartitions(args []string) error {
 
 func cmdPacstrap(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: pacstrap <mountpoint> <packages...>")
+		return fmt.Errorf("usage: pacstrap [-K] <mountpoint> <packages...>")
 	}
-	cmdArgs := append([]string{args[0]}, args[1:]...)
+	cmdArgs := []string{}
+	// Pass through -K flag if present (copies keyring from live ISO)
+	for _, arg := range args {
+		if arg != "-K" {
+			cmdArgs = append(cmdArgs, arg)
+		}
+	}
 	return runCommand("pacstrap", cmdArgs...)
 }
 

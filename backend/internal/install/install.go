@@ -40,7 +40,7 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 		ctx.Logger.Info("Installing %d %s packages via pacstrap", len(packages), description)
 	}
 
-	args := []string{PacstrapMountPoint}
+	args := []string{"-K", PacstrapMountPoint}
 	args = append(args, packages...)
 	cmd := exec.Command("sudo", append([]string{ctx.Helper, HelperCmdRun, "pacstrap"}, args...)...)
 
