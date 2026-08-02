@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// configurePlymouth sets up Plymouth BGRT theme for silent boot in the installed system.
+// ConfigurePlymouth sets up Plymouth BGRT theme for silent boot in the installed system.
 // Runs inside the installed system via arch-chroot as root.
 //
 // Steps:
@@ -16,7 +16,7 @@ import (
 //   3. Run plymouth-set-default-theme -R bgrt (regenerates initramfs)
 //   4. Enable plymouth-wait-for-animation.service (for fast boots)
 //   5. Create .hushlogin for the user (suppresses "Last login" message)
-func configurePlymouth(ctx *InstallContext) error {
+func ConfigurePlymouth(ctx *InstallContext) error {
 	if err := validateMountedSystem(ctx); err != nil {
 		return err
 	}
