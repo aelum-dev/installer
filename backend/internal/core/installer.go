@@ -179,6 +179,7 @@ var stepDefinitions = []installationStep{
 	{name: "setup_users", label: "Setting up users", run: install.SetupUsers},
 	{name: "configure_system", label: "Configuring system", run: install.ConfigureSystem},
 	{name: "configure_greetd", label: "Configuring login manager", run: install.ConfigureGreetd},
+	{name: "configure_plymouth", label: "Configuring silent boot", run: install.ConfigurePlymouth},
 	{name: "enable_services", label: "Enabling services", run: install.EnableServices},
 }
 
@@ -196,6 +197,7 @@ var stepWeights = []int{
 	2,  // setup_users
 	2,  // configure_system
 	2,  // configure_greetd
+	1,  // configure_plymouth
 	2,  // enable_services
 }
 

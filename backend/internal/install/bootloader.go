@@ -174,8 +174,9 @@ func discoverKernelFiles(helper string) (kernel, initrd string, err error) {
 // Per the Boot Loader Specification, Type #2 entries go in $ESP/loader/entries/.
 // The entry references the root partition by UUID. For btrfs subvolume layouts,
 // rootflags=subvol=@ is required so the kernel mounts the @ subvolume as root.
+// Includes silent boot kernel parameters: quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0
 func writeBootEntry(helper, esp, rootUUID, kernel, initrd, fsType string) error {
-	options := "root=UUID=" + rootUUID + " rw"
+	options := "root=UUID=" + rootUUID + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
 	if fsType == shared.FileSystemBtrfs {
 		options += " rootflags=subvol=@"
 	}
