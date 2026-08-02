@@ -7,7 +7,7 @@ var desktopPackages = []string{
 	// Login manager
 	"greetd",
 	"greetd-agreety",
-	"greetd-dms-greeter-bin",
+	"greetd-dms-greeter-git",
 	"uwsm",
 
 	// Desktop environment
@@ -17,7 +17,6 @@ var desktopPackages = []string{
 	"cava",
 	"dgop",
 	"matugen",
-	"dankcalendar-bin",
 	"qt6ct-kde",
 	"nautilus",
 	"firefox",
@@ -44,6 +43,7 @@ var desktopPackages = []string{
 	"noto-fonts-cjk",
 	"noto-fonts-emoji",
 	"terminus-font",
+	"ttf-jetbrains-mono-nerd",
 
 	// GPU drivers
 	"vulkan-radeon",

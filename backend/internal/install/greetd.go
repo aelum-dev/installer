@@ -3,6 +3,7 @@ package install
 import (
 	_ "embed"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -87,6 +88,17 @@ func ConfigureGreetd(ctx *InstallContext) error {
 
 	if err := writeFile(ctx, "/etc/greetd/config.toml", greetdConfigToml); err != nil {
 		return err
+	}
+
+	// Step 2.5: Copy hypr.lua from live ISO to installed system
+	// The live ISO has the greeter's Hyprland config at /etc/greetd/hypr.lua
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Copying hypr.lua from live ISO")
+	}
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "bash", "-c", "cp /etc/greetd/hypr.lua /mnt/etc/greetd/hypr.lua")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy hypr.lua: %w: %s", err, string(output))
 	}
 
 	// Step 3: Sync DMS greeter with the user's config (wallpaper, theme, colors)
@@ -176,10 +188,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		filepath.Join(home, ".config", "DankMaterialShell"),
 		filepath.Join(home, ".local", "state", "DankMaterialShell"),
 		filepath.Join(home, ".cache", "DankMaterialShell"),
-		filepath.Join(home, ".cache", "quickshell"),
-		filepath.Join(home, ".config", "quickshell"),
-		filepath.Join(home, ".local", "share", "wayland-sessions"),
-		filepath.Join(home, ".local", "share", "xsessions"),
+		filepath.Join(home, ".local", "share", "color-schemes"),
 	}
 	for _, dir := range dmsConfigDirs {
 		// chgrp -R greeter <dir> && chmod -R g+rX <dir>
@@ -303,7 +312,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	}
 	for _, source := range userSlotFiles {
 		filename := filepath.Base(source)
-		output, err = runChroot(ctx, "cp", "-f", source, filepath.Join(userSlot, filename))
+		_, err = runChroot(ctx, "cp", "-f", source, filepath.Join(userSlot, filename))
 		if err != nil {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("Failed to copy %s to user slot: %v", filename, err)

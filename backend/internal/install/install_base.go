@@ -28,6 +28,8 @@ var basePackages = []string{
 	"sudo",
 	"networkmanager",
 	"bluez",
+	"power-profiles-daemon",
+	"yay-bin",
 
 	// Editor
 	"vim",
