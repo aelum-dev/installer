@@ -84,13 +84,7 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
               │ • mount, umount       │
               │ • chroot-run (whitelist)│
               │ • write/append/read-file│
-              │ • bootctl-install     │
-              │ • btrfs subvol cmds   │
-              │ • run-useradd/chpasswd│
-              │ • run-locale-gen, etc │
-              │ • query-blkid/findmnt │
-              │ • reboot              │
-              │ • 60+ dedicated cmds  │
+
               └───────────────────────┘
 ```
 
@@ -160,13 +154,21 @@ Welcome (language select)
 ## Key Design Decisions
 
 ### Helper Binary Pattern
-All privileged operations go through `aestheticos-helper`, invoked via `sudo`. This avoids giving the entire Wails app root access — only specific commands are allowed via sudoers. The helper has **60+ dedicated commands** organized into categories:
-- **Chroot commands**: `chroot-run` (whitelisted), `enable-service`, `run-locale-gen`, `run-dconf-update`, `run-useradd`, `run-chpasswd`, `run-plymouth-set-theme`, `run-mkinitcpio`
-- **Target filesystem ops**: `write-file`, `append-file`, `read-file`, `set-symlink`, `chmod`, `chown`, `touch`, `mkdir`
-- **Host-level queries**: `query-blkid`, `query-findmnt`, `query-ls`, `query-test`, `query-find`
-- **Bootctl commands**: `bootctl-install`, `bootctl-cleanup`, `bootctl-random-seed`, `bootctl-set-default`, `bootctl-is-installed`, `bootctl-status`
-- **Partition/format**: `parted`, `format`, `mount`, `umount`, `sgdisk`, `wipefs`, `mkswap`, `swapon`, `chattr`, `btrfs-mkswapfile`
-- **Other**: `reboot`, `btrfs-subvol-create`, `btrfs-subvol-set-default`, `btrfs-set-compression`, `cp`, `dd`, `fallocate`, `rmdir`, `swapoff`, `udev-settle`
+All privileged operations go through `aestheticos-helper`, invoked via `sudo`. This avoids giving the entire Wails app root access — only specific commands are allowed via sudoers. The helper is a single `main.go` file with a **command registration pattern**: each command is a `HelperCommand` struct (`Name`, `Usage`, `Help`, `Run`) registered in a slice.
+
+Two whitelists control allowed operations:
+- **`runWhitelist`** — host-level commands via the generic `run` command
+- **`chrootRunWhitelist`** — commands allowed inside chroot via `chroot-run`
+
+**Commands:**
+- **Chroot commands**: `chroot-run` (whitelisted cmds only), `run-chpasswd`
+- **Target filesystem ops**: `write-file`, `append-file`, `read-file`, `set-symlink`
+- **Host-level (via `run`)**: `blkid`, `findmnt`, `ls`, `test`, `find`, `chmod`, `chown`, `touch`, `mkdir`, `rmdir`, `cp`, `dd`, `fallocate`, `sgdisk`, `mkswap`, `swapon`, `swapoff`, `reboot`, `passwd`, `useradd`, `chattr`, `bootctl`
+- **Partition/format**: `parted`, `format`, `mount`, `umount`, `mountpoints`, `lsblk-partitions`, `wipefs`
+- **Package/fstab**: `pacstrap`, `genfstab`
+- **Bootloader**: `bootctl <subcommand> <esp>` (install|cleanup|random-seed|set-default|is-installed|status), `efibootmgr` (list|delete)
+- **btrfs**: `btrfs-subvol-create`, `btrfs-subvol-set-default`, `btrfs-set-compression`, `btrfs-mkswapfile`
+- **Other**: `udev-settle`
 
 ### Chroot via arch-chroot
 System configuration inside the installed system uses `arch-chroot /mnt` through the helper's `chroot-run` command (whitelisted commands only). This handles `/proc`, `/sys`, `/dev` mounting automatically.
@@ -242,10 +244,9 @@ AestheticOS-Installer/
 ├── wails.json                   # Wails config
 ├── build.sh / run.sh            # Build & dev scripts
 ├── RULES.md                     # Development rules
-├── REFACTOR.md                  # Helper refactor plan (completed)
 ├── backend/
 │   ├── cmd/
-│   │   ├── helper/main.go       # Privileged helper (60+ commands)
+│   │   ├── helper/main.go       # Privileged helper (command registration pattern)
 │   │   └── installer-cli/main.go # CLI installer
 │   ├── gui/
 │   │   ├── app.go               # Wails app struct, reboot, start page
