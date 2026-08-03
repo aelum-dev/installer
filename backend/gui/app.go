@@ -6,8 +6,6 @@ import (
 	"os/exec"
 
 	"aestheticos-installer/backend/internal/core"
-
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // NewApp creates a new App application struct
@@ -54,8 +52,7 @@ func (a *App) GetDryRun() bool {
 // In dry-run mode, it only logs the action without rebooting.
 func (a *App) RebootAndClose() error {
 	if a.dryRun {
-		wailsRuntime.LogInfo(a.ctx, "Rebooting...")
-		wailsRuntime.Quit(a.ctx)
+		logger.Info("Rebooting...")
 		return nil
 	}
 
@@ -66,7 +63,6 @@ func (a *App) RebootAndClose() error {
 		return fmt.Errorf("failed to reboot: %w", err)
 	}
 
-	// Close the application window after initiating reboot
-	wailsRuntime.Quit(a.ctx)
+	logger.Info("Rebooting...")
 	return nil
 }

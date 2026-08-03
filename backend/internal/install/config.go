@@ -267,30 +267,6 @@ const BtrfsSetupTmpMount = "/tmp/btrfs-setup"
 
 // Note: LogFileMode is defined in shared/config.go.
 
-// LogChannelBufferSize is the buffer size for the async log channel.
-// 1000 entries provides ample headroom — install steps are short-lived and
-// log writes are infrequent. Larger values waste memory; smaller ones risk
-// blocking on a full channel during a burst of output.
-const LogChannelBufferSize = 1000
-
-// LogWriteRetries is the number of retries before falling back to synchronous write.
-// 3 retries with 1ms backoff handles transient channel congestion without
-// adding noticeable latency to the installation pipeline.
-const LogWriteRetries = 3
-
-// LogWriteBackoffMs is the backoff duration between retry attempts (ms).
-const LogWriteBackoffMs = 1
-
-// --- Command output prefix ---------------------------------------------------
-
-// CommandOutputPrefix is the prefix for command output lines in the console logger.
-const CommandOutputPrefix = "  > "
-
-// --- Error messages ----------------------------------------------------------
-
-// ErrorPrefix is the prefix for error log lines.
-const ErrorPrefix = "ERROR: "
-
 // --- Simulate ---------------------------------------------------------------
 
 // SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode (milliseconds).

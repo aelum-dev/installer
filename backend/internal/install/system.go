@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -23,7 +22,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return fmt.Errorf("region not set")
 	}
 
-	helper := ctx.Helper
 	region := ctx.Region
 
 	// Step 1: Set hostname
@@ -39,7 +37,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	// Step 2: Set timezone from region
 	if ctx.Logger != nil {
 	}
-	cmd := exec.Command("sudo", helper, HelperCmdSetSymlink,
+	cmd := ctx.run(HelperCmdSetSymlink,
 		fmt.Sprintf("/usr/share/zoneinfo/%s", region.Timezone),
 		shared.MountRoot+"/etc/localtime")
 	output, err := cmd.CombinedOutput()
@@ -52,7 +50,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 	}
 	localeGenPath := shared.MountRoot + "/etc/locale.gen"
-	cmd = exec.Command("sudo", helper, HelperCmdReadFile, localeGenPath)
+	cmd = ctx.run(HelperCmdReadFile, localeGenPath)
 	output, err = cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to read locale.gen: %w", err)
@@ -69,7 +67,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	// Generate locale
 	if ctx.Logger != nil {
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRunLocaleGen)
+	cmd = ctx.run(HelperCmdRunLocaleGen)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
@@ -98,7 +96,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	// Step 5: Enable NTP via systemd-timesyncd
 	if ctx.Logger != nil {
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdEnableService, "systemd-timesyncd")
+	cmd = ctx.run(HelperCmdEnableService, "systemd-timesyncd")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to enable NTP: %w: %s", err, string(output))

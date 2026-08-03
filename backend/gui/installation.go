@@ -63,7 +63,8 @@ func (a *App) StartInstallation() error {
 		wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
 	}
 	installer.OnError = func(label, message string) {
-		logPath := WriteErrorLog(label, message)
+		logger.WriteErrorLog(label, message)
+		logPath := ""
 		progress := InstallationProgress{
 			Label:   label,
 			Percent: 0,

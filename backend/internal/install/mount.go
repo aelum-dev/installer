@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -53,7 +52,7 @@ func MountFilesystem(ctx *InstallContext) error {
 		mountOpts := buildMountOpts(rootSubvol)
 		if ctx.Logger != nil {
 		}
-		cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
+		cmd := ctx.run("mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
@@ -62,7 +61,7 @@ func MountFilesystem(ctx *InstallContext) error {
 		// Standard mount for ext4 and other filesystems
 		if ctx.Logger != nil {
 		}
-		cmd := exec.Command("sudo", ctx.Helper, "mount", p.RootPart, shared.MountRoot)
+		cmd := ctx.run("mount", p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))
@@ -70,7 +69,7 @@ func MountFilesystem(ctx *InstallContext) error {
 		}
 
 	// Verify root mount
-	if err := verifyMount(ctx.Helper, shared.MountRoot, p.RootPart); err != nil {
+	if err := verifyMount(ctx, shared.MountRoot, p.RootPart); err != nil {
 		return err
 	}
 
@@ -101,14 +100,14 @@ func MountFilesystem(ctx *InstallContext) error {
 
 			// Create mount point directory
 			fullPath := shared.MountRoot + mountPath
-			cmd := exec.Command("sudo", ctx.Helper, HelperCmdMkdir, fullPath)
+			cmd := ctx.run(HelperCmdMkdir, fullPath)
 			cmd.Run()
 
 			// Mount subvolume with its properties
 			mountOpts := buildMountOpts(sv)
 			if ctx.Logger != nil {
 			}
-			cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, fullPath)
+			cmd = ctx.run("mount", "-o", mountOpts, p.RootPart, fullPath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(output))
@@ -125,13 +124,13 @@ func MountFilesystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdMkdir, bootMount)
+	cmd := ctx.run(HelperCmdMkdir, bootMount)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
 	}
 
-	cmd = exec.Command("sudo", ctx.Helper, "mount", p.EFIPart, bootMount)
+	cmd = ctx.run("mount", p.EFIPart, bootMount)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("mount EFI failed: %w: %s", err, string(output))
@@ -141,7 +140,7 @@ func MountFilesystem(ctx *InstallContext) error {
 	}
 
 	// Verify EFI mount
-	if err := verifyMount(ctx.Helper, bootMount, p.EFIPart); err != nil {
+	if err := verifyMount(ctx, bootMount, p.EFIPart); err != nil {
 		return err
 	}
 
@@ -167,9 +166,9 @@ func buildMountOpts(sv *shared.BtrfsSubvolume) string {
 // Uses findmnt which is more reliable than mountpoint (works even if mountpoint package is absent).
 // For btrfs subvolume mounts, findmnt returns "device[/subvol]" (e.g. "/dev/vda2[/@]"),
 // so we strip the [/subvol] suffix before comparing.
-func verifyMount(helper, mountpoint, expectedDevice string) error {
+func verifyMount(ctx *InstallContext, mountpoint, expectedDevice string) error {
 	// Check that the mountpoint is mounted
-	cmd := exec.Command("sudo", helper, HelperCmdQueryFindmnt, mountpoint)
+	cmd := ctx.run(HelperCmdQueryFindmnt, mountpoint)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("mount verification failed: %s is not mounted", mountpoint)

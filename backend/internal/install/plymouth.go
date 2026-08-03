@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -82,7 +81,7 @@ UseFirmwareBackground=true
 func addPlymouthToMkinitcpio(ctx *InstallContext) error {
 	// Read the current mkinitcpio config
 	configPath := "/etc/mkinitcpio.conf.d/archiso.conf"
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdReadFile, configPath)
+	cmd := ctx.run(HelperCmdReadFile, configPath)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", configPath, err)
@@ -119,7 +118,7 @@ func createHushlogin(ctx *InstallContext, username string) error {
 	home := shared.MountRoot + filepath.Join("/home", username)
 
 	// Create the file (empty, just needs to exist)
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdTouch, filepath.Join(home, ".hushlogin"))
+	cmd := ctx.run(HelperCmdTouch, filepath.Join(home, ".hushlogin"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create .hushlogin: %w: %s", err, string(output))

@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -123,7 +122,7 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 	}
 
 	// Read fstab content
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdReadFile, "/mnt/etc/fstab")
+	cmd := ctx.run(HelperCmdReadFile, "/mnt/etc/fstab")
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to read fstab: %w", err)

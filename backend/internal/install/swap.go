@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os/exec"
 
 	"aestheticos-installer/backend/internal/shared"
 )
@@ -55,7 +54,7 @@ func createBtrfsSwapFile(ctx *InstallContext, path string) error {
 
 	// @swap subvolume is already mounted at /mnt/swap by MountFilesystem
 	swapMountPoint := shared.MountRoot + path
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdBtrfsMkswapfile, swapMountPoint, "4G")
+	cmd := ctx.run(HelperCmdBtrfsMkswapfile, swapMountPoint, "4G")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create btrfs swap file: %w: %s", err, string(output))
@@ -71,7 +70,7 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 	}
 
 	// Fast path: fallocate
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdFallocate, "-l", "4096M", shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdFallocate, "-l", "4096M", shared.MountRoot+path)
 	if err := cmd.Run(); err == nil {
 		if ctx.Logger != nil {
 		}
@@ -80,7 +79,7 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 		if ctx.Logger != nil {
 		}
 
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdDd,
+		cmd = ctx.run(HelperCmdDd,
 			"if=/dev/zero",
 			"of="+shared.MountRoot+path,
 			"bs=1M",
@@ -114,7 +113,7 @@ func setSwapFilePermissions(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdChmod, "0600", shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdChmod, "0600", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set swap file permissions: %w: %s", err, string(output))
@@ -128,7 +127,7 @@ func formatSwap(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdMkswap, shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdMkswap, shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to format swap file: %w: %s", err, string(output))
@@ -145,7 +144,7 @@ func enableSwap(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdSwapon, shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdSwapon, shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to enable swap file: %w: %s", err, string(output))

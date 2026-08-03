@@ -1,4 +1,4 @@
-package install
+package core
 
 import (
 	"fmt"
@@ -10,14 +10,47 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
+// Logger is the shared logging interface used by installation steps and the GUI.
+type Logger interface {
+	// Info logs an informational message to stdout and the log file.
+	Info(format string, args ...interface{})
+	// Error logs an error message to stderr and the log file.
+	Error(format string, args ...interface{})
+	// Command logs a line of command output to stdout and the log file.
+	Command(line string)
+	// WriteErrorLog writes a formatted error block to the log file.
+	WriteErrorLog(stepLabel, errMsg string)
+}
+
+// --- Logging constants -------------------------------------------------------
+
+// LogChannelBufferSize is the buffer size for the async log channel.
+const LogChannelBufferSize = 1000
+
+// LogWriteRetries is the number of retries before falling back to synchronous write.
+const LogWriteRetries = 3
+
+// LogWriteBackoffMs is the backoff duration between retry attempts (ms).
+const LogWriteBackoffMs = 1
+
+// CommandOutputPrefix is the prefix for command output lines.
+const CommandOutputPrefix = "  > "
+
+// ErrorPrefix is the prefix for error log lines.
+const ErrorPrefix = "ERROR: "
+
 // ConsoleLogger writes logs to the terminal AND to installation.log.
 // File writes are asynchronous to avoid blocking the installation process.
-// This is the default logger used by both CLI and GUI when launched from a terminal.
+// This is the default logger used by both CLI and GUI.
 type ConsoleLogger struct {
 	mu       sync.Mutex
 	logFile  *os.File
 	logChan  chan string
 	done     chan struct{}
+}
+
+func NewConsoleLogger() *ConsoleLogger {
+	return &ConsoleLogger{}
 }
 
 func (l *ConsoleLogger) getLogFile() *os.File {
@@ -90,10 +123,11 @@ func (l *ConsoleLogger) writeToFile(msg string) {
 
 	// Channel consistently full — write synchronously as last resort
 	f := l.getLogFile()
-	if f != nil {
-		timestamp := time.Now().Format(shared.TimestampFormatFull)
-		f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
+	if f == nil {
+		return
 	}
+	timestamp := time.Now().Format(shared.TimestampFormatFull)
+	f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 }
 
 func (l *ConsoleLogger) Info(format string, args ...interface{}) {
@@ -112,9 +146,20 @@ func (l *ConsoleLogger) Command(line string) {
 	if line == "" {
 		return
 	}
-	// Prefix each line with CommandOutputPrefix to indicate it's command output
 	for _, line := range strings.Split(strings.TrimRight(line, "\n"), "\n") {
 		fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
 		l.writeToFile(CommandOutputPrefix + line)
 	}
+}
+
+// WriteErrorLog writes a formatted error block to the log file.
+func (l *ConsoleLogger) WriteErrorLog(stepLabel, errMsg string) {
+	timestamp := time.Now().Format(shared.TimestampFormatFull)
+	l.writeToFile("")
+	l.writeToFile(fmt.Sprintf("=== INSTALLATION ERROR at %s ===", timestamp))
+	l.writeToFile(fmt.Sprintf("Step: %s", stepLabel))
+	l.writeToFile(fmt.Sprintf("Error: %s", errMsg))
+	l.writeToFile(fmt.Sprintf("Log file: %s", shared.GetLogPath()))
+	l.writeToFile("=== END ERROR ===")
+	l.writeToFile("")
 }

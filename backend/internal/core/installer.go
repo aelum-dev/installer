@@ -51,7 +51,7 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 		fileSystem: fileSystem,
 		dryRun:     dryRun,
 		esp:        install.BootMountPoint,
-		Logger:     &install.ConsoleLogger{},
+		Logger:     NewConsoleLogger(),
 	}
 }
 
@@ -92,7 +92,6 @@ func (inst *Installer) Install() error {
 
 		inst.emitProgress(label, startPercent, "running")
 		inst.logInfo("Starting step: %s", step.label)
-		WriteLog("Starting step: %s", step.label)
 
 		// Launch tick goroutine: slowly advances percentage during long steps.
 		// Fast steps (format, mount) finish before the first tick fires.
@@ -109,17 +108,15 @@ func (inst *Installer) Install() error {
 
 		if err != nil {
 			inst.logError("Step failed: %s - %v", step.label, err)
-			WriteLog("Step failed: %s - %v", step.label, err)
 			inst.emitError(step.label, err.Error())
 			return fmt.Errorf("step \"%s\" failed: %w", step.label, err)
 		}
 
 		inst.logInfo("Step completed: %s", step.label)
-		WriteLog("Step completed: %s", step.label)
 		inst.emitProgress(label, endPercent, "done")
 	}
 
-	WriteLog("Installation completed successfully")
+	inst.logInfo("Installation completed successfully")
 	return nil
 }
 
@@ -248,7 +245,6 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 			}
 			i.emitProgress(label, 0, "running")
 			i.logInfo("Starting step: %s", s.label)
-			WriteLog("Starting step: %s", s.label)
 			var stepErr error
 			if i.dryRun {
 				stepErr = simulateStep()
@@ -257,13 +253,11 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 			}
 			if stepErr != nil {
 				i.logError("Step failed: %s - %v", s.label, stepErr)
-				WriteLog("Step failed: %s - %v", s.label, stepErr)
 				i.emitError(s.label, stepErr.Error())
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.label, stepErr)
 			}
 			i.emitProgress(label, 100, "done")
 			i.logInfo("Step completed: %s", s.label)
-			WriteLog("Step completed: %s", s.label)
 			return label, 100, nil
 		}
 	}

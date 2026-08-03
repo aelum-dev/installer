@@ -32,20 +32,19 @@ var isoCopies = []copyEntry{
 // copyISOFiles copies all static files from the live ISO to the installed system.
 // It iterates over isoCopies, runs mkdir -p on each destination parent, then cp.
 func copyISOFiles(ctx *InstallContext) error {
-	helper := ctx.Helper
 	for _, entry := range isoCopies {
 		if ctx.Logger != nil {
 		}
 
 		// Ensure parent directory exists (idempotent — safe to run unconditionally).
 		parentDir := filepath.Dir(entry.Dest)
-		mkdirCmd := exec.Command("sudo", helper, HelperCmdMkdir, parentDir)
+		mkdirCmd := ctx.run(HelperCmdMkdir, parentDir)
 		if _, err := mkdirCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("failed to create dir %s: %w", parentDir, err)
 		}
 
 		// Build cp command: cp [flags] source dest
-		cpArgs := append([]string{helper, HelperCmdCp}, entry.Flags...)
+		cpArgs := append([]string{ctx.Helper, HelperCmdCp}, entry.Flags...)
 		cpArgs = append(cpArgs, entry.Source, entry.Dest)
 		cmd := exec.Command("sudo", cpArgs...)
 		output, err := cmd.CombinedOutput()

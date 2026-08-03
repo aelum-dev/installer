@@ -19,7 +19,6 @@ func SetupUsers(ctx *InstallContext) error {
 		return nil
 	}
 
-	helper := ctx.Helper
 	var cmd *exec.Cmd
 	var output []byte
 	var err error
@@ -35,14 +34,14 @@ func SetupUsers(ctx *InstallContext) error {
 	// Compile dconf database in installed system
 	if ctx.Logger != nil {
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRunDconfUpdate)
+	cmd = ctx.run(HelperCmdRunDconfUpdate)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
 	}
 
 	// Create user inside chroot (skip if already exists)
-	cmd = exec.Command("sudo", helper, HelperCmdRunUseradd, ctx.Username)
+	cmd = ctx.run(HelperCmdRunUseradd, ctx.Username)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		// useradd fails if user already exists — that's ok
@@ -58,7 +57,7 @@ func SetupUsers(ctx *InstallContext) error {
 	if ctx.Password != "" {
 		if ctx.Logger != nil {
 		}
-		cmd = exec.Command("sudo", helper, HelperCmdRunChpasswd, ctx.Username)
+		cmd = ctx.run(HelperCmdRunChpasswd, ctx.Username)
 		cmd.Stdin = strings.NewReader(ctx.Password + "\n")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -81,7 +80,7 @@ func SetupUsers(ctx *InstallContext) error {
 		// (last_change, min_age, max_age, warn_age, inactive, expiry).
 		// Read shadow, replace root hash, write back.
 		shadowPath := shared.MountRoot + "/etc/shadow"
-		cmd = exec.Command("sudo", helper, HelperCmdReadFile, shadowPath)
+		cmd = ctx.run(HelperCmdReadFile, shadowPath)
 		shadowOutput, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("failed to read shadow: %w", err)
@@ -99,14 +98,14 @@ func SetupUsers(ctx *InstallContext) error {
 	// NOT /etc/sudoers.d/wheel which is on the live ISO.
 	if ctx.Logger != nil {
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdMkdir, shared.MountRoot+"/etc/sudoers.d")
+	cmd = ctx.run(HelperCmdMkdir, shared.MountRoot+"/etc/sudoers.d")
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
 	}
 	if err := writeFile(ctx, "/etc/sudoers.d/wheel", "%wheel ALL=(ALL:ALL) ALL\n"); err != nil {
 		return err
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdChmod, "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
+	cmd = ctx.run(HelperCmdChmod, "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to chmod sudoers: %w: %s", err, string(output))

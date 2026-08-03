@@ -11,6 +11,8 @@ type Logger interface {
 	Error(format string, args ...interface{})
 	// Command logs a line of command output
 	Command(line string)
+	// WriteErrorLog writes a formatted error block to the log file.
+	WriteErrorLog(stepLabel, errMsg string)
 }
 
 // InstallContext holds all data needed by installation steps.

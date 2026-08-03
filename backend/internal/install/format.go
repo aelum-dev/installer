@@ -47,10 +47,10 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Unmount anything previously mounted
-	exec.Command("sudo", ctx.Helper, HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot).Run()
+	ctx.run(HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot).Run()
 
 	// Clear partition table
-	cmd := exec.Command("sudo", ctx.Helper, "parted", diskID)
+	cmd := ctx.run("parted", diskID)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("parted failed: %w: %s", err, string(out))
@@ -84,7 +84,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		}
 		args = append(args, SgdiskSetNameFlag, fmt.Sprintf("%d:%s", num, p.Name))
 
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdSgdisk)
+		cmd = ctx.run(HelperCmdSgdisk)
 		cmd.Args = append(cmd.Args, args...)
 		cmd.Args = append(cmd.Args, diskID)
 		out, err = cmd.CombinedOutput()
@@ -120,7 +120,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		return fmt.Errorf("get partitions: %w", err)
 	}
 	for i := range diskPartitions {
-		uuid, err := readPartitionUUID(ctx.Helper, diskPartitions[i].Path)
+		uuid, err := readPartitionUUID(ctx, diskPartitions[i].Path)
 		if err != nil {
 			return fmt.Errorf("blkid %s: %w", diskPartitions[i].Path, err)
 		}
@@ -171,7 +171,7 @@ func formatPartition(ctx *InstallContext, diskID string, num int, p struct {
 	path := derivePartitionPath(diskID, num)
 	if ctx.Logger != nil {
 	}
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdFormat, path, p.Fstype)
+	cmd := ctx.run(HelperCmdFormat, path, p.Fstype)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("format %s failed: %w: %s", path, err, string(out))
@@ -186,22 +186,22 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	rootPath := derivePartitionPath(diskID, 2)
 	tmp := BtrfsSetupTmpMount
 
-	exec.Command("sudo", ctx.Helper, HelperCmdMkdir, tmp).Run()
-	cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", fmt.Sprintf("subvolid=%d", BtrfsTopLevelSubvolumeID), rootPath, tmp)
+	ctx.run(HelperCmdMkdir, tmp).Run()
+	cmd := ctx.run("mount", "-o", fmt.Sprintf("subvolid=%d", BtrfsTopLevelSubvolumeID), rootPath, tmp)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("mount btrfs top-level: %w", err)
 	}
-	defer exec.Command("sudo", ctx.Helper, HelperCmdUmount, UmountLazyFlag, tmp).Run()
+	defer ctx.run(HelperCmdUmount, UmountLazyFlag, tmp).Run()
 
 	for _, sv := range subvolumes {
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSubvolCreate, tmp, sv.Name)
+		cmd = ctx.run(HelperCmdBtrfsSubvolCreate, tmp, sv.Name)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("create subvolume %s: %w: %s", sv.Name, err, string(out))
 		}
 		}
 
-	cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSubvolSetDefault, tmp, "@")
+	cmd = ctx.run(HelperCmdBtrfsSubvolSetDefault, tmp, "@")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("set default subvolume: %w: %s", err, string(out))
@@ -214,7 +214,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		if sv.Compression == "" {
 			continue
 		}
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSetCompression, tmp, sv.Name, sv.Compression)
+		cmd = ctx.run(HelperCmdBtrfsSetCompression, tmp, sv.Name, sv.Compression)
 		if _, err := cmd.CombinedOutput(); err != nil {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("Warning: compression on %s: %v", sv.Name, err)
@@ -222,7 +222,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		}
 	}
 
-	exec.Command("sudo", ctx.Helper, HelperCmdRmdir, tmp).Run()
+	ctx.run(HelperCmdRmdir, tmp).Run()
 
 	if ctx.Logger != nil {
 		var summaries []string
@@ -281,8 +281,8 @@ func findPartitionsByIndex(parts []shared.PartitionEntry) (*shared.PartitionEntr
 	return efi, root
 }
 
-func readPartitionUUID(helper, partition string) (string, error) {
-	cmd := exec.Command("sudo", helper, HelperCmdQueryBlkid, partition)
+func readPartitionUUID(ctx *InstallContext, partition string) (string, error) {
+	cmd := ctx.run(HelperCmdQueryBlkid, partition)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("blkid %s: %w", partition, err)

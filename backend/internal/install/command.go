@@ -8,6 +8,12 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
+// run executes a privileged command via the helper binary.
+// Wraps: sudo <helper> <args...>
+func (ctx *InstallContext) run(args ...string) *exec.Cmd {
+	return exec.Command("sudo", append([]string{ctx.Helper}, args...)...)
+}
+
 // runChroot executes a command inside the installed system via arch-chroot.
 // Wraps: sudo <helper> chroot-run /mnt <args...>
 func runChroot(ctx *InstallContext, args ...string) ([]byte, error) {
@@ -28,7 +34,7 @@ func writeFile(ctx *InstallContext, targetPath string, content string) error {
 	if !strings.HasPrefix(targetPath, shared.MountRoot) {
 		hostPath = shared.MountRoot + targetPath
 	}
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdWriteFile, hostPath)
+	cmd := ctx.run(HelperCmdWriteFile, hostPath)
 	cmd.Stdin = strings.NewReader(content)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -52,7 +58,7 @@ func appendFile(ctx *InstallContext, targetPath string, content string) error {
 	if !strings.HasPrefix(targetPath, shared.MountRoot) {
 		hostPath = shared.MountRoot + targetPath
 	}
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdAppendFile, hostPath)
+	cmd := ctx.run(HelperCmdAppendFile, hostPath)
 	cmd.Stdin = strings.NewReader(content)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
