@@ -2,15 +2,6 @@
 
 Thanks for your interest in contributing! This guide covers the basics.
 
-## Development Rules
-
-See [RULES.md](./RULES.md) for detailed conventions. Key points:
-
-- **Do not auto-commit.** Always ask for approval before committing.
-- **Build before testing.** Run `./build.sh` before testing — never assume old binaries.
-- **Never guess tool behavior.** Check man pages or ask before assuming how `parted`, `bootctl`, `pacstrap`, etc. work.
-- **Live ISO vs Installed System.** Never confuse the two. See RULES.md for the full distinction.
-
 ## Building
 
 ```bash

@@ -3,3 +3,5 @@ node_modules
 frontend/dist
 aesthetic-os-installer
 cli
+build-local.sh
+RULES.md
