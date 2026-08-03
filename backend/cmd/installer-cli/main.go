@@ -55,6 +55,26 @@ func main() {
 	// Layout is now determined by filesystem type (ext4 or btrfs)
 	// No separate layout flag needed
 
+	// Rollback is handled separately — it doesn't use resolveDiskAndStep
+	if *rollbackFlag != "" {
+		fmt.Printf("Rolling back %s...\n", *rollbackFlag)
+		helper := core.FindHelper()
+		if helper == "" {
+			fmt.Fprintf(os.Stderr, "Error: aestheticos-helper not found\n")
+			os.Exit(1)
+		}
+		installer := core.NewInstaller(
+			*rollbackFlag, helper, shared.DefaultCLIUsername, "", shared.DefaultHostname,
+			shared.GetRegion(shared.DefaultLanguageCode), *fileSystemFlag, false,
+		)
+		if err := installer.Rollback(); err != nil {
+			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s %v\n", "\033[31m", "\033[0m", err)
+			os.Exit(1)
+		}
+		fmt.Printf("\n%s✓%s Rollback complete. %s is ready for a fresh install.\n", "\033[32m", "\033[0m", *rollbackFlag)
+		return
+	}
+
 	// Determine which flag was provided (first one wins)
 	disk, stepName := resolveDiskAndStep(resolveFlags(
 		installFlag, "",
@@ -81,25 +101,6 @@ func main() {
 
 	if *dryRun {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
-	}
-
-	if *rollbackFlag != "" {
-		fmt.Printf("Rolling back %s...\n", *rollbackFlag)
-		helper := core.FindHelper()
-		if helper == "" {
-			fmt.Fprintf(os.Stderr, "Error: aestheticos-helper not found\n")
-			os.Exit(1)
-		}
-		installer := core.NewInstaller(
-			*rollbackFlag, helper, shared.DefaultCLIUsername, "", shared.DefaultHostname,
-			shared.GetRegion(shared.DefaultLanguageCode), *fileSystemFlag, false,
-		)
-		if err := installer.Rollback(); err != nil {
-			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s %v\n", "\033[31m", "\033[0m", err)
-			os.Exit(1)
-		}
-		fmt.Printf("\n%s✓%s Rollback complete. %s is ready for a fresh install.\n", "\033[32m", "\033[0m", *rollbackFlag)
-		return
 	}
 
 	helper := core.FindHelper()

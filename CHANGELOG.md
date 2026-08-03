@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `README.md` with project overview, build instructions, and usage
 - `LICENSE` (GPL-3.0)
 - `CHANGELOG.md`
+- `--rollback` CLI flag — cleans up partial installations (unmounts + wipes partition signatures)
+- Deferred mount cleanup in `Install()` — ensures retryability on failure
+- `DerivePartitionPath()` in shared package
 
 ### Fixed
 - svelte-check error: `logInfo` called with 2 arguments instead of 1

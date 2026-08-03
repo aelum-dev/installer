@@ -4,6 +4,7 @@
 - **Do not auto-commit changes.** Always ask for approval before committing.
 - **Don't overthink.** You're thinking budget is limited.
 - Binaries go in `build/bin/` — never in project root.
+- **Update CHANGELOG.md** with every meaningful change under `[Unreleased]`.
 
 ## Building
 - **User always runs `build.sh` before testing.** Never assume user is running old binaries or manual `go build` commands.
@@ -55,6 +56,7 @@
 - `/shared` is mounted on a VM
 
 ## Testing
+- **Always test on the VM.** The user always tests everything on the QEMU VM booting from the ISO. Never assume host behavior matches the ISO environment.
 - Run `go test ./...` before building to catch regressions
 
 ## Architecture & Code Organization

@@ -1,4 +1,15 @@
 #!/bin/bash
+# build.sh — Build all AestheticOS Installer binaries.
+#
+# Usage:
+#   ./build.sh              Build only (outputs to build/bin/)
+#   SHARED_DIR=/path ./build.sh   Also copy to a shared folder (e.g. VM mount)
+#   BIN_DIR=/path ./build.sh      Also copy to a distro airootfs bin dir
+#
+# Outputs:
+#   build/bin/aestheticos-installer    GUI (Wails)
+#   build/bin/aestheticos-helper       Privileged helper (sudo)
+#   build/bin/aestheticos-installer-cli  CLI installer
 set -e
 
 cd "$(dirname "$0")"
