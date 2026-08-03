@@ -52,30 +52,22 @@ func MountFilesystem(ctx *InstallContext) error {
 		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd)
 		mountOpts := buildMountOpts(rootSubvol)
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", rootSubvol.Name, shared.MountRoot, mountOpts)
 		}
 		cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
 		}
-		if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
-	} else {
+		} else {
 		// Standard mount for ext4 and other filesystems
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Mounting root partition (%s) → /mnt", p.RootPart)
 		}
 		cmd := exec.Command("sudo", ctx.Helper, "mount", p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))
 		}
-		if ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
 		}
-	}
 
 	// Verify root mount
 	if err := verifyMount(ctx.Helper, shared.MountRoot, p.RootPart); err != nil {
@@ -103,20 +95,18 @@ func MountFilesystem(ctx *InstallContext) error {
 			}
 			if sv == nil {
 				if ctx.Logger != nil {
-					ctx.Logger.Info("No subvolume definition for mount point %s, skipping", mountPath)
 				}
 				continue
 			}
 
 			// Create mount point directory
 			fullPath := shared.MountRoot + mountPath
-			cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", fullPath)
+			cmd := exec.Command("sudo", ctx.Helper, HelperCmdMkdir, fullPath)
 			cmd.Run()
 
 			// Mount subvolume with its properties
 			mountOpts := buildMountOpts(sv)
 			if ctx.Logger != nil {
-				ctx.Logger.Info("Mounting btrfs %s subvolume → %s (%s)", sv.Name, fullPath, mountOpts)
 			}
 			cmd = exec.Command("sudo", ctx.Helper, "mount", "-o", mountOpts, p.RootPart, fullPath)
 			output, err := cmd.CombinedOutput()
@@ -133,10 +123,9 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	bootMount := BootMountPoint
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Mounting EFI partition (%s) → %s", p.EFIPart, bootMount)
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", bootMount)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdMkdir, bootMount)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
@@ -157,7 +146,6 @@ func MountFilesystem(ctx *InstallContext) error {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("All mounts verified successfully")
 	}
 	return nil
 }
@@ -181,7 +169,7 @@ func buildMountOpts(sv *shared.BtrfsSubvolume) string {
 // so we strip the [/subvol] suffix before comparing.
 func verifyMount(helper, mountpoint, expectedDevice string) error {
 	// Check that the mountpoint is mounted
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "findmnt", "-n", "-o", "SOURCE", mountpoint)
+	cmd := exec.Command("sudo", helper, HelperCmdQueryFindmnt, mountpoint)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("mount verification failed: %s is not mounted", mountpoint)

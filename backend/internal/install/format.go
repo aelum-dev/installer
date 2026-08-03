@@ -34,7 +34,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Using filesystem: %s", fsType)
 	}
 
 	partitions := []struct {
@@ -65,7 +64,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	for i, p := range partitions {
 		num := i + 1
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Creating partition %d: %s (%d MB, %s)", num, p.Name, p.SizeMB, p.Fstype)
 		}
 
 		var args []string
@@ -86,17 +84,14 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		}
 		args = append(args, SgdiskSetNameFlag, fmt.Sprintf("%d:%s", num, p.Name))
 
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "sgdisk")
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdSgdisk)
 		cmd.Args = append(cmd.Args, args...)
 		cmd.Args = append(cmd.Args, diskID)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("sgdisk partition %d failed: %w: %s", num, err, string(out))
 		}
-		if ctx.Logger != nil && len(out) > 0 {
-			ctx.Logger.Command(string(out))
 		}
-	}
 
 	// Format EFI
 	if err := formatPartition(ctx, diskID, 1, partitions[0]); err != nil {
@@ -111,7 +106,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	// Refresh kernel partition table
 	exec.Command("sudo", "partprobe", diskID).Run()
 
-	// btrfs subvolumes
 	var subvolumes []shared.BtrfsSubvolume
 	if fsType == "btrfs" {
 		subvolumes = shared.GetBtrfsSubvolumes()
@@ -132,7 +126,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		}
 		diskPartitions[i].UUID = uuid
 		if ctx.Logger != nil {
-			ctx.Logger.Info("%s: UUID=%s, FSTYPE=%s", diskPartitions[i].Path, uuid, diskPartitions[i].Fstype)
 		}
 	}
 
@@ -148,7 +141,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("EFI: %s (UUID: %s), Root: %s (UUID: %s)", efi.Path, efi.UUID, root.Path, root.UUID)
 	}
 
 	ctx.Partitions = &shared.PartitionInfo{
@@ -178,7 +170,6 @@ func formatPartition(ctx *InstallContext, diskID string, num int, p struct {
 }) error {
 	path := derivePartitionPath(diskID, num)
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Formatting %s as %s", path, p.Fstype)
 	}
 	cmd := exec.Command("sudo", ctx.Helper, HelperCmdFormat, path, p.Fstype)
 	out, err := cmd.CombinedOutput()
@@ -195,7 +186,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	rootPath := derivePartitionPath(diskID, 2)
 	tmp := BtrfsSetupTmpMount
 
-	exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkdir", "-p", tmp).Run()
+	exec.Command("sudo", ctx.Helper, HelperCmdMkdir, tmp).Run()
 	cmd := exec.Command("sudo", ctx.Helper, "mount", "-o", fmt.Sprintf("subvolid=%d", BtrfsTopLevelSubvolumeID), rootPath, tmp)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("mount btrfs top-level: %w", err)
@@ -208,10 +199,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		if err != nil {
 			return fmt.Errorf("create subvolume %s: %w: %s", sv.Name, err, string(out))
 		}
-		if ctx.Logger != nil && len(out) > 0 {
-			ctx.Logger.Command(string(out))
 		}
-	}
 
 	cmd = exec.Command("sudo", ctx.Helper, HelperCmdBtrfsSubvolSetDefault, tmp, "@")
 	out, err := cmd.CombinedOutput()
@@ -234,7 +222,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		}
 	}
 
-	exec.Command("sudo", ctx.Helper, HelperCmdRun, "rmdir", tmp).Run()
+	exec.Command("sudo", ctx.Helper, HelperCmdRmdir, tmp).Run()
 
 	if ctx.Logger != nil {
 		var summaries []string
@@ -251,7 +239,6 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 			}
 			summaries = append(summaries, sv.Name+" ("+strings.Join(props, ", ")+")")
 		}
-		ctx.Logger.Info("btrfs subvolumes: %s", strings.Join(summaries, ", "))
 	}
 	return nil
 }
@@ -295,7 +282,7 @@ func findPartitionsByIndex(parts []shared.PartitionEntry) (*shared.PartitionEntr
 }
 
 func readPartitionUUID(helper, partition string) (string, error) {
-	cmd := exec.Command("sudo", helper, "run", "blkid", "-s", "UUID", "-o", "value", partition)
+	cmd := exec.Command("sudo", helper, HelperCmdQueryBlkid, partition)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("blkid %s: %w", partition, err)

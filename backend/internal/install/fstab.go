@@ -35,14 +35,12 @@ func GenerateFstab(ctx *InstallContext) error {
 	// For btrfs, write custom fstab with subvolume entries
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Generating custom fstab for btrfs subvolumes")
 		}
 		return writeBtrfsFstab(ctx)
 	}
 
 	// Standard fstab generation for ext4 and other filesystems
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Generating fstab for %s", p.RootPart)
 	}
 
 	// Write fstab manually (genfstab requires chroot, which we don't have here)
@@ -114,7 +112,6 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 // Returns an error if the fstab is empty or missing required entries.
 func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Verifying fstab")
 	}
 
 	// Validate UUIDs are not empty before checking
@@ -126,7 +123,7 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 	}
 
 	// Read fstab content
-	cmd := exec.Command("sudo", ctx.Helper, "run", "cat", "/mnt/etc/fstab")
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdReadFile, "/mnt/etc/fstab")
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to read fstab: %w", err)
@@ -153,7 +150,6 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Fstab verification passed")
 	}
 
 	return nil

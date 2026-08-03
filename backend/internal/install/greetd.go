@@ -35,7 +35,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 	// systemd-sysusers only runs at boot, so we trigger it manually after install.
 	// Also run systemd-tmpfiles to create /var/lib/greeter (home dir) and /var/cache/dms-greeter.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Ensuring greeter user exists")
 	}
 	output, err := runChroot(ctx, "systemd-sysusers", "--root=/", "--no-pager")
 	if err != nil {
@@ -43,7 +42,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating greeter directories")
 	}
 	output, err = runChroot(ctx, "systemd-tmpfiles", "--create", "--root=/")
 	if err != nil {
@@ -52,7 +50,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 
 	// Ensure greeter user owns its directories (tmpfiles may not set ownership correctly)
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting greeter directory ownership")
 	}
 	// Create directories first in case systemd-tmpfiles didn't (e.g. package not yet installed)
 	for _, dir := range []string{"/var/cache/dms-greeter", "/var/lib/greeter"} {
@@ -69,7 +66,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 	// Set 2770 permissions (setgid + rwxrwx---) on cache dirs per dms-greeter spec.
 	// The setgid bit ensures new files inherit the greeter group.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting greeter directory permissions (2770)")
 	}
 	for _, dir := range []string{"/var/cache/dms-greeter", "/var/lib/greeter"} {
 		output, err = runChroot(ctx, "chmod", "2770", dir)
@@ -82,7 +78,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 	// This is what `dms greeter enable` does internally, but we do it as root
 	// to avoid the "should not be run as root" check in the dms CLI.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Configuring greetd")
 	}
 
 	if err := writeFile(ctx, "/etc/greetd/config.toml", greetdConfigToml); err != nil {
@@ -129,7 +124,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// Group membership lets the greeter process read synced config files via
 	// group ACLs (g:greeter:rX) on the user's home directories.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Adding user '%s' to greeter group", username)
 	}
 	output, err := runChroot(ctx, "usermod", "-aG", "greeter", username)
 	if err != nil {
@@ -137,7 +131,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	}
 	// Also add the greeter daemon user so the greeter process can read synced files
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Adding greeter daemon to greeter group")
 	}
 	output, err = runChroot(ctx, "usermod", "-aG", "greeter", "greeter")
 	if err != nil {
@@ -149,7 +142,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// We use setfacl to grant the greeter user access without changing ownership.
 	// First ensure the directory structure exists (useradd -m doesn't create .local etc.)
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting ACLs for greeter on user home directories")
 	}
 	aclDirs := []string{home, filepath.Join(home, ".config"), filepath.Join(home, ".local"),
 		filepath.Join(home, ".cache"), filepath.Join(home, ".local", "state"),
@@ -170,7 +162,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// 3. Set group ownership on DMS config directories so greeter can read them
 	// The DMS config dirs need group 'greeter' with read+execute permissions.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting DMS config group permissions")
 	}
 	dmsConfigDirs := []string{
 		filepath.Join(home, ".config", "DankMaterialShell"),
@@ -186,7 +177,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 			if _, testErr := runChroot(ctx, "test", "-d", dir); testErr != nil {
 				// Directory doesn't exist — that's ok, skip it
 				if ctx.Logger != nil {
-					ctx.Logger.Info("DMS config dir %s not found, skipping", dir)
 				}
 				continue
 			}
@@ -204,7 +194,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	//   - .local/share: runtime data
 	//   - .cache: runtime cache
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating greeter cache runtime subdirs")
 	}
 	cacheDir := "/var/cache/dms-greeter"
 	runtimeSubdirs := []string{
@@ -234,7 +223,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// Configs are shipped in ISO /etc/skel, so they already exist in user's home.
 	// These symlinks let the greeter (running as greeter user) read them.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating greeter cache symlinks")
 	}
 	symlinks := map[string]string{
 		filepath.Join(cacheDir, "settings.json"): filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
@@ -258,7 +246,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// This lets the greeter pre-select the user and session in the picker,
 	// but does NOT enable auto-login (no autoLoginEnabled field).
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Writing greeter memory.json")
 	}
 	stateMemoryPath := filepath.Join(cacheDir, ".local", "state", "memory.json")
 	memoryContent := strings.ReplaceAll(defaultMemoryJson, "{{USERNAME}}", username)
@@ -284,7 +271,6 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// 8. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
 	// This enables multi-account picker with the user's avatar and theme preview.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting up per-user greeter slot")
 	}
 	userSlot := filepath.Join(cacheDir, "users", username)
 	output, err = runChroot(ctx, "mkdir", "-p", userSlot)

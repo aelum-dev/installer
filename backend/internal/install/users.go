@@ -25,7 +25,6 @@ func SetupUsers(ctx *InstallContext) error {
 	var err error
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating user account '%s' with wheel group", ctx.Username)
 	}
 
 	// Copy ISO files (skel, dconf, wallpaper, environment, hypr.lua)
@@ -35,21 +34,21 @@ func SetupUsers(ctx *InstallContext) error {
 
 	// Compile dconf database in installed system
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Compiling dconf database in installed system")
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot, "dconf", "update")
+	cmd = exec.Command("sudo", helper, HelperCmdRunDconfUpdate)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
 	}
 
 	// Create user inside chroot (skip if already exists)
-	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
-		"bash", "-c", fmt.Sprintf("if ! id %s >/dev/null 2>&1; then useradd -m -G wheel %s; fi",
-			ctx.Username, ctx.Username))
+	cmd = exec.Command("sudo", helper, HelperCmdRunUseradd, ctx.Username)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
+		// useradd fails if user already exists — that's ok
+		if !strings.Contains(string(output), "already exists") {
+			return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
+		}
 	}
 	if ctx.Logger != nil && len(output) > 0 {
 		ctx.Logger.Command(string(output))
@@ -58,10 +57,8 @@ func SetupUsers(ctx *InstallContext) error {
 	// Set password inside chroot (via stdin to avoid shell interpolation of special chars)
 	if ctx.Password != "" {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Setting password for user '%s'", ctx.Username)
 		}
-		cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
-			"bash", "-c", "read -r pass && echo \"$1:$pass\" | chpasswd", "--", ctx.Username)
+		cmd = exec.Command("sudo", helper, HelperCmdRunChpasswd, ctx.Username)
 		cmd.Stdin = strings.NewReader(ctx.Password + "\n")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -71,7 +68,6 @@ func SetupUsers(ctx *InstallContext) error {
 		// Also set root password (same as user password for recovery)
 		// Generate hash on host using openssl, then update /mnt/etc/shadow directly
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Setting root password")
 		}
 		// Generate SHA-512 hash of password
 		hashCmd := exec.Command("openssl", "passwd", "-6", ctx.Password)
@@ -83,15 +79,18 @@ func SetupUsers(ctx *InstallContext) error {
 
 		// Update root entry in /mnt/etc/shadow, preserving remaining fields
 		// (last_change, min_age, max_age, warn_age, inactive, expiry).
-		// Using | as sed delimiter since $hash contains /. Replaces only the
-		// second field (the hash) while keeping everything after it intact.
-		cmd = exec.Command("sudo", helper, "run", "bash", "-c", fmt.Sprintf(
-			"sed -i 's|^root:[^:]*|root:%s|' /mnt/etc/shadow",
-			hash,
-		))
-		output, err = cmd.CombinedOutput()
+		// Read shadow, replace root hash, write back.
+		shadowPath := shared.MountRoot + "/etc/shadow"
+		cmd = exec.Command("sudo", helper, HelperCmdReadFile, shadowPath)
+		shadowOutput, err := cmd.Output()
 		if err != nil {
-			return fmt.Errorf("failed to set root password: %w: %s", err, string(output))
+			return fmt.Errorf("failed to read shadow: %w", err)
+		}
+		shadowContent := string(shadowOutput)
+		// Replace root's hash field (second field) using | as delimiter since hash contains /
+		shadowContent = strings.Replace(shadowContent, "root:", "root:"+hash+":", 1)
+		if err := writeFile(ctx, "/etc/shadow", shadowContent); err != nil {
+			return fmt.Errorf("failed to set root password: %w", err)
 		}
 	}
 
@@ -99,13 +98,18 @@ func SetupUsers(ctx *InstallContext) error {
 	// Write directly to /mnt/etc/sudoers.d/wheel (the mounted installed system),
 	// NOT /etc/sudoers.d/wheel which is on the live ISO.
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Configuring sudoers for wheel group")
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		"mkdir -p /mnt/etc/sudoers.d && echo \"%wheel ALL=(ALL:ALL) ALL\" > /mnt/etc/sudoers.d/wheel && chmod 0440 /mnt/etc/sudoers.d/wheel")
+	cmd = exec.Command("sudo", helper, HelperCmdMkdir, shared.MountRoot+"/etc/sudoers.d")
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
+	}
+	if err := writeFile(ctx, "/etc/sudoers.d/wheel", "%wheel ALL=(ALL:ALL) ALL\n"); err != nil {
+		return err
+	}
+	cmd = exec.Command("sudo", helper, HelperCmdChmod, "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to configure sudoers: %w: %s", err, string(output))
+		return fmt.Errorf("failed to chmod sudoers: %w: %s", err, string(output))
 	}
 	if ctx.Logger != nil && len(output) > 0 {
 		ctx.Logger.Command(string(output))

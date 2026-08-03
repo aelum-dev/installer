@@ -42,7 +42,7 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 
 	args := []string{"-K", PacstrapMountPoint}
 	args = append(args, packages...)
-	cmd := exec.Command("sudo", append([]string{ctx.Helper, HelperCmdRun, "pacstrap"}, args...)...)
+	cmd := exec.Command("sudo", append([]string{ctx.Helper, "pacstrap"}, args...)...)
 
 	// Stream stdout to parse real progress from pacstrap's lines.
 	stdout, err := cmd.StdoutPipe()

@@ -19,7 +19,6 @@ func CreateSwap(ctx *InstallContext) error {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating swap file")
 	}
 
 	var swapFilePath string
@@ -42,7 +41,6 @@ func CreateSwap(ctx *InstallContext) error {
 	}
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Swap file created and enabled: %s", swapFilePath)
 	}
 
 	return nil
@@ -70,22 +68,19 @@ func createBtrfsSwapFile(ctx *InstallContext, path string) error {
 // Sets 0600 permissions and formats with mkswap (btrfs handles these via mkswapfile).
 func createExt4SwapFile(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating swap file: %s (4096 MB)", path)
 	}
 
 	// Fast path: fallocate
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "fallocate", "-l", "4096M", shared.MountRoot+path)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdFallocate, "-l", "4096M", shared.MountRoot+path)
 	if err := cmd.Run(); err == nil {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Swap file created with fallocate")
 		}
 	} else {
 		// Fallback: dd (works on all filesystems)
 		if ctx.Logger != nil {
-			ctx.Logger.Info("fallocate failed, falling back to dd")
 		}
 
-		cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "dd",
+		cmd = exec.Command("sudo", ctx.Helper, HelperCmdDd,
 			"if=/dev/zero",
 			"of="+shared.MountRoot+path,
 			"bs=1M",
@@ -98,7 +93,6 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 		}
 
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Swap file created with dd")
 		}
 	}
 
@@ -118,10 +112,9 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 // setSwapFilePermissions sets the required permissions on the swap file.
 func setSwapFilePermissions(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting swap file permissions to 0600")
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "chmod", "0600", shared.MountRoot+path)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdChmod, "0600", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set swap file permissions: %w: %s", err, string(output))
@@ -133,10 +126,9 @@ func setSwapFilePermissions(ctx *InstallContext, path string) error {
 // formatSwap formats the swap file with mkswap.
 func formatSwap(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Formatting swap file")
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "mkswap", shared.MountRoot+path)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdMkswap, shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to format swap file: %w: %s", err, string(output))
@@ -151,10 +143,9 @@ func formatSwap(ctx *InstallContext, path string) error {
 // enableSwap enables the swap file with swapon.
 func enableSwap(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Enabling swap file")
 	}
 
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "swapon", shared.MountRoot+path)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdSwapon, shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to enable swap file: %w: %s", err, string(output))

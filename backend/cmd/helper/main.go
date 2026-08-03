@@ -4,8 +4,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -68,9 +70,45 @@ var commands = []HelperCommand{
 	},
 	{
 		Name:  "bootctl-install",
-		Usage: "bootctl-install <esp>",
-		Help:  "Install systemd-boot to ESP",
+		Usage: "bootctl-install <esp> [extra-args...]",
+		Help:  "Install systemd-boot to ESP (extra args like --graceful appended)",
 		Run:   cmdBootctlInstall,
+	},
+	{
+		Name:  "bootctl-cleanup",
+		Usage: "bootctl-cleanup <esp> [extra-args...]",
+		Help:  "Clean up orphaned files from ESP",
+		Run:   cmdBootctlCleanup,
+	},
+	{
+		Name:  "bootctl-random-seed",
+		Usage: "bootctl-random-seed <esp>",
+		Help:  "Generate random seed for entropy pool",
+		Run:   cmdBootctlRandomSeed,
+	},
+	{
+		Name:  "bootctl-set-default",
+		Usage: "bootctl-set-default <entry>",
+		Help:  "Set default boot entry",
+		Run:   cmdBootctlSetDefault,
+	},
+	{
+		Name:  "bootctl-is-installed",
+		Usage: "bootctl-is-installed <esp>",
+		Help:  "Check if systemd-boot is installed",
+		Run:   cmdBootctlIsInstalled,
+	},
+	{
+		Name:  "bootctl-status",
+		Usage: "bootctl-status <esp>",
+		Help:  "Show bootctl status",
+		Run:   cmdBootctlStatus,
+	},
+	{
+		Name:  "query-find",
+		Usage: "query-find <path> [args...]",
+		Help:  "Find files (find <path> [args...])",
+		Run:   cmdQueryFind,
 	},
 	{
 		Name:  "passwd",
@@ -91,10 +129,124 @@ var commands = []HelperCommand{
 		Run:   cmdEfibootmgr,
 	},
 	{
-		Name:  "run",
-		Usage: "run <command> [args...]",
-		Help:  "Run any command as root",
-		Run:   cmdRun,
+		Name:  "chroot-run",
+		Usage: "chroot-run <chroot> <cmd> [args...]",
+		Help:  "Run a whitelisted command inside a chroot (e.g., chroot-run /mnt systemctl enable foo)",
+		Run:   cmdChrootRun,
+	},
+	{
+		Name:  "enable-service",
+		Usage: "enable-service <service>",
+		Help:  "Enable a systemd service inside /mnt",
+		Run:   cmdEnableService,
+	},
+	{
+		Name:  "run-locale-gen",
+		Usage: "run-locale-gen",
+		Help:  "Run locale-gen inside /mnt",
+		Run:   cmdRunLocaleGen,
+	},
+	{
+		Name:  "run-dconf-update",
+		Usage: "run-dconf-update",
+		Help:  "Run dconf update inside /mnt",
+		Run:   cmdRunDconfUpdate,
+	},
+	{
+		Name:  "run-useradd",
+		Usage: "run-useradd <username>",
+		Help:  "Create a user inside /mnt (useradd -m -G wheel)",
+		Run:   cmdRunUseradd,
+	},
+	{
+		Name:  "run-chpasswd",
+		Usage: "run-chpasswd <username>",
+		Help:  "Set password for user inside /mnt (password via stdin)",
+		Run:   cmdRunChpasswd,
+	},
+	{
+		Name:  "run-plymouth-set-theme",
+		Usage: "run-plymouth-set-theme <theme>",
+		Help:  "Set plymouth theme inside /mnt (e.g., bgrt)",
+		Run:   cmdRunPlymouthSetTheme,
+	},
+	{
+		Name:  "run-mkinitcpio",
+		Usage: "run-mkinitcpio",
+		Help:  "Run mkinitcpio -P inside /mnt",
+		Run:   cmdRunMkinitcpio,
+	},
+	{
+		Name:  "write-file",
+		Usage: "write-file <path> [content]",
+		Help:  "Write content to a file (content via stdin if not provided as arg)",
+		Run:   cmdWriteFile,
+	},
+	{
+		Name:  "append-file",
+		Usage: "append-file <path> [content]",
+		Help:  "Append content to a file (content via stdin if not provided as arg)",
+		Run:   cmdAppendFile,
+	},
+	{
+		Name:  "read-file",
+		Usage: "read-file <path>",
+		Help:  "Read and print the contents of a file",
+		Run:   cmdReadFile,
+	},
+	{
+		Name:  "set-symlink",
+		Usage: "set-symlink <target> <link>",
+		Help:  "Create a symbolic link (ln -sf)",
+		Run:   cmdSetSymlink,
+	},
+	{
+		Name:  "chmod",
+		Usage: "chmod <mode> <path>",
+		Help:  "Change file permissions",
+		Run:   cmdChmod,
+	},
+	{
+		Name:  "chown",
+		Usage: "chown <owner> <path>",
+		Help:  "Change file ownership",
+		Run:   cmdChown,
+	},
+	{
+		Name:  "touch",
+		Usage: "touch <path>",
+		Help:  "Create an empty file or update timestamp",
+		Run:   cmdTouch,
+	},
+	{
+		Name:  "mkdir",
+		Usage: "mkdir <path>",
+		Help:  "Create a directory (mkdir -p)",
+		Run:   cmdMkdir,
+	},
+	{
+		Name:  "query-blkid",
+		Usage: "query-blkid <device>",
+		Help:  "Query blkid for a device (outputs UUID value)",
+		Run:   cmdQueryBlkid,
+	},
+	{
+		Name:  "query-findmnt",
+		Usage: "query-findmnt <mountpoint>",
+		Help:  "Query findmnt for a mountpoint (outputs SOURCE)",
+		Run:   cmdQueryFindmnt,
+	},
+	{
+		Name:  "query-ls",
+		Usage: "query-ls <path>",
+		Help:  "List a directory (ls)",
+		Run:   cmdQueryLs,
+	},
+	{
+		Name:  "query-test",
+		Usage: "query-test <flags> <path>",
+		Help:  "Test a file condition (test <flags> <path>)",
+		Run:   cmdQueryTest,
 	},
 	{
 		Name:  "reboot",
@@ -149,6 +301,42 @@ var commands = []HelperCommand{
 		Usage: "btrfs-mkswapfile <path> <size>",
 		Help:  "Create a btrfs swap file with proper CoW handling (e.g., btrfs-mkswapfile /swapfile 4G)",
 		Run:   cmdBtrfsMkswapfile,
+	},
+	{
+		Name:  "sgdisk",
+		Usage: "sgdisk <args...>",
+		Help:  "Run sgdisk partitioning commands",
+		Run:   cmdSgdisk,
+	},
+	{
+		Name:  "dd",
+		Usage: "dd <args...>",
+		Help:  "Run dd (copy/convert file)",
+		Run:   cmdDd,
+	},
+	{
+		Name:  "fallocate",
+		Usage: "fallocate <args...>",
+		Help:  "Run fallocate (preallocate file space)",
+		Run:   cmdFallocate,
+	},
+	{
+		Name:  "rmdir",
+		Usage: "rmdir <path>",
+		Help:  "Remove an empty directory",
+		Run:   cmdRmdir,
+	},
+	{
+		Name:  "swapoff",
+		Usage: "swapoff <args...>",
+		Help:  "Disable a swap device or file",
+		Run:   cmdSwapoff,
+	},
+	{
+		Name:  "cp",
+		Usage: "cp <args...>",
+		Help:  "Copy files (cp [flags] source dest)",
+		Run:   cmdCp,
 	},
 }
 
@@ -419,11 +607,50 @@ func cmdGenfstab(args []string) error {
 
 func cmdBootctlInstall(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-install <esp>")
+		return fmt.Errorf("usage: bootctl-install <esp> [extra-args...]")
 	}
 	// Install systemd-boot to the EFI System Partition.
 	// Per bootctl(1): "--esp-path= Path to the EFI System Partition (ESP)."
-	return runCommand("bootctl", "install", "--esp-path="+args[0])
+	cmdArgs := []string{"install", "--esp-path=" + args[0]}
+	cmdArgs = append(cmdArgs, args[1:]...)
+	return runCommand("bootctl", cmdArgs...)
+}
+
+func cmdBootctlCleanup(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: bootctl-cleanup <esp> [extra-args...]")
+	}
+	cmdArgs := []string{"cleanup", "--esp-path=" + args[0]}
+	cmdArgs = append(cmdArgs, args[1:]...)
+	return runCommand("bootctl", cmdArgs...)
+}
+
+func cmdBootctlRandomSeed(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: bootctl-random-seed <esp>")
+	}
+	return runCommand("bootctl", "random-seed", "--esp-path="+args[0])
+}
+
+func cmdBootctlSetDefault(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: bootctl-set-default <entry>")
+	}
+	return runCommand("bootctl", "set-default", args[0])
+}
+
+func cmdBootctlIsInstalled(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: bootctl-is-installed <esp>")
+	}
+	return runCommand("bootctl", "is-installed", "--esp-path="+args[0])
+}
+
+func cmdBootctlStatus(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: bootctl-status <esp>")
+	}
+	return runCommand("bootctl", "status", "--esp-path="+args[0])
 }
 
 func cmdPasswd(args []string) error {
@@ -440,11 +667,234 @@ func cmdUseradd(args []string) error {
 	return runCommand("useradd", "-m", "-s", "/bin/bash", args[0])
 }
 
-func cmdRun(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: run <command> [args...]")
+// chrootRunWhitelist defines the subset of commands allowed inside a chroot.
+var chrootRunWhitelist = map[string]bool{
+	"systemctl":                  true,
+	"locale-gen":                 true,
+	"dconf":                      true,
+	"useradd":                    true,
+	"usermod":                    true,
+	"chpasswd":                   true,
+	"plymouth-set-default-theme": true,
+	"mkinitcpio":                 true,
+	"test":                       true,
+	"id":                         true,
+	"mkdir":                      true,
+	"rm":                         true,
+	"ln":                         true,
+	"chown":                      true,
+	"chgrp":                      true,
+	"chmod":                      true,
+	"setfacl":                    true,
+	"cp":                         true,
+	"systemd-sysusers":           true,
+	"systemd-tmpfiles":           true,
+}
+
+func cmdChrootRun(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: chroot-run <chroot> <cmd> [args...]")
 	}
-	return runCommand(args[0], args[1:]...)
+	chroot := args[0]
+	cmdName := args[1]
+
+	// Whitelist check
+	if !chrootRunWhitelist[cmdName] {
+		return fmt.Errorf("command %q is not allowed in chroot-run (whitelist: %v)", cmdName, chrootRunWhitelist)
+	}
+
+	// Validate chroot path
+	if !strings.HasPrefix(chroot, "/") {
+		return fmt.Errorf("invalid chroot path: %s", chroot)
+	}
+
+	cmdArgs := append([]string{chroot, cmdName}, args[2:]...)
+	return runCommand("arch-chroot", cmdArgs...)
+}
+
+func cmdEnableService(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: enable-service <service>")
+	}
+	return cmdChrootRun([]string{"/mnt", "systemctl", "enable", args[0]})
+}
+
+func cmdRunLocaleGen(args []string) error {
+	return cmdChrootRun([]string{"/mnt", "locale-gen"})
+}
+
+func cmdRunDconfUpdate(args []string) error {
+	return cmdChrootRun([]string{"/mnt", "dconf", "update"})
+}
+
+func cmdRunUseradd(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: run-useradd <username>")
+	}
+	return cmdChrootRun([]string{"/mnt", "useradd", "-m", "-G", "wheel", args[0]})
+}
+
+func cmdRunChpasswd(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: run-chpasswd <username>")
+	}
+	username := args[0]
+	// Read password from stdin
+	buf, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return fmt.Errorf("failed to read password from stdin: %w", err)
+	}
+	password := strings.TrimRight(string(buf), "\n")
+	// Pipe "username:password" directly to chpasswd (no bash needed)
+	cmd := exec.Command("arch-chroot", "/mnt", "chpasswd")
+	cmd.Stdin = strings.NewReader(username + ":" + password + "\n")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func cmdRunPlymouthSetTheme(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: run-plymouth-set-theme <theme>")
+	}
+	return cmdChrootRun([]string{"/mnt", "plymouth-set-default-theme", "-R", args[0]})
+}
+
+func cmdRunMkinitcpio(args []string) error {
+	return cmdChrootRun([]string{"/mnt", "mkinitcpio", "-P"})
+}
+
+func cmdWriteFile(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: write-file <path> [content]")
+	}
+	path := args[0]
+	var content string
+	if len(args) > 1 {
+		content = args[1]
+	} else {
+		buf, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("failed to read stdin: %w", err)
+		}
+		content = string(buf)
+	}
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("mkdir -p '%s' && cat > '%s'", filepath.Dir(path), path))
+	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func cmdAppendFile(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: append-file <path> [content]")
+	}
+	path := args[0]
+	var content string
+	if len(args) > 1 {
+		content = args[1]
+	} else {
+		buf, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("failed to read stdin: %w", err)
+		}
+		content = string(buf)
+	}
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("mkdir -p '%s' && cat >> '%s'", filepath.Dir(path), path))
+	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func cmdReadFile(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: read-file <path>")
+	}
+	return runCommand("cat", args[0])
+}
+
+func cmdSetSymlink(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: set-symlink <target> <link>")
+	}
+	return runCommand("ln", "-sf", args[0], args[1])
+}
+
+func cmdChmod(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: chmod <mode> <path>")
+	}
+	return runCommand("chmod", args[0], args[1])
+}
+
+func cmdChown(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: chown <owner> <path>")
+	}
+	return runCommand("chown", args[0], args[1])
+}
+
+func cmdTouch(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: touch <path>")
+	}
+	return runCommand("touch", args[0])
+}
+
+func cmdMkdir(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: mkdir <path>")
+	}
+	return runCommand("mkdir", "-p", args[0])
+}
+
+func cmdQueryBlkid(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: query-blkid <device>")
+	}
+	cmd := exec.Command("blkid", "-s", "UUID", "-o", "value", args[0])
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("blkid %s: %w", args[0], err)
+	}
+	fmt.Print(strings.TrimSpace(string(output)))
+	return nil
+}
+
+func cmdQueryFindmnt(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: query-findmnt <mountpoint>")
+	}
+	cmd := exec.Command("findmnt", "-n", "-o", "SOURCE", args[0])
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("findmnt %s: %w", args[0], err)
+	}
+	fmt.Print(strings.TrimSpace(string(output)))
+	return nil
+}
+
+func cmdQueryLs(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: query-ls <path>")
+	}
+	return runCommand("ls", args...)
+}
+
+func cmdQueryTest(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: query-test <flags> <path>")
+	}
+	return runCommand("test", args[0], args[1])
+}
+
+func cmdQueryFind(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: query-find <path> [args...]")
+	}
+	return runCommand("find", args...)
 }
 
 func cmdReboot(args []string) error {
@@ -630,4 +1080,43 @@ func cmdBtrfsMkswapfile(args []string) error {
 	path := args[0]
 	size := args[1] // e.g., "4G", "2G", "512M"
 	return runCommand("btrfs", "filesystem", "mkswapfile", "--size", size, path)
+}
+
+func cmdSgdisk(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: sgdisk <args...>")
+	}
+	return runCommand("sgdisk", args...)
+}
+
+func cmdDd(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: dd <args...>")
+	}
+	return runCommand("dd", args...)
+}
+
+func cmdFallocate(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: fallocate <args...>")
+	}
+	return runCommand("fallocate", args...)
+}
+
+func cmdRmdir(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: rmdir <path>")
+	}
+	return runCommand("rmdir", args[0])
+}
+
+func cmdSwapoff(args []string) error {
+	return runCommand("swapoff", args...)
+}
+
+func cmdCp(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: cp <source> <dest>")
+	}
+	return runCommand("cp", args...)
 }

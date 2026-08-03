@@ -3,7 +3,6 @@ package install
 import (
 	"fmt"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -32,44 +31,45 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return fmt.Errorf("hostname not set")
 	}
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting hostname to '%s'", ctx.Hostname)
 	}
-	// Use printf with positional args to avoid shell interpolation of hostname
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		"printf '%s\\n' \"$1\" > \"$2\"", "--", ctx.Hostname, shared.MountRoot+"/etc/hostname")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to set hostname: %w: %s", err, string(output))
+	if err := writeFile(ctx, "/etc/hostname", ctx.Hostname+"\n"); err != nil {
+		return err
 	}
 
 	// Step 2: Set timezone from region
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting timezone to %s", region.Timezone)
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("ln -sf /usr/share/zoneinfo/%s %s/etc/localtime", region.Timezone, shared.MountRoot))
-	output, err = cmd.CombinedOutput()
+	cmd := exec.Command("sudo", helper, HelperCmdSetSymlink,
+		fmt.Sprintf("/usr/share/zoneinfo/%s", region.Timezone),
+		shared.MountRoot+"/etc/localtime")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %w: %s", err, string(output))
 	}
 
 	// Step 3: Configure locale from region
-	// Uncomment locale in locale.gen
+	// Uncomment locale in locale.gen by reading, modifying, and writing back
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Configuring locale: %s", region.Locale)
 	}
-	// Use fixed-string grep replacement to avoid regex metacharacters in locale names (e.g. ".")
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		fmt.Sprintf("sed -i 's/^#%s/%s/' %s/etc/locale.gen", regexp.QuoteMeta(region.Locale), region.Locale, shared.MountRoot))
-	output, err = cmd.CombinedOutput()
+	localeGenPath := shared.MountRoot + "/etc/locale.gen"
+	cmd = exec.Command("sudo", helper, HelperCmdReadFile, localeGenPath)
+	output, err = cmd.Output()
 	if err != nil {
-		return fmt.Errorf("failed to configure locale: %w: %s", err, string(output))
+		return fmt.Errorf("failed to read locale.gen: %w", err)
+	}
+	localeGenContent := string(output)
+	// Use fixed-string replacement to avoid regex metacharacters in locale names (e.g. ".")
+	localeGenContent = strings.Replace(localeGenContent,
+		"#"+region.Locale, region.Locale,
+		1)
+	if err := writeFile(ctx, "/etc/locale.gen", localeGenContent); err != nil {
+		return err
 	}
 
 	// Generate locale
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Generating locale")
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot, "locale-gen")
+	cmd = exec.Command("sudo", helper, HelperCmdRunLocaleGen)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
@@ -79,35 +79,26 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Write locale.conf
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'LANG=%s' > %s/etc/locale.conf", region.Locale, shared.MountRoot))
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to write locale.conf: %w: %s", err, string(output))
+	if err := writeFile(ctx, "/etc/locale.conf", "LANG="+region.Locale+"\n"); err != nil {
+		return err
 	}
 
 	// Step 4: Set console keymap from region
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting console keymap to %s", region.Keymap)
 	}
 	// Write KEYMAP line
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'KEYMAP=%s' > %s/etc/vconsole.conf", region.Keymap, shared.MountRoot))
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to set keymap: %w: %s", err, string(output))
+	if err := writeFile(ctx, "/etc/vconsole.conf", "KEYMAP="+region.Keymap+"\n"); err != nil {
+		return err
 	}
-	// Write FONT line
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("echo 'FONT=ter-132n' >> %s/etc/vconsole.conf", shared.MountRoot))
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to set font: %w: %s", err, string(output))
+	// Append FONT line
+	if err := appendFile(ctx, "/etc/vconsole.conf", "FONT=ter-132n\n"); err != nil {
+		return err
 	}
 
 	// Step 5: Enable NTP via systemd-timesyncd
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Enabling NTP")
 	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot,
-		"systemctl", "enable", "systemd-timesyncd")
+	cmd = exec.Command("sudo", helper, HelperCmdEnableService, "systemd-timesyncd")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to enable NTP: %w: %s", err, string(output))
@@ -115,7 +106,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 
 	// Step 6: Copy mirror list for region
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Copying mirror list for region %s", region.Code)
 	}
 	if err := copyMirrorList(ctx, region.Code); err != nil {
 		return err

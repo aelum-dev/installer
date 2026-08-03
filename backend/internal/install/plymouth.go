@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // ConfigurePlymouth sets up Plymouth BGRT theme for silent boot in the installed system.
@@ -23,7 +25,6 @@ func ConfigurePlymouth(ctx *InstallContext) error {
 
 	// Step 1: Write /etc/plymouth/plymouthd.conf
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Configuring Plymouth BGRT theme")
 	}
 	plymouthdConf := `[Daemon]
 Theme=bgrt
@@ -36,7 +37,6 @@ UseFirmwareBackground=true
 
 	// Step 2: Add plymouth to mkinitcpio HOOKS
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Adding plymouth to mkinitcpio hooks")
 	}
 	if err := addPlymouthToMkinitcpio(ctx); err != nil {
 		return err
@@ -44,7 +44,6 @@ UseFirmwareBackground=true
 
 	// Step 3: Set BGRT theme and regenerate initramfs
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Setting Plymouth BGRT theme and rebuilding initramfs")
 	}
 	output, err := runChroot(ctx, "plymouth-set-default-theme", "-R", "bgrt")
 	if err != nil {
@@ -53,7 +52,6 @@ UseFirmwareBackground=true
 
 	// Step 4: Enable plymouth-wait-for-animation.service (for fast boots)
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Enabling plymouth-wait-for-animation service")
 	}
 	output, err = runChroot(ctx, "systemctl", "enable", "plymouth-wait-for-animation.service")
 	if err != nil {
@@ -66,7 +64,6 @@ UseFirmwareBackground=true
 	// Step 5: Create .hushlogin for the user
 	if ctx.Username != "" {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("Creating .hushlogin for user '%s'", ctx.Username)
 		}
 		if err := createHushlogin(ctx, ctx.Username); err != nil {
 			// Non-fatal — .hushlogin is nice-to-have
@@ -85,7 +82,7 @@ UseFirmwareBackground=true
 func addPlymouthToMkinitcpio(ctx *InstallContext) error {
 	// Read the current mkinitcpio config
 	configPath := "/etc/mkinitcpio.conf.d/archiso.conf"
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "cat", configPath)
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdReadFile, configPath)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", configPath, err)
@@ -96,7 +93,6 @@ func addPlymouthToMkinitcpio(ctx *InstallContext) error {
 	// Check if plymouth is already in the HOOKS
 	if strings.Contains(currentConfig, "plymouth") {
 		if ctx.Logger != nil {
-			ctx.Logger.Info("plymouth already in mkinitcpio HOOKS")
 		}
 		return nil
 	}
@@ -120,20 +116,19 @@ func addPlymouthToMkinitcpio(ctx *InstallContext) error {
 // createHushlogin creates a .hushlogin file in the user's home directory
 // to suppress the "Last login" message on TTY login.
 func createHushlogin(ctx *InstallContext, username string) error {
-	home := filepath.Join("/home", username)
+	home := shared.MountRoot + filepath.Join("/home", username)
 
 	// Create the file (empty, just needs to exist)
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "touch", filepath.Join(home, ".hushlogin"))
+	cmd := exec.Command("sudo", ctx.Helper, HelperCmdTouch, filepath.Join(home, ".hushlogin"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create .hushlogin: %w: %s", err, string(output))
 	}
 
-	// Set correct ownership
-	cmd = exec.Command("sudo", ctx.Helper, HelperCmdRun, "chown", username+":"+username, filepath.Join(home, ".hushlogin"))
-	output, err = cmd.CombinedOutput()
+	// Set correct ownership (must run inside chroot since user may not exist on host)
+	_, err = runChroot(ctx, "chown", username+":"+username, filepath.Join("/home", username, ".hushlogin"))
 	if err != nil {
-		return fmt.Errorf("failed to set .hushlogin ownership: %w: %s", err, string(output))
+		return fmt.Errorf("failed to set .hushlogin ownership: %w", err)
 	}
 
 	return nil
