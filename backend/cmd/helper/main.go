@@ -173,6 +173,8 @@ var runWhitelist = map[string]bool{
 	"fallocate": true,
 	// Partitioning
 	"sgdisk": true,
+	"wipefs": true,
+	"partprobe": true,
 	// Swap
 	"mkswap":  true,
 	"swapon":  true,

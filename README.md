@@ -110,6 +110,9 @@ sudo ./build/bin/aestheticos-installer-cli --install /dev/vda --filesystem btrfs
 # Dry run (simulate, no changes)
 sudo ./build/bin/aestheticos-installer-cli --install /dev/vda --dry-run
 
+# Rollback a partial installation (cleans up mounts + wipes partition signatures)
+sudo ./build/bin/aestheticos-installer-cli --rollback /dev/vda
+
 # Single step
 sudo ./build/bin/aestheticos-installer-cli --format-disk /dev/vda
 sudo ./build/bin/aestheticos-installer-cli --install-bootloader /dev/vda
@@ -120,6 +123,8 @@ sudo ./build/bin/aestheticos-installer-cli --install-bootloader /dev/vda
 | Variable | Purpose |
 |----------|---------|
 | `AESTHETIC_DRY_RUN=1` | Simulate installation (steps sleep 200ms instead of executing) |
+| `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
+| `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
 | `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
 
 ## Installation Steps
@@ -140,6 +145,17 @@ The installer runs 12 steps sequentially:
 | 10 | Configure greetd | Write config, create greeter user, sync DMS greeter |
 | 11 | Configure Plymouth | BGRT theme, mkinitcpio hook, `.hushlogin` |
 | 12 | Enable Services | NetworkManager, greetd, bluetooth |
+
+## Idempotency & Rollback
+
+The installer is **idempotent** — if it fails mid-install, running it again will clean up and start fresh:
+
+- Mounts are automatically torn down on any failure
+- The `--rollback` flag manually cleans up a partial installation:
+  ```bash
+  sudo ./aestheticos-installer-cli --rollback /dev/vda
+  ```
+  This unmounts everything under `/mnt`, wipes filesystem signatures from both partitions, and re-probes the partition table. The disk is then ready for a fresh install.
 
 ## Security Design
 

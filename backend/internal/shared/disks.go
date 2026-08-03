@@ -372,3 +372,13 @@ func fakePartitions(diskPath string) []PartitionDetail {
 		return []PartitionDetail{}
 	}
 }
+
+// DerivePartitionPath returns the device path for partition num on diskID.
+// NVMe devices use the spN convention (e.g. /dev/nvme0n1p1), everything else
+// uses dN (e.g. /dev/sda1).
+func DerivePartitionPath(diskID string, num int) string {
+	if strings.HasPrefix(diskID, "/dev/nvme") {
+		return fmt.Sprintf("%sp%d", diskID, num)
+	}
+	return fmt.Sprintf("%s%d", diskID, num)
+}

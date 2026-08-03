@@ -47,6 +47,7 @@ func main() {
 	enableServicesFlag := flag.String("enable-services", "", "Disk to enable services on")
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
+	rollback := flag.Bool("rollback", false, "Clean up a partial installation and wipe partition signatures")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
 	passwordFlag := flag.String("password", "", "User password (required)")
 	flag.Parse()
@@ -80,6 +81,25 @@ func main() {
 
 	if *dryRun {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
+	}
+
+	if *rollback {
+		fmt.Printf("Rolling back %s...\n", disk)
+		helper := core.FindHelper()
+		if helper == "" {
+			fmt.Fprintf(os.Stderr, "Error: aestheticos-helper not found\n")
+			os.Exit(1)
+		}
+		installer := core.NewInstaller(
+			disk, helper, shared.DefaultCLIUsername, "", shared.DefaultHostname,
+			shared.GetRegion(shared.DefaultLanguageCode), *fileSystemFlag, false,
+		)
+		if err := installer.Rollback(); err != nil {
+			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s %v\n", "\033[31m", "\033[0m", err)
+			os.Exit(1)
+		}
+		fmt.Printf("\n%s✓%s Rollback complete. %s is ready for a fresh install.\n", "\033[32m", "\033[0m", disk)
+		return
 	}
 
 	helper := core.FindHelper()
@@ -176,6 +196,7 @@ func resolveDiskAndStep(args ...string) (disk string, stepName string) {
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                       Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                        Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                   Mount partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                     Install base system\n", os.Args[0])
@@ -189,5 +210,6 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --rollback /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install-bootloader /dev/vda\n", os.Args[0])
 }

@@ -234,10 +234,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 }
 
 func derivePartitionPath(diskID string, num int) string {
-	if strings.HasPrefix(diskID, "/dev/nvme") {
-		return fmt.Sprintf("%sp%d", diskID, num)
-	}
-	return fmt.Sprintf("%s%d", diskID, num)
+	return shared.DerivePartitionPath(diskID, num)
 }
 
 func findPartitionsByFstype(parts []shared.PartitionEntry) (*shared.PartitionEntry, *shared.PartitionEntry) {

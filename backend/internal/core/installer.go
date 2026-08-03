@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -57,6 +58,7 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 
 // Install runs the full installation process.
 // Returns nil on success, error on failure.
+// On failure, cleans up any mounted filesystems so the installer can be retried.
 func (inst *Installer) Install() error {
 	if inst.diskID == "" {
 		return fmt.Errorf("disk ID is required")
@@ -68,6 +70,9 @@ func (inst *Installer) Install() error {
 	// Clear previous log
 	logPath := shared.GetLogPath()
 	os.WriteFile(logPath, nil, shared.LogFileMode)
+
+	// Ensure mounts are cleaned up on any failure so the installer is retryable.
+	defer install.CleanupMounts(inst.helperPath)
 
 	ctx := inst.context()
 
@@ -321,6 +326,45 @@ func (i *Installer) logError(format string, args ...interface{}) {
 func simulateStep() error {
 	time.Sleep(time.Duration(install.SimulateStepSleepDuration) * time.Millisecond)
 	return nil
+}
+
+// Rollback cleans up a partial or failed installation:
+// unmounts everything under /mnt, turns off swap, and wipes filesystem
+// signatures from the target disk partitions. After rollback the disk is
+// ready for a fresh installation.
+func (inst *Installer) Rollback() error {
+	if inst.diskID == "" {
+		return fmt.Errorf("disk ID is required")
+	}
+
+	inst.logInfo("Rolling back: cleaning up %s", inst.diskID)
+
+	// Clean up any mounted filesystems.
+	install.CleanupMounts(inst.helperPath)
+
+	// Wipe filesystem signatures from both partitions so the disk is clean.
+	for i := 1; i <= 2; i++ {
+		partPath := shared.DerivePartitionPath(inst.diskID, i)
+		inst.logInfo("Wiping signatures on %s", partPath)
+		cmd := inst.run("wipefs", "--all", "-f", partPath)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			inst.logError("Failed to wipe %s: %v (%s)", partPath, err, string(out))
+		}
+	}
+
+	// Reprobe partition table.
+	cmd := inst.run("partprobe", inst.diskID)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		inst.logError("partprobe failed: %v (%s)", err, string(out))
+	}
+
+	inst.logInfo("Rollback complete: %s is ready for a fresh install", inst.diskID)
+	return nil
+}
+
+// run executes a privileged command via the helper binary.
+func (inst *Installer) run(args ...string) *exec.Cmd {
+	return exec.Command("sudo", append([]string{inst.helperPath}, args...)...)
 }
 
 // FindHelper finds the aestheticos-helper binary.
