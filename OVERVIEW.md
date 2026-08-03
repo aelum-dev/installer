@@ -19,6 +19,7 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 | **Desktop** | Hyprland + DankMaterialShell (based on Quickshell) + DMS Greeter (greetd) |
 | **Bootloader** | systemd-boot (bootctl) |
 | **Filesystems** | ext4 or btrfs (with subvolumes) |
+| **Boot Splash** | Plymouth BGRT (silent boot with firmware background) |
 
 ---
 
@@ -35,8 +36,9 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 │  • User Account      │    • Validation (delegate)         │
 │  • Disk Selection    │    • Navigation                    │
 │  • Confirmation      │    • Root check                    │
-│  • Installation      │                                    │
-│  • Finish            │  Core Layer (core/)                │
+│  • Installation      │    • Installation orchestration    │
+│  • Finish            │                                    │
+│                      │  Core Layer (core/)                │
 │                      │    • Installer (orchestrator)      │
 │                      │    • RootCheck                     │
 │                      │                                    │
@@ -44,8 +46,14 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 │                      │    • format, mount, fstab          │
 │                      │    • install_base, install_desktop │
 │                      │    • bootloader, users, system     │
-│                      │    • greetd, services, swap        │
+│                      │    • greetd, plymouth, services    │
+│                      │    • swap, copy (ISO files)        │
 │                      │    • cleanup                       │
+│                      │    • command (chroot/write helpers)│
+│                      │    • config (constants)            │
+│                      │    • context (InstallContext)      │
+│                      │    • checks (validation helpers)   │
+│                      │    • logging (async logger)        │
 │                      │                                    │
 │                      │  Shared Layer (shared/)            │
 │                      │    • types, config, validators     │
@@ -59,11 +67,15 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
               │ (sudo-privileged)     │
               │ • parted, format      │
               │ • mount, umount       │
-              │ • run (arbitrary cmd) │
+              │ • chroot-run (whitelist)│
+              │ • write/append/read-file│
               │ • bootctl-install     │
               │ • btrfs subvol cmds   │
-              │ • passwd, useradd     │
+              │ • run-useradd/chpasswd│
+              │ • run-locale-gen, etc │
+              │ • query-blkid/findmnt │
               │ • reboot              │
+              │ • 60+ dedicated cmds  │
               └───────────────────────┘
 ```
 
@@ -77,7 +89,7 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 
 ---
 
-## Installation Steps (11 total)
+## Installation Steps (12 total)
 
 The `Installer.Install()` method runs these steps sequentially:
 
@@ -85,15 +97,23 @@ The `Installer.Install()` method runs these steps sequentially:
 |---|------|----------|-------------|
 | 1 | Format Disk | `FormatDisk` | Partitions (GPT: EFI 128MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
 | 2 | Mount Filesystem | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, ESP to `/mnt/boot` |
-| 3 | Install Base | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
-| 4 | Install Desktop | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. |
-| 5 | Create Swap | `CreateSwap` | 4GB swap file (btrfs: inside `@swap` subvolume; ext4: fallocate/dd) |
+| 3 | Create Swap | `CreateSwap` | 4GB swap file (btrfs: inside `@swap` subvolume; ext4: fallocate/dd) |
+| 4 | Install Base | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
+| 5 | Install Desktop | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. |
 | 6 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes) |
 | 7 | Configure Bootloader | `ConfigureBootloader` | systemd-boot install, boot entry, random seed |
-| 8 | Setup Users | `SetupUsers` | Creates user (wheel group), sets passwords, sudoers |
+| 8 | Setup Users | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
 | 9 | Configure System | `ConfigureSystem` | Hostname, timezone, locale, keymap, mirrorlist |
-| 10 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user |
-| 11 | Enable Services | `EnableServices` | Enables NetworkManager, greetd |
+| 10 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
+| 11 | Configure Plymouth | `ConfigurePlymouth` | BGRT theme, mkinitcpio hook, `.hushlogin` |
+| 12 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
+
+### Progress Tracking
+
+The two pacstrap steps (base + desktop) together account for ~80% of total installation time. Progress is tracked via:
+- **Line-count-based pacstrap tracker**: parses actual pacstrap output lines (downloading, verifying, installing, hooks) for smooth, accurate progress
+- **Weighted step percentages**: base pacstrap (45), desktop pacstrap (35), remaining steps (20 combined)
+- **Tick goroutine**: advances percentage during long steps to keep the UI feeling alive
 
 ---
 
@@ -112,23 +132,37 @@ Welcome (language select)
 
 | File | Purpose |
 |------|---------|
-| `src/App.svelte` | Root component, page routing, navigation events |
+| `src/App.svelte` | Root component, page routing, navigation events, start page support |
 | `src/lib/state.svelte.ts` | Svelte stores for user account, disk selection, page state |
 | `src/lib/types.ts` | TypeScript interfaces, page IDs, constants |
 | `src/lib/navigation.ts` | Frontend validation calls to Go backend |
 | `src/lib/validate.ts` | Client-side form validation |
 | `src/pages/*.svelte` | 6 wizard pages |
-| `src/components/*.svelte` | Reusable components (Button, Dropdown, PageLayout, etc.) |
+| `src/components/*.svelte` | Reusable components (Button, Dropdown, PageLayout, ConfirmDialog, ErrorBanner, etc.) |
 
 ---
 
 ## Key Design Decisions
 
 ### Helper Binary Pattern
-All privileged operations go through `aestheticos-helper`, invoked via `sudo`. This avoids giving the entire Wails app root access — only specific commands are allowed via sudoers.
+All privileged operations go through `aestheticos-helper`, invoked via `sudo`. This avoids giving the entire Wails app root access — only specific commands are allowed via sudoers. The helper has **60+ dedicated commands** organized into categories:
+- **Chroot commands**: `chroot-run` (whitelisted), `enable-service`, `run-locale-gen`, `run-dconf-update`, `run-useradd`, `run-chpasswd`, `run-plymouth-set-theme`, `run-mkinitcpio`
+- **Target filesystem ops**: `write-file`, `append-file`, `read-file`, `set-symlink`, `chmod`, `chown`, `touch`, `mkdir`
+- **Host-level queries**: `query-blkid`, `query-findmnt`, `query-ls`, `query-test`, `query-find`
+- **Bootctl commands**: `bootctl-install`, `bootctl-cleanup`, `bootctl-random-seed`, `bootctl-set-default`, `bootctl-is-installed`, `bootctl-status`
+- **Partition/format**: `parted`, `format`, `mount`, `umount`, `sgdisk`, `wipefs`, `mkswap`, `swapon`, `chattr`, `btrfs-mkswapfile`
+- **Other**: `reboot`, `btrfs-subvol-create`, `btrfs-subvol-set-default`, `btrfs-set-compression`, `cp`, `dd`, `fallocate`, `rmdir`, `swapoff`, `udev-settle`
 
 ### Chroot via arch-chroot
-System configuration inside the installed system uses `arch-chroot /mnt` through the helper's `run` command. This handles `/proc`, `/sys`, `/dev` mounting automatically.
+System configuration inside the installed system uses `arch-chroot /mnt` through the helper's `chroot-run` command (whitelisted commands only). This handles `/proc`, `/sys`, `/dev` mounting automatically.
+
+### ISO File Copying
+Static files from the live ISO are copied to the installed system during `SetupUsers`:
+- `/etc/skel/` → user home directory
+- `/etc/dconf/profile/user` and `01-icons`
+- DMS wallpaper
+- `/etc/environment`
+- `/etc/greetd/hypr.lua`
 
 ### Dry Run Mode
 Set `AESTHETIC_DRY_RUN=1` environment variable to simulate installation (steps sleep 200ms instead of executing). Useful for UI testing.
@@ -136,8 +170,11 @@ Set `AESTHETIC_DRY_RUN=1` environment variable to simulate installation (steps s
 ### Fake Disks
 Set `FAKE_DISKS=1` to get synthetic disk data for frontend development without real hardware.
 
+### Start Page
+The installer supports starting on any page via the `StartPage` constant in `main.go` (0=Welcome, 1=User Account, etc.). Set to `-1` for default Welcome page. The GUI exposes `GetStartPage()` and `SetStartPage()` Wails bindings.
+
 ### btrfs Subvolumes
-When btrfs is selected, 7 subvolumes are created: `@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap`. Each has configurable compression (zstd) and mount options. `@` is set as default.
+When btrfs is selected, 7 subvolumes are created: `@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap`. Each has configurable compression (zstd) and mount options. `@` is set as default. `@cache`, `@tmp`, `@swap` use `nodatacow` to avoid CoW overhead.
 
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:
@@ -165,7 +202,7 @@ Region-specific mirrorlists are embedded in the binary. A `mirrorlist_gen.go` sc
 ```
 
 This runs:
-1. Mirrorlist refresh
+1. Mirrorlist refresh (`mirrorlist_gen.go`)
 2. Frontend `npm install` + `npm run build`
 3. `wails build -clean -tags webkit2_41` (GUI binary)
 4. `go build` for helper and CLI binaries
@@ -186,17 +223,18 @@ go test ./...          # Run all Go tests
 
 ```
 AestheticOS-Installer/
-├── main.go                      # Wails app entry point
+├── main.go                      # Wails app entry point (StartPage support)
 ├── wails.json                   # Wails config
 ├── build.sh / run.sh            # Build & dev scripts
 ├── RULES.md                     # Development rules
+├── REFACTOR.md                  # Helper refactor plan (completed)
 ├── backend/
 │   ├── cmd/
-│   │   ├── helper/main.go       # Privileged helper (22 commands)
+│   │   ├── helper/main.go       # Privileged helper (60+ commands)
 │   │   └── installer-cli/main.go # CLI installer
 │   ├── gui/
-│   │   ├── app.go               # Wails app struct, reboot
-│   │   ├── bindings.go          # Wails API bindings
+│   │   ├── app.go               # Wails app struct, reboot, start page
+│   │   ├── bindings.go          # Wails API bindings (disks, languages, fs)
 │   │   ├── installation.go      # StartInstallation orchestration
 │   │   ├── navigation.go        # Page IDs, navigation state
 │   │   ├── root_check.go        # Sudo verification
@@ -213,15 +251,18 @@ AestheticOS-Installer/
 │       │   ├── mount.go         # Mount filesystem + verification
 │       │   ├── install_base.go  # pacstrap base packages
 │       │   ├── install_desktop.go # pacstrap desktop packages
+│       │   ├── install.go       # Pacstrap progress tracking
 │       │   ├── fstab.go         # fstab generation + verification
 │       │   ├── bootloader.go    # systemd-boot install + boot entries
-│       │   ├── users.go         # User account creation
+│       │   ├── users.go         # User account creation + ISO copy
 │       │   ├── system.go        # Hostname, locale, timezone, mirrors
-│       │   ├── greetd.go        # Login manager config
+│       │   ├── greetd.go        # Login manager config + DMS sync
+│       │   ├── plymouth.go      # Silent boot (BGRT theme)
 │       │   ├── services.go      # systemd service enabling
 │       │   ├── swap.go          # Swap file creation
+│       │   ├── copy.go          # ISO-to-target file copying
 │       │   ├── cleanup.go       # Mount cleanup
-│       │   ├── command.go       # chroot + writeFile helpers
+│       │   ├── command.go       # chroot + writeFile/appendFile helpers
 │       │   ├── config.go        # All install constants
 │       │   ├── context.go       # InstallContext + Logger interface
 │       │   ├── checks.go        # Validation helpers
@@ -265,3 +306,4 @@ The installed system includes:
 - **Audio**: PipeWire + WirePlumber
 - **Utilities**: btop, fastfetch, brightnessctl, ddcutil, cava, matugen
 - **Fonts**: Noto (including CJK + Emoji) + Terminus
+- **Boot Splash**: Plymouth BGRT (uses firmware background image for silent boot)
