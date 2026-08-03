@@ -33,14 +33,10 @@ func GenerateFstab(ctx *InstallContext) error {
 
 	// For btrfs, write custom fstab with subvolume entries
 	if ctx.FileSystem == shared.FileSystemBtrfs {
-		if ctx.Logger != nil {
-		}
 		return writeBtrfsFstab(ctx)
 	}
 
 	// Standard fstab generation for ext4 and other filesystems
-	if ctx.Logger != nil {
-	}
 
 	// Write fstab manually (genfstab requires chroot, which we don't have here)
 	// Determine root filesystem type from partition
@@ -110,8 +106,6 @@ func writeBtrfsFstab(ctx *InstallContext) error {
 // verifyFstab reads /mnt/etc/fstab and verifies it contains the expected UUIDs.
 // Returns an error if the fstab is empty or missing required entries.
 func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
-	if ctx.Logger != nil {
-	}
 
 	// Validate UUIDs are not empty before checking
 	if rootUUID == "" {
@@ -148,8 +142,6 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 		return fmt.Errorf("fstab missing / mount point")
 	}
 
-	if ctx.Logger != nil {
-	}
 
 	return nil
 }

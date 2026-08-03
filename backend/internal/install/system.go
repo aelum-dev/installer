@@ -28,15 +28,11 @@ func ConfigureSystem(ctx *InstallContext) error {
 	if ctx.Hostname == "" {
 		return fmt.Errorf("hostname not set")
 	}
-	if ctx.Logger != nil {
-	}
 	if err := writeFile(ctx, "/etc/hostname", ctx.Hostname+"\n"); err != nil {
 		return err
 	}
 
 	// Step 2: Set timezone from region
-	if ctx.Logger != nil {
-	}
 	cmd := ctx.run(HelperCmdSetSymlink,
 		fmt.Sprintf("/usr/share/zoneinfo/%s", region.Timezone),
 		shared.MountRoot+"/etc/localtime")
@@ -47,8 +43,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 
 	// Step 3: Configure locale from region
 	// Uncomment locale in locale.gen by reading, modifying, and writing back
-	if ctx.Logger != nil {
-	}
 	localeGenPath := shared.MountRoot + "/etc/locale.gen"
 	cmd = ctx.run(HelperCmdReadFile, localeGenPath)
 	output, err = cmd.Output()
@@ -65,8 +59,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Generate locale
-	if ctx.Logger != nil {
-	}
 	output, err = runChroot(ctx, "locale-gen")
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
@@ -81,8 +73,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Step 4: Set console keymap from region
-	if ctx.Logger != nil {
-	}
 	// Write KEYMAP line
 	if err := writeFile(ctx, "/etc/vconsole.conf", "KEYMAP="+region.Keymap+"\n"); err != nil {
 		return err
@@ -93,16 +83,12 @@ func ConfigureSystem(ctx *InstallContext) error {
 	}
 
 	// Step 5: Enable NTP via systemd-timesyncd
-	if ctx.Logger != nil {
-	}
 	output, err = runChroot(ctx, "systemctl", "enable", "systemd-timesyncd")
 	if err != nil {
 		return fmt.Errorf("failed to enable NTP: %w: %s", err, string(output))
 	}
 
 	// Step 6: Copy mirror list for region
-	if ctx.Logger != nil {
-	}
 	if err := copyMirrorList(ctx, region.Code); err != nil {
 		return err
 	}

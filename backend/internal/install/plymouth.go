@@ -23,8 +23,6 @@ func ConfigurePlymouth(ctx *InstallContext) error {
 	}
 
 	// Step 1: Write /etc/plymouth/plymouthd.conf
-	if ctx.Logger != nil {
-	}
 	plymouthdConf := `[Daemon]
 Theme=bgrt
 ShowDelay=0
@@ -35,23 +33,17 @@ UseFirmwareBackground=true
 	}
 
 	// Step 2: Add plymouth to mkinitcpio HOOKS
-	if ctx.Logger != nil {
-	}
 	if err := addPlymouthToMkinitcpio(ctx); err != nil {
 		return err
 	}
 
 	// Step 3: Set BGRT theme and regenerate initramfs
-	if ctx.Logger != nil {
-	}
 	output, err := runChroot(ctx, "plymouth-set-default-theme", "-R", "bgrt")
 	if err != nil {
 		return fmt.Errorf("failed to set Plymouth BGRT theme: %w: %s", err, string(output))
 	}
 
 	// Step 4: Enable plymouth-wait-for-animation.service (for fast boots)
-	if ctx.Logger != nil {
-	}
 	output, err = runChroot(ctx, "systemctl", "enable", "plymouth-wait-for-animation.service")
 	if err != nil {
 		// Non-fatal — animation delay is optional
@@ -62,8 +54,6 @@ UseFirmwareBackground=true
 
 	// Step 5: Create .hushlogin for the user
 	if ctx.Username != "" {
-		if ctx.Logger != nil {
-		}
 		if err := createHushlogin(ctx, ctx.Username); err != nil {
 			// Non-fatal — .hushlogin is nice-to-have
 			if ctx.Logger != nil {
@@ -91,8 +81,6 @@ func addPlymouthToMkinitcpio(ctx *InstallContext) error {
 
 	// Check if plymouth is already in the HOOKS
 	if strings.Contains(currentConfig, "plymouth") {
-		if ctx.Logger != nil {
-		}
 		return nil
 	}
 

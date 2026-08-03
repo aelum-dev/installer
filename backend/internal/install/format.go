@@ -33,8 +33,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		return fmt.Errorf("unsupported filesystem type: %s (supported: ext4, btrfs)", fsType)
 	}
 
-	if ctx.Logger != nil {
-	}
 
 	partitions := []struct {
 		Name       string
@@ -63,8 +61,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	var currentSector int64 = shared.GPTPartitionStartSector
 	for i, p := range partitions {
 		num := i + 1
-		if ctx.Logger != nil {
-		}
 
 		var args []string
 		if p.SizeMB > 0 {
@@ -125,8 +121,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 			return fmt.Errorf("blkid %s: %w", diskPartitions[i].Path, err)
 		}
 		diskPartitions[i].UUID = uuid
-		if ctx.Logger != nil {
-		}
 	}
 
 	efi, root := findPartitionsByFstype(diskPartitions)
@@ -140,8 +134,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		return fmt.Errorf("root partition not found (got %d partitions)", len(diskPartitions))
 	}
 
-	if ctx.Logger != nil {
-	}
 
 	ctx.Partitions = &shared.PartitionInfo{
 		Disk:        diskID,
@@ -169,8 +161,6 @@ func formatPartition(ctx *InstallContext, diskID string, num int, p struct {
 	MountPoint string
 }) error {
 	path := derivePartitionPath(diskID, num)
-	if ctx.Logger != nil {
-	}
 	cmd := ctx.run(HelperCmdFormat, path, p.Fstype)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

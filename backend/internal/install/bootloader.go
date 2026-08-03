@@ -49,8 +49,6 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	}
 
 	// Step 1: Install systemd-boot to the ESP
-	if ctx.Logger != nil {
-	}
 	if err := installSystemdBoot(ctx, esp); err != nil {
 		return err
 	}
@@ -60,34 +58,24 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	if err != nil {
 		return err
 	}
-	if ctx.Logger != nil {
-	}
 
 	// Step 3: Write boot entry configuration
-	if ctx.Logger != nil {
-	}
 	if err := writeBootEntry(ctx, esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.FileSystem); err != nil {
 		return err
 	}
 
 	// Step 4: Set as default boot entry
-	if ctx.Logger != nil {
-	}
 	if err := setDefaultBootEntry(ctx, esp, BootEntryFileName+".conf"); err != nil {
 		return err
 	}
 
 	// Step 5: Clean up orphaned files from the ESP (leftover from previous installations)
-	if ctx.Logger != nil {
-	}
 	if err := cleanupEsp(ctx, esp); err != nil {
 		return err
 	}
 
 	// Step 6: Generate random seed for the new system's entropy pool
 	// This is best-effort — failure is not fatal
-	if ctx.Logger != nil {
-	}
 	if err := generateRandomSeed(ctx, esp); err != nil {
 		if ctx.Logger != nil {
 			ctx.Logger.Error("Warning: random seed generation failed (non-fatal): %v", err)
@@ -95,8 +83,6 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	}
 
 	// Step 7: Verify installation
-	if ctx.Logger != nil {
-	}
 	return verifyBootloaderInstallation(ctx, esp)
 }
 

@@ -23,8 +23,6 @@ func SetupUsers(ctx *InstallContext) error {
 	var output []byte
 	var err error
 
-	if ctx.Logger != nil {
-	}
 
 	// Copy ISO files (skel, dconf, wallpaper, environment, hypr.lua)
 	if err := copyISOFiles(ctx); err != nil {
@@ -32,8 +30,6 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	// Compile dconf database in installed system
-	if ctx.Logger != nil {
-	}
 	cmd = ctx.run(HelperCmdChrootRun, shared.MountRoot, "dconf", "update")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
@@ -55,8 +51,6 @@ func SetupUsers(ctx *InstallContext) error {
 
 	// Set password inside chroot (via stdin to avoid shell interpolation of special chars)
 	if len(ctx.Password) > 0 {
-		if ctx.Logger != nil {
-		}
 		cmd = ctx.run(HelperCmdRunChpasswd, ctx.Username)
 		cmd.Stdin = strings.NewReader(string(ctx.Password) + "\n")
 		output, err = cmd.CombinedOutput()
@@ -72,8 +66,6 @@ func SetupUsers(ctx *InstallContext) error {
 	// Configure sudoers: wheel group requires password for sudo
 	// Write directly to /mnt/etc/sudoers.d/wheel (the mounted installed system),
 	// NOT /etc/sudoers.d/wheel which is on the live ISO.
-	if ctx.Logger != nil {
-	}
 	cmd = ctx.run(HelperCmdRun, "mkdir", "-p", shared.MountRoot+"/etc/sudoers.d")
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create sudoers.d dir: %w", err)

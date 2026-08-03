@@ -50,8 +50,6 @@ func MountFilesystem(ctx *InstallContext) error {
 	if rootSubvol != nil {
 		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd)
 		mountOpts := buildMountOpts(rootSubvol)
-		if ctx.Logger != nil {
-		}
 		cmd := ctx.run("mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -59,8 +57,6 @@ func MountFilesystem(ctx *InstallContext) error {
 		}
 		} else {
 		// Standard mount for ext4 and other filesystems
-		if ctx.Logger != nil {
-		}
 		cmd := ctx.run("mount", p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -93,8 +89,6 @@ func MountFilesystem(ctx *InstallContext) error {
 				}
 			}
 			if sv == nil {
-				if ctx.Logger != nil {
-				}
 				continue
 			}
 
@@ -105,8 +99,6 @@ func MountFilesystem(ctx *InstallContext) error {
 
 			// Mount subvolume with its properties
 			mountOpts := buildMountOpts(sv)
-			if ctx.Logger != nil {
-			}
 			cmd = ctx.run("mount", "-o", mountOpts, p.RootPart, fullPath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
@@ -121,8 +113,6 @@ func MountFilesystem(ctx *InstallContext) error {
 	// ── Mount EFI partition at /mnt/boot ──
 
 	bootMount := BootMountPoint
-	if ctx.Logger != nil {
-	}
 
 	cmd := ctx.run(HelperCmdRun, "mkdir", "-p", bootMount)
 	output, err := cmd.CombinedOutput()
@@ -144,8 +134,6 @@ func MountFilesystem(ctx *InstallContext) error {
 		return err
 	}
 
-	if ctx.Logger != nil {
-	}
 	return nil
 }
 

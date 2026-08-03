@@ -33,8 +33,6 @@ var isoCopies = []copyEntry{
 // It iterates over isoCopies, runs mkdir -p on each destination parent, then cp.
 func copyISOFiles(ctx *InstallContext) error {
 	for _, entry := range isoCopies {
-		if ctx.Logger != nil {
-		}
 
 		// Ensure parent directory exists (idempotent — safe to run unconditionally).
 		parentDir := filepath.Dir(entry.Dest)

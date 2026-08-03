@@ -17,8 +17,6 @@ func CreateSwap(ctx *InstallContext) error {
 		return err
 	}
 
-	if ctx.Logger != nil {
-	}
 
 	var swapFilePath string
 	switch ctx.FileSystem {
@@ -39,8 +37,6 @@ func CreateSwap(ctx *InstallContext) error {
 		return err
 	}
 
-	if ctx.Logger != nil {
-	}
 
 	return nil
 }
@@ -66,18 +62,12 @@ func createBtrfsSwapFile(ctx *InstallContext, path string) error {
 // createExt4SwapFile creates a swap file using fallocate (fast) with dd fallback.
 // Sets 0600 permissions and formats with mkswap (btrfs handles these via mkswapfile).
 func createExt4SwapFile(ctx *InstallContext, path string) error {
-	if ctx.Logger != nil {
-	}
 
 	// Fast path: fallocate
 	cmd := ctx.run(HelperCmdRun, "fallocate", "-l", "4096M", shared.MountRoot+path)
 	if err := cmd.Run(); err == nil {
-		if ctx.Logger != nil {
-		}
 	} else {
 		// Fallback: dd (works on all filesystems)
-		if ctx.Logger != nil {
-		}
 
 		cmd = ctx.run(HelperCmdRun,
 			"if=/dev/zero",
@@ -91,8 +81,6 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 			return fmt.Errorf("failed to create swap file with dd: %w: %s", err, string(output))
 		}
 
-		if ctx.Logger != nil {
-		}
 	}
 
 	// Set permissions (btrfs mkswapfile handles this automatically)
@@ -110,8 +98,6 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 
 // setSwapFilePermissions sets the required permissions on the swap file.
 func setSwapFilePermissions(ctx *InstallContext, path string) error {
-	if ctx.Logger != nil {
-	}
 
 	cmd := ctx.run(HelperCmdRun, "chmod", "0600", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
@@ -124,8 +110,6 @@ func setSwapFilePermissions(ctx *InstallContext, path string) error {
 
 // formatSwap formats the swap file with mkswap.
 func formatSwap(ctx *InstallContext, path string) error {
-	if ctx.Logger != nil {
-	}
 
 	cmd := ctx.run(HelperCmdRun, "mkswap", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
@@ -141,8 +125,6 @@ func formatSwap(ctx *InstallContext, path string) error {
 
 // enableSwap enables the swap file with swapon.
 func enableSwap(ctx *InstallContext, path string) error {
-	if ctx.Logger != nil {
-	}
 
 	cmd := ctx.run(HelperCmdRun, "swapon", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
