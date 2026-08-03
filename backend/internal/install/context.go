@@ -23,7 +23,7 @@ type InstallContext struct {
 	Partitions *shared.PartitionInfo
 	Helper     string
 	Username   string
-	Password   string
+	Password   []byte // zeroed after use; never logged or returned
 	Hostname   string
 	Region     shared.Region
 	FileSystem string // root filesystem: "ext4" or "btrfs"

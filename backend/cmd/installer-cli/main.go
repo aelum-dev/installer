@@ -101,9 +101,9 @@ func main() {
 	installer := core.NewInstaller(
 		disk,
 		helper,
-		shared.DefaultCLIUsername,   // username
+		shared.DefaultCLIUsername,  // username
 		*passwordFlag,              // password (required via --password)
-		shared.DefaultHostname,      // hostname
+		shared.DefaultHostname,     // hostname
 		shared.GetRegion(shared.DefaultLanguageCode), // region (default)
 		*fileSystemFlag,
 		*dryRun,

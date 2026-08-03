@@ -23,7 +23,7 @@ type Installer struct {
 	diskID     string
 	helperPath string
 	username   string
-	password   string
+	password   []byte // zeroed after being copied to InstallContext
 	hostname   string
 	region     shared.Region
 	fileSystem string // root filesystem: "ext4" or "btrfs"
@@ -45,7 +45,7 @@ func NewInstaller(diskID, helperPath, username, password, hostname string, regio
 		diskID:     diskID,
 		helperPath: helperPath,
 		username:   username,
-		password:   password,
+		password:   []byte(password),
 		hostname:   hostname,
 		region:     region,
 		fileSystem: fileSystem,
@@ -266,13 +266,21 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 }
 
 // context creates an InstallContext for this installer.
+// The password is copied to the context and then zeroed from the Installer
+// to minimize the time the plaintext password resides in memory.
 func (i *Installer) context() *install.InstallContext {
+	password := make([]byte, len(i.password))
+	copy(password, i.password)
+	// Zero our copy immediately — the context now owns the only copy.
+	for k := range i.password {
+		i.password[k] = 0
+	}
 	return &install.InstallContext{
 		DiskID:     i.diskID,
 		ESP:        i.esp,
 		Helper:     i.helperPath,
 		Username:   i.username,
-		Password:   i.password,
+		Password:   password,
 		Hostname:   i.hostname,
 		Region:     i.region,
 		FileSystem: i.fileSystem,

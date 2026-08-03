@@ -54,42 +54,18 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	// Set password inside chroot (via stdin to avoid shell interpolation of special chars)
-	if ctx.Password != "" {
+	if len(ctx.Password) > 0 {
 		if ctx.Logger != nil {
 		}
 		cmd = ctx.run(HelperCmdRunChpasswd, ctx.Username)
-		cmd.Stdin = strings.NewReader(ctx.Password + "\n")
+		cmd.Stdin = strings.NewReader(string(ctx.Password) + "\n")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("passwd failed: %w: %s", err, string(output))
 		}
-
-		// Also set root password (same as user password for recovery)
-		// Generate hash on host using openssl, then update /mnt/etc/shadow directly
-		if ctx.Logger != nil {
-		}
-		// Generate SHA-512 hash of password
-		hashCmd := exec.Command("openssl", "passwd", "-6", ctx.Password)
-		hashOutput, err := hashCmd.Output()
-		if err != nil {
-			return fmt.Errorf("failed to generate password hash: %w", err)
-		}
-		hash := strings.TrimSpace(string(hashOutput))
-
-		// Update root entry in /mnt/etc/shadow, preserving remaining fields
-		// (last_change, min_age, max_age, warn_age, inactive, expiry).
-		// Read shadow, replace root hash, write back.
-		shadowPath := shared.MountRoot + "/etc/shadow"
-		cmd = ctx.run(HelperCmdReadFile, shadowPath)
-		shadowOutput, err := cmd.Output()
-		if err != nil {
-			return fmt.Errorf("failed to read shadow: %w", err)
-		}
-		shadowContent := string(shadowOutput)
-		// Replace root's hash field (second field) using | as delimiter since hash contains /
-		shadowContent = strings.Replace(shadowContent, "root:", "root:"+hash+":", 1)
-		if err := writeFile(ctx, "/etc/shadow", shadowContent); err != nil {
-			return fmt.Errorf("failed to set root password: %w", err)
+		// Zero the password from the context after use.
+		for k := range ctx.Password {
+			ctx.Password[k] = 0
 		}
 	}
 

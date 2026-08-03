@@ -56,7 +56,7 @@ func TestInstaller_Context(t *testing.T) {
 		diskID:     "/dev/sda",
 		helperPath: "/usr/bin/helper",
 		username:   "testuser",
-		password:   "testpass",
+		password:   []byte("testpass"),
 		region:     shared.GetRegion("en_US"),
 		esp:        "/mnt/boot",
 	}
