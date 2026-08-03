@@ -369,9 +369,9 @@ func (inst *Installer) run(args ...string) *exec.Cmd {
 
 // FindHelper finds the aestheticos-helper binary.
 func FindHelper() string {
-	// Try /shared first (testing/live ISO)
-	if _, err := os.Stat("/usr/local/bin/aestheticos-installer-helper"); err == nil {
-		return "/usr/local/bin/aestheticos-installer-helper"
+	// Try ISO path first (live ISO has it at /usr/local/bin/)
+	if _, err := os.Stat("/usr/local/bin/aestheticos-helper"); err == nil {
+		return "/usr/local/bin/aestheticos-helper"
 	}
 	// Fallback: next to the main executable
 	exe, err := os.Executable()
