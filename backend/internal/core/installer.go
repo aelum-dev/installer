@@ -172,7 +172,7 @@ var stepDefinitions = []installationStep{
 	{name: "format_disk", label: "Formatting disk", run: install.FormatDisk},
 	{name: "mount_filesystem", label: "Mounting filesystem", run: install.MountFilesystem},
 	{name: "create_swap", label: "Creating swap", run: install.CreateSwap},
-	{name: "install", label: "Installing base system", run: install.Install},
+	{name: "install_base", label: "Installing base system", run: install.Install},
 	{name: "install_desktop", label: "Installing desktop environment", run: install.InstallDesktop},
 	{name: "generate_fstab", label: "Generating fstab", run: install.GenerateFstab},
 	{name: "configure_bootloader", label: "Configuring bootloader", run: install.ConfigureBootloader},

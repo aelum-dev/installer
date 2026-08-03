@@ -14,7 +14,7 @@ func TestInstaller_StepNames(t *testing.T) {
 		"format_disk",
 		"mount_filesystem",
 		"create_swap",
-		"install",
+		"install_base",
 		"install_desktop",
 		"generate_fstab",
 		"configure_bootloader",
@@ -83,7 +83,7 @@ func TestValidStepNames(t *testing.T) {
 	expected := map[string]bool{
 		"format_disk":            false,
 		"mount_filesystem":       false,
-		"install":                false,
+		"install_base":           false,
 		"install_desktop":        false,
 		"create_swap":            false,
 		"generate_fstab":         false,
