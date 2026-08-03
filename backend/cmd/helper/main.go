@@ -532,11 +532,15 @@ func cmdWriteFile(args []string) error {
 		}
 		content = string(buf)
 	}
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("mkdir -p '%s' && cat > '%s'", filepath.Dir(path), path))
-	cmd.Stdin = strings.NewReader(content)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	// Create parent directories
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(path), err)
+	}
+	// Write content directly — no shell involved
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", path, err)
+	}
+	return nil
 }
 
 func cmdAppendFile(args []string) error {
@@ -554,11 +558,20 @@ func cmdAppendFile(args []string) error {
 		}
 		content = string(buf)
 	}
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("mkdir -p '%s' && cat >> '%s'", filepath.Dir(path), path))
-	cmd.Stdin = strings.NewReader(content)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	// Create parent directories if needed
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(path), err)
+	}
+	// Append content directly — no shell involved
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("failed to open %s for appending: %w", path, err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(content); err != nil {
+		return fmt.Errorf("failed to append to %s: %w", path, err)
+	}
+	return nil
 }
 
 func cmdReadFile(args []string) error {
