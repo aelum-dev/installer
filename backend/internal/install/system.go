@@ -67,8 +67,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	// Generate locale
 	if ctx.Logger != nil {
 	}
-	cmd = ctx.run(HelperCmdRunLocaleGen)
-	output, err = cmd.CombinedOutput()
+	output, err = runChroot(ctx, "locale-gen")
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
 	}
@@ -96,8 +95,7 @@ func ConfigureSystem(ctx *InstallContext) error {
 	// Step 5: Enable NTP via systemd-timesyncd
 	if ctx.Logger != nil {
 	}
-	cmd = ctx.run(HelperCmdEnableService, "systemd-timesyncd")
-	output, err = cmd.CombinedOutput()
+	output, err = runChroot(ctx, "systemctl", "enable", "systemd-timesyncd")
 	if err != nil {
 		return fmt.Errorf("failed to enable NTP: %w: %s", err, string(output))
 	}

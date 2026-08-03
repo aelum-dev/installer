@@ -37,58 +37,27 @@ const PartitionLayoutRoot = "Root"
 // HelperCommand names as registered in the aestheticos-helper.
 const (
 	// Chroot commands
-	HelperCmdChrootRun          = "chroot-run"
-	HelperCmdEnableService      = "enable-service"
-	HelperCmdRunLocaleGen       = "run-locale-gen"
-	HelperCmdRunDconfUpdate     = "run-dconf-update"
-	HelperCmdRunUseradd         = "run-useradd"
-	HelperCmdRunChpasswd        = "run-chpasswd"
-	HelperCmdRunPlymouthSetTheme = "run-plymouth-set-theme"
-	HelperCmdRunMkinitcpio      = "run-mkinitcpio"
+	HelperCmdChrootRun   = "chroot-run"
+	HelperCmdRunChpasswd = "run-chpasswd"
 
 	// Target filesystem ops
 	HelperCmdWriteFile  = "write-file"
 	HelperCmdAppendFile = "append-file"
 	HelperCmdReadFile   = "read-file"
 	HelperCmdSetSymlink = "set-symlink"
-	HelperCmdChmod      = "chmod"
-	HelperCmdChown      = "chown"
-	HelperCmdTouch      = "touch"
-	HelperCmdMkdir      = "mkdir"
 
-	// Host-level queries
-	HelperCmdQueryBlkid   = "query-blkid"
-	HelperCmdQueryFindmnt = "query-findmnt"
-	HelperCmdQueryLs      = "query-ls"
-	HelperCmdQueryTest    = "query-test"
+	// Bootctl (consolidated from 6 commands)
+	HelperCmdBootctl = "bootctl"
 
-	// Bootctl commands
-	HelperCmdBootctlInstall      = "bootctl-install"
-	HelperCmdBootctlCleanup      = "bootctl-cleanup"
-	HelperCmdBootctlRandomSeed   = "bootctl-random-seed"
-	HelperCmdBootctlSetDefault   = "bootctl-set-default"
-	HelperCmdBootctlIsInstalled  = "bootctl-is-installed"
-	HelperCmdBootctlStatus       = "bootctl-status"
-
-	// Query commands
-	HelperCmdQueryFind = "query-find"
+	// Generic whitelisted command runner
+	HelperCmdRun = "run"
 
 	// Existing commands
-	HelperCmdReboot                = "reboot"
 	HelperCmdUdevSettle            = "udev-settle"
 	HelperCmdBtrfsSubvolCreate     = "btrfs-subvol-create"
 	HelperCmdBtrfsSubvolSetDefault = "btrfs-subvol-set-default"
 	HelperCmdBtrfsSetCompression   = "btrfs-set-compression"
 	HelperCmdBtrfsMkswapfile       = "btrfs-mkswapfile"
-	HelperCmdMkswap                = "mkswap"
-	HelperCmdSwapon                = "swapon"
-	HelperCmdChattr                = "chattr"
-	HelperCmdSgdisk                = "sgdisk"
-	HelperCmdDd                    = "dd"
-	HelperCmdFallocate             = "fallocate"
-	HelperCmdRmdir                 = "rmdir"
-	HelperCmdSwapoff               = "swapoff"
-	HelperCmdCp                    = "cp"
 	HelperCmdParted                = "parted"
 	HelperCmdFormat                = "format"
 	HelperCmdMount                 = "mount"

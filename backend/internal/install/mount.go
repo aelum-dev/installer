@@ -100,7 +100,7 @@ func MountFilesystem(ctx *InstallContext) error {
 
 			// Create mount point directory
 			fullPath := shared.MountRoot + mountPath
-			cmd := ctx.run(HelperCmdMkdir, fullPath)
+			cmd := ctx.run(HelperCmdRun, "mkdir", "-p", fullPath)
 			cmd.Run()
 
 			// Mount subvolume with its properties
@@ -124,7 +124,7 @@ func MountFilesystem(ctx *InstallContext) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := ctx.run(HelperCmdMkdir, bootMount)
+	cmd := ctx.run(HelperCmdRun, "mkdir", "-p", bootMount)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
@@ -168,7 +168,7 @@ func buildMountOpts(sv *shared.BtrfsSubvolume) string {
 // so we strip the [/subvol] suffix before comparing.
 func verifyMount(ctx *InstallContext, mountpoint, expectedDevice string) error {
 	// Check that the mountpoint is mounted
-	cmd := ctx.run(HelperCmdQueryFindmnt, mountpoint)
+	cmd := ctx.run(HelperCmdRun, "findmnt", "-n", "-o", "SOURCE", mountpoint)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("mount verification failed: %s is not mounted", mountpoint)

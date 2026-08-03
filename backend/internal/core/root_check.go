@@ -53,7 +53,7 @@ func CheckRoot(helperPath string) RootCheckResult {
 	}
 
 	// Test if sudo can run the helper without a password prompt
-	cmd := exec.Command("sudo", "-n", helperPath, "query-test", "-e", helperPath)
+	cmd := exec.Command("sudo", "-n", helperPath, "run", "test", "-e", helperPath)
 	output, err := cmd.CombinedOutput()
 	outputStr := string(output)
 

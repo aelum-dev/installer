@@ -69,58 +69,10 @@ var commands = []HelperCommand{
 		Run:   cmdGenfstab,
 	},
 	{
-		Name:  "bootctl-install",
-		Usage: "bootctl-install <esp> [extra-args...]",
-		Help:  "Install systemd-boot to ESP (extra args like --graceful appended)",
-		Run:   cmdBootctlInstall,
-	},
-	{
-		Name:  "bootctl-cleanup",
-		Usage: "bootctl-cleanup <esp> [extra-args...]",
-		Help:  "Clean up orphaned files from ESP",
-		Run:   cmdBootctlCleanup,
-	},
-	{
-		Name:  "bootctl-random-seed",
-		Usage: "bootctl-random-seed <esp>",
-		Help:  "Generate random seed for entropy pool",
-		Run:   cmdBootctlRandomSeed,
-	},
-	{
-		Name:  "bootctl-set-default",
-		Usage: "bootctl-set-default <entry>",
-		Help:  "Set default boot entry",
-		Run:   cmdBootctlSetDefault,
-	},
-	{
-		Name:  "bootctl-is-installed",
-		Usage: "bootctl-is-installed <esp>",
-		Help:  "Check if systemd-boot is installed",
-		Run:   cmdBootctlIsInstalled,
-	},
-	{
-		Name:  "bootctl-status",
-		Usage: "bootctl-status <esp>",
-		Help:  "Show bootctl status",
-		Run:   cmdBootctlStatus,
-	},
-	{
-		Name:  "query-find",
-		Usage: "query-find <path> [args...]",
-		Help:  "Find files (find <path> [args...])",
-		Run:   cmdQueryFind,
-	},
-	{
-		Name:  "passwd",
-		Usage: "passwd <username>",
-		Help:  "Set user password",
-		Run:   cmdPasswd,
-	},
-	{
-		Name:  "useradd",
-		Usage: "useradd <username>",
-		Help:  "Create a new user",
-		Run:   cmdUseradd,
+		Name:  "bootctl",
+		Usage: "bootctl <subcommand> <esp> [extra-args...]",
+		Help:  "Run bootctl subcommand (install|cleanup|random-seed|set-default|is-installed|status)",
+		Run:   cmdBootctl,
 	},
 	{
 		Name:  "efibootmgr",
@@ -135,46 +87,10 @@ var commands = []HelperCommand{
 		Run:   cmdChrootRun,
 	},
 	{
-		Name:  "enable-service",
-		Usage: "enable-service <service>",
-		Help:  "Enable a systemd service inside /mnt",
-		Run:   cmdEnableService,
-	},
-	{
-		Name:  "run-locale-gen",
-		Usage: "run-locale-gen",
-		Help:  "Run locale-gen inside /mnt",
-		Run:   cmdRunLocaleGen,
-	},
-	{
-		Name:  "run-dconf-update",
-		Usage: "run-dconf-update",
-		Help:  "Run dconf update inside /mnt",
-		Run:   cmdRunDconfUpdate,
-	},
-	{
-		Name:  "run-useradd",
-		Usage: "run-useradd <username>",
-		Help:  "Create a user inside /mnt (useradd -m -G wheel)",
-		Run:   cmdRunUseradd,
-	},
-	{
 		Name:  "run-chpasswd",
 		Usage: "run-chpasswd <username>",
 		Help:  "Set password for user inside /mnt (password via stdin)",
 		Run:   cmdRunChpasswd,
-	},
-	{
-		Name:  "run-plymouth-set-theme",
-		Usage: "run-plymouth-set-theme <theme>",
-		Help:  "Set plymouth theme inside /mnt (e.g., bgrt)",
-		Run:   cmdRunPlymouthSetTheme,
-	},
-	{
-		Name:  "run-mkinitcpio",
-		Usage: "run-mkinitcpio",
-		Help:  "Run mkinitcpio -P inside /mnt",
-		Run:   cmdRunMkinitcpio,
 	},
 	{
 		Name:  "write-file",
@@ -201,60 +117,6 @@ var commands = []HelperCommand{
 		Run:   cmdSetSymlink,
 	},
 	{
-		Name:  "chmod",
-		Usage: "chmod <mode> <path>",
-		Help:  "Change file permissions",
-		Run:   cmdChmod,
-	},
-	{
-		Name:  "chown",
-		Usage: "chown <owner> <path>",
-		Help:  "Change file ownership",
-		Run:   cmdChown,
-	},
-	{
-		Name:  "touch",
-		Usage: "touch <path>",
-		Help:  "Create an empty file or update timestamp",
-		Run:   cmdTouch,
-	},
-	{
-		Name:  "mkdir",
-		Usage: "mkdir <path>",
-		Help:  "Create a directory (mkdir -p)",
-		Run:   cmdMkdir,
-	},
-	{
-		Name:  "query-blkid",
-		Usage: "query-blkid <device>",
-		Help:  "Query blkid for a device (outputs UUID value)",
-		Run:   cmdQueryBlkid,
-	},
-	{
-		Name:  "query-findmnt",
-		Usage: "query-findmnt <mountpoint>",
-		Help:  "Query findmnt for a mountpoint (outputs SOURCE)",
-		Run:   cmdQueryFindmnt,
-	},
-	{
-		Name:  "query-ls",
-		Usage: "query-ls <path>",
-		Help:  "List a directory (ls)",
-		Run:   cmdQueryLs,
-	},
-	{
-		Name:  "query-test",
-		Usage: "query-test <flags> <path>",
-		Help:  "Test a file condition (test <flags> <path>)",
-		Run:   cmdQueryTest,
-	},
-	{
-		Name:  "reboot",
-		Usage: "reboot",
-		Help:  "Reboot the system",
-		Run:   cmdReboot,
-	},
-	{
 		Name:  "btrfs-subvol-create",
 		Usage: "btrfs-subvol-create <mountpoint> <subvol...>",
 		Help:  "Create btrfs subvolumes (e.g., @ and @home)",
@@ -273,71 +135,57 @@ var commands = []HelperCommand{
 		Run:   cmdBtrfsSetCompression,
 	},
 	{
-		Name:  "udev-settle",
-		Usage: "udev-settle",
-		Help:  "Wait for udev to finish processing all events",
-		Run:   cmdUdevSettle,
-	},
-	{
-		Name:  "mkswap",
-		Usage: "mkswap <device-or-file>",
-		Help:  "Create a swap area on a device or file",
-		Run:   cmdMkswap,
-	},
-	{
-		Name:  "swapon",
-		Usage: "swapon <device-or-file>",
-		Help:  "Enable a device or file for swapping",
-		Run:   cmdSwapon,
-	},
-	{
-		Name:  "chattr",
-		Usage: "chattr <flags> <path>",
-		Help:  "Change file attributes (e.g., +C for nodatacow on btrfs)",
-		Run:   cmdChattr,
-	},
-	{
 		Name:  "btrfs-mkswapfile",
 		Usage: "btrfs-mkswapfile <path> <size>",
 		Help:  "Create a btrfs swap file with proper CoW handling (e.g., btrfs-mkswapfile /swapfile 4G)",
 		Run:   cmdBtrfsMkswapfile,
 	},
 	{
-		Name:  "sgdisk",
-		Usage: "sgdisk <args...>",
-		Help:  "Run sgdisk partitioning commands",
-		Run:   cmdSgdisk,
+		Name:  "udev-settle",
+		Usage: "udev-settle",
+		Help:  "Wait for udev to finish processing all events",
+		Run:   cmdUdevSettle,
 	},
 	{
-		Name:  "dd",
-		Usage: "dd <args...>",
-		Help:  "Run dd (copy/convert file)",
-		Run:   cmdDd,
+		Name:  "run",
+		Usage: "run <command> [args...]",
+		Help:  "Run a whitelisted host command (e.g., run blkid /dev/vda1)",
+		Run:   cmdRun,
 	},
-	{
-		Name:  "fallocate",
-		Usage: "fallocate <args...>",
-		Help:  "Run fallocate (preallocate file space)",
-		Run:   cmdFallocate,
-	},
-	{
-		Name:  "rmdir",
-		Usage: "rmdir <path>",
-		Help:  "Remove an empty directory",
-		Run:   cmdRmdir,
-	},
-	{
-		Name:  "swapoff",
-		Usage: "swapoff <args...>",
-		Help:  "Disable a swap device or file",
-		Run:   cmdSwapoff,
-	},
-	{
-		Name:  "cp",
-		Usage: "cp <args...>",
-		Help:  "Copy files (cp [flags] source dest)",
-		Run:   cmdCp,
-	},
+}
+
+// runWhitelist defines the subset of host commands allowed via the generic `run` command.
+var runWhitelist = map[string]bool{
+	// System queries
+	"blkid":   true,
+	"findmnt": true,
+	"ls":      true,
+	"test":    true,
+	"find":    true,
+	// File operations
+	"chmod":    true,
+	"chown":    true,
+	"touch":    true,
+	"mkdir":    true,
+	"rmdir":    true,
+	"cp":       true,
+	"dd":       true,
+	"fallocate": true,
+	// Partitioning
+	"sgdisk": true,
+	// Swap
+	"mkswap":  true,
+	"swapon":  true,
+	"swapoff": true,
+	// System
+	"reboot": true,
+	// Users
+	"passwd":  true,
+	"useradd": true,
+	// Attributes
+	"chattr": true,
+	// Bootloader
+	"bootctl": true,
 }
 
 func main() {
@@ -417,13 +265,10 @@ func cmdFormat(args []string) error {
 	extraArgs := args[2:]
 
 	// Wipe filesystem signatures before formatting
-	// Use -f (force) to bypass "device or resource busy" errors
-	// wipefs also calls BLKRRPART ioctl to notify kernel of changes
 	if err := runCommand("wipefs", "--all", "-f", partition); err != nil {
 		return fmt.Errorf("failed to wipe filesystem signatures: %w", err)
 	}
 
-	// Format based on the fstype argument — trust the caller, don't guess from partition name
 	switch fstype {
 	case "vfat":
 		cmdArgs := []string{"-F", "32", "-n", "EFI"}
@@ -431,13 +276,6 @@ func cmdFormat(args []string) error {
 		cmdArgs = append(cmdArgs, partition)
 		return runCommand("mkfs.fat", cmdArgs...)
 	case "ext4":
-		// mkfs.ext4 checks is_device_in_use() which reads /proc/mounts and
-		// checks fcntl(F_GETLK). On re-install scenarios the kernel may still
-		// have stale mount entries. We work around this by:
-		// 1. First running wipefs --all --force to clear all signatures
-		// 2. Then calling mke2fs with -F (force) which should skip the check
-		// 3. If that fails, we use a direct approach: write a minimal ext4
-		//    superblock via dd, then let tune2fs finalize it
 		cmdArgs := []string{"-F", "-E", "lazy_itable_init=0", "-L", "aestheticos"}
 		cmdArgs = append(cmdArgs, extraArgs...)
 		cmdArgs = append(cmdArgs, partition)
@@ -457,7 +295,6 @@ func cmdMount(args []string) error {
 		return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
 	}
 
-	// Parse and validate arguments
 	var options []string
 	device := ""
 	mountpoint := ""
@@ -487,7 +324,6 @@ func cmdMount(args []string) error {
 		return fmt.Errorf("usage: mount [-o options] <disk> <mountpoint>")
 	}
 
-	// Validate paths
 	if !strings.HasPrefix(device, "/dev/") {
 		return fmt.Errorf("invalid device path: %s", device)
 	}
@@ -495,7 +331,6 @@ func cmdMount(args []string) error {
 		return fmt.Errorf("invalid mountpoint: %s", mountpoint)
 	}
 
-	// Build mount command
 	cmdArgs := []string{"mount"}
 	if len(options) > 0 {
 		cmdArgs = append(cmdArgs, "-o", strings.Join(options, ","))
@@ -509,7 +344,6 @@ func cmdUmount(args []string) error {
 		return fmt.Errorf("usage: umount [-R] <mountpoint>")
 	}
 
-	// Parse flags
 	recursive := false
 	mountpoint := ""
 	for _, arg := range args {
@@ -524,7 +358,6 @@ func cmdUmount(args []string) error {
 		return fmt.Errorf("usage: umount [-R] <mountpoint>")
 	}
 
-	// Build umount arguments: -l (lazy) always, -R (recursive) if requested
 	umountArgs := []string{"-l"}
 	if recursive {
 		umountArgs = append(umountArgs, "-R")
@@ -539,7 +372,6 @@ func cmdMountpoints(args []string) error {
 		return fmt.Errorf("usage: mountpoints <device>")
 	}
 	device := args[0]
-	// Use lsblk to get all mountpoints for the disk and its children
 	cmd := exec.Command("lsblk", "-lnbo", "MOUNTPOINT", device)
 	output, err := cmd.Output()
 	if err != nil {
@@ -560,7 +392,6 @@ func cmdLsblkPartitions(args []string) error {
 		return fmt.Errorf("usage: lsblk-partitions <device>")
 	}
 	device := args[0]
-	// Output: NAME|MOUNTPOINT for each partition
 	cmd := exec.Command("lsblk", "-ln", "-o", "NAME,MOUNTPOINT", device)
 	output, err := cmd.Output()
 	if err != nil {
@@ -572,7 +403,6 @@ func cmdLsblkPartitions(args []string) error {
 		if line == "" || strings.HasPrefix(line, "NAME") {
 			continue
 		}
-		// Parse: NAME     MOUNTPOINT (whitespace-separated, may have trailing -)
 		fields := strings.Fields(line)
 		if len(fields) >= 2 {
 			mountpoint := fields[1]
@@ -589,7 +419,6 @@ func cmdPacstrap(args []string) error {
 		return fmt.Errorf("usage: pacstrap [-K] <mountpoint> <packages...>")
 	}
 	cmdArgs := []string{}
-	// Pass through -K flag if present (copies keyring from live ISO)
 	for _, arg := range args {
 		if arg != "-K" {
 			cmdArgs = append(cmdArgs, arg)
@@ -605,90 +434,28 @@ func cmdGenfstab(args []string) error {
 	return runCommand("genfstab", "-U", args[0])
 }
 
-func cmdBootctlInstall(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-install <esp> [extra-args...]")
+func cmdBootctl(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("usage: bootctl <subcommand> <esp> [extra-args...]")
 	}
-	// Install systemd-boot to the EFI System Partition.
-	// Per bootctl(1): "--esp-path= Path to the EFI System Partition (ESP)."
-	cmdArgs := []string{"install", "--esp-path=" + args[0]}
-	cmdArgs = append(cmdArgs, args[1:]...)
+	subcommand := args[0]
+	esp := args[1]
+
+	validSubcommands := map[string]bool{
+		"install":      true,
+		"cleanup":      true,
+		"random-seed":  true,
+		"set-default":  true,
+		"is-installed": true,
+		"status":       true,
+	}
+	if !validSubcommands[subcommand] {
+		return fmt.Errorf("unknown bootctl subcommand: %s (valid: install, cleanup, random-seed, set-default, is-installed, status)", subcommand)
+	}
+
+	cmdArgs := []string{subcommand, "--esp-path=" + esp}
+	cmdArgs = append(cmdArgs, args[2:]...)
 	return runCommand("bootctl", cmdArgs...)
-}
-
-func cmdBootctlCleanup(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-cleanup <esp> [extra-args...]")
-	}
-	cmdArgs := []string{"cleanup", "--esp-path=" + args[0]}
-	cmdArgs = append(cmdArgs, args[1:]...)
-	return runCommand("bootctl", cmdArgs...)
-}
-
-func cmdBootctlRandomSeed(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-random-seed <esp>")
-	}
-	return runCommand("bootctl", "random-seed", "--esp-path="+args[0])
-}
-
-func cmdBootctlSetDefault(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-set-default <entry>")
-	}
-	return runCommand("bootctl", "set-default", args[0])
-}
-
-func cmdBootctlIsInstalled(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-is-installed <esp>")
-	}
-	return runCommand("bootctl", "is-installed", "--esp-path="+args[0])
-}
-
-func cmdBootctlStatus(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: bootctl-status <esp>")
-	}
-	return runCommand("bootctl", "status", "--esp-path="+args[0])
-}
-
-func cmdPasswd(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: passwd <username>")
-	}
-	return runCommand("passwd", args[0])
-}
-
-func cmdUseradd(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: useradd <username>")
-	}
-	return runCommand("useradd", "-m", "-s", "/bin/bash", args[0])
-}
-
-// chrootRunWhitelist defines the subset of commands allowed inside a chroot.
-var chrootRunWhitelist = map[string]bool{
-	"systemctl":                  true,
-	"locale-gen":                 true,
-	"dconf":                      true,
-	"useradd":                    true,
-	"usermod":                    true,
-	"chpasswd":                   true,
-	"plymouth-set-default-theme": true,
-	"mkinitcpio":                 true,
-	"test":                       true,
-	"id":                         true,
-	"mkdir":                      true,
-	"rm":                         true,
-	"ln":                         true,
-	"chown":                      true,
-	"chgrp":                      true,
-	"chmod":                      true,
-	"setfacl":                    true,
-	"cp":                         true,
-	"systemd-sysusers":           true,
-	"systemd-tmpfiles":           true,
 }
 
 func cmdChrootRun(args []string) error {
@@ -699,11 +466,32 @@ func cmdChrootRun(args []string) error {
 	cmdName := args[1]
 
 	// Whitelist check
+	chrootRunWhitelist := map[string]bool{
+		"systemctl":                  true,
+		"locale-gen":                 true,
+		"dconf":                      true,
+		"useradd":                    true,
+		"usermod":                    true,
+		"chpasswd":                   true,
+		"plymouth-set-default-theme": true,
+		"mkinitcpio":                 true,
+		"test":                       true,
+		"id":                         true,
+		"mkdir":                      true,
+		"rm":                         true,
+		"ln":                         true,
+		"chown":                      true,
+		"chgrp":                      true,
+		"chmod":                      true,
+		"setfacl":                    true,
+		"cp":                         true,
+		"systemd-sysusers":           true,
+		"systemd-tmpfiles":           true,
+	}
 	if !chrootRunWhitelist[cmdName] {
 		return fmt.Errorf("command %q is not allowed in chroot-run (whitelist: %v)", cmdName, chrootRunWhitelist)
 	}
 
-	// Validate chroot path
 	if !strings.HasPrefix(chroot, "/") {
 		return fmt.Errorf("invalid chroot path: %s", chroot)
 	}
@@ -712,56 +500,21 @@ func cmdChrootRun(args []string) error {
 	return runCommand("arch-chroot", cmdArgs...)
 }
 
-func cmdEnableService(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: enable-service <service>")
-	}
-	return cmdChrootRun([]string{"/mnt", "systemctl", "enable", args[0]})
-}
-
-func cmdRunLocaleGen(args []string) error {
-	return cmdChrootRun([]string{"/mnt", "locale-gen"})
-}
-
-func cmdRunDconfUpdate(args []string) error {
-	return cmdChrootRun([]string{"/mnt", "dconf", "update"})
-}
-
-func cmdRunUseradd(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: run-useradd <username>")
-	}
-	return cmdChrootRun([]string{"/mnt", "useradd", "-m", "-G", "wheel", args[0]})
-}
-
 func cmdRunChpasswd(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: run-chpasswd <username>")
 	}
 	username := args[0]
-	// Read password from stdin
 	buf, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("failed to read password from stdin: %w", err)
 	}
 	password := strings.TrimRight(string(buf), "\n")
-	// Pipe "username:password" directly to chpasswd (no bash needed)
 	cmd := exec.Command("arch-chroot", "/mnt", "chpasswd")
 	cmd.Stdin = strings.NewReader(username + ":" + password + "\n")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
-}
-
-func cmdRunPlymouthSetTheme(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: run-plymouth-set-theme <theme>")
-	}
-	return cmdChrootRun([]string{"/mnt", "plymouth-set-default-theme", "-R", args[0]})
-}
-
-func cmdRunMkinitcpio(args []string) error {
-	return cmdChrootRun([]string{"/mnt", "mkinitcpio", "-P"})
 }
 
 func cmdWriteFile(args []string) error {
@@ -822,83 +575,15 @@ func cmdSetSymlink(args []string) error {
 	return runCommand("ln", "-sf", args[0], args[1])
 }
 
-func cmdChmod(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: chmod <mode> <path>")
-	}
-	return runCommand("chmod", args[0], args[1])
-}
-
-func cmdChown(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: chown <owner> <path>")
-	}
-	return runCommand("chown", args[0], args[1])
-}
-
-func cmdTouch(args []string) error {
+func cmdRun(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: touch <path>")
+		return fmt.Errorf("usage: run <command> [args...]")
 	}
-	return runCommand("touch", args[0])
-}
-
-func cmdMkdir(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: mkdir <path>")
+	cmdName := args[0]
+	if !runWhitelist[cmdName] {
+		return fmt.Errorf("command %q is not allowed in run (whitelist: %v)", cmdName, runWhitelist)
 	}
-	return runCommand("mkdir", "-p", args[0])
-}
-
-func cmdQueryBlkid(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: query-blkid <device>")
-	}
-	cmd := exec.Command("blkid", "-s", "UUID", "-o", "value", args[0])
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("blkid %s: %w", args[0], err)
-	}
-	fmt.Print(strings.TrimSpace(string(output)))
-	return nil
-}
-
-func cmdQueryFindmnt(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: query-findmnt <mountpoint>")
-	}
-	cmd := exec.Command("findmnt", "-n", "-o", "SOURCE", args[0])
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("findmnt %s: %w", args[0], err)
-	}
-	fmt.Print(strings.TrimSpace(string(output)))
-	return nil
-}
-
-func cmdQueryLs(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: query-ls <path>")
-	}
-	return runCommand("ls", args...)
-}
-
-func cmdQueryTest(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: query-test <flags> <path>")
-	}
-	return runCommand("test", args[0], args[1])
-}
-
-func cmdQueryFind(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: query-find <path> [args...]")
-	}
-	return runCommand("find", args...)
-}
-
-func cmdReboot(args []string) error {
-	return runCommand("reboot")
+	return runCommand(cmdName, args[1:]...)
 }
 
 func cmdEfibootmgr(args []string) error {
@@ -908,7 +593,6 @@ func cmdEfibootmgr(args []string) error {
 	subcmd := args[0]
 	switch subcmd {
 	case "list":
-		// List all EFI boot entries, output: BOOTNUM|Title
 		cmd := exec.Command("efibootmgr", "-v")
 		output, err := cmd.Output()
 		if err != nil {
@@ -917,17 +601,13 @@ func cmdEfibootmgr(args []string) error {
 		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 		for _, line := range lines {
 			line = strings.TrimSpace(line)
-			// Parse lines like: Boot0009* Linux Boot Manager\t\tPCIms\t\tVEN=...\t\tUUID=...
-			// We want to extract the boot number and title
 			if strings.HasPrefix(line, "Boot") && strings.Contains(line, "*") {
-				// Extract boot number: Boot0009*
 				bootNum := ""
 				title := ""
 				for i, ch := range line {
 					if ch >= '0' && ch <= '9' {
 						bootNum += string(ch)
 					} else if ch == '*' {
-						// Rest is the title (possibly with tabs/spaces)
 						title = strings.ReplaceAll(strings.TrimSpace(line[i+1:]), "\t", " ")
 						break
 					}
@@ -957,15 +637,12 @@ func cmdEfibootmgr(args []string) error {
 
 func cmdBtrfsSubvolCreate(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: btrfs-subvol-create <mountpoint> <subvol1> [subvol2 ...]")
+		return fmt.Errorf("usage: btrfs-subvol-create <mountpoint> <subvol...>")
 	}
 	mountpoint := args[0]
 	subvols := args[1:]
 
 	for _, subvol := range subvols {
-		// Create subvolume (e.g., "@" or "@home")
-		// Using -p (parent reference) for efficiency — mirrors archinstall's approach
-		// This creates the subvolume as a copy of its parent, which is faster
 		cmd := exec.Command("btrfs", "subvolume", "create", "-p", mountpoint+"/"+subvol)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -984,19 +661,14 @@ func cmdBtrfsSubvolSetDefault(args []string) error {
 	mountpoint := args[0]
 	subvol := args[1]
 
-	// Find the subvolume ID by listing and matching the name
 	cmd := exec.Command("btrfs", "subvolume", "list", mountpoint)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to list subvolumes: %w", err)
 	}
 
-	// Parse output to find the subvolume ID
-	// Format: ID 258 gen 12345 top level 5 path @
-	// Use the 'path <name>' suffix for reliable matching
 	var targetID string
 	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		// Match lines ending with "path <subvol>"
 		prefix := "path " + subvol + "\n"
 		if strings.HasSuffix(line+"\n", prefix) {
 			fields := strings.Fields(line)
@@ -1011,7 +683,6 @@ func cmdBtrfsSubvolSetDefault(args []string) error {
 		return fmt.Errorf("subvolume %s not found in %s", subvol, mountpoint)
 	}
 
-	// Set as default subvolume
 	cmd = exec.Command("btrfs", "subvolume", "set-default", targetID, mountpoint)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1028,10 +699,8 @@ func cmdBtrfsSetCompression(args []string) error {
 	}
 	mountpoint := args[0]
 	subvol := args[1]
-	algorithm := args[2] // e.g., "zstd"
+	algorithm := args[2]
 
-	// Set compression property on the subvolume
-	// This persists regardless of mount options
 	cmd := exec.Command("btrfs", "property", "set", mountpoint+"/"+subvol, "compression", algorithm)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1042,81 +711,15 @@ func cmdBtrfsSetCompression(args []string) error {
 	return nil
 }
 
-func cmdUdevSettle(args []string) error {
-	// Wait for udev to finish processing all pending events.
-	// This ensures the kernel has fully registered new partition device nodes
-	// before subsequent operations (like mkfs) try to access them.
-	// This is the standard approach used by archinstall and other installers.
-	return runCommand("udevadm", "settle")
-}
-
-func cmdMkswap(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: mkswap <device-or-file>")
-	}
-	return runCommand("mkswap", args[0])
-}
-
-func cmdSwapon(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: swapon <device-or-file>")
-	}
-	return runCommand("swapon", args[0])
-}
-
-func cmdChattr(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: chattr <flags> <path>")
-	}
-	flags := args[0]
-	path := args[1]
-	return runCommand("chattr", flags, path)
-}
-
 func cmdBtrfsMkswapfile(args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("usage: btrfs-mkswapfile <path> <size>")
 	}
 	path := args[0]
-	size := args[1] // e.g., "4G", "2G", "512M"
+	size := args[1]
 	return runCommand("btrfs", "filesystem", "mkswapfile", "--size", size, path)
 }
 
-func cmdSgdisk(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: sgdisk <args...>")
-	}
-	return runCommand("sgdisk", args...)
-}
-
-func cmdDd(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: dd <args...>")
-	}
-	return runCommand("dd", args...)
-}
-
-func cmdFallocate(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: fallocate <args...>")
-	}
-	return runCommand("fallocate", args...)
-}
-
-func cmdRmdir(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: rmdir <path>")
-	}
-	return runCommand("rmdir", args[0])
-}
-
-func cmdSwapoff(args []string) error {
-	return runCommand("swapoff", args...)
-}
-
-func cmdCp(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: cp <source> <dest>")
-	}
-	return runCommand("cp", args...)
+func cmdUdevSettle(args []string) error {
+	return runCommand("udevadm", "settle")
 }

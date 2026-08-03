@@ -34,14 +34,14 @@ func SetupUsers(ctx *InstallContext) error {
 	// Compile dconf database in installed system
 	if ctx.Logger != nil {
 	}
-	cmd = ctx.run(HelperCmdRunDconfUpdate)
+	cmd = ctx.run(HelperCmdChrootRun, shared.MountRoot, "dconf", "update")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
 	}
 
 	// Create user inside chroot (skip if already exists)
-	cmd = ctx.run(HelperCmdRunUseradd, ctx.Username)
+	cmd = ctx.run(HelperCmdChrootRun, shared.MountRoot, "useradd", "-m", "-G", "wheel", ctx.Username)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		// useradd fails if user already exists — that's ok
@@ -98,14 +98,14 @@ func SetupUsers(ctx *InstallContext) error {
 	// NOT /etc/sudoers.d/wheel which is on the live ISO.
 	if ctx.Logger != nil {
 	}
-	cmd = ctx.run(HelperCmdMkdir, shared.MountRoot+"/etc/sudoers.d")
+	cmd = ctx.run(HelperCmdRun, "mkdir", "-p", shared.MountRoot+"/etc/sudoers.d")
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
 	}
 	if err := writeFile(ctx, "/etc/sudoers.d/wheel", "%wheel ALL=(ALL:ALL) ALL\n"); err != nil {
 		return err
 	}
-	cmd = ctx.run(HelperCmdChmod, "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
+	cmd = ctx.run(HelperCmdRun, "chmod", "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to chmod sudoers: %w: %s", err, string(output))

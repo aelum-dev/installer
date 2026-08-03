@@ -73,7 +73,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 	// Step 4: Set as default boot entry
 	if ctx.Logger != nil {
 	}
-	if err := setDefaultBootEntry(ctx, BootEntryFileName+".conf"); err != nil {
+	if err := setDefaultBootEntry(ctx, esp, BootEntryFileName+".conf"); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 //
 // Uses a custom boot option description so entries can be identified later.
 func installSystemdBoot(ctx *InstallContext, esp string) error {
-	cmd := ctx.run(HelperCmdBootctlInstall, esp,
+	cmd := ctx.run(HelperCmdBootctl, "install", esp,
 		BootctlGracefulFlag,
 		"--efi-boot-option-description="+BootOptionDescription,
 	)
@@ -127,7 +127,7 @@ func installSystemdBoot(ctx *InstallContext, esp string) error {
 // Works regardless of kernel flavor (linux, linux-lts, linux-zen, etc.).
 func discoverKernelFiles(ctx *InstallContext) (kernel, initrd string, err error) {
 	// List files in /mnt/boot/ matching vmlinuz-* using find (no shell glob needed)
-	cmd := ctx.run(HelperCmdQueryFind, BootMountPoint, "-maxdepth", "1", "-name", KernelFilePrefix+"*")
+	cmd := ctx.run(HelperCmdRun, "find", BootMountPoint, "-maxdepth", "1", "-name", KernelFilePrefix+"*")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to list kernel files in %s: %w", BootMountPoint, err)
@@ -146,10 +146,10 @@ func discoverKernelFiles(ctx *InstallContext) (kernel, initrd string, err error)
 	initrd = InitrdFilePrefix + base + InitrdFileExtension
 
 	// Verify initrd exists; if not, try the fallback initrd (initramfs-<base>-fallback.img)
-	cmd = ctx.run(HelperCmdQueryTest, "-f", BootMountPoint+"/"+initrd)
+	cmd = ctx.run(HelperCmdRun, "test", "-f", BootMountPoint+"/"+initrd)
 	if err := cmd.Run(); err != nil {
 		initrdFallback := InitrdFilePrefix + base + "-fallback" + InitrdFileExtension
-		cmd = ctx.run(HelperCmdQueryTest, "-f", BootMountPoint+"/"+initrdFallback)
+		cmd = ctx.run(HelperCmdRun, "test", "-f", BootMountPoint+"/"+initrdFallback)
 		if err := cmd.Run(); err != nil {
 			return "", "", fmt.Errorf("no initrd found in %s for kernel %s (tried %s and %s)", BootMountPoint, kernel, initrd, initrdFallback)
 		}
@@ -174,7 +174,7 @@ func writeBootEntry(ctx *InstallContext, esp, rootUUID, kernel, initrd, fsType s
 	entryPath := esp + "/" + BootLoaderEntriesDir + "/" + BootEntryFileName + ".conf"
 
 	// Create parent directory
-	cmd := ctx.run(HelperCmdMkdir, esp+"/"+BootLoaderEntriesDir)
+	cmd := ctx.run(HelperCmdRun, "mkdir", "-p", esp+"/"+BootLoaderEntriesDir)
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create boot entry dir: %w", err)
 	}
@@ -196,7 +196,7 @@ func writeBootEntry(ctx *InstallContext, esp, rootUUID, kernel, initrd, fsType s
 // Per the bootctl man page: "Removes files from the ESP and XBOOTLDR partitions that
 // belong to the entry token but are not referenced in any boot loader entries."
 func cleanupEsp(ctx *InstallContext, esp string) error {
-	cmd := ctx.run(HelperCmdBootctlCleanup, esp,
+	cmd := ctx.run(HelperCmdBootctl, "cleanup", esp,
 		BootctlGracefulFlag,
 	)
 	output, err := cmd.CombinedOutput()
@@ -211,7 +211,7 @@ func cleanupEsp(ctx *InstallContext, esp string) error {
 // Partition (ESP), for use by the systemd-boot boot loader."
 // The seed is credited to the kernel's entropy pool during early boot.
 func generateRandomSeed(ctx *InstallContext, esp string) error {
-	cmd := ctx.run(HelperCmdBootctlRandomSeed, esp)
+	cmd := ctx.run(HelperCmdBootctl, "random-seed", esp)
 	if err := cmd.Run(); err != nil {
 		// Not fatal — entropy generation is a best-effort improvement
 		fmt.Fprintf(os.Stderr, "Warning: failed to generate random seed: %v\n", err)
@@ -222,8 +222,8 @@ func generateRandomSeed(ctx *InstallContext, esp string) error {
 
 // setDefaultBootEntry sets the default boot entry using bootctl.
 // Per the bootctl man page: "set-default ID — Sets the default boot loader entry."
-func setDefaultBootEntry(ctx *InstallContext, entryID string) error {
-	cmd := ctx.run(HelperCmdBootctlSetDefault, entryID)
+func setDefaultBootEntry(ctx *InstallContext, esp, entryID string) error {
+	cmd := ctx.run(HelperCmdBootctl, "set-default", esp, entryID)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("bootctl set-default failed: %w: %s", err, string(output))
@@ -240,21 +240,21 @@ func verifyBootloaderInstallation(ctx *InstallContext, esp string) error {
 	var info []string
 
 	// Check 1: bootctl is-installed
-	cmd := ctx.run(HelperCmdBootctlIsInstalled, esp)
+	cmd := ctx.run(HelperCmdBootctl, "is-installed", esp)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		issues = append(issues, fmt.Sprintf("bootctl is-installed failed: %s", strings.TrimSpace(string(output))))
 	}
 
 	// Check 2: loader.conf exists
-	cmd = ctx.run(HelperCmdQueryTest, "-f", esp+"/loader/loader.conf")
+	cmd = ctx.run(HelperCmdRun, "test", "-f", esp+"/loader/loader.conf")
 	if err := cmd.Run(); err != nil {
 		issues = append(issues, "loader.conf is MISSING")
 	}
 
 	// Check 3: boot entry file exists
 	entryPath := esp + "/" + BootLoaderEntriesDir + "/" + BootEntryFileName + ".conf"
-	cmd = ctx.run(HelperCmdQueryTest, "-f", entryPath)
+	cmd = ctx.run(HelperCmdRun, "test", "-f", entryPath)
 	if err := cmd.Run(); err != nil {
 		issues = append(issues, "boot entry file is MISSING: "+entryPath)
 	} else {
@@ -267,14 +267,14 @@ func verifyBootloaderInstallation(ctx *InstallContext, esp string) error {
 	}
 
 	// Check 4: loader directory structure
-	cmd = ctx.run(HelperCmdQueryFind, esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
+	cmd = ctx.run(HelperCmdRun, "find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
 	output, err = cmd.Output()
 	if err == nil {
 		info = append(info, "ESP files: "+strings.TrimSpace(string(output)))
 	}
 
 	// Check 5: bootctl status
-	cmd = ctx.run(HelperCmdBootctlStatus, esp)
+	cmd = ctx.run(HelperCmdBootctl, "status", esp)
 	output, err = cmd.CombinedOutput()
 	if err == nil {
 		info = append(info, "bootctl status:\n"+strings.TrimSpace(string(output)))

@@ -15,7 +15,7 @@ func validateMountedSystem(ctx *InstallContext) error {
 	}
 
 	// Check if /mnt is mounted
-	cmd := ctx.run(HelperCmdQueryFindmnt, shared.MountRoot)
+	cmd := ctx.run(HelperCmdRun, "findmnt", "-n", "-o", "SOURCE", shared.MountRoot)
 	output, err := cmd.Output()
 	if err != nil || strings.TrimSpace(string(output)) == "" {
 		return fmt.Errorf("/mnt is not mounted. Run --mount-filesystem <disk> first to mount partitions")

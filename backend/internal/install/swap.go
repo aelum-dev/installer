@@ -70,7 +70,7 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 	}
 
 	// Fast path: fallocate
-	cmd := ctx.run(HelperCmdFallocate, "-l", "4096M", shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdRun, "fallocate", "-l", "4096M", shared.MountRoot+path)
 	if err := cmd.Run(); err == nil {
 		if ctx.Logger != nil {
 		}
@@ -79,7 +79,7 @@ func createExt4SwapFile(ctx *InstallContext, path string) error {
 		if ctx.Logger != nil {
 		}
 
-		cmd = ctx.run(HelperCmdDd,
+		cmd = ctx.run(HelperCmdRun,
 			"if=/dev/zero",
 			"of="+shared.MountRoot+path,
 			"bs=1M",
@@ -113,7 +113,7 @@ func setSwapFilePermissions(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := ctx.run(HelperCmdChmod, "0600", shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdRun, "chmod", "0600", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set swap file permissions: %w: %s", err, string(output))
@@ -127,7 +127,7 @@ func formatSwap(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := ctx.run(HelperCmdMkswap, shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdRun, "mkswap", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to format swap file: %w: %s", err, string(output))
@@ -144,7 +144,7 @@ func enableSwap(ctx *InstallContext, path string) error {
 	if ctx.Logger != nil {
 	}
 
-	cmd := ctx.run(HelperCmdSwapon, shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdRun, "swapon", shared.MountRoot+path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to enable swap file: %w: %s", err, string(output))

@@ -58,7 +58,7 @@ func (a *App) RebootAndClose() error {
 
 	// Use aestheticos-helper to reboot (requires root via sudo)
 	helper := core.FindHelper()
-	cmd := exec.Command("sudo", helper, "reboot")
+	cmd := exec.Command("sudo", helper, "run", "reboot")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to reboot: %w", err)
 	}

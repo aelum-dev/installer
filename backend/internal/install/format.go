@@ -84,7 +84,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		}
 		args = append(args, SgdiskSetNameFlag, fmt.Sprintf("%d:%s", num, p.Name))
 
-		cmd = ctx.run(HelperCmdSgdisk)
+		cmd = ctx.run(HelperCmdRun, "sgdisk")
 		cmd.Args = append(cmd.Args, args...)
 		cmd.Args = append(cmd.Args, diskID)
 		out, err = cmd.CombinedOutput()
@@ -186,7 +186,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	rootPath := derivePartitionPath(diskID, 2)
 	tmp := BtrfsSetupTmpMount
 
-	ctx.run(HelperCmdMkdir, tmp).Run()
+	ctx.run(HelperCmdRun, "mkdir", "-p", tmp).Run()
 	cmd := ctx.run("mount", "-o", fmt.Sprintf("subvolid=%d", BtrfsTopLevelSubvolumeID), rootPath, tmp)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("mount btrfs top-level: %w", err)
@@ -222,7 +222,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		}
 	}
 
-	ctx.run(HelperCmdRmdir, tmp).Run()
+	ctx.run(HelperCmdRun, "rmdir", tmp).Run()
 
 	if ctx.Logger != nil {
 		var summaries []string
@@ -282,7 +282,7 @@ func findPartitionsByIndex(parts []shared.PartitionEntry) (*shared.PartitionEntr
 }
 
 func readPartitionUUID(ctx *InstallContext, partition string) (string, error) {
-	cmd := ctx.run(HelperCmdQueryBlkid, partition)
+	cmd := ctx.run(HelperCmdRun, "blkid", "-s", "UUID", "-o", "value", partition)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("blkid %s: %w", partition, err)

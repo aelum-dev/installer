@@ -118,7 +118,7 @@ func createHushlogin(ctx *InstallContext, username string) error {
 	home := shared.MountRoot + filepath.Join("/home", username)
 
 	// Create the file (empty, just needs to exist)
-	cmd := ctx.run(HelperCmdTouch, filepath.Join(home, ".hushlogin"))
+	cmd := ctx.run(HelperCmdRun, "touch", filepath.Join(home, ".hushlogin"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create .hushlogin: %w: %s", err, string(output))

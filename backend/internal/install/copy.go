@@ -38,13 +38,13 @@ func copyISOFiles(ctx *InstallContext) error {
 
 		// Ensure parent directory exists (idempotent — safe to run unconditionally).
 		parentDir := filepath.Dir(entry.Dest)
-		mkdirCmd := ctx.run(HelperCmdMkdir, parentDir)
+		mkdirCmd := ctx.run(HelperCmdRun, "mkdir", "-p", parentDir)
 		if _, err := mkdirCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("failed to create dir %s: %w", parentDir, err)
 		}
 
 		// Build cp command: cp [flags] source dest
-		cpArgs := append([]string{ctx.Helper, HelperCmdCp}, entry.Flags...)
+		cpArgs := append([]string{ctx.Helper, HelperCmdRun, "cp"}, entry.Flags...)
 		cpArgs = append(cpArgs, entry.Source, entry.Dest)
 		cmd := exec.Command("sudo", cpArgs...)
 		output, err := cmd.CombinedOutput()
