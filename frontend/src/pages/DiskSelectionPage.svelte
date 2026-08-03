@@ -44,7 +44,7 @@
 		partitions = [];
 		try {
 			const parts = await GetDiskPartitions(disk.path);
-			logInfo(`[DiskSelectionPage] Got ${parts?.length ?? 0} partitions:`, JSON.stringify(parts));
+			logInfo(`[DiskSelectionPage] Got ${parts?.length ?? 0} partitions: ${JSON.stringify(parts)}`);
 			partitions = parts ?? [];
 		} catch (err) {
 			logInfo(`[DiskSelectionPage] Failed to load partitions: ${err}`);
