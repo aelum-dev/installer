@@ -1,5 +1,20 @@
 # AestheticOS Installer — Project Overview
 
+## Live ISO vs Installed System
+
+**Never confuse these two. It is the #1 source of bugs.**
+
+| Term | What It Is | Key Paths |
+|------|-----------|-----------|
+| **Live ISO** | Bootable Arch environment running the installer. Read-only rootfs (overlay). | `/etc/sudoers.d/aestheticos` — lets helper run via sudo. Helper binary at `/usr/local/bin/aestheticos-helper`. |
+| **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. ESP at `/mnt/boot/`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
+| **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `/home/power007/Projects/shared` shared with VM. |
+| **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
+
+**Code rule:** If it touches `/mnt/*` or runs via `arch-chroot` → installed system. If it touches `/dev/*` or runs directly → live ISO.
+
+---
+
 ## What It Is
 
 AestheticOS Installer is a **graphical Arch Linux installer** built with [Wails v2](https://wails.io/) (Go backend + Svelte 5 frontend). It provides a step-by-step wizard to install a custom Arch Linux desktop environment ("AestheticOS") onto a target disk.

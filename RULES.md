@@ -21,6 +21,33 @@
 - **Prefer standard tools over custom implementations.** Before writing custom logic for something a well-known tool already handles (e.g., `arch-chroot` instead of manual `/proc` mounting), proactively suggest the standard tool and explain why it's better. Don't just patch within existing patterns — step back and consider if there's a better established approach first.
 - **If stuck, ask.** Don't improvise or guess at solutions. If you're unsure about the right approach, stop and ask the user questions before continuing.
 
+## Live ISO vs Installed System
+
+**This distinction is critical. Never confuse the two.**
+
+| Term | What It Is | Where Code Runs |
+|------|-----------|------------------|
+| **Live ISO** | The bootable Arch Linux environment the user starts from. Contains the installer binaries, helper, and live desktop. | `/etc/sudoers.d/aestheticos` on ISO lets helper run without password. Log file written here. Read-only rootfs (overlay). |
+| **Installed System** | The Arch Linux being written to the target disk. What the user boots into after installation. | `/mnt/` is the mount point during install. `/etc/sudoers.d/wheel` is written here for the new user. `arch-chroot /mnt` runs commands inside it. |
+| **Host** | The developer's main machine (not the VM). | Where `build.sh` runs, where git lives. |
+| **VM** | QEMU VM booting from the ISO. Used for testing. | `/shared` is mounted from host's `/home/power007/Projects/shared`. |
+
+**Key paths:**
+- Live ISO root: `/` (read-only, overlay)
+- Installed system root during install: `/mnt/`
+- ESP (EFI System Partition) during install: `/mnt/boot/`
+- Helper binary on ISO: `/usr/local/bin/aestheticos-helper`
+- Helper binary on installed system: none (not needed after install)
+- Sudoers on ISO: `/etc/sudoers.d/aestheticos` (lets installer run helper)
+- Sudoers on installed system: `/etc/sudoers.d/wheel` (lets new user use sudo)
+
+**When writing code, ask: "Which system am I operating on?"**
+- Operations on `/dev/*` → live ISO (host-level)
+- Operations on `/mnt/*` → installed system (target)
+- Operations via `arch-chroot /mnt` → installed system (target, as if booted)
+- Operations via `runChroot()` → installed system (target)
+- Operations via `ctx.run()` without chroot → live ISO (host-level)
+
 ## Testing Environments
 - **Host machine** = main development system (where you develop the installer)
 - **VM** = QEMU virtual machine booting from ISO (testing environment)
