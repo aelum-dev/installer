@@ -16,7 +16,7 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 | **Backend** | Go 1.25 |
 | **Frontend** | Svelte 5 (TypeScript), Vite, Tailwind-like CSS variables |
 | **Target OS** | Arch Linux (installed via `pacstrap`) |
-| **Desktop** | Hyprland + DMS Greeter (greetd) + Quickshell |
+| **Desktop** | Hyprland + DankMaterialShell (based on Quickshell) + DMS Greeter (greetd) |
 | **Bootloader** | systemd-boot (bootctl) |
 | **Filesystems** | ext4 or btrfs (with subvolumes) |
 
@@ -257,8 +257,8 @@ AestheticOS-Installer/
 
 The installed system includes:
 - **Window Manager**: Hyprland (Wayland compositor)
+- **Shell**: DankMaterialShell (based on Quickshell) + dms-shell-hyprland
 - **Login Manager**: greetd + DMS greeter
-- **Shell**: Quickshell (overlay shell) + dms-shell-hyprland
 - **Terminal**: Alacritty
 - **File Manager**: Nautilus
 - **Browser**: Firefox

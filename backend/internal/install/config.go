@@ -263,6 +263,11 @@ const DmsWallpaperSource = "/usr/share/DankMaterialShell/wallpaper.jpg"
 // installed system's DMS configuration directory.
 const DmsWallpaperDest = "/mnt/usr/share/DankMaterialShell/wallpaper.jpg"
 
+// --- Environment file -------------------------------------------------------
+
+// EnvironmentFileSource is the path to the environment file on the live ISO.
+const EnvironmentFileSource = "/etc/environment"
+
 // --- Progress tick ----------------------------------------------------------
 
 // ProgressTickDelayMs is the initial delay before the progress tick starts.

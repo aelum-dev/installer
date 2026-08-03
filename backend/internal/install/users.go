@@ -35,6 +35,27 @@ func SetupUsers(ctx *InstallContext) error {
 		return fmt.Errorf("failed to copy skel: %w: %s", err, string(output))
 	}
 
+	// Copy ISO dconf profiles to installed system (sets default icon theme)
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Copying ISO dconf profiles to installed system")
+	}
+	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
+		"mkdir -p /mnt/etc/dconf/profile /mnt/etc/dconf/db/local.d && cp -a /etc/dconf/profile/user /mnt/etc/dconf/profile/ && cp -a /etc/dconf/db/local.d/01-icons /mnt/etc/dconf/db/local.d/")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy dconf: %w: %s", err, string(output))
+	}
+
+	// Compile dconf database in installed system
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Compiling dconf database in installed system")
+	}
+	cmd = exec.Command("sudo", helper, HelperCmdRun, ChrootCommand, shared.MountRoot, "dconf", "update")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
+	}
+
 	// Copy DMS wallpaper from live ISO to installed system
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Copying DMS wallpaper to installed system")

@@ -21,6 +21,7 @@ func TestInstaller_StepNames(t *testing.T) {
 		"setup_users",
 		"configure_system",
 		"configure_greetd",
+		"configure_plymouth",
 		"enable_services",
 	}
 
@@ -90,6 +91,7 @@ func TestValidStepNames(t *testing.T) {
 		"setup_users":            false,
 		"configure_system":       false,
 		"configure_greetd":       false,
+		"configure_plymouth":     false,
 		"enable_services":        false,
 	}
 
