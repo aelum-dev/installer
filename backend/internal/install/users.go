@@ -20,30 +20,17 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	helper := ctx.Helper
+	var cmd *exec.Cmd
+	var output []byte
+	var err error
 
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Creating user account '%s' with wheel group", ctx.Username)
 	}
 
-	// Copy ISO skel to installed system so useradd -m picks up DMS configs
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Copying ISO skel to installed system")
-	}
-	cmd := exec.Command("sudo", helper, HelperCmdRun, "cp", "-a", "/etc/skel/.", "/mnt/etc/skel/")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to copy skel: %w: %s", err, string(output))
-	}
-
-	// Copy ISO dconf profiles to installed system (sets default icon theme)
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Copying ISO dconf profiles to installed system")
-	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		"mkdir -p /mnt/etc/dconf/profile /mnt/etc/dconf/db/local.d && cp -a /etc/dconf/profile/user /mnt/etc/dconf/profile/ && cp -a /etc/dconf/db/local.d/01-icons /mnt/etc/dconf/db/local.d/")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to copy dconf: %w: %s", err, string(output))
+	// Copy ISO files (skel, dconf, wallpaper, environment, hypr.lua)
+	if err := copyISOFiles(ctx); err != nil {
+		return err
 	}
 
 	// Compile dconf database in installed system
@@ -54,18 +41,6 @@ func SetupUsers(ctx *InstallContext) error {
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
-	}
-
-	// Copy DMS wallpaper from live ISO to installed system
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Copying DMS wallpaper to installed system")
-	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c",
-		fmt.Sprintf("mkdir -p %s && cp %s %s", 
-			"/mnt/usr/share/DankMaterialShell", DmsWallpaperSource, DmsWallpaperDest))
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to copy wallpaper: %w: %s", err, string(output))
 	}
 
 	// Create user inside chroot (skip if already exists)

@@ -3,7 +3,6 @@ package install
 import (
 	_ "embed"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -88,17 +87,6 @@ func ConfigureGreetd(ctx *InstallContext) error {
 
 	if err := writeFile(ctx, "/etc/greetd/config.toml", greetdConfigToml); err != nil {
 		return err
-	}
-
-	// Step 2.5: Copy hypr.lua from live ISO to installed system
-	// The live ISO has the greeter's Hyprland config at /etc/greetd/hypr.lua
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Copying hypr.lua from live ISO")
-	}
-	cmd := exec.Command("sudo", ctx.Helper, HelperCmdRun, "bash", "-c", "cp /etc/greetd/hypr.lua /mnt/etc/greetd/hypr.lua")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to copy hypr.lua: %w: %s", err, string(output))
 	}
 
 	// Step 3: Sync DMS greeter with the user's config (wallpaper, theme, colors)

@@ -121,16 +121,6 @@ func ConfigureSystem(ctx *InstallContext) error {
 		return err
 	}
 
-	// Step 7: Copy environment file from live ISO
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Copying environment file")
-	}
-	cmd = exec.Command("sudo", helper, HelperCmdRun, "bash", "-c", fmt.Sprintf("cp %s %s/etc/environment", EnvironmentFileSource, shared.MountRoot))
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to copy environment file: %w: %s", err, string(output))
-	}
-
 	return nil
 }
 
