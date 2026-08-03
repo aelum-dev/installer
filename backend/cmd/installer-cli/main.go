@@ -47,7 +47,7 @@ func main() {
 	enableServicesFlag := flag.String("enable-services", "", "Disk to enable services on")
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
-	rollback := flag.Bool("rollback", false, "Clean up a partial installation and wipe partition signatures")
+	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
 	passwordFlag := flag.String("password", "", "User password (required)")
 	flag.Parse()
@@ -83,22 +83,22 @@ func main() {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
 	}
 
-	if *rollback {
-		fmt.Printf("Rolling back %s...\n", disk)
+	if *rollbackFlag != "" {
+		fmt.Printf("Rolling back %s...\n", *rollbackFlag)
 		helper := core.FindHelper()
 		if helper == "" {
 			fmt.Fprintf(os.Stderr, "Error: aestheticos-helper not found\n")
 			os.Exit(1)
 		}
 		installer := core.NewInstaller(
-			disk, helper, shared.DefaultCLIUsername, "", shared.DefaultHostname,
+			*rollbackFlag, helper, shared.DefaultCLIUsername, "", shared.DefaultHostname,
 			shared.GetRegion(shared.DefaultLanguageCode), *fileSystemFlag, false,
 		)
 		if err := installer.Rollback(); err != nil {
 			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s %v\n", "\033[31m", "\033[0m", err)
 			os.Exit(1)
 		}
-		fmt.Printf("\n%s✓%s Rollback complete. %s is ready for a fresh install.\n", "\033[32m", "\033[0m", disk)
+		fmt.Printf("\n%s✓%s Rollback complete. %s is ready for a fresh install.\n", "\033[32m", "\033[0m", *rollbackFlag)
 		return
 	}
 
