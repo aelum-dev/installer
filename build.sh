@@ -3,8 +3,11 @@ set -e
 
 cd "$(dirname "$0")"
 
-SHARED_DIR=$HOME"/Projects/shared"
-BIN_DIR=$HOME"/Projects/AestheticOS/airootfs/usr/local/bin"
+# Override these to copy binaries to additional locations.
+# SHARED_DIR  — e.g. /mnt/shared (QEMU VM shared folder)
+# BIN_DIR     — e.g. path/to/airootfs/usr/local/bin (distro ISO build)
+SHARED_DIR="${SHARED_DIR:-}"
+BIN_DIR="${BIN_DIR:-}"
 
 echo "=== Refreshing mirrorlists ==="
 go run ./backend/internal/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
@@ -25,17 +28,21 @@ go build -o build/bin/aestheticos-helper ./backend/cmd/helper
 echo "=== Building aestheticos-installer-cli ==="
 go build -o build/bin/aestheticos-installer-cli ./backend/cmd/installer-cli
 
-echo "=== Copying executables to ${SHARED_DIR} ==="
-mkdir -p "$SHARED_DIR"
-cp build/bin/aestheticos-installer "$SHARED_DIR/"
-cp build/bin/aestheticos-helper "$SHARED_DIR/"
-cp build/bin/aestheticos-installer-cli "$SHARED_DIR/"
-chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-installer-cli"
+if [ -n "$SHARED_DIR" ]; then
+	echo "=== Copying executables to ${SHARED_DIR} ==="
+	mkdir -p "$SHARED_DIR"
+	cp build/bin/aestheticos-installer "$SHARED_DIR/"
+	cp build/bin/aestheticos-helper "$SHARED_DIR/"
+	cp build/bin/aestheticos-installer-cli "$SHARED_DIR/"
+	chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-helper" "$SHARED_DIR/aestheticos-installer-cli"
+fi
 
-echo "=== Copying executables to distro ${BIN_DIR} ==="
-mkdir -p "$BIN_DIR"
-cp build/bin/aestheticos-installer "$BIN_DIR/"
-cp build/bin/aestheticos-helper "$BIN_DIR/"
-cp build/bin/aestheticos-installer-cli "$BIN_DIR/"
+if [ -n "$BIN_DIR" ]; then
+	echo "=== Copying executables to distro ${BIN_DIR} ==="
+	mkdir -p "$BIN_DIR"
+	cp build/bin/aestheticos-installer "$BIN_DIR/"
+	cp build/bin/aestheticos-helper "$BIN_DIR/"
+	cp build/bin/aestheticos-installer-cli "$BIN_DIR/"
+fi
 
 echo "=== Done! ==="
