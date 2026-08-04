@@ -103,7 +103,14 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Refresh kernel partition table
-	ctx.run(HelperCmdRun, HelperCmdPartprobe, diskID).Run()
+	cmd := ctx.run(HelperCmdRun, HelperCmdPartprobe, diskID)
+	probeOut, probeErr := cmd.CombinedOutput()
+	if probeErr != nil {
+		if ctx.Logger != nil {
+			ctx.Logger.Error("partprobe failed: %v (%s)", probeErr, string(probeOut))
+		}
+		return fmt.Errorf("partprobe: %w", probeErr)
+	}
 
 	var subvolumes []shared.BtrfsSubvolume
 	if fsType == "btrfs" {
