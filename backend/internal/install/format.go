@@ -7,6 +7,10 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
+// Error wrapping convention: use %w when wrapping an existing error so the
+// caller can inspect it with errors.Is/As. Use plain %s/%d for new errors
+// that do not wrap an underlying error (validation, missing config, etc.).
+
 // FormatDisk partitions and formats the target disk, then stores partition info
 // in ctx.Partitions. On failure, tears down any mounts left behind.
 func FormatDisk(ctx *InstallContext) (retErr error) {

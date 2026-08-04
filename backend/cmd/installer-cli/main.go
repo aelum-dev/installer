@@ -26,6 +26,9 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
+// Version is set at build time via ldflags.
+var Version = "dev"
+
 func main() {
 	// Set custom usage function for --help
 	flag.Usage = func() {
@@ -50,7 +53,13 @@ func main() {
 	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
 	passwordFlag := flag.String("password", "", "User password (required)")
+	versionFlag := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Println(Version)
+		os.Exit(0)
+	}
 
 	// Layout is now determined by filesystem type (ext4 or btrfs)
 	// No separate layout flag needed

@@ -37,7 +37,7 @@ echo "=== Building aestheticos-helper ==="
 go build -o build/bin/aestheticos-helper ./backend/cmd/helper
 
 echo "=== Building aestheticos-installer-cli ==="
-go build -o build/bin/aestheticos-installer-cli ./backend/cmd/installer-cli
+go build -ldflags "-X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" -o build/bin/aestheticos-installer-cli ./backend/cmd/installer-cli
 
 if [ -n "$SHARED_DIR" ]; then
 	echo "=== Copying executables to ${SHARED_DIR} ==="

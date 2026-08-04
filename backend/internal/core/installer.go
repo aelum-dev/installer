@@ -189,19 +189,35 @@ var stepDefinitions = []installationStep{
 // The two pacstrap steps (base + desktop) together account for ~80% of total
 // installation time, so they receive proportionally higher weights.
 var stepWeights = []int{
-	3,  // format_disk
-	2,  // mount_filesystem
-	2,  // create_swap
-	45, // install (base pacstrap — longest step)
-	35, // install_desktop (desktop pacstrap — second longest)
-	2,  // generate_fstab
-	3,  // configure_bootloader
-	2,  // setup_users
-	2,  // configure_system
-	2,  // configure_greetd
-	1,  // configure_plymouth
-	2,  // enable_services
+	WeightFormatDisk,
+	WeightMountFilesystem,
+	WeightCreateSwap,
+	WeightInstallBase,
+	WeightInstallDesktop,
+	WeightGenerateFstab,
+	WeightConfigureBootloader,
+	WeightSetupUsers,
+	WeightConfigureSystem,
+	WeightConfigureGreetd,
+	WeightConfigurePlymouth,
+	WeightEnableServices,
 }
+
+// Progress weight constants for installation steps.
+const (
+	WeightFormatDisk         = 3
+	WeightMountFilesystem    = 2
+	WeightCreateSwap         = 2
+	WeightInstallBase        = 45 // base pacstrap — longest step
+	WeightInstallDesktop     = 35 // desktop pacstrap — second longest
+	WeightGenerateFstab      = 2
+	WeightConfigureBootloader = 3
+	WeightSetupUsers         = 2
+	WeightConfigureSystem    = 2
+	WeightConfigureGreetd    = 2
+	WeightConfigurePlymouth  = 1
+	WeightEnableServices     = 2
+)
 
 // cumulativePercentages calculates the cumulative percentage at each step boundary
 // based on step weights. Returns a slice of length len(steps)+1, where result[0] = 0
