@@ -99,24 +99,30 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 
 ---
 
-## Installation Steps (12 total)
+## Installation Steps (6 top-level, 12 logical)
 
-The `Installer.Install()` method runs these steps sequentially:
+The `Installer.Install()` method runs 6 top-level steps sequentially. The last step merges 7 configuration sub-steps into one:
 
-| # | Step | Function | Description |
-|---|------|----------|-------------|
-| 1 | Format Disk | `FormatDisk` | Partitions (GPT: EFI 128MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
-| 2 | Mount Filesystem | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, ESP to `/mnt/boot` |
-| 3 | Create Swap | `CreateSwap` | 4GB swap file (btrfs: inside `@swap` subvolume; ext4: fallocate/dd) |
-| 4 | Install Base | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
-| 5 | Install Desktop | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. |
-| 6 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes) |
-| 7 | Configure Bootloader | `ConfigureBootloader` | systemd-boot install, boot entry, random seed |
-| 8 | Setup Users | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
-| 9 | Configure System | `ConfigureSystem` | Hostname, timezone, locale, keymap, mirrorlist |
-| 10 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
-| 11 | Configure Plymouth | `ConfigurePlymouth` | BGRT theme, mkinitcpio hook, `.hushlogin` |
-| 12 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
+| # | Step | Weight | Function | Description |
+|---|------|--------|----------|-------------|
+| 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 128MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
+| 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, ESP to `/mnt/boot` |
+| 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
+| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. |
+| 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
+| 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → bootloader → system config → greetd → Plymouth → zram → services |
+
+**Step 6 sub-steps (in order):**
+
+| # | Sub-step | Function | Description |
+|---|----------|----------|-------------|
+| 6.1 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes) |
+| 6.2 | Configure Bootloader | `ConfigureBootloader` | systemd-boot install, boot entry, random seed |
+| 6.3 | Configure System | `ConfigureSystemBase` | Hostname, timezone, locale, keymap, NTP, mirrorlist |
+| 6.4 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
+| 6.5 | Configure Plymouth | `ConfigurePlymouth` | BGRT theme, mkinitcpio hook, `.hushlogin` |
+| 6.6 | Configure zram | `ConfigureZram` | Compressed swap via zram-generator |
+| 6.7 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
 
 ### Progress Tracking
 

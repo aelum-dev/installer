@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Add `go mod tidy` to `build.sh` and CI — fails the build early if dependencies drift
+
 ### Security
 - Fix injection vulnerability in `write-file` and `append-file` helper commands — replaced `bash -c` with native Go `os` package operations
 - Change password storage from `string` to `[]byte` with explicit zeroing after use

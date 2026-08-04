@@ -14,6 +14,10 @@ set -e
 
 cd "$(dirname "$0")"
 
+# Sync dependencies — fails the build if go.mod/go.sum drift from go.sum
+
+go mod tidy
+
 # Override these to copy binaries to additional locations.
 # SHARED_DIR  — e.g. /mnt/shared (QEMU VM shared folder)
 # BIN_DIR     — e.g. path/to/airootfs/usr/local/bin (distro ISO build)
