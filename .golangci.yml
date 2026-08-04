@@ -1,0 +1,81 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - revive
+    - unconvert
+    - durationcheck
+    - makezero
+    - copyloopvar
+  disable:
+    # Too strict for this project
+    - exhaustruct
+    - forbidigo
+    - gochecknoglobals
+    - gosmopolitan
+    - mnd
+    - varnamelen
+    - ireturn
+    - nonamedreturns
+    - paralleltest
+    - testpackage
+    # Style preferences we don't enforce
+    - godot
+    - goprintffuncname
+    - nestif
+    - wsl
+    - nlreturn
+    - whitespace
+    - perfsprint
+    - prealloc
+    - intrange
+    - funlen
+    - lll
+    - gocritic
+    - forcetypeassert
+    - wrapcheck
+    - nilerr
+    - unparam
+    - stylecheck
+    - noctx
+    - promlinter
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: aestheticos-installer
+  revive:
+    rules:
+      - name: dot-imports
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        arguments: [35]
+
+      - name: function-length
+        arguments: [120, 200]
+      - name: line-length-limit
+        arguments: [240]
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - govet
