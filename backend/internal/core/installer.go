@@ -346,14 +346,14 @@ func (inst *Installer) Rollback() error {
 	for i := 1; i <= 2; i++ {
 		partPath := shared.DerivePartitionPath(inst.diskID, i)
 		inst.logInfo("Wiping signatures on %s", partPath)
-		cmd := inst.run("wipefs", "--all", "-f", partPath)
+		cmd := inst.run("run", "wipefs", "--all", "-f", partPath)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			inst.logError("Failed to wipe %s: %v (%s)", partPath, err, string(out))
 		}
 	}
 
 	// Reprobe partition table.
-	cmd := inst.run("partprobe", inst.diskID)
+	cmd := inst.run("run", "partprobe", inst.diskID)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		inst.logError("partprobe failed: %v (%s)", err, string(out))
 	}
