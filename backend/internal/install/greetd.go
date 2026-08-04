@@ -104,8 +104,10 @@ func ConfigureGreetd(ctx *InstallContext) error {
 //  1. Add user to the 'greeter' group
 //  2. Set ACLs on parent dirs (~, .config, .local, .cache, .local/state)
 //  3. Set group ownership on DMS config dirs
-//  4. Create symlinks from /var/cache/dms-greeter/ → user's config files
-//  5. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
+//  4. Create greeter cache runtime subdirs
+//  5. Create symlinks from /var/cache/dms-greeter/ → user's config files
+//  6. Write memory.json for session memory
+//  7. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
 func syncDmsGreeter(ctx *InstallContext) error {
 	username := ctx.Username
 	home := filepath.Join("/home", username)
@@ -197,7 +199,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		}
 	}
 
-	// 6. Create symlinks from /var/cache/dms-greeter/ → user's DMS config files
+	// 5. Create symlinks from /var/cache/dms-greeter/ → user's DMS config files
 	// Configs are shipped in ISO /etc/skel, so they already exist in user's home.
 	// These symlinks let the greeter (running as greeter user) read them.
 	symlinks := map[string]string{
@@ -218,7 +220,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		}
 	}
 
-	// 7. Write memory.json for session memory (last user + last session)
+	// 6. Write memory.json for session memory (last user + last session)
 	// This lets the greeter pre-select the user and session in the picker,
 	// but does NOT enable auto-login (no autoLoginEnabled field).
 	stateMemoryPath := filepath.Join(cacheDir, ".local", "state", "memory.json")
@@ -242,7 +244,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 		return fmt.Errorf("failed to create legacy memory symlink: %w: %s", err, string(output))
 	}
 
-	// 8. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
+	// 7. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
 	// This enables multi-account picker with the user's avatar and theme preview.
 	userSlot := filepath.Join(cacheDir, "users", username)
 	output, err = runChroot(ctx, "mkdir", "-p", userSlot)
