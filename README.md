@@ -184,12 +184,17 @@ On the installed system, `/etc/sudoers.d/wheel` is written for the new user:
 ## Testing
 
 ```bash
-# Run all Go tests
+# Run all Go tests (unit + integration)
 go test ./...
 
 # Run frontend tests
 cd frontend && npm run test
+
+# Type checking
+cd frontend && npm run check
 ```
+
+Integration tests verify the full install flow in dry-run mode (no real commands executed) — step ordering, progress tracking, error handling, and rollback.
 
 ## Development
 

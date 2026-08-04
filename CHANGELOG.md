@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--rollback` CLI flag — cleans up partial installations (unmounts + wipes partition signatures)
 - Deferred mount cleanup in `Install()` — ensures retryability on failure
 - `DerivePartitionPath()` in shared package
+- Integration tests for full install flow (dry-run, ext4/btrfs, progress tracking, error handling)
+- `ValidateDiskPath()` — regex-sanitized disk path validation
+- `ValidateDiskSize()` — minimum 16 GiB disk size check
+- `--version` flag with ldflags version injection
+- Named `Weight*` constants for installation step progress weights
+- `SECURITY.md` — vulnerability reporting policy and security design
+- `TROUBLESHOOTING.md` — common failures, log inspection, recovery steps
+- Complete `CONTRIBUTING.md` with code style, commit conventions, and PR template
 
 ### Fixed
 - svelte-check error: `logInfo` called with 2 arguments instead of 1
+- Rollback silent failures — `wipefs` and `partprobe` errors now returned
+- CLI panic recovery — `defer recover()` ensures mount cleanup on panic
+- Removed 6 `[DEBUG]` `fmt.Printf` statements leaking to stdout on live ISO
+- Removed dead btrfs subvolume summary code in `setupBtrfsSubvolumes`
+- Fixed bare `exec.Command("sudo", "partprobe")` in `format.go` to use helper

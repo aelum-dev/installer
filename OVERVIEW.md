@@ -232,9 +232,18 @@ This runs:
 ## Testing
 
 ```bash
-go test ./...          # Run all Go tests
+go test ./...          # Run all Go tests (unit + integration)
 ./run.sh               # Start Wails dev server (hot-reload)
 ```
+
+### Test Types
+
+| Type | Location | What it covers |
+|------|----------|----------------|
+| Unit | `backend/internal/*/ *_test.go` | Validators, progress tracker, disk parsing, context |
+| Integration | `backend/internal/core/installer_integration_test.go` | Full install flow (dry-run), step ordering, progress, error handling, rollback |
+| GUI | `backend/gui/*_test.go` | Validation logic, root check |
+| Frontend | `frontend/` (Vitest) | Component tests |
 
 ---
 
