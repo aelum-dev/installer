@@ -12,6 +12,8 @@ Paired with the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) distr
 - **CLI mode** — Headless automated installs via `aestheticos-installer-cli`
 - **Progress tracking** — Line-count-based pacstrap progress for accurate percentages
 - **Dry-run mode** — Simulate the full install for UI testing (`AESTHETIC_DRY_RUN=1`)
+- **Fake disks** — Synthetic disk data for frontend development (`FAKE_DISKS=1`)
+- **Zram swap** — Compressed RAM-based swap, size auto-detected from live ISO RAM (2/4/8 GiB tiered)
 
 ## Desktop Environment
 
@@ -118,7 +120,10 @@ sudo ./build/bin/aestheticos-installer-cli --rollback /dev/vda
 
 # Single step
 sudo ./build/bin/aestheticos-installer-cli --format-disk /dev/vda
-sudo ./build/bin/aestheticos-installer-cli --install-bootloader /dev/vda
+sudo ./build/bin/aestheticos-installer-cli --mount-filesystem /dev/vda
+sudo ./build/bin/aestheticos-installer-cli --install-system /dev/vda
+sudo ./build/bin/aestheticos-installer-cli --setup-users /dev/vda
+sudo ./build/bin/aestheticos-installer-cli --configure-system /dev/vda
 ```
 
 ### Environment Variables
@@ -126,9 +131,9 @@ sudo ./build/bin/aestheticos-installer-cli --install-bootloader /dev/vda
 | Variable | Purpose |
 |----------|---------|
 | `AESTHETIC_DRY_RUN=1` | Simulate installation (steps sleep 200ms instead of executing) |
+| `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
 | `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
 | `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
-| `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
 
 ### Security Note
 
@@ -136,22 +141,18 @@ The CLI **never accepts the password as a command-line flag**. Passwords are rea
 
 ## Installation Steps
 
-The installer runs 12 steps sequentially:
+The installer runs **6 top-level steps** (12 logical sub-steps). The last step merges 7 configuration tasks into one:
 
-| # | Step | Description |
-|---|------|-------------|
-| 1 | Format Disk | GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs) |
-| 2 | Mount Filesystem | Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` |
-| 3 | Create Swap | 4GB swap file (btrfs: inside `@swap` subvolume) |
-| 4 | Install Base | `pacstrap` base packages + linux-lts |
-| 5 | Install Desktop | `pacstrap` Hyprland, DMS greeter, Firefox, PipeWire, etc. |
-| 6 | Generate fstab | Custom fstab (btrfs subvolume-aware) |
-| 7 | Configure Bootloader | systemd-boot install + boot entry |
-| 8 | Setup Users | Create user (wheel group), set passwords, sudoers |
-| 9 | Configure System | Hostname, timezone, locale, keymap, mirrorlist |
-| 10 | Configure greetd | Write config, create greeter user, sync DMS greeter |
-| 11 | Configure Plymouth | BGRT theme, mkinitcpio hook, `.hushlogin` |
-| 12 | Enable Services | NetworkManager, greetd, bluetooth |
+| # | Step | Weight | Description |
+|---|------|--------|-------------|
+| 1 | Format Disk | 3% | GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes |
+| 2 | Mount Filesystem | 2% | Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` |
+| 3 | Install Base | 45% | `pacstrap` base packages + linux-lts |
+| 4 | Install Desktop | 35% | `pacstrap` Hyprland, DMS greeter, Firefox, PipeWire, etc. |
+| 5 | Setup Users | 2% | Create user (wheel group), set passwords, sudoers, copy ISO skel files |
+| 6 | Configure System | 13% | fstab → bootloader → hostname/locale/timezone → greetd → Plymouth BGRT → zram swap → services |
+
+**Step 6 sub-steps:** Generate fstab, configure systemd-boot bootloader, set hostname/timezone/locale/keymap/mirrors, configure greetd + DMS greeter, configure Plymouth BGRT silent boot, configure zram compressed swap, enable systemd services (NetworkManager, greetd, bluetooth).
 
 ## Idempotency & Rollback
 
