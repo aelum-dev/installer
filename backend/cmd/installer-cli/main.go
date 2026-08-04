@@ -47,6 +47,7 @@ func main() {
 	setupUsersFlag := flag.String("setup-users", "", "Disk to set up users on")
 	configureSysFlag := flag.String("configure-system", "", "Disk to configure system on")
 	configureGreetdFlag := flag.String("configure-greetd", "", "Disk to configure greetd on")
+	configureZramFlag := flag.String("configure-zram", "", "Disk to configure zram swap on")
 	enableServicesFlag := flag.String("enable-services", "", "Disk to enable services on")
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
@@ -99,6 +100,7 @@ func main() {
 		setupUsersFlag, "setup_users",
 		configureSysFlag, "configure_system",
 		configureGreetdFlag, "configure_greetd",
+		configureZramFlag, "configure_zram",
 		enableServicesFlag, "enable_services",
 	)...)
 
@@ -238,6 +240,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                        Set up user accounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --configure-greetd <disk> [--dry-run]                   Configure greetd + DMS greeter\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --configure-zram <disk> [--dry-run]                     Configure zram swap\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --enable-services <disk> [--dry-run]                    Enable systemd services\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
