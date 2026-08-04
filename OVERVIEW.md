@@ -79,15 +79,14 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileg
 └──────────────────────┴────────────────────────────────────┘
                           │
                           ▼
-              ┌───────────────────────┐
-              │ aestheticos-helper    │
-              │ (sudo-privileged)     │
-              │ • parted, format      │
-              │ • mount, umount       │
-              │ • chroot-run (whitelist)│
-              │ • write/append/read-file│
-
-              └───────────────────────┘
+              ┌──────────────────────────┐
+              │ aestheticos-helper       │
+              │ (sudo-privileged)        │
+              │ • parted, format         │
+              │ • mount, umount          │
+              │ • chroot-run (whitelist) │
+              │ • write/append/read-file │
+              └──────────────────────────┘
 ```
 
 ### Three Binaries

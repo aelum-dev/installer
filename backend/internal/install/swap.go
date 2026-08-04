@@ -139,13 +139,8 @@ func enableSwap(ctx *InstallContext, path string) error {
 }
 
 // GetSwapFstabEntry returns the fstab line for the swap file.
-// For btrfs: swap file is in /swap subvolume (nodatacow property avoids CoW),
-// referenced via UUID with subvol=@swap mount option.
+// For btrfs: returns the swap file entry (the @swap mount is handled separately in fstab).
 // For ext4: swap file is directly on root filesystem.
 func GetSwapFstabEntry(ctx *InstallContext) string {
-	if ctx.FileSystem == shared.FileSystemBtrfs {
-		// btrfs: mount the @swap subvolume which contains the swap file
-		return fmt.Sprintf("UUID=%s  /swap  btrfs  subvol=@swap,defaults,autodefrag  0  0", ctx.Partitions.RootUUID)
-	}
 	return "/swapfile  none  swap  defaults  0  0"
 }

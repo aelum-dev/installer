@@ -37,18 +37,7 @@ func GenerateFstab(ctx *InstallContext) error {
 	}
 
 	// Standard fstab generation for ext4 and other filesystems
-
-	// Write fstab manually (genfstab requires chroot, which we don't have here)
-	// Determine root filesystem type from partition
-	rootFstype := "ext4"
-	if ctx.FileSystem != "" {
-		rootFstype = ctx.FileSystem
-	}
-	fstabContent := fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
-UUID=%s  /              %s    %s        0  1
-UUID=%s  /boot          vfat    %s 0 2
-%s
-`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask, GetSwapFstabEntry(ctx))
+	fstabContent := generateExt4Fstab(ctx)
 
 	if err := writeFile(ctx, "/etc/fstab", fstabContent); err != nil {
 		return err
@@ -62,41 +51,68 @@ UUID=%s  /boot          vfat    %s 0 2
 	return nil
 }
 
-// writeBtrfsFstab writes a custom fstab for btrfs with subvolumes.
+// generateBtrfsFstab builds the fstab content string for btrfs with subvolumes.
 // All subvolumes share the root partition UUID, with subvol=<name> in mount options.
-func writeBtrfsFstab(ctx *InstallContext) error {
+// The @swap subvolume is handled separately: mounted as btrfs, plus a swap entry for the file.
+func generateBtrfsFstab(ctx *InstallContext) string {
 	p := ctx.Partitions
 
 	// Get subvolumes from shared definition
 	subvolumes := shared.GetBtrfsSubvolumes()
 
-	// Build fstab: one line per subvolume + EFI
+	// Build fstab: EFI first, then subvolumes, then swap
 	var lines []string
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
 
+	// EFI partition first
+	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, EfiPartitionUmask))
+
 	for _, sv := range subvolumes {
-		opts := fmt.Sprintf("%s%s,%s,%s", BtrfsSubvolumeMountPrefix, sv.Name, DefaultMountOptions, BtrfsAutodefragOption)
-		if sv.Compression != "" {
-			opts += ",compress=" + sv.Compression
+		// Skip @swap — it needs special handling (mount + swap entry)
+		if sv.Name == "@swap" {
+			continue
 		}
+		opts := buildMountOpts(&sv)
 		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
 	}
 
-	// EFI partition
-	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, EfiPartitionUmask))
+	// @swap subvolume mount (required so /swap exists for the swap file)
+	swapSubvol := shared.FindSubvolumeByMountPoint(subvolumes, "/swap")
+	if swapSubvol != nil {
+		lines = append(lines, fmt.Sprintf("UUID=%s  /swap  btrfs   %s  0 0", p.RootUUID, buildMountOpts(swapSubvol)))
+	}
 
-	// Swap
-	lines = append(lines, GetSwapFstabEntry(ctx))
+	// Swap file entry — must come after /swap mount so the path exists at boot
+	lines = append(lines, "/swap/swapfile  none  swap  defaults  0  0")
 
-	fstabContent := strings.Join(lines, "\n") + "\n"
+	return strings.Join(lines, "\n") + "\n"
+}
 
-	// Write fstab
+// generateExt4Fstab builds the fstab content string for ext4 and other non-btrfs filesystems.
+func generateExt4Fstab(ctx *InstallContext) string {
+	p := ctx.Partitions
+
+	rootFstype := "ext4"
+	if ctx.FileSystem != "" {
+		rootFstype = ctx.FileSystem
+	}
+	return fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
+UUID=%s  /              %s    %s        0  1
+UUID=%s  /boot          vfat    %s 0 2
+%s
+`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask, GetSwapFstabEntry(ctx))
+}
+
+// writeBtrfsFstab writes a custom fstab for btrfs with subvolumes.
+func writeBtrfsFstab(ctx *InstallContext) error {
+	fstabContent := generateBtrfsFstab(ctx)
+
 	if err := writeFile(ctx, "/etc/fstab", fstabContent); err != nil {
 		return err
 	}
 
 	// Verify fstab was written correctly
-	if err := verifyFstab(ctx, p.RootUUID, p.EFIUUID); err != nil {
+	if err := verifyFstab(ctx, ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID); err != nil {
 		return err
 	}
 
