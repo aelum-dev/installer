@@ -11,15 +11,23 @@
 //	./aestheticos-installer-cli --install-system /dev/vda
 //	./aestheticos-installer-cli --setup-users /dev/vda
 //	./aestheticos-installer-cli --configure-system /dev/vda
+//
+// Password is read interactively from the terminal. For non-interactive use, pipe it via stdin:
+//
+//	echo 'mypassword' | ./aestheticos-installer-cli --install /dev/vda
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"aestheticos-installer/backend/internal/core"
 	"aestheticos-installer/backend/internal/shared"
+
+	"golang.org/x/term"
 )
 
 // Version is set at build time via ldflags.
@@ -44,7 +52,6 @@ func main() {
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
-	passwordFlag := flag.String("password", "", "User password (required)")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
 
@@ -105,8 +112,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *passwordFlag == "" {
-		fmt.Fprintf(os.Stderr, "Error: --password is required\n")
+	// Read password from stdin (never accept via flag — avoids /proc, ps, and shell history exposure)
+	password, err := readPassword()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to read password: %v\n", err)
+		os.Exit(1)
+	}
+	if password == "" {
+		fmt.Fprintf(os.Stderr, "Error: password cannot be empty\n")
 		os.Exit(1)
 	}
 
@@ -133,9 +146,9 @@ func main() {
 	installer := core.NewInstaller(
 		disk,
 		helper,
-		shared.DefaultCLIUsername,  // username
-		*passwordFlag,              // password (required via --password)
-		shared.DefaultHostname,     // hostname
+		shared.DefaultCLIUsername, // username
+		password,                  // password (read from stdin)
+		shared.DefaultHostname,    // hostname
 		shared.GetRegion(shared.DefaultLanguageCode), // region (default)
 		*fileSystemFlag,
 		*dryRun,
@@ -161,7 +174,6 @@ func main() {
 		}
 	}()
 
-	var err error
 	if stepName != "" {
 		// Run a single step
 		fmt.Println()
@@ -224,11 +236,36 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                        Set up user accounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
-	fmt.Fprintf(os.Stderr, "Note: --password is required for all installation steps.\n")
+	fmt.Fprintf(os.Stderr, "Password: entered interactively from the terminal (never passed as a flag).\n")
+	fmt.Fprintf(os.Stderr, "         Pipe a password via stdin for non-interactive use: echo 'pass' | %s --install /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback /dev/vda\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --install-bootloader /dev/vda\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  echo 'mypassword' | %s --install /dev/vda\n", os.Args[0])
+}
+
+// readPassword prompts the user for a password on the terminal and returns it.
+// If stdin is not a terminal (e.g. piped input), it reads the password from stdin directly.
+// The password is never stored in a flag and therefore never appears in /proc, ps, or shell history.
+func readPassword() (string, error) {
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		fmt.Fprintf(os.Stderr, "Enter password: ")
+		bytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr) // newline after masked input
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(bytes)), nil
+	}
+	// Non-interactive: read from stdin (piped or redirected)
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return "", nil
 }

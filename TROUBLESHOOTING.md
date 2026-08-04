@@ -136,8 +136,10 @@ If an installation is partially complete and you want to start fresh:
 lsblk /dev/sda
 # Should show partitions but no mountpoints
 
-# 3. Re-run installation
-./aestheticos-installer-cli --install /dev/sda --filesystem btrfs --password yourpassword
+# 3. Re-run installation (password entered interactively)
+./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
+# Or pipe it for non-interactive use:
+# echo 'mypassword' | ./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
 ```
 
 ## Reporting Bugs

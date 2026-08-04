@@ -101,7 +101,7 @@ sudo ./build/bin/aestheticos-installer
 ### CLI
 
 ```bash
-# Full installation
+# Full installation (password entered interactively)
 sudo ./build/bin/aestheticos-installer-cli --install /dev/vda
 
 # With btrfs
@@ -109,6 +109,9 @@ sudo ./build/bin/aestheticos-installer-cli --install /dev/vda --filesystem btrfs
 
 # Dry run (simulate, no changes)
 sudo ./build/bin/aestheticos-installer-cli --install /dev/vda --dry-run
+
+# Non-interactive: pipe password via stdin
+sudo ./build/bin/aestheticos-installer-cli --install /dev/vda <<< 'mypassword'
 
 # Rollback a partial installation (cleans up mounts + wipes partition signatures)
 sudo ./build/bin/aestheticos-installer-cli --rollback /dev/vda
@@ -126,6 +129,10 @@ sudo ./build/bin/aestheticos-installer-cli --install-bootloader /dev/vda
 | `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
 | `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
 | `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
+
+### Security Note
+
+The CLI **never accepts the password as a command-line flag**. Passwords are read from the terminal (masked) or from stdin (piped). This prevents the password from appearing in `/proc`, `ps` output, or shell history.
 
 ## Installation Steps
 
