@@ -255,7 +255,7 @@ func cmdFormat(args []string) error {
 	fstype := args[1]
 
 	// Validate partition path
-	if partition == "" || !(strings.HasPrefix(partition, "/dev/") || strings.HasPrefix(partition, "/mnt/")) {
+	if partition == "" || (!strings.HasPrefix(partition, "/dev/") && !strings.HasPrefix(partition, "/mnt/")) {
 		return fmt.Errorf("invalid partition path: %s", partition)
 	}
 
@@ -572,7 +572,7 @@ func cmdAppendFile(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open %s for appending: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to append to %s: %w", path, err)
 	}

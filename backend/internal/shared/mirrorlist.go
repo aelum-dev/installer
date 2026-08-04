@@ -125,7 +125,7 @@ func downloadMirrorList(path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("mirrorlist URL returned status %d", resp.StatusCode)
@@ -139,7 +139,7 @@ func downloadMirrorList(path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	_, err = io.Copy(f, resp.Body)
 	return err
@@ -152,7 +152,7 @@ func parseMirrorList(path string) ([]mirrorSection, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Build reverse map: locale -> country names
 	localeToCountries := make(map[string][]string)
@@ -238,15 +238,15 @@ func writeRegionMirrorList(locale string, servers []string, mlDir string) error 
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	w := bufio.NewWriter(f)
-	fmt.Fprintf(w, "##\n")
-	fmt.Fprintf(w, "## Arch Linux mirrorlist for %s\n", locale)
-	fmt.Fprintf(w, "##\n\n")
+	_, _ = fmt.Fprintf(w, "##\n")
+	_, _ = fmt.Fprintf(w, "## Arch Linux mirrorlist for %s\n", locale)
+	_, _ = fmt.Fprintf(w, "##\n\n")
 
 	for _, server := range servers {
-		fmt.Fprintln(w, server)
+		_, _ = fmt.Fprintln(w, server)
 	}
 
 	return w.Flush()

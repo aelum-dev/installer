@@ -81,9 +81,9 @@ func (l *ConsoleLogger) startWriter() {
 		}
 		for msg := range l.logChan {
 			timestamp := time.Now().Format(shared.TimestampFormatFull)
-			_, _ = f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
+			_, _ = fmt.Fprintf(f, "[%s] %s\n", timestamp, msg)
 		}
-		f.Close()
+		_ = f.Close()
 		close(l.done)
 	}()
 }
@@ -127,12 +127,12 @@ func (l *ConsoleLogger) writeToFile(msg string) {
 		return
 	}
 	timestamp := time.Now().Format(shared.TimestampFormatFull)
-	_, _ = f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
+	_, _ = fmt.Fprintf(f, "[%s] %s\n", timestamp, msg)
 }
 
 func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
+	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
 	l.writeToFile(msg)
 }
 
@@ -147,7 +147,7 @@ func (l *ConsoleLogger) Command(line string) {
 		return
 	}
 	for _, line := range strings.Split(strings.TrimRight(line, "\n"), "\n") {
-		fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
+		_, _ = fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
 		l.writeToFile(CommandOutputPrefix + line)
 	}
 }

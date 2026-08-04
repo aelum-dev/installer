@@ -21,10 +21,7 @@ var assets embed.FS
 const StartPage = -1
 
 func main() {
-	dryRun := false
-	if os.Getenv("AESTHETIC_DRY_RUN") == "1" {
-		dryRun = true
-	}
+	dryRun := os.Getenv("AESTHETIC_DRY_RUN") == "1"
 
 	if dryRun {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
