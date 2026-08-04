@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -616,28 +617,20 @@ func cmdEfibootmgr(args []string) error {
 	subcmd := args[0]
 	switch subcmd {
 	case "list":
-		cmd := exec.Command("efibootmgr", "-v")
+		cmd := exec.Command("efibootmgr")
 		output, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("efibootmgr list failed: %w", err)
 		}
+		re := regexp.MustCompile(`^(Boot[0-9A-Fa-f]+)\*\t+(.+)$`)
 		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 		for _, line := range lines {
 			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "Boot") && strings.Contains(line, "*") {
-				bootNum := ""
-				title := ""
-				for i, ch := range line {
-					if ch >= '0' && ch <= '9' {
-						bootNum += string(ch)
-					} else if ch == '*' {
-						title = strings.ReplaceAll(strings.TrimSpace(line[i+1:]), "\t", " ")
-						break
-					}
-				}
-				if bootNum != "" {
-					fmt.Printf("%s|%s\n", bootNum, title)
-				}
+			matches := re.FindStringSubmatch(line)
+			if matches != nil {
+				bootNum := strings.TrimPrefix(strings.TrimSuffix(matches[1], "*"), "Boot")
+				title := matches[2]
+				fmt.Printf("%s|%s\n", bootNum, title)
 			}
 		}
 		return nil
