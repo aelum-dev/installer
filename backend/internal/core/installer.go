@@ -349,6 +349,7 @@ func (inst *Installer) Rollback() error {
 		cmd := inst.run("run", "wipefs", "--all", "-f", partPath)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			inst.logError("Failed to wipe %s: %v (%s)", partPath, err, string(out))
+			return fmt.Errorf("rollback: failed to wipe %s: %w", partPath, err)
 		}
 	}
 
@@ -356,10 +357,17 @@ func (inst *Installer) Rollback() error {
 	cmd := inst.run("run", "partprobe", inst.diskID)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		inst.logError("partprobe failed: %v (%s)", err, string(out))
+		return fmt.Errorf("rollback: partprobe failed: %w", err)
 	}
 
 	inst.logInfo("Rollback complete: %s is ready for a fresh install", inst.diskID)
 	return nil
+}
+
+// Cleanup runs deferred cleanup (unmounts, swapoff) for this installer.
+// Called on panic recovery to ensure no mounts are left hanging.
+func (inst *Installer) Cleanup() {
+	install.CleanupMounts(inst.helperPath)
 }
 
 // run executes a privileged command via the helper binary.

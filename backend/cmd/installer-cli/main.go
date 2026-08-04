@@ -58,6 +58,10 @@ func main() {
 	// Rollback is handled separately — it doesn't use resolveDiskAndStep
 	if *rollbackFlag != "" {
 		fmt.Printf("Rolling back %s...\n", *rollbackFlag)
+		if err := shared.ValidateDiskPath(*rollbackFlag); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 		helper := core.FindHelper()
 		if helper == "" {
 			fmt.Fprintf(os.Stderr, "Error: aestheticos-helper not found\n")
@@ -91,6 +95,11 @@ func main() {
 
 	if disk == "" {
 		printUsage()
+		os.Exit(1)
+	}
+
+	if err := shared.ValidateDiskPath(disk); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -140,6 +149,15 @@ func main() {
 	installer.OnError = func(label, message string) {
 		fmt.Fprintf(os.Stderr, "\n[ERROR] %s: %s\n", label, message)
 	}
+
+	// Ensure cleanup runs on panic after install has started.
+	defer func() {
+		if r := recover(); r != nil {
+			installer.Cleanup()
+			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s panic recovered: %v\n", "\033[31m", "\033[0m", r)
+			os.Exit(1)
+		}
+	}()
 
 	var err error
 	if stepName != "" {

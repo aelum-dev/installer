@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
@@ -100,7 +99,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Refresh kernel partition table
-	exec.Command("sudo", "partprobe", diskID).Run()
+	ctx.run("run", "partprobe", diskID).Run()
 
 	var subvolumes []shared.BtrfsSubvolume
 	if fsType == "btrfs" {
@@ -213,23 +212,6 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	}
 
 	ctx.run(HelperCmdRun, "rmdir", tmp).Run()
-
-	if ctx.Logger != nil {
-		var summaries []string
-		for _, sv := range subvolumes {
-			var props []string
-			if sv.Name == "@" {
-				props = append(props, "default")
-			}
-			if sv.Compression != "" {
-				props = append(props, "compressed")
-			}
-			if sv.NoDataCow {
-				props = append(props, "nodatacow")
-			}
-			summaries = append(summaries, sv.Name+" ("+strings.Join(props, ", ")+")")
-		}
-	}
 	return nil
 }
 

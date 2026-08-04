@@ -104,17 +104,13 @@ type lsblkEntry struct {
 // GetDisks returns a list of available block devices (disks) for installation.
 func GetDisks() ([]DiskInfo, error) {
 	if os.Getenv("FAKE_DISKS") == "1" {
-		fmt.Printf("[DEBUG] FAKE_DISKS=1, returning fake disks\n")
 		return fakeDisks(), nil
 	}
-	fmt.Printf("[DEBUG] GetDisks: running lsblk\n")
 	cmd := exec.Command("lsblk", "-b", "-d", "-o", "NAME,TYPE,SIZE,MODEL,VENDOR,ROTA,RO,FSTYPE,MOUNTPOINT,SERIAL,TRAN", "-J")
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("[DEBUG] GetDisks: lsblk failed: %v\n", err)
 		return nil, fmt.Errorf("failed to run lsblk: %w", err)
 	}
-	fmt.Printf("[DEBUG] GetDisks: lsblk output: %s\n", string(output))
 
 	var result struct {
 		Blockdevices []lsblkEntry `json:"blockdevices"`
@@ -203,10 +199,8 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 	cmd := exec.Command("lsblk", "-b", "-J", "-o", "NAME,TYPE,SIZE,FSTYPE,UUID,MOUNTPOINT", diskPath)
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("[DEBUG] lsblk failed for %s: %v\n", diskPath, err)
 		return nil, fmt.Errorf("lsblk failed for %s: %w", diskPath, err)
 	}
-	fmt.Printf("[DEBUG] lsblk output for %s: %s\n", diskPath, string(output))
 
 	var result struct {
 		Blockdevices []struct {

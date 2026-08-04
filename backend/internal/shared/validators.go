@@ -1,6 +1,9 @@
 package shared
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
 
 // ValidateUserAccount checks user account fields.
 // Password/confirm checks are skipped when password is empty,
@@ -24,6 +27,19 @@ func ValidateUserAccount(data UserAccountData) error {
 	}
 	if data.Password != data.ConfirmPassword {
 		return fmt.Errorf("passwords do not match")
+	}
+	return nil
+}
+
+// ValidateDiskPath checks that a disk path is valid and safe to use.
+// It must start with /dev/ and contain only alphanumeric characters, slashes,
+// hyphens, and underscores (no shell metacharacters).
+func ValidateDiskPath(path string) error {
+	if path == "" {
+		return fmt.Errorf("disk path is required")
+	}
+	if !regexp.MustCompile(`^/dev/[a-zA-Z0-9_-]+$`).MatchString(path) {
+		return fmt.Errorf("invalid disk path: %q (must be /dev/ followed by alphanumeric characters, hyphens, or underscores)", path)
 	}
 	return nil
 }
