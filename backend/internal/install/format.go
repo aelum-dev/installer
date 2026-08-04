@@ -103,7 +103,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Refresh kernel partition table
-	cmd := ctx.run(HelperCmdRun, HelperCmdPartprobe, diskID)
+	cmd = ctx.run(HelperCmdRun, HelperCmdPartprobe, diskID)
 	probeOut, probeErr := cmd.CombinedOutput()
 	if probeErr != nil {
 		if ctx.Logger != nil {
