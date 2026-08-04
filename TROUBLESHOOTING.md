@@ -1,0 +1,156 @@
+# Troubleshooting
+
+Common issues and how to resolve them.
+
+## Installation Fails — How to Read the Log
+
+The installer writes a detailed log to:
+
+```
+~/.local/share/aestheticos-installer/installation.log
+```
+
+On the live ISO, the path is:
+
+```
+/shared/installation.log
+```
+
+### Log Format
+
+```
+[14:32:01] Starting step: Formatting disk
+[14:32:02] Running: sgdisk -Z /dev/sda
+[14:32:02] Running: sgdisk -n 1:2048:+128M -t 1:C12A7328... /dev/sda
+[14:32:03] ERROR: Failed to wipe /dev/sda1: exit status 1 (Unknown command: wipefs ...)
+```
+
+- `[HH:MM:SS]` — timestamp
+- `Starting step:` / `Step completed:` — step boundaries
+- `Running:` — command output from the helper
+- `ERROR:` — failure point with command and output
+
+### Quick Log Inspection
+
+```bash
+# Last 50 lines
+tail -50 ~/.local/share/aestheticos-installer/installation.log
+
+# Search for errors
+grep -i "error\|failed" ~/.local/share/aestheticos-installer/installation.log
+
+# See only a specific step
+sed -n '/Starting step: Formatting disk/,/Starting step: Mounting filesystem/p' ~/.local/share/aestheticos-installer/installation.log
+```
+
+## Common Failures
+
+### "parted failed" / "sgdisk failed"
+
+**Cause**: Disk is in use, locked, or has an incompatible partition table.
+
+**Fix**:
+```bash
+# Check what's using the disk
+lsblk /dev/sda
+mount | grep /dev/sda
+
+# If partitions are mounted, unmount them
+sudo umount -R /mnt 2>/dev/null
+
+# Try rollback to clean up
+./aestheticos-installer-cli --rollback /dev/sda
+```
+
+### "pacstrap failed" / "no mirror list available"
+
+**Cause**: Mirrorlist is missing or corrupted for the selected region.
+
+**Fix**:
+1. Verify the mirrorlist exists: `ls /etc/pacman.d/mirrorlist-*`
+2. Rebuild mirrorlists: `go run ./backend/internal/shared/mirrorlist_gen.go`
+3. Rebuild the installer: `./build.sh`
+
+### "bootctl install failed"
+
+**Cause**: ESP is not mounted correctly, or firmware doesn't support systemd-boot.
+
+**Fix**:
+```bash
+# Check ESP is mounted
+ls /mnt/boot/
+
+# Verify EFI firmware
+efibootmgr --version
+```
+
+### "root UUID is empty" / "partitions not initialized"
+
+**Cause**: `FormatDisk` was skipped or failed before populating partition info.
+
+**Fix**: Run the format step first:
+```bash
+./aestheticos-installer-cli --format-disk /dev/sda
+```
+
+### Rollback Leaves Disk in Unknown State
+
+**Cause**: Rollback partially failed (e.g., `wipefs` succeeded on one partition but not the other).
+
+**Fix**:
+```bash
+# Full wipe — removes partition table and all signatures
+sudo sgdisk -Z /dev/sda
+
+# Or use the helper if available
+sudo /usr/local/bin/aestheticos-helper run sgdisk -Z /dev/sda
+```
+
+## Hardware-Specific Issues
+
+### NVMe Disks
+
+NVMe devices use `nvme0n1p1` naming (not `sda1`). The installer handles this automatically via `DerivePartitionPath()`. If you see path errors, verify the disk name:
+
+```bash
+lsblk -d -o NAME,TYPE,SIZE /dev/nvme*
+```
+
+### TPM / Secure Boot
+
+The installer does not configure Secure Boot. If Secure Boot is enabled, the kernel modules and bootloader may need to be signed. This is not handled by the installer.
+
+### Small Disks (< 16 GB)
+
+The installer rejects disks smaller than 16 GB. This is a hard limit because the base system + desktop + swap require approximately 10–12 GB.
+
+## Recovery: Starting Over
+
+If an installation is partially complete and you want to start fresh:
+
+```bash
+# 1. Roll back the disk
+./aestheticos-installer-cli --rollback /dev/sda
+
+# 2. Verify it's clean
+lsblk /dev/sda
+# Should show partitions but no mountpoints
+
+# 3. Re-run installation
+./aestheticos-installer-cli --install /dev/sda --filesystem btrfs --password yourpassword
+```
+
+## Reporting Bugs
+
+When reporting a bug, include:
+
+1. **What you expected** vs **what actually happened**
+2. **Steps to reproduce** (exact commands, disk type, filesystem choice)
+3. **Log file** — attach `~/.local/share/aestheticos-installer/installation.log`
+4. **Environment**:
+   - Live ISO version
+   - Target disk model and size
+   - Filesystem selected (ext4 / btrfs)
+   - Any custom flags used
+
+Use the [GitHub issue template](https://github.com/AestheticOS/AestheticOS-Installer/issues/new) when available.
