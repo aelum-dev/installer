@@ -7,9 +7,10 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
-// ConfigureSystem sets up system configuration in the installed system via chroot.
+// ConfigureSystemBase sets up system configuration in the installed system via chroot.
 // Configures: hostname, timezone, locale, keymap — all from region data.
-func ConfigureSystem(ctx *InstallContext) error {
+// Called by ConfigureSystem (the merged step) in configuration.go.
+func ConfigureSystemBase(ctx *InstallContext) error {
 	if err := validateMountedSystem(ctx); err != nil {
 		return err
 	}

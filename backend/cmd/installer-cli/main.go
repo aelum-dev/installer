@@ -9,12 +9,8 @@
 //	./aestheticos-installer-cli --format-disk /dev/vda
 //	./aestheticos-installer-cli --mount-filesystem /dev/vda
 //	./aestheticos-installer-cli --install-system /dev/vda
-//	./aestheticos-installer-cli --generate-fstab /dev/vda
-//	./aestheticos-installer-cli --install-bootloader /dev/vda
 //	./aestheticos-installer-cli --setup-users /dev/vda
 //	./aestheticos-installer-cli --configure-system /dev/vda
-//	./aestheticos-installer-cli --configure-greetd /dev/vda
-//	./aestheticos-installer-cli --enable-services /dev/vda
 package main
 
 import (
@@ -42,13 +38,8 @@ func main() {
 	formatDiskFlag := flag.String("format-disk", "", "Disk to format")
 	mountFsFlag := flag.String("mount-filesystem", "", "Disk whose partitions to mount")
 	installSystemFlag := flag.String("install-system", "", "Disk to install base system to")
-	genFstabFlag := flag.String("generate-fstab", "", "Disk to generate fstab for")
-	bootloaderFlag := flag.String("install-bootloader", "", "Disk to install bootloader on")
 	setupUsersFlag := flag.String("setup-users", "", "Disk to set up users on")
 	configureSysFlag := flag.String("configure-system", "", "Disk to configure system on")
-	configureGreetdFlag := flag.String("configure-greetd", "", "Disk to configure greetd on")
-	configureZramFlag := flag.String("configure-zram", "", "Disk to configure zram swap on")
-	enableServicesFlag := flag.String("enable-services", "", "Disk to enable services on")
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
@@ -95,13 +86,8 @@ func main() {
 		formatDiskFlag, "format_disk",
 		mountFsFlag, "mount_filesystem",
 		installSystemFlag, "install",
-		genFstabFlag, "generate_fstab",
-		bootloaderFlag, "configure_bootloader",
 		setupUsersFlag, "setup_users",
 		configureSysFlag, "configure_system",
-		configureGreetdFlag, "configure_greetd",
-		configureZramFlag, "configure_zram",
-		enableServicesFlag, "enable_services",
 	)...)
 
 	if disk == "" {
@@ -235,15 +221,11 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                        Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                   Mount partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                     Install base system\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --generate-fstab <disk> [--dry-run]                     Generate fstab\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --install-bootloader <disk> [--dry-run]                 Install bootloader\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                        Set up user accounts\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --configure-greetd <disk> [--dry-run]                   Configure greetd + DMS greeter\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --configure-zram <disk> [--dry-run]                     Configure zram swap\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --enable-services <disk> [--dry-run]                    Enable systemd services\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Note: --password is required for all installation steps.\n")
+	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])

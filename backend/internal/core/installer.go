@@ -175,14 +175,8 @@ var stepDefinitions = []installationStep{
 	{name: "mount_filesystem", label: "Mounting filesystem", run: install.MountFilesystem},
 	{name: "install_base", label: "Installing base system", run: install.Install},
 	{name: "install_desktop", label: "Installing desktop environment", run: install.InstallDesktop},
-	{name: "generate_fstab", label: "Generating fstab", run: install.GenerateFstab},
-	{name: "configure_bootloader", label: "Configuring bootloader", run: install.ConfigureBootloader},
 	{name: "setup_users", label: "Setting up users", run: install.SetupUsers},
 	{name: "configure_system", label: "Configuring system", run: install.ConfigureSystem},
-	{name: "configure_greetd", label: "Configuring login manager", run: install.ConfigureGreetd},
-	{name: "configure_plymouth", label: "Configuring silent boot", run: install.ConfigurePlymouth},
-	{name: "configure_zram", label: "Configuring zram swap", run: install.ConfigureZram},
-	{name: "enable_services", label: "Enabling services", run: install.EnableServices},
 }
 
 // stepWeights assigns relative weight to each step for progress bar calculation.
@@ -193,14 +187,8 @@ var stepWeights = []int{
 	WeightMountFilesystem,
 	WeightInstallBase,
 	WeightInstallDesktop,
-	WeightGenerateFstab,
-	WeightConfigureBootloader,
 	WeightSetupUsers,
 	WeightConfigureSystem,
-	WeightConfigureGreetd,
-	WeightConfigurePlymouth,
-	WeightConfigureZram,
-	WeightEnableServices,
 }
 
 // Progress weight constants for installation steps.
@@ -209,14 +197,8 @@ const (
 	WeightMountFilesystem     = 2
 	WeightInstallBase         = 45 // base pacstrap — longest step
 	WeightInstallDesktop      = 35 // desktop pacstrap — second longest
-	WeightGenerateFstab       = 2
-	WeightConfigureBootloader = 3
 	WeightSetupUsers          = 2
-	WeightConfigureSystem     = 2
-	WeightConfigureGreetd     = 2
-	WeightConfigurePlymouth   = 1
-	WeightConfigureZram       = 1
-	WeightEnableServices      = 2
+	WeightConfigureSystem     = 13
 )
 
 // cumulativePercentages calculates the cumulative percentage at each step boundary

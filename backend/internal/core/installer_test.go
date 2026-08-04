@@ -15,14 +15,8 @@ func TestInstaller_StepNames(t *testing.T) {
 		"mount_filesystem",
 		"install_base",
 		"install_desktop",
-		"generate_fstab",
-		"configure_bootloader",
 		"setup_users",
 		"configure_system",
-		"configure_greetd",
-		"configure_plymouth",
-		"configure_zram",
-		"enable_services",
 	}
 
 	if len(steps) != len(expectedSteps) {
@@ -85,14 +79,8 @@ func TestValidStepNames(t *testing.T) {
 		"mount_filesystem":      false,
 		"install_base":          false,
 		"install_desktop":       false,
-		"generate_fstab":        false,
-		"configure_bootloader":  false,
 		"setup_users":           false,
 		"configure_system":      false,
-		"configure_greetd":      false,
-		"configure_plymouth":    false,
-		"configure_zram":        false,
-		"enable_services":       false,
 	}
 
 	for _, name := range names {

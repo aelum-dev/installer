@@ -48,8 +48,8 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 
 	// Last event should be the last step at 100% done.
 	last := progressEvents[len(progressEvents)-1]
-	if !strings.Contains(last, "Enabling services:100:done") {
-		t.Errorf("expected last event to be Enabling services at 100%% done, got: %s", last)
+	if !strings.Contains(last, "Configuring system:100:done") {
+		t.Errorf("expected last event to be Configuring system at 100%% done, got: %s", last)
 	}
 }
 
@@ -78,8 +78,8 @@ func TestInstall_DryRun_Btrfs(t *testing.T) {
 		t.Fatalf("expected success in dry-run btrfs, got error: %v", err)
 	}
 
-	// All 12 steps should have been invoked.
-	if len(stepLabels) != 12 {
+	// All 6 steps should have been invoked.
+	if len(stepLabels) != 6 {
 		t.Errorf("expected 12 step labels, got %d: %v", len(stepLabels), stepLabels)
 	}
 }
