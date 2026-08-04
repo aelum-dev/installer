@@ -7,9 +7,6 @@ var desktopPackages = []string{
 	// Boot splash
 	"plymouth",
 
-	// Zram swap
-	"systemd-zram-generator",
-
 	// Login manager
 	"greetd",
 	"greetd-agreety",

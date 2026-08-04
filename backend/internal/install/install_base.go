@@ -30,6 +30,7 @@ var basePackages = []string{
 	"bluez",
 	"power-profiles-daemon",
 	"yay-bin",
+	"zram-generator",
 
 	// Editor
 	"vim",

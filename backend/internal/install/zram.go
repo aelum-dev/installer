@@ -6,7 +6,7 @@ import (
 )
 
 // ConfigureZram sets up zram-based compressed swap in the installed system.
-// Uses systemd-zram-generator with zram-size = min(ram/2, 16384 MiB) and zstd compression.
+// Uses zram-generator with zram-size = min(ram/2, 16384 MiB) and zstd compression.
 // Also adds zram to mkinitcpio so the module is available early in boot.
 func ConfigureZram(ctx *InstallContext) error {
 	if err := validateMountedSystem(ctx); err != nil {
