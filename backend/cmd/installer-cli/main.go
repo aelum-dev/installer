@@ -243,6 +243,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --configure-zram <disk> [--dry-run]                     Configure zram swap\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --enable-services <disk> [--dry-run]                    Enable systemd services\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "Note: --password is required for all installation steps.\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
