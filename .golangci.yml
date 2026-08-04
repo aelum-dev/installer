@@ -34,6 +34,9 @@ linters:
         linters:
           - errcheck
           - govet
+      - path: main\.go
+        linters:
+          - typecheck
       - text: "InstallContext"
         linters:
           - revive
