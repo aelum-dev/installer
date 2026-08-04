@@ -19,7 +19,6 @@ var btrfsSubvolumes = []BtrfsSubvolume{
 	{Name: "@cache", MountPoint: "/var/cache", Compression: "", NoDataCow: true},
 	{Name: "@tmp", MountPoint: "/var/tmp", Compression: "", NoDataCow: true},
 	{Name: "@log", MountPoint: "/var/log", Compression: "zstd", NoDataCow: false},
-	{Name: "@swap", MountPoint: "/swap", Compression: "", NoDataCow: true},
 }
 
 // GetBtrfsSubvolumes returns the standard btrfs subvolume scheme.

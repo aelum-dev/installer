@@ -15,7 +15,7 @@ const MinUsernameLength = 3
 const MinPasswordLength = 6
 
 // MinDiskSizeBytes is the minimum disk size in bytes (16 GiB).
-// Accounts for: base system (~1.5GB) + desktop packages (~4GB) + swap (4GB) + overhead (~1GB).
+// Accounts for: base system (~1.5GB) + desktop packages (~4GB) + swap (dynamic, up to 16GB) + overhead (~1GB).
 const MinDiskSizeBytes = 16 * 1024 * 1024 * 1024
 
 // --- Filesystem types --------------------------------------------------------

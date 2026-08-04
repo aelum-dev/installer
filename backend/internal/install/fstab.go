@@ -53,14 +53,13 @@ func GenerateFstab(ctx *InstallContext) error {
 
 // generateBtrfsFstab builds the fstab content string for btrfs with subvolumes.
 // All subvolumes share the root partition UUID, with subvol=<name> in mount options.
-// The @swap subvolume is handled separately: mounted as btrfs, plus a swap entry for the file.
 func generateBtrfsFstab(ctx *InstallContext) string {
 	p := ctx.Partitions
 
 	// Get subvolumes from shared definition
 	subvolumes := shared.GetBtrfsSubvolumes()
 
-	// Build fstab: EFI first, then subvolumes, then swap
+	// Build fstab: EFI first, then subvolumes
 	var lines []string
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
 
@@ -68,22 +67,9 @@ func generateBtrfsFstab(ctx *InstallContext) string {
 	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, EfiPartitionUmask))
 
 	for _, sv := range subvolumes {
-		// Skip @swap — it needs special handling (mount + swap entry)
-		if sv.Name == "@swap" {
-			continue
-		}
 		opts := buildMountOpts(&sv)
 		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
 	}
-
-	// @swap subvolume mount (required so /swap exists for the swap file)
-	swapSubvol := shared.FindSubvolumeByMountPoint(subvolumes, "/swap")
-	if swapSubvol != nil {
-		lines = append(lines, fmt.Sprintf("UUID=%s  /swap  btrfs   %s  0 0", p.RootUUID, buildMountOpts(swapSubvol)))
-	}
-
-	// Swap file entry — must come after /swap mount so the path exists at boot
-	lines = append(lines, "/swap/swapfile  none  swap  defaults  0  0")
 
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -99,8 +85,7 @@ func generateExt4Fstab(ctx *InstallContext) string {
 	return fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
 UUID=%s  /              %s    %s        0  1
 UUID=%s  /boot          vfat    %s 0 2
-%s
-`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask, GetSwapFstabEntry(ctx))
+`, p.RootUUID, rootFstype, DefaultMountOptions, p.EFIUUID, EfiPartitionUmask)
 }
 
 // writeBtrfsFstab writes a custom fstab for btrfs with subvolumes.

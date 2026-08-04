@@ -13,7 +13,6 @@ func TestInstaller_StepNames(t *testing.T) {
 	expectedSteps := []string{
 		"format_disk",
 		"mount_filesystem",
-		"create_swap",
 		"install_base",
 		"install_desktop",
 		"generate_fstab",
@@ -22,6 +21,7 @@ func TestInstaller_StepNames(t *testing.T) {
 		"configure_system",
 		"configure_greetd",
 		"configure_plymouth",
+		"configure_zram",
 		"enable_services",
 	}
 
@@ -81,18 +81,18 @@ func TestValidStepNames(t *testing.T) {
 
 	// Check that all expected names are present
 	expected := map[string]bool{
-		"format_disk":            false,
-		"mount_filesystem":       false,
-		"install_base":           false,
-		"install_desktop":        false,
-		"create_swap":            false,
-		"generate_fstab":         false,
-		"configure_bootloader":   false,
-		"setup_users":            false,
-		"configure_system":       false,
-		"configure_greetd":       false,
-		"configure_plymouth":     false,
-		"enable_services":        false,
+		"format_disk":           false,
+		"mount_filesystem":      false,
+		"install_base":          false,
+		"install_desktop":       false,
+		"generate_fstab":        false,
+		"configure_bootloader":  false,
+		"setup_users":           false,
+		"configure_system":      false,
+		"configure_greetd":      false,
+		"configure_plymouth":    false,
+		"configure_zram":        false,
+		"enable_services":       false,
 	}
 
 	for _, name := range names {

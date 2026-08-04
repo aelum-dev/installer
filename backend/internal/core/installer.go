@@ -173,7 +173,6 @@ type installationStep struct {
 var stepDefinitions = []installationStep{
 	{name: "format_disk", label: "Formatting disk", run: install.FormatDisk},
 	{name: "mount_filesystem", label: "Mounting filesystem", run: install.MountFilesystem},
-	{name: "create_swap", label: "Creating swap", run: install.CreateSwap},
 	{name: "install_base", label: "Installing base system", run: install.Install},
 	{name: "install_desktop", label: "Installing desktop environment", run: install.InstallDesktop},
 	{name: "generate_fstab", label: "Generating fstab", run: install.GenerateFstab},
@@ -182,6 +181,7 @@ var stepDefinitions = []installationStep{
 	{name: "configure_system", label: "Configuring system", run: install.ConfigureSystem},
 	{name: "configure_greetd", label: "Configuring login manager", run: install.ConfigureGreetd},
 	{name: "configure_plymouth", label: "Configuring silent boot", run: install.ConfigurePlymouth},
+	{name: "configure_zram", label: "Configuring zram swap", run: install.ConfigureZram},
 	{name: "enable_services", label: "Enabling services", run: install.EnableServices},
 }
 
@@ -191,7 +191,6 @@ var stepDefinitions = []installationStep{
 var stepWeights = []int{
 	WeightFormatDisk,
 	WeightMountFilesystem,
-	WeightCreateSwap,
 	WeightInstallBase,
 	WeightInstallDesktop,
 	WeightGenerateFstab,
@@ -200,23 +199,24 @@ var stepWeights = []int{
 	WeightConfigureSystem,
 	WeightConfigureGreetd,
 	WeightConfigurePlymouth,
+	WeightConfigureZram,
 	WeightEnableServices,
 }
 
 // Progress weight constants for installation steps.
 const (
-	WeightFormatDisk         = 3
-	WeightMountFilesystem    = 2
-	WeightCreateSwap         = 2
-	WeightInstallBase        = 45 // base pacstrap — longest step
-	WeightInstallDesktop     = 35 // desktop pacstrap — second longest
-	WeightGenerateFstab      = 2
+	WeightFormatDisk          = 3
+	WeightMountFilesystem     = 2
+	WeightInstallBase         = 45 // base pacstrap — longest step
+	WeightInstallDesktop      = 35 // desktop pacstrap — second longest
+	WeightGenerateFstab       = 2
 	WeightConfigureBootloader = 3
-	WeightSetupUsers         = 2
-	WeightConfigureSystem    = 2
-	WeightConfigureGreetd    = 2
-	WeightConfigurePlymouth  = 1
-	WeightEnableServices     = 2
+	WeightSetupUsers          = 2
+	WeightConfigureSystem     = 2
+	WeightConfigureGreetd     = 2
+	WeightConfigurePlymouth   = 1
+	WeightConfigureZram       = 1
+	WeightEnableServices      = 2
 )
 
 // cumulativePercentages calculates the cumulative percentage at each step boundary

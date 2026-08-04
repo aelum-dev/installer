@@ -298,8 +298,8 @@ func TestStepWeightsSum(t *testing.T) {
 	for _, w := range stepWeights {
 		total += w
 	}
-	if total != 101 {
-		t.Errorf("expected step weights to sum to 101, got %d", total)
+	if total != 100 {
+		t.Errorf("expected step weights to sum to 100, got %d", total)
 	}
 }
 
