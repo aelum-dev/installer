@@ -61,6 +61,46 @@ frontend/src/
 4. Run `./build.sh` to verify the full build
 5. Commit with a clear message, then push and open a PR
 
+## Code Style
+
+- **Go**: Follow [Effective Go](https://go.dev/doc/effective_go) and `gofmt`. Run `go vet ./...` and `go test ./...` before submitting.
+- **Svelte/TypeScript**: Follow [Svelte docs](https://svelte.dev/docs) conventions. Run `npm run check` for type checking.
+- **No magic numbers**: Extract constants into named `const` variables.
+- **Single responsibility**: Each function does one thing. Validation functions validate only — they don't mutate state.
+- **Live ISO vs installed system**: Never confuse the two. See `RULES.md` for the full distinction.
+
+## Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+```
+
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+
+Examples:
+```
+fix(core): return error on wipefs failure in Rollback
+feat(cli): add --version flag with ldflags injection
+refactor(format): replace magic numbers in stepWeights with constants
+```
+
+## Pull Requests
+
+1. Fork and create a feature branch
+2. Write or update tests for your changes
+3. Run the full test suite: `go test ./...` and `cd frontend && npm run test`
+4. Build to verify: `./build.sh`
+5. Squash commits into a single logical commit per feature
+6. Open a PR with:
+   - Clear description of what and why
+   - Link to related issue
+   - Screenshots for UI changes
+   - Testing notes (VM test results, etc.)
+
 ## Reporting Bugs
 
 Open an issue with:

@@ -21,6 +21,8 @@ AestheticOS Installer is a **graphical Arch Linux installer** built with [Wails 
 
 It also ships a **CLI installer** (`aestheticos-installer-cli`) and a **privileged helper binary** (`aestheticos-helper`) for headless/automated use.
 
+**This is an offline installer.** All packages are pulled from the live ISO's pacman database — no network connectivity is required or used during installation.
+
 ---
 
 ## Tech Stack

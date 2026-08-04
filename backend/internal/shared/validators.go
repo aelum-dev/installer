@@ -2,7 +2,10 @@ package shared
 
 import (
 	"fmt"
+	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 // ValidateUserAccount checks user account fields.
@@ -40,6 +43,25 @@ func ValidateDiskPath(path string) error {
 	}
 	if !regexp.MustCompile(`^/dev/[a-zA-Z0-9_-]+$`).MatchString(path) {
 		return fmt.Errorf("invalid disk path: %q (must be /dev/ followed by alphanumeric characters, hyphens, or underscores)", path)
+	}
+	return nil
+}
+
+// ValidateDiskSize checks that a disk meets the minimum size requirement.
+// It queries lsblk to get the disk size in bytes and compares against MinDiskSizeBytes.
+func ValidateDiskSize(diskPath string) error {
+	cmd := exec.Command("lsblk", "-b", "-d", "-n", "-o", "SIZE", diskPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to get disk size for %s: %w", diskPath, err)
+	}
+	sizeStr := strings.TrimSpace(string(output))
+	sizeBytes, err := strconv.ParseUint(sizeStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse disk size %q: %w", sizeStr, err)
+	}
+	if sizeBytes < MinDiskSizeBytes {
+		return fmt.Errorf("disk %s is too small: %s (minimum 16 GB required)", diskPath, FormatSize(sizeStr))
 	}
 	return nil
 }

@@ -112,6 +112,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := shared.ValidateDiskSize(disk); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
 	if *passwordFlag == "" {
 		fmt.Fprintf(os.Stderr, "Error: --password is required\n")
 		os.Exit(1)
