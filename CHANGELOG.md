@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `SHARED_DIR` and `BIN_DIR` in `build.sh` optional environment variables instead of hardcoded paths
 - Remove 63 empty `if ctx.Logger != nil {}` dead-code blocks across the install package
 
+### Fixed
+- Robustify `efibootmgr` output parsing in helper — replaced fragile char-by-char digit collection with regex matching, fixing broken boot numbers on labels containing digits and hex entry IDs
+- Pin Go toolchain to `go1.25.0` in `go.mod` to prevent confusing version errors on older Go installations
+
 ### Added
 - GitHub Actions CI workflow (`go test`, `go vet`, `svelte-check`, frontend tests)
 - `README.md` with project overview, build instructions, and usage
