@@ -99,6 +99,7 @@ Binaries: `build/bin/aestheticos-installer` (GUI), `build/bin/aestheticos-helper
 - Test on the VM (QEMU), not the host.
 - Run `go test ./...` before building.
 - Binaries go in `build/bin/` — never in project root.
+- **Run git commands one at a time.** Never chain multiple git operations in a single bash call — each can acquire locks and batching causes `index.lock` errors.
 
 ## Security
 - Passwords read from stdin (never CLI flags — avoids /proc, ps, shell history).

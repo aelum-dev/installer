@@ -5,6 +5,7 @@
 - **Don't overthink.** You're thinking budget is limited.
 - Binaries go in `build/bin/` — never in project root.
 - **Update CHANGELOG.md** with every meaningful change under `[Unreleased]`.
+- **Run git commands one at a time.** Never chain multiple git operations (e.g. `git add && git status && git commit`) in a single bash call. Each git command can acquire locks, and batching them causes `index.lock` errors. Always use separate bash calls.
 
 ## Building
 - **User always runs `build.sh` before testing.** Never assume user is running old binaries or manual `go build` commands.
