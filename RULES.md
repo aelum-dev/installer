@@ -31,7 +31,7 @@
 | **Live ISO** | The bootable Arch Linux environment the user starts from. Contains the installer binaries, helper, and live desktop. | `/etc/sudoers.d/aestheticos` on ISO lets helper run without password. Log file written here. Read-only rootfs (overlay). |
 | **Installed System** | The Arch Linux being written to the target disk. What the user boots into after installation. | `/mnt/` is the mount point during install. `/etc/sudoers.d/wheel` is written here for the new user. `arch-chroot /mnt` runs commands inside it. |
 | **Host** | The developer's main machine (not the VM). | Where `build.sh` runs, where git lives. |
-| **VM** | QEMU VM booting from the ISO. Used for testing. | `/shared` is mounted from host's `/home/power007/Projects/shared`. |
+| **VM** | QEMU VM booting from the ISO. Used for testing. | `/shared` is mounted from host's `~/Projects/shared`. |
 
 **Key paths:**
 - Live ISO root: `/` (read-only, overlay)
@@ -52,7 +52,7 @@
 ## Testing Environments
 - **Host machine** = main development system (where you develop the installer)
 - **VM** = QEMU virtual machine booting from ISO (testing environment)
-- `/home/power007/Projects/shared` is shared between host and VM
+- `~/Projects/shared` is shared between host and VM
 - `/shared` is mounted on a VM
 
 ## Testing

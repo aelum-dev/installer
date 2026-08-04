@@ -8,7 +8,7 @@
 |------|-----------|-----------|
 | **Live ISO** | Bootable Arch environment running the installer. Read-only rootfs (overlay). | `/etc/sudoers.d/aestheticos` — lets helper run via sudo. Helper binary at `/usr/local/bin/aestheticos-helper`. |
 | **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. ESP at `/mnt/boot/`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
-| **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `/home/power007/Projects/shared` shared with VM. |
+| **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `~/Projects/shared` shared with VM. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
 **Code rule:** If it touches `/mnt/*` or runs via `arch-chroot` → installed system. If it touches `/dev/*` or runs directly → live ISO.
@@ -206,9 +206,9 @@ Region-specific mirrorlists are embedded in the binary. A `mirrorlist_gen.go` sc
 
 ## Shared Host/VM Setup
 
-- **Host**: `/home/power007/Projects/shared`
+- **Host**: `~/Projects/shared`
 - **VM**: `/shared` (mounted from host shared dir)
-- **ISO bin dir**: `/home/power007/Projects/AestheticOS/airootfs/usr/local/bin`
+- **ISO bin dir**: `~/Projects/AestheticOS/airootfs/usr/local/bin`
 - Built binaries are copied to both locations by `build.sh`
 
 ---
