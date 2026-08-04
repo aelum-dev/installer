@@ -2,12 +2,85 @@ package install
 
 import (
 	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
 )
 
 // SwapFilePermissions are the required permissions for swap files (kernel requirement).
 const SwapFilePermissions = 0600
+
+// Swap size constants (in bytes).
+const (
+	SwapMaxBytes = 16 * 1024 * 1024 * 1024 // 16 GiB cap
+)
+
+// meminfoKBRegex extracts the numeric value from a /proc/meminfo line (e.g. "MemTotal:       16384 kB").
+var meminfoKBRegex = regexp.MustCompile(`^MemTotal:\s+(\d+)\s+kB$`)
+
+// GetTotalRAMKB reads /proc/meminfo on the live ISO and returns total RAM in kB.
+func GetTotalRAMKB() (int64, error) {
+	data, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return 0, fmt.Errorf("failed to read /proc/meminfo: %w", err)
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		matches := meminfoKBRegex.FindStringSubmatch(line)
+		if matches != nil {
+			kb, err := strconv.ParseInt(matches[1], 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("failed to parse meminfo value: %w", err)
+			}
+			return kb, nil
+		}
+	}
+	return 0, fmt.Errorf("MemTotal not found in /proc/meminfo")
+}
+
+// CalculateSwapSize returns the recommended swap size in bytes.
+// Rule: min(RAM/2, 16GiB).
+func CalculateSwapSize(totalRAMKB int64) int64 {
+	totalRAMBytes := totalRAMKB * 1024
+	halfRAM := totalRAMBytes / 2
+	if halfRAM > SwapMaxBytes {
+		return SwapMaxBytes
+	}
+	return halfRAM
+}
+
+// formatSwapSize returns a human-readable swap size string for commands
+// (e.g. "8G", "4096M"). Uses GiB when >= 1GiB, otherwise MiB.
+func formatSwapSize(bytes int64) string {
+	giB := int(bytes / (1024 * 1024 * 1024))
+	if giB >= 1 {
+		return fmt.Sprintf("%dG", giB)
+	}
+	miB := int(bytes / (1024 * 1024))
+	return fmt.Sprintf("%dM", miB)
+}
+
+// parseSwapSize converts a size string (e.g. "8G", "4096M") back to bytes.
+func parseSwapSize(s string) (int64, error) {
+	s = strings.TrimSpace(s)
+	if strings.HasSuffix(s, "G") {
+		v, err := strconv.ParseInt(strings.TrimSuffix(s, "G"), 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid size %q: %w", s, err)
+		}
+		return v * 1024 * 1024 * 1024, nil
+	}
+	if strings.HasSuffix(s, "M") {
+		v, err := strconv.ParseInt(strings.TrimSuffix(s, "M"), 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid size %q: %w", s, err)
+		}
+		return v * 1024 * 1024, nil
+	}
+	return 0, fmt.Errorf("unsupported size format %q (expected G or M suffix)", s)
+}
 
 // CreateSwap creates a swap file on the installed system.
 // For btrfs: creates /swap subvolume with nodatacow, then swap file inside it.
@@ -18,16 +91,27 @@ func CreateSwap(ctx *InstallContext) error {
 	}
 
 
+	// Detect RAM and calculate swap size
+	totalRAMKB, err := GetTotalRAMKB()
+	if err != nil {
+		return fmt.Errorf("failed to detect RAM: %w", err)
+	}
+	swapSizeBytes := CalculateSwapSize(totalRAMKB)
+	swapSizeStr := formatSwapSize(swapSizeBytes)
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Detected %d kB RAM, using %s swap", totalRAMKB, swapSizeStr)
+	}
+
 	var swapFilePath string
 	switch ctx.FileSystem {
 	case shared.FileSystemBtrfs:
 		swapFilePath = "/swap/swapfile"
-		if err := createBtrfsSwapFile(ctx, swapFilePath); err != nil {
+		if err := createBtrfsSwapFile(ctx, swapFilePath, swapSizeStr); err != nil {
 			return err
 		}
 	default:
 		swapFilePath = "/swapfile"
-		if err := createExt4SwapFile(ctx, swapFilePath); err != nil {
+		if err := createExt4SwapFile(ctx, swapFilePath, swapSizeStr); err != nil {
 			return err
 		}
 	}
@@ -43,14 +127,14 @@ func CreateSwap(ctx *InstallContext) error {
 
 // createBtrfsSwapFile creates the swap file inside the already-mounted @swap subvolume.
 // The subvolume is created, configured with nodatacow, and mounted by MountFilesystem.
-func createBtrfsSwapFile(ctx *InstallContext, path string) error {
+func createBtrfsSwapFile(ctx *InstallContext, path, size string) error {
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Creating btrfs swap file: %s (4G)", path)
+		ctx.Logger.Info("Creating btrfs swap file: %s (%s)", path, size)
 	}
 
 	// @swap subvolume is already mounted at /mnt/swap by MountFilesystem
 	swapMountPoint := shared.MountRoot + path
-	cmd := ctx.run(HelperCmdBtrfsMkswapfile, swapMountPoint, "4G")
+	cmd := ctx.run(HelperCmdBtrfsMkswapfile, swapMountPoint, size)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create btrfs swap file: %w: %s", err, string(output))
@@ -61,26 +145,30 @@ func createBtrfsSwapFile(ctx *InstallContext, path string) error {
 
 // createExt4SwapFile creates a swap file using fallocate (fast) with dd fallback.
 // Sets 0600 permissions and formats with mkswap (btrfs handles these via mkswapfile).
-func createExt4SwapFile(ctx *InstallContext, path string) error {
+func createExt4SwapFile(ctx *InstallContext, path, size string) error {
+	// Parse size string back to bytes for fallocate/dd
+	sizeBytes, err := parseSwapSize(size)
+	if err != nil {
+		return fmt.Errorf("failed to parse swap size %q: %w", size, err)
+	}
 
 	// Fast path: fallocate
-	cmd := ctx.run(HelperCmdRun, "fallocate", "-l", "4096M", shared.MountRoot+path)
+	cmd := ctx.run(HelperCmdRun, "fallocate", "-l", size, shared.MountRoot+path)
 	if err := cmd.Run(); err == nil {
 	} else {
 		// Fallback: dd (works on all filesystems)
-
+		miB := int(sizeBytes / (1024 * 1024))
 		cmd = ctx.run(HelperCmdRun,
 			"if=/dev/zero",
 			"of="+shared.MountRoot+path,
 			"bs=1M",
-			"count=4096",
+			"count="+strconv.Itoa(miB),
 			"status=progress",
 		)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("failed to create swap file with dd: %w: %s", err, string(output))
 		}
-
 	}
 
 	// Set permissions (btrfs mkswapfile handles this automatically)
