@@ -735,6 +735,6 @@ func cmdBtrfsMkswapfile(args []string) error {
 	return runCommand("btrfs", "filesystem", "mkswapfile", "--size", size, path)
 }
 
-func cmdUdevSettle(args []string) error {
+func cmdUdevSettle(_ []string) error {
 	return runCommand("udevadm", "settle")
 }

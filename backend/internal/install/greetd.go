@@ -11,7 +11,7 @@ import (
 var greetdConfigToml string
 
 //go:embed data/greetd/memory.json
-var defaultMemoryJson string
+var defaultMemoryJSON string
 
 // ConfigureGreetd sets up greetd as the login manager with the DMS greeter.
 // Runs inside the installed system via arch-chroot as root.
@@ -224,7 +224,7 @@ func syncDmsGreeter(ctx *InstallContext) error {
 	// This lets the greeter pre-select the user and session in the picker,
 	// but does NOT enable auto-login (no autoLoginEnabled field).
 	stateMemoryPath := filepath.Join(cacheDir, ".local", "state", "memory.json")
-	memoryContent := strings.ReplaceAll(defaultMemoryJson, "{{USERNAME}}", username)
+	memoryContent := strings.ReplaceAll(defaultMemoryJSON, "{{USERNAME}}", username)
 	if err := writeFile(ctx, stateMemoryPath, memoryContent); err != nil {
 		return fmt.Errorf("failed to write memory.json: %w", err)
 	}

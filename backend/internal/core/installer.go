@@ -223,7 +223,7 @@ func cumulativePercentages(steps []installationStep) []int {
 }
 
 // installationSteps returns the list of installation steps.
-func (i *Installer) installationSteps() []installationStep {
+func (inst *Installer) installationSteps() []installationStep {
 	return stepDefinitions
 }
 
@@ -238,29 +238,29 @@ func validStepNames() []string {
 
 // RunStep runs a single named installation step.
 // Returns the step label, the percentage (0-100, always 100 for single step), and any error.
-func (i *Installer) RunStep(stepName string) (label string, percent int, err error) {
-	allSteps := i.installationSteps()
+func (inst *Installer) RunStep(stepName string) (label string, percent int, err error) {
+	allSteps := inst.installationSteps()
 	for _, s := range allSteps {
 		if s.name == stepName {
 			label = s.label
-			if i.dryRun {
+			if inst.dryRun {
 				label = "[DRY RUN] " + label
 			}
-			i.emitProgress(label, 0, "running")
-			i.logInfo("Starting step: %s", s.label)
+			inst.emitProgress(label, 0, "running")
+			inst.logInfo("Starting step: %s", s.label)
 			var stepErr error
-			if i.dryRun {
+			if inst.dryRun {
 				stepErr = simulateStep()
 			} else {
-				stepErr = s.run(i.context())
+				stepErr = s.run(inst.context())
 			}
 			if stepErr != nil {
-				i.logError("Step failed: %s - %v", s.label, stepErr)
-				i.emitError(s.label, stepErr.Error())
+				inst.logError("Step failed: %s - %v", s.label, stepErr)
+				inst.emitError(s.label, stepErr.Error())
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.label, stepErr)
 			}
-			i.emitProgress(label, 100, "done")
-			i.logInfo("Step completed: %s", s.label)
+			inst.emitProgress(label, 100, "done")
+			inst.logInfo("Step completed: %s", s.label)
 			return label, 100, nil
 		}
 	}
@@ -271,51 +271,51 @@ func (i *Installer) RunStep(stepName string) (label string, percent int, err err
 // context creates an InstallContext for this installer.
 // The password is copied to the context and then zeroed from the Installer
 // to minimize the time the plaintext password resides in memory.
-func (i *Installer) context() *install.InstallContext {
-	password := make([]byte, len(i.password))
-	copy(password, i.password)
+func (inst *Installer) context() *install.InstallContext {
+	password := make([]byte, len(inst.password))
+	copy(password, inst.password)
 	// Zero our copy immediately — the context now owns the only copy.
-	for k := range i.password {
-		i.password[k] = 0
+	for k := range inst.password {
+		inst.password[k] = 0
 	}
 	return &install.InstallContext{
-		DiskID:     i.diskID,
-		ESP:        i.esp,
-		Helper:     i.helperPath,
-		Username:   i.username,
+		DiskID:     inst.diskID,
+		ESP:        inst.esp,
+		Helper:     inst.helperPath,
+		Username:   inst.username,
 		Password:   password,
-		Hostname:   i.hostname,
-		Region:     i.region,
-		FileSystem: i.fileSystem,
-		Logger:     i.Logger,
+		Hostname:   inst.hostname,
+		Region:     inst.region,
+		FileSystem: inst.fileSystem,
+		Logger:     inst.Logger,
 	}
 }
 
 // emitProgress reports progress to the UI.
-func (i *Installer) emitProgress(label string, percent int, phase string) {
-	if i.OnProgress != nil {
-		i.OnProgress(label, percent, phase)
+func (inst *Installer) emitProgress(label string, percent int, phase string) {
+	if inst.OnProgress != nil {
+		inst.OnProgress(label, percent, phase)
 	}
 }
 
 // emitError reports an error to the UI.
-func (i *Installer) emitError(label, message string) {
-	if i.OnError != nil {
-		i.OnError(label, message)
+func (inst *Installer) emitError(label, message string) {
+	if inst.OnError != nil {
+		inst.OnError(label, message)
 	}
 }
 
 // logInfo logs an informational message via the step logger.
-func (i *Installer) logInfo(format string, args ...interface{}) {
-	if i.Logger != nil {
-		i.Logger.Info(format, args...)
+func (inst *Installer) logInfo(format string, args ...interface{}) {
+	if inst.Logger != nil {
+		inst.Logger.Info(format, args...)
 	}
 }
 
 // logError logs an error message via the step logger.
-func (i *Installer) logError(format string, args ...interface{}) {
-	if i.Logger != nil {
-		i.Logger.Error(format, args...)
+func (inst *Installer) logError(format string, args ...interface{}) {
+	if inst.Logger != nil {
+		inst.Logger.Error(format, args...)
 	}
 }
 

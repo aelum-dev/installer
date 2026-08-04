@@ -20,7 +20,7 @@ func CleanupMounts(helper string) {
 }
 
 // FormatDiskErrorCleanup tears down mounts left over from a failed FormatDisk.
-func FormatDiskErrorCleanup(disk, helper string) {
+func FormatDiskErrorCleanup(_ string, helper string) {
 	cmd := exec.Command("sudo", helper, HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot)
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: cleanup unmount failed: %v\n", err)
