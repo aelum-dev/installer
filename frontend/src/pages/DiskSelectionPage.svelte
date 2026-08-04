@@ -12,7 +12,8 @@
 	import Button from '$components/Button.svelte';
 	import { diskSelectionData, pageValid } from '$lib/state.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
-	import { formatSize, FILESYSTEMS, MIN_DISK_SIZE_BYTES } from '$lib/types';
+	import { formatSize, FILESYSTEMS } from '$lib/types';
+	import { MinDiskSizeBytes } from '$lib/constants';
 
 	let disks = $state<DiskInfo[]>([]);
 	let selectedDiskId = $state<string>('');
@@ -64,8 +65,8 @@
 		// Check disk size
 		if (disk && disk.size) {
 			const sizeBytes = parseInt(disk.size, 10);
-			if (!isNaN(sizeBytes) && sizeBytes < MIN_DISK_SIZE_BYTES) {
-				diskSizeError = `Disk is too small. Minimum ${formatSize(String(MIN_DISK_SIZE_BYTES))} required, but selected disk is ${formatSize(disk.size)}.`;
+			if (!isNaN(sizeBytes) && sizeBytes < MinDiskSizeBytes) {
+				diskSizeError = `Disk is too small. Minimum ${formatSize(String(MinDiskSizeBytes))} required, but selected disk is ${formatSize(disk.size)}.`;
 				pageValid.value = false;
 				return;
 			}

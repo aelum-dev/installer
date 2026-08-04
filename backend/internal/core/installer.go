@@ -373,18 +373,11 @@ func (inst *Installer) run(args ...string) *exec.Cmd {
 	return exec.Command("sudo", append([]string{inst.helperPath}, args...)...)
 }
 
-// FindHelper finds the aestheticos-helper binary.
+// FindHelper finds the aestheticos-helper binary next to the running executable.
 func FindHelper() string {
-	// Try ISO path first (live ISO has it at /usr/local/bin/)
-	if _, err := os.Stat("/usr/local/bin/aestheticos-helper"); err == nil {
-		return "/usr/local/bin/aestheticos-helper"
-	}
-	// Fallback: next to the main executable
 	exe, err := os.Executable()
 	if err != nil {
 		return "./aestheticos-helper"
 	}
-	// Get the directory of the executable
-	dir := filepath.Dir(exe)
-	return dir + "/aestheticos-helper"
+	return filepath.Dir(exe) + "/aestheticos-helper"
 }

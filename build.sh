@@ -23,6 +23,9 @@ BIN_DIR="${BIN_DIR:-}"
 echo "=== Refreshing mirrorlists ==="
 go run ./backend/internal/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
 
+echo "=== Generating TypeScript constants from Go ==="
+go run ./backend/scripts/gen-ts-constants.go
+
 echo "=== Building frontend ==="
 if [ ! -d "frontend/node_modules" ]; then
   echo "Installing frontend dependencies..."

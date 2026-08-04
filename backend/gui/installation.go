@@ -64,13 +64,12 @@ func (a *App) StartInstallation() error {
 	}
 	installer.OnError = func(label, message string) {
 		logger.WriteErrorLog(label, message)
-		logPath := ""
 		progress := InstallationProgress{
 			Label:   label,
 			Percent: 0,
 			Phase:   "error",
 		}
-		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, message, logPath)
+		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Install failed. You can reboot or use --rollback flag on aestheticos-installer-cli. For detailed information check installation.log", "")
 	}
 
 	// Run installation in a goroutine so it doesn't block the UI

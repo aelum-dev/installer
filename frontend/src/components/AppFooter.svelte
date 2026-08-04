@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Button from '$components/Button.svelte';
-	import { PAGE_IDS, MIN_DISK_SIZE_BYTES } from '$lib/types';
+	import { PAGE_IDS } from '$lib/types';
+	import { MinDiskSizeBytes } from '$lib/constants';
 	import { diskSelectionData, pageValid } from '$lib/state.svelte';
 
 	let { currentPage }: { currentPage: number } = $props();
@@ -13,7 +14,7 @@
 	const diskSizeOk = $derived.by(() => {
 		if (!diskSelectionData.disk) return false;
 		const size = parseInt(diskSelectionData.disk.size, 10);
-		return !isNaN(size) && size >= MIN_DISK_SIZE_BYTES;
+		return !isNaN(size) && size >= MinDiskSizeBytes;
 	});
 	const nextDisabled = $derived(currentPage === PAGE_IDS.CONFIRMATION ? !diskSizeOk : !pageValid.value);
 

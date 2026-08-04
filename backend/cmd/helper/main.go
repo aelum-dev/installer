@@ -417,16 +417,19 @@ func cmdLsblkPartitions(args []string) error {
 }
 
 func cmdPacstrap(args []string) error {
+	if _, err := buildPacstrapArgs(args); err != nil {
+		return err
+	}
+	return runCommand("pacstrap", args...)
+}
+
+// buildPacstrapArgs validates pacstrap arguments and returns the mountpoint.
+// It ensures at least a mountpoint and one package are provided.
+func buildPacstrapArgs(args []string) (string, error) {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: pacstrap [-K] <mountpoint> <packages...>")
+		return "", fmt.Errorf("usage: pacstrap [-K] <mountpoint> <packages...>")
 	}
-	cmdArgs := []string{}
-	for _, arg := range args {
-		if arg != "-K" {
-			cmdArgs = append(cmdArgs, arg)
-		}
-	}
-	return runCommand("pacstrap", cmdArgs...)
+	return args[0], nil
 }
 
 func cmdGenfstab(args []string) error {
