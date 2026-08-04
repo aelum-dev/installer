@@ -8,7 +8,7 @@ Graphical Arch Linux installer built with **Wails v2** (Go backend + Svelte 5 fr
 |------|------|-----------|
 | **Live ISO** | Bootable Arch env running the installer. Read-only rootfs (overlay). | Helper: `/usr/local/bin/aestheticos-helper`. Sudoers: `/etc/sudoers.d/aestheticos` |
 | **Installed System** | Arch being written to target disk. | Mounted at `/mnt/`. ESP at `/mnt/boot/`. Sudoers: `/etc/sudoers.d/wheel`. Accessed via `arch-chroot /mnt` |
-| **Host** | Developer's main machine. | `/home/power007/Projects/shared` shared with VM. |
+| **Host** | Developer's main machine. | `/home/<user>/Projects/shared` shared with VM. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
 **Code rule:** `/mnt/*` or `arch-chroot` → installed system. `/dev/*` or direct execution → live ISO.
