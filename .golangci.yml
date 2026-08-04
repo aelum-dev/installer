@@ -28,6 +28,18 @@ linters:
           arguments: [240]
         - name: exported
           disabled: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - govet
+      - text: "InstallContext"
+        linters:
+          - revive
+      - text: "InstallDesktop"
+        linters:
+          - revive
 
 formatters:
   enable:
@@ -43,14 +55,3 @@ formatters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - govet
-    - text: "InstallContext"
-      linters:
-        - revive
-    - text: "InstallDesktop"
-      linters:
-        - revive
