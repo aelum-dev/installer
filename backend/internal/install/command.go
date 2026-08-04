@@ -33,11 +33,8 @@ func writeFile(ctx *InstallContext, targetPath string, content string) error {
 	}
 	cmd := ctx.run(HelperCmdWriteFile, hostPath)
 	cmd.Stdin = strings.NewReader(content)
-	output, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
-		if ctx != nil && ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
 		return fmt.Errorf("failed to write %s: %w", targetPath, err)
 	}
 	return nil
@@ -54,11 +51,8 @@ func appendFile(ctx *InstallContext, targetPath string, content string) error {
 	}
 	cmd := ctx.run(HelperCmdAppendFile, hostPath)
 	cmd.Stdin = strings.NewReader(content)
-	output, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
-		if ctx != nil && ctx.Logger != nil && len(output) > 0 {
-			ctx.Logger.Command(string(output))
-		}
 		return fmt.Errorf("failed to append to %s: %w", targetPath, err)
 	}
 	return nil
