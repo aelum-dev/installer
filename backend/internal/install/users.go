@@ -23,7 +23,6 @@ func SetupUsers(ctx *InstallContext) error {
 	var output []byte
 	var err error
 
-
 	// Copy ISO files (skel, dconf, wallpaper, environment, hypr.lua)
 	if err := copyISOFiles(ctx); err != nil {
 		return err

@@ -17,8 +17,8 @@ var defaultMemoryJson string
 // Runs inside the installed system via arch-chroot as root.
 // Steps:
 //
-//	1. Create greeter user and dirs via systemd-sysusers/tmpfiles
-//	2. Write /etc/greetd/config.toml (avoids dms greeter enable root check)
+//  1. Create greeter user and dirs via systemd-sysusers/tmpfiles
+//  2. Write /etc/greetd/config.toml (avoids dms greeter enable root check)
 //
 // Note: greetd.service is enabled by EnableServices() in services.go.
 // Note: The greetd-dms-greeter-bin package is installed during the desktop
@@ -101,11 +101,11 @@ func ConfigureGreetd(ctx *InstallContext) error {
 //
 // Steps:
 //
-//	1. Add user to the 'greeter' group
-//	2. Set ACLs on parent dirs (~, .config, .local, .cache, .local/state)
-//	3. Set group ownership on DMS config dirs
-//	4. Create symlinks from /var/cache/dms-greeter/ → user's config files
-//	5. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
+//  1. Add user to the 'greeter' group
+//  2. Set ACLs on parent dirs (~, .config, .local, .cache, .local/state)
+//  3. Set group ownership on DMS config dirs
+//  4. Create symlinks from /var/cache/dms-greeter/ → user's config files
+//  5. Copy per-user slot to /var/cache/dms-greeter/users/<username>/
 func syncDmsGreeter(ctx *InstallContext) error {
 	username := ctx.Username
 	home := filepath.Join("/home", username)

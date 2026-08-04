@@ -55,14 +55,14 @@ func MountFilesystem(ctx *InstallContext) error {
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
 		}
-		} else {
+	} else {
 		// Standard mount for ext4 and other filesystems
 		cmd := ctx.run("mount", p.RootPart, shared.MountRoot)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))
 		}
-		}
+	}
 
 	// Verify root mount
 	if err := verifyMount(ctx, shared.MountRoot, p.RootPart); err != nil {
@@ -95,7 +95,7 @@ func MountFilesystem(ctx *InstallContext) error {
 			// Create mount point directory
 			fullPath := shared.MountRoot + mountPath
 			cmd := ctx.run(HelperCmdRun, "mkdir", "-p", fullPath)
-			cmd.Run()
+			_ = cmd.Run()
 
 			// Mount subvolume with its properties
 			mountOpts := buildMountOpts(sv)

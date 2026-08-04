@@ -164,17 +164,17 @@ var runWhitelist = map[string]bool{
 	"test":    true,
 	"find":    true,
 	// File operations
-	"chmod":    true,
-	"chown":    true,
-	"touch":    true,
-	"mkdir":    true,
-	"rmdir":    true,
-	"cp":       true,
-	"dd":       true,
+	"chmod":     true,
+	"chown":     true,
+	"touch":     true,
+	"mkdir":     true,
+	"rmdir":     true,
+	"cp":        true,
+	"dd":        true,
 	"fallocate": true,
 	// Partitioning
-	"sgdisk": true,
-	"wipefs": true,
+	"sgdisk":    true,
+	"wipefs":    true,
 	"partprobe": true,
 	// Swap
 	"mkswap":  true,
@@ -314,7 +314,6 @@ func cmdMount(args []string) error {
 				device = args[i]
 			} else if mountpoint == "" {
 				mountpoint = args[i]
-				i++
 				break
 			} else {
 				return fmt.Errorf("too many arguments")

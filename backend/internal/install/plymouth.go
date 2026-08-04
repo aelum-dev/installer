@@ -12,11 +12,11 @@ import (
 // Runs inside the installed system via arch-chroot as root.
 //
 // Steps:
-//   1. Write /etc/plymouth/plymouthd.conf (Theme=bgrt, UseFirmwareBackground=true)
-//   2. Add plymouth to mkinitcpio HOOKS
-//   3. Run plymouth-set-default-theme -R bgrt (regenerates initramfs)
-//   4. Enable plymouth-wait-for-animation.service (for fast boots)
-//   5. Create .hushlogin for the user (suppresses "Last login" message)
+//  1. Write /etc/plymouth/plymouthd.conf (Theme=bgrt, UseFirmwareBackground=true)
+//  2. Add plymouth to mkinitcpio HOOKS
+//  3. Run plymouth-set-default-theme -R bgrt (regenerates initramfs)
+//  4. Enable plymouth-wait-for-animation.service (for fast boots)
+//  5. Create .hushlogin for the user (suppresses "Last login" message)
 func ConfigurePlymouth(ctx *InstallContext) error {
 	if err := validateMountedSystem(ctx); err != nil {
 		return err
@@ -44,7 +44,7 @@ UseFirmwareBackground=true
 	}
 
 	// Step 4: Enable plymouth-wait-for-animation.service (for fast boots)
-	output, err = runChroot(ctx, "systemctl", "enable", "plymouth-wait-for-animation.service")
+	_, err = runChroot(ctx, "systemctl", "enable", "plymouth-wait-for-animation.service")
 	if err != nil {
 		// Non-fatal — animation delay is optional
 		if ctx.Logger != nil {

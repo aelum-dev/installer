@@ -75,7 +75,7 @@ func ValidateDiskSelection(data DiskSelectionData) error {
 		return fmt.Errorf("please select a disk to install to")
 	}
 	var sizeBytes uint64
-	fmt.Sscanf(data.Size, "%d", &sizeBytes)
+	fmt.Sscanf(data.Size, "%d", &sizeBytes) //nolint:errcheck // format is validated before calling
 	if sizeBytes < MinDiskSizeBytes {
 		return fmt.Errorf("selected disk is too small. minimum 16 GB required")
 	}

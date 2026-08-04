@@ -69,7 +69,7 @@ func (inst *Installer) Install() error {
 
 	// Clear previous log
 	logPath := shared.GetLogPath()
-	os.WriteFile(logPath, nil, shared.LogFileMode)
+	_ = os.WriteFile(logPath, nil, shared.LogFileMode)
 
 	// Ensure mounts are cleaned up on any failure so the installer is retryable.
 	defer install.CleanupMounts(inst.helperPath)
@@ -193,12 +193,12 @@ var stepWeights = []int{
 
 // Progress weight constants for installation steps.
 const (
-	WeightFormatDisk          = 3
-	WeightMountFilesystem     = 2
-	WeightInstallBase         = 45 // base pacstrap — longest step
-	WeightInstallDesktop      = 35 // desktop pacstrap — second longest
-	WeightSetupUsers          = 2
-	WeightConfigureSystem     = 13
+	WeightFormatDisk      = 3
+	WeightMountFilesystem = 2
+	WeightInstallBase     = 45 // base pacstrap — longest step
+	WeightInstallDesktop  = 35 // desktop pacstrap — second longest
+	WeightSetupUsers      = 2
+	WeightConfigureSystem = 13
 )
 
 // cumulativePercentages calculates the cumulative percentage at each step boundary

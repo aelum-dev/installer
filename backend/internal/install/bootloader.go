@@ -13,12 +13,12 @@ import (
 // When ctx.Partitions is nil, it auto-discovers the ESP and root partition from the live system.
 //
 // Steps performed:
-//   1. Auto-discover ESP and root partition if not provided via FormatDisk
-//   2. Run bootctl install --esp-path=<ESP> to install systemd-boot to the ESP
-//   3. Discover kernel/initrd filenames from /mnt/boot/ (flavor-agnostic)
-//   4. Write a Type #2 boot entry to <ESP>/loader/entries/aesthetic-os.conf
-//   5. Set it as the default entry via bootctl set-default
-//   6. Verify installation with bootctl status
+//  1. Auto-discover ESP and root partition if not provided via FormatDisk
+//  2. Run bootctl install --esp-path=<ESP> to install systemd-boot to the ESP
+//  3. Discover kernel/initrd filenames from /mnt/boot/ (flavor-agnostic)
+//  4. Write a Type #2 boot entry to <ESP>/loader/entries/aesthetic-os.conf
+//  5. Set it as the default entry via bootctl set-default
+//  6. Verify installation with bootctl status
 //
 // The boot entry uses the root partition UUID captured during formatting (or discovered
 // on-the-fly), and kernel/initrd paths discovered from the installed system — so it works
@@ -277,5 +277,3 @@ func verifyBootloaderInstallation(ctx *InstallContext, esp string) error {
 
 	return nil
 }
-
-

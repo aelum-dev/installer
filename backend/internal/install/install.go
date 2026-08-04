@@ -126,11 +126,11 @@ func parsePackagesCount(line string) int {
 // actual line counts rather than relying solely on (N/M) counters.
 //
 // Pacstrap's output phases (in order):
-//   1. Pre-download: resolving deps, package list (Packages (N))
-//   2. Downloading: "<pkg> downloading..." lines — one per package
-//   3. Verification: "checking keyring...", "loading package files...", etc.
-//   4. Installing: "installing <pkg>..." lines — one per package
-//   5. Post-hooks: "( N/M) ..." lines with explicit counters
+//  1. Pre-download: resolving deps, package list (Packages (N))
+//  2. Downloading: "<pkg> downloading..." lines — one per package
+//  3. Verification: "checking keyring...", "loading package files...", etc.
+//  4. Installing: "installing <pkg>..." lines — one per package
+//  5. Post-hooks: "( N/M) ..." lines with explicit counters
 //
 // Work model:
 //   - Download: totalPackages units
@@ -139,7 +139,8 @@ func parsePackagesCount(line string) int {
 //   - Hooks: hookCompletedPhases + hookCurrentTotal (grows with new phases)
 //
 // Progress = (downloaded + verified + installed + hookCurrent) /
-//            (2*totalPackages + verified + hookDenominator) * 100
+//
+//	(2*totalPackages + verified + hookDenominator) * 100
 //
 // The factor of 2 assumes download and install phases consume equal work units.
 // This is approximate — actual time depends on package sizes and disk speed —

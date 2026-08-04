@@ -26,9 +26,6 @@ func runChroot(ctx *InstallContext, args ...string) ([]byte, error) {
 // targetPath should be absolute path inside the chroot (e.g., "/etc/fstab").
 // If the path already starts with MountRoot (e.g., ESP paths), it is used as-is.
 func writeFile(ctx *InstallContext, targetPath string, content string) error {
-	if ctx != nil && ctx.Logger != nil {
-	}
-
 	// Prepend mount root for chroot-relative paths, but leave host paths (like ESP) as-is
 	hostPath := targetPath
 	if !strings.HasPrefix(targetPath, shared.MountRoot) {
@@ -50,9 +47,6 @@ func writeFile(ctx *InstallContext, targetPath string, content string) error {
 // targetPath should be absolute path inside the chroot (e.g., "/etc/vconsole.conf").
 // If the path already starts with MountRoot, it is used as-is.
 func appendFile(ctx *InstallContext, targetPath string, content string) error {
-	if ctx != nil && ctx.Logger != nil {
-	}
-
 	// Prepend mount root for chroot-relative paths, but leave host paths as-is
 	hostPath := targetPath
 	if !strings.HasPrefix(targetPath, shared.MountRoot) {

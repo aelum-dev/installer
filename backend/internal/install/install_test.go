@@ -62,8 +62,8 @@ func TestPacstrapProgressTracker_BasicProgress(t *testing.T) {
 
 	// Single phase: (1/5), (2/5), (3/5), (4/5), (5/5)
 	tests := []struct {
-		n, m     int
-		wantPct  int
+		n, m    int
+		wantPct int
 	}{
 		{1, 5, 20},
 		{2, 5, 40},
@@ -157,7 +157,6 @@ func TestPacstrapProgressTracker_DefensiveN(t *testing.T) {
 		t.Errorf("defensive N: got %d%%, want %d%%", got, want)
 	}
 }
-
 
 func TestPacstrapProgressTracker_PackagesCount(t *testing.T) {
 	tr := newPacstrapProgressTracker()

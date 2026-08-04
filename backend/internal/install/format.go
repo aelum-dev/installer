@@ -36,7 +36,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		return fmt.Errorf("unsupported filesystem type: %s (supported: ext4, btrfs)", fsType)
 	}
 
-
 	partitions := []struct {
 		Name       string
 		SizeMB     int64
@@ -48,7 +47,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Unmount anything previously mounted
-	ctx.run(HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot).Run()
+	_ = ctx.run(HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot).Run()
 
 	// Clear partition table
 	cmd := ctx.run("parted", diskID)
@@ -90,7 +89,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		if err != nil {
 			return fmt.Errorf("sgdisk partition %d failed: %w: %s", num, err, string(out))
 		}
-		}
+	}
 
 	// Format EFI
 	if err := formatPartition(ctx, diskID, 1, partitions[0]); err != nil {
@@ -144,7 +143,6 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		return fmt.Errorf("root partition not found (got %d partitions)", len(diskPartitions))
 	}
 
-
 	ctx.Partitions = &shared.PartitionInfo{
 		Disk:        diskID,
 		EFIPart:     efi.Path,
@@ -186,12 +184,12 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	rootPath := derivePartitionPath(diskID, 2)
 	tmp := BtrfsSetupTmpMount
 
-	ctx.run(HelperCmdRun, "mkdir", "-p", tmp).Run()
+	_ = ctx.run(HelperCmdRun, "mkdir", "-p", tmp).Run()
 	cmd := ctx.run("mount", "-o", fmt.Sprintf("subvolid=%d", BtrfsTopLevelSubvolumeID), rootPath, tmp)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("mount btrfs top-level: %w", err)
 	}
-	defer ctx.run(HelperCmdUmount, UmountLazyFlag, tmp).Run()
+	defer func() { _ = ctx.run(HelperCmdUmount, UmountLazyFlag, tmp).Run() }()
 
 	for _, sv := range subvolumes {
 		cmd = ctx.run(HelperCmdBtrfsSubvolCreate, tmp, sv.Name)
@@ -199,7 +197,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		if err != nil {
 			return fmt.Errorf("create subvolume %s: %w: %s", sv.Name, err, string(out))
 		}
-		}
+	}
 
 	cmd = ctx.run(HelperCmdBtrfsSubvolSetDefault, tmp, "@")
 	out, err := cmd.CombinedOutput()
@@ -222,7 +220,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		}
 	}
 
-	ctx.run(HelperCmdRun, "rmdir", tmp).Run()
+	_ = ctx.run(HelperCmdRun, "rmdir", tmp).Run()
 	return nil
 }
 

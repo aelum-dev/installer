@@ -23,5 +23,3 @@ func validateMountedSystem(ctx *InstallContext) error {
 
 	return nil
 }
-
-

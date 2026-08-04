@@ -17,6 +17,14 @@ jobs:
         with:
           go-version: '1.25'
 
+      - name: Run gofmt check
+        run: test -z "$(gofmt -l backend/)"
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
       - name: Run Go tests
         run: go test ./backend/...
 

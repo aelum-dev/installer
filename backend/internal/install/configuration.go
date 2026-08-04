@@ -3,13 +3,13 @@ package install
 // ConfigureSystem merges the former separate configuration steps into a single
 // "Configuring system" step. It runs in order:
 //
-//	1. Generate fstab
-//	2. Configure bootloader
-//	3. System configuration (hostname, timezone, locale, keymap, NTP, mirrors)
-//	4. greetd + DMS greeter setup
-//	5. Plymouth BGRT silent boot
-//	6. zram swap configuration
-//	7. Enable systemd services
+//  1. Generate fstab
+//  2. Configure bootloader
+//  3. System configuration (hostname, timezone, locale, keymap, NTP, mirrors)
+//  4. greetd + DMS greeter setup
+//  5. Plymouth BGRT silent boot
+//  6. zram swap configuration
+//  7. Enable systemd services
 func ConfigureSystem(ctx *InstallContext) error {
 	if err := GenerateFstab(ctx); err != nil {
 		return err

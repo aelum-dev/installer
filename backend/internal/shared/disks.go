@@ -10,12 +10,12 @@ import (
 
 // PartitionEntry represents a single partition on a disk, as returned by lsblk.
 type PartitionEntry struct {
-	Path    string
-	Type    string
-	Size    string
-	Fstype  string
-	UUID    string
-	Trans   string
+	Path   string
+	Type   string
+	Size   string
+	Fstype string
+	UUID   string
+	Trans  string
 }
 
 // GetPartitions returns the partitions of a given disk by querying lsblk.
@@ -86,18 +86,18 @@ func (j *jsonBool) UnmarshalJSON(data []byte) error {
 }
 
 type lsblkEntry struct {
-	Name       string     `json:"name"`
-	Type       string     `json:"type"`
-	Size       jsonSize   `json:"size"`
-	Model      string     `json:"model"`
-	Vendor     string     `json:"vendor"`
-	Rota       jsonBool   `json:"rota"`
-	Ro         jsonBool   `json:"ro"`
-	Fstype     string     `json:"fstype"`
-	Mountpoint string     `json:"mountpoint"`
-	Serial     string     `json:"serial"`
-	Trans      string     `json:"tran"`
-	UUID       string     `json:"uuid"`
+	Name       string       `json:"name"`
+	Type       string       `json:"type"`
+	Size       jsonSize     `json:"size"`
+	Model      string       `json:"model"`
+	Vendor     string       `json:"vendor"`
+	Rota       jsonBool     `json:"rota"`
+	Ro         jsonBool     `json:"ro"`
+	Fstype     string       `json:"fstype"`
+	Mountpoint string       `json:"mountpoint"`
+	Serial     string       `json:"serial"`
+	Trans      string       `json:"tran"`
+	UUID       string       `json:"uuid"`
 	Children   []lsblkEntry `json:"children"`
 }
 
@@ -129,19 +129,19 @@ func GetDisks() ([]DiskInfo, error) {
 		}
 
 		disk := DiskInfo{
-			Name:         bd.Name,
-			Path:         "/dev/" + bd.Name,
-			Size:         bd.Size.Value,
-			Type:         bd.Type,
-			Model:        strings.TrimSpace(bd.Model),
-			Vendor:       strings.TrimSpace(bd.Vendor),
-			Rotational:   bool(bd.Rota),
-			Readonly:     bool(bd.Ro),
-			Fstype:       bd.Fstype,
-			Mountpoint:   bd.Mountpoint,
-			Serial:       strings.TrimSpace(bd.Serial),
-			Trans:        bd.Trans,
-			IsRemovable:  isRemovable(bd.Trans),
+			Name:        bd.Name,
+			Path:        "/dev/" + bd.Name,
+			Size:        bd.Size.Value,
+			Type:        bd.Type,
+			Model:       strings.TrimSpace(bd.Model),
+			Vendor:      strings.TrimSpace(bd.Vendor),
+			Rotational:  bool(bd.Rota),
+			Readonly:    bool(bd.Ro),
+			Fstype:      bd.Fstype,
+			Mountpoint:  bd.Mountpoint,
+			Serial:      strings.TrimSpace(bd.Serial),
+			Trans:       bd.Trans,
+			IsRemovable: isRemovable(bd.Trans),
 		}
 
 		if disk.Model == "" && disk.Vendor != "" {
@@ -205,12 +205,12 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 	var result struct {
 		Blockdevices []struct {
 			Children []struct {
-				Name       string     `json:"name"`
-				Type       string     `json:"type"`
+				Name       string      `json:"name"`
+				Type       string      `json:"type"`
 				Size       json.Number `json:"size"`
-				Fstype     string     `json:"fstype"`
-				UUID       string     `json:"uuid"`
-				Mountpoint string     `json:"mountpoint"`
+				Fstype     string      `json:"fstype"`
+				UUID       string      `json:"uuid"`
+				Mountpoint string      `json:"mountpoint"`
 			} `json:"children"`
 		} `json:"blockdevices"`
 	}
@@ -277,7 +277,7 @@ func getBtrfsMountpoints(partPath string) []string {
 // FormatSize converts byte size to human-readable format.
 func FormatSize(byteStr string) string {
 	var bytes uint64
-	fmt.Sscanf(byteStr, "%d", &bytes)
+	fmt.Sscanf(byteStr, "%d", &bytes) //nolint:errcheck // format is validated before calling
 	if bytes == 0 {
 		return byteStr
 	}

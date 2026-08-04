@@ -143,6 +143,5 @@ func verifyFstab(ctx *InstallContext, rootUUID, efiUUID string) error {
 		return fmt.Errorf("fstab missing / mount point")
 	}
 
-
 	return nil
 }

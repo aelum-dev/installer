@@ -43,10 +43,10 @@ const ErrorPrefix = "ERROR: "
 // File writes are asynchronous to avoid blocking the installation process.
 // This is the default logger used by both CLI and GUI.
 type ConsoleLogger struct {
-	mu       sync.Mutex
-	logFile  *os.File
-	logChan  chan string
-	done     chan struct{}
+	mu      sync.Mutex
+	logFile *os.File
+	logChan chan string
+	done    chan struct{}
 }
 
 func NewConsoleLogger() *ConsoleLogger {
@@ -81,7 +81,7 @@ func (l *ConsoleLogger) startWriter() {
 		}
 		for msg := range l.logChan {
 			timestamp := time.Now().Format(shared.TimestampFormatFull)
-			f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
+			_, _ = f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 		}
 		f.Close()
 		close(l.done)
@@ -127,7 +127,7 @@ func (l *ConsoleLogger) writeToFile(msg string) {
 		return
 	}
 	timestamp := time.Now().Format(shared.TimestampFormatFull)
-	f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
+	_, _ = f.WriteString(fmt.Sprintf("[%s] %s\n", timestamp, msg))
 }
 
 func (l *ConsoleLogger) Info(format string, args ...interface{}) {

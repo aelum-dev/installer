@@ -35,7 +35,7 @@ func TestInstaller_StepNames(t *testing.T) {
 
 func TestInstaller_RunStep_UnknownStep(t *testing.T) {
 	inst := &Installer{
-		diskID:   "/dev/vda",
+		diskID:     "/dev/vda",
 		helperPath: "/fake/helper",
 	}
 
@@ -75,12 +75,12 @@ func TestValidStepNames(t *testing.T) {
 
 	// Check that all expected names are present
 	expected := map[string]bool{
-		"format_disk":           false,
-		"mount_filesystem":      false,
-		"install_base":          false,
-		"install_desktop":       false,
-		"setup_users":           false,
-		"configure_system":      false,
+		"format_disk":      false,
+		"mount_filesystem": false,
+		"install_base":     false,
+		"install_desktop":  false,
+		"setup_users":      false,
+		"configure_system": false,
 	}
 
 	for _, name := range names {

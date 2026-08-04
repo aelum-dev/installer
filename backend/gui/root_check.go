@@ -18,8 +18,6 @@ func (a *App) CheckRoot() core.RootCheckResult {
 	} else {
 		logger.Error("Root check failed: %s", result.Message)
 	}
-	
+
 	return result
 }
-
-

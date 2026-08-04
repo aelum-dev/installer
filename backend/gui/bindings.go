@@ -18,8 +18,6 @@ func (a *App) GetDiskPartitions(diskPath string) ([]shared.PartitionDetail, erro
 	return shared.GetDiskPartitions(diskPath)
 }
 
-
-
 // GetLanguages returns the list of available languages/regions.
 // Wails binding: frontend calls this.
 func (a *App) GetLanguages() []shared.Language {

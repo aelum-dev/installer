@@ -115,12 +115,12 @@ const GPTPartitionStartSector = 2048
 
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
 var GPTTypeGUIDs = struct {
-	ESP          string
-	LinuxRootX86_64 string
+	ESP                    string
+	LinuxRootX86_64        string
 	LinuxFilesystemGeneric string
 }{
-	ESP:                 "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
-	LinuxRootX86_64:     "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
+	ESP:                    "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+	LinuxRootX86_64:        "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
 	LinuxFilesystemGeneric: "8300", // GPT type code for Linux filesystem (standard)
 }
 
