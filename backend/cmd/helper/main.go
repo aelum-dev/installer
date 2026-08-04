@@ -583,7 +583,12 @@ func cmdReadFile(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: read-file <path>")
 	}
-	return runCommand("cat", args[0])
+	data, err := os.ReadFile(args[0])
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.Write(data)
+	return err
 }
 
 func cmdSetSymlink(args []string) error {

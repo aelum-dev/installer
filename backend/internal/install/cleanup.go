@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	"aestheticos-installer/backend/internal/shared"
