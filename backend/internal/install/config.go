@@ -59,6 +59,7 @@ const (
 	HelperCmdBtrfsSetCompression   = "btrfs-set-compression"
 	HelperCmdBtrfsMkswapfile       = "btrfs-mkswapfile"
 	HelperCmdParted                = "parted"
+	HelperCmdPartprobe             = "partprobe"
 	HelperCmdFormat                = "format"
 	HelperCmdMount                 = "mount"
 	HelperCmdUmount                = "umount"

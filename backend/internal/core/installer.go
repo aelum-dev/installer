@@ -352,7 +352,7 @@ func (inst *Installer) Rollback() error {
 	}
 
 	// Reprobe partition table.
-	cmd := inst.run("run", "partprobe", inst.diskID)
+	cmd := inst.run(install.HelperCmdRun, install.HelperCmdPartprobe, inst.diskID)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		inst.logError("partprobe failed: %v (%s)", err, string(out))
 		return fmt.Errorf("rollback: partprobe failed: %w", err)

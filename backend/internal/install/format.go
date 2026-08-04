@@ -103,7 +103,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Refresh kernel partition table
-	ctx.run("run", "partprobe", diskID).Run()
+	ctx.run(HelperCmdRun, HelperCmdPartprobe, diskID).Run()
 
 	var subvolumes []shared.BtrfsSubvolume
 	if fsType == "btrfs" {
