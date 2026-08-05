@@ -22,7 +22,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"aestheticos-installer/backend/internal/core"
 	"aestheticos-installer/backend/internal/shared"
@@ -166,14 +168,28 @@ func main() {
 	}
 
 	// Ensure cleanup runs on panic or error.
-	// The defer in installer.Install() also calls CleanupMounts on any exit
-	// (including Ctrl+C), so no additional signal handling is needed.
 	defer func() {
 		if r := recover(); r != nil {
 			installer.Cleanup()
 			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s panic recovered: %v\n", "\033[31m", "\033[0m", r)
 			os.Exit(1)
 		}
+	}()
+
+	// Catch Ctrl+C (SIGINT) and clean up mounted filesystems before exiting.
+	// The defer in installer.Install() only runs on normal/panic exit — SIGINT
+	// terminates the process before defers fire, so we need explicit handling.
+	// We set the interrupted flag so Install()'s defer skips its cleanup,
+	// avoiding a race where both the signal handler and the defer try to
+	// unmount simultaneously.
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
+	go func() {
+		<-sigChan
+		installer.LogInfo("Interrupted — cleaning up mounts on %s", disk)
+		installer.SetInterrupted()
+		installer.Cleanup()
+		os.Exit(130)
 	}()
 
 	if stepName != "" {
@@ -191,6 +207,12 @@ func main() {
 	}
 
 	if err != nil {
+		// If interrupted by SIGINT, exit with 130 (standard POSIX signal exit code)
+		// instead of 1. The signal handler already logged the interruption and
+		// performed cleanup, so don't print a duplicate error.
+		if installer.Interrupted() {
+			os.Exit(130)
+		}
 		fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s %v\n", "\033[31m", "\033[0m", err)
 		os.Exit(1)
 	}

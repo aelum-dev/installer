@@ -24,7 +24,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("FormatDisk failed, cleaning up: %v", retErr)
 			}
-			FormatDiskErrorCleanup(diskID, ctx.Helper, ctx.Logger)
+			_ = FormatDiskErrorCleanup(diskID, ctx.Helper, ctx.Logger)
 		}
 	}()
 

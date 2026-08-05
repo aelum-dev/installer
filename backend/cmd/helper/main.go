@@ -153,6 +153,12 @@ var commands = []HelperCommand{
 		Help:  "Run a whitelisted host command (e.g., run blkid /dev/vda1)",
 		Run:   cmdRun,
 	},
+	{
+		Name:  "cleanup",
+		Usage: "cleanup <disk>",
+		Help:  "Full teardown: unmount /mnt, kill processes on disk, partprobe, dmsetup remove_all",
+		Run:   cmdCleanup,
+	},
 }
 
 // runWhitelist defines the subset of host commands allowed via the generic `run` command.
@@ -163,6 +169,8 @@ var runWhitelist = map[string]bool{
 	"ls":      true,
 	"test":    true,
 	"find":    true,
+	// Sync
+	"sync": true,
 	// File operations
 	"chmod":     true,
 	"chown":     true,
@@ -740,4 +748,44 @@ func cmdBtrfsMkswapfile(args []string) error {
 
 func cmdUdevSettle(_ []string) error {
 	return runCommand("udevadm", "settle")
+}
+
+// cmdCleanup performs a full teardown of a partially-installed system:
+// 1. sync — flush pending writes
+// 2. umount -l -R /mnt — lazy recursive unmount
+// 3. fuser -k <disk> — kill processes holding the disk
+// 4. partprobe <disk> — re-read partition table
+// 5. dmsetup remove_all — remove leftover device-mapper entries
+func cmdCleanup(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: cleanup <disk>")
+	}
+	disk := args[0]
+
+	// 1. Sync — flush pending writes.
+	if err := runCommand("sync"); err != nil {
+		return fmt.Errorf("sync failed: %w", err)
+	}
+
+	// 2. Lazy recursive unmount of /mnt and all submounts.
+	//    This is the most critical step — if it fails, downstream operations
+	//    (wipefs, sgdisk) may operate on still-mounted filesystems.
+	if err := runCommand("umount", "-l", "-R", "/mnt"); err != nil {
+		return fmt.Errorf("umount failed: %w", err)
+	}
+
+	// 3. Kill processes holding open FDs on the disk (and its partitions).
+	_ = runCommand("fuser", "-k", disk)
+
+	// 4. Re-read partition table.
+	if err := runCommand("partprobe", disk); err != nil {
+		return fmt.Errorf("partprobe failed: %w", err)
+	}
+
+	// 5. Remove leftover device-mapper entries (LVM, LUKS, dm-crypt).
+	if err := runCommand("dmsetup", "remove_all"); err != nil {
+		return fmt.Errorf("dmsetup remove_all failed: %w", err)
+	}
+
+	return nil
 }

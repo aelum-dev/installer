@@ -33,8 +33,10 @@ func (a *App) StartInstallation() error {
 
 	helper := core.FindHelper()
 
-	// Cleanup leftover mounts before starting
-	install.CleanupMounts(helper, logger)
+	// Cleanup leftover mounts before starting (non-fatal — installation will retry anyway)
+	if err := install.CleanupMounts(helper, logger, a.diskSelection.DiskID); err != nil {
+		logger.WriteErrorLog("pre-install cleanup", err.Error())
+	}
 
 	// Use provided hostname or fall back to default
 	hostname := a.hostname
@@ -72,15 +74,13 @@ func (a *App) StartInstallation() error {
 		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Install failed. You can reboot or use --rollback flag on aestheticos-installer-cli. For detailed information check installation.log", "")
 	}
 
-	// Run installation in a goroutine so it doesn't block the UI
+	// Run installation in a goroutine so it doesn't block the UI.
+	// Install() already defers CleanupMounts, so no second cleanup is needed here.
 	go func() {
 		err := installer.Install()
 		if err != nil {
 			return
 		}
-
-		// Unmount everything after successful install
-		install.CleanupMounts(helper, logger)
 
 		// Report completion
 		label := "Installation completed!"

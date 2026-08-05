@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -200,7 +199,9 @@ func generateRandomSeed(ctx *InstallContext, esp string) error {
 	cmd := ctx.run(HelperCmdBootctl, "random-seed", esp)
 	if err := cmd.Run(); err != nil {
 		// Not fatal — entropy generation is a best-effort improvement
-		fmt.Fprintf(os.Stderr, "Warning: failed to generate random seed: %v\n", err)
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Warning: failed to generate random seed: %v", err)
+		}
 		return fmt.Errorf("failed to generate random seed (non-fatal): %w", err)
 	}
 	return nil
