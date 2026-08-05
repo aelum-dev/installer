@@ -42,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete `CONTRIBUTING.md` with code style, commit conventions, and PR template
 
 ### Fixed
+- Cleanup/rollback race conditions — `CleanupMounts` now returns an error, `Rollback` fails fast if cleanup fails, GPT partition table is cleared with `sgdisk -Z`, and `discoverPartitions` guards against double `/dev/` prefix
+- Double cleanup on SIGINT — added `isInterruptError()` to detect Ctrl+C via the child process error message (`"signal: interrupt"`) rather than relying on a flag that races with `pacstrap`'s termination; defer skips cleanup on interrupt to avoid duplicate unmount and duplicate log output
+- SIGINT handling in CLI — signal handler sets interrupted flag, calls cleanup, and exits with code 130; CLI suppresses duplicate error output on interrupt
+- `CleanupMounts` now returns `error` instead of silently ignoring helper failures
+- `cmdCleanup` in helper now checks and returns errors from `sync`, `umount`, `partprobe`, and `dmsetup`
+- `RunStep()` now defers cleanup on failure (was missing, leaving mounts stuck after single-step failures)
+- Removed redundant second `CleanupMounts` call on GUI success path (Install() already defers it)
+- `generateRandomSeed` in bootloader now uses `ctx.Logger` instead of `fmt.Fprintf(os.Stderr, ...)`
 - svelte-check error: `logInfo` called with 2 arguments instead of 1
 - Rollback silent failures — `wipefs` and `partprobe` errors now returned
 - CLI panic recovery — `defer recover()` ensures mount cleanup on panic
