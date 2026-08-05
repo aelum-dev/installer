@@ -19,21 +19,59 @@ import (
 //
 // Safe to call when nothing is mounted — every step tolerates no-op cases.
 func CleanupMounts(helper string, logger Logger) {
-	// 1. Find disks BEFORE unmounting — after unmount lsblk shows "-" for
-	//    mountpoints and we can't identify which disk was used.
+	// 1. Find disks — try to find mounted disks first, fallback to all disks.
+	//    After unmount lsblk shows "-" for mountpoints, so we can't identify
+	//    which disk was used. If /mnt wasn't mounted (e.g., FormatDisk error),
+	//    we need to scan all block devices.
 	disks := findMountedDisks()
+	if len(disks) == 0 {
+		disks = findAllDisks()
+	}
 	if logger != nil {
 		logger.Info("Cleanup: found %d disk(s) to clean up", len(disks))
 	}
 
-	// 2. Sync — flush pending writes while filesystem is still mounted.
+	// Run the cleanup sequence.
+	runCleanupSequence(helper, logger, disks)
+}
+
+// FormatDiskErrorCleanup tears down mounts left over from a failed FormatDisk.
+// Same full cleanup as CleanupMounts — format may have partially partitioned
+// the disk, so we need the same thorough teardown.
+// diskID is used to target the specific disk even if /mnt wasn't mounted
+// (e.g., format failed before mount step).
+func FormatDiskErrorCleanup(diskID string, helper string, logger Logger) {
+	// If we have a specific disk ID, prefer it over auto-detection.
+	if diskID != "" {
+		CleanupMountsWithDisk(helper, logger, diskID)
+	} else {
+		CleanupMounts(helper, logger)
+	}
+}
+
+// CleanupMountsWithDisk performs cleanup targeting a specific disk device.
+// Used when the disk ID is known (e.g., FormatDisk error) but /mnt wasn't mounted.
+func CleanupMountsWithDisk(helper string, logger Logger, diskID string) {
+	// Normalize disk ID: /dev/vda → /dev/vda
+	disks := []string{diskID}
+	if logger != nil {
+		logger.Info("Cleanup: targeting specific disk %s", diskID)
+	}
+
+	// Run the same cleanup sequence with the specific disk.
+	runCleanupSequence(helper, logger, disks)
+}
+
+// runCleanupSequence performs the actual cleanup steps for the given disks.
+func runCleanupSequence(helper string, logger Logger, disks []string) {
+	// 1. Sync — flush pending writes.
 	if logger != nil {
 		logger.Info("Cleanup: syncing kernel buffers")
 	}
 	syncCmd := exec.Command("sync")
 	_ = syncCmd.Run()
 
-	// 3. Lazy recursive unmount — detaches filesystems even with lingering refs.
+	// 2. Lazy recursive unmount.
 	if logger != nil {
 		logger.Info("Cleanup: unmounting /mnt recursively")
 	}
@@ -44,9 +82,7 @@ func CleanupMounts(helper string, logger Logger) {
 		}
 	}
 
-	// 4. Remove any leftover device-mapper entries (LVM, LUKS, dm-crypt).
-	//    These hold the underlying disk device and prevent it from being
-	//    reused until they're gone.
+	// 3. Remove device-mapper entries.
 	if logger != nil {
 		logger.Info("Cleanup: removing device-mapper entries")
 	}
@@ -57,8 +93,7 @@ func CleanupMounts(helper string, logger Logger) {
 		}
 	}
 
-	// 5. Kill processes holding open FDs on the target disk.
-	//    fuser -k sends SIGTERM to any process with an open FD on the device.
+	// 4. Kill processes with open FDs on the target disk.
 	for _, disk := range disks {
 		if logger != nil {
 			logger.Info("Cleanup: killing processes with open FDs on %s", disk)
@@ -71,8 +106,7 @@ func CleanupMounts(helper string, logger Logger) {
 		}
 	}
 
-	// 6. Re-read partition table. This tells the kernel to drop all internal
-	//    references to the disk's partitions.
+	// 5. Re-read partition table.
 	for _, disk := range disks {
 		if logger != nil {
 			logger.Info("Cleanup: re-reading partition table for %s", disk)
@@ -90,11 +124,35 @@ func CleanupMounts(helper string, logger Logger) {
 	}
 }
 
-// FormatDiskErrorCleanup tears down mounts left over from a failed FormatDisk.
-// Same full cleanup as CleanupMounts — format may have partially partitioned
-// the disk, so we need the same thorough teardown.
-func FormatDiskErrorCleanup(helper string, logger Logger) {
-	CleanupMounts(helper, logger)
+// findAllDisks queries lsblk to find all top-level block devices (disks).
+// Returns device paths like /dev/vda, /dev/sda, etc.
+func findAllDisks() []string {
+	cmd := exec.Command("lsblk", "-lnbo", "KNAME,TYPE", "NAME")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(lines) == 0 {
+		return nil
+	}
+
+	var disks []string
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		kname := fields[0]
+		devType := fields[1]
+
+		// Only include top-level disk devices (not partitions)
+		if devType == "disk" {
+			disks = append(disks, "/dev/"+kname)
+		}
+	}
+	return disks
 }
 
 // findMountedDisks queries lsblk to find block devices that had mountpoints

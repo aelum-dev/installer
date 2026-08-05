@@ -165,7 +165,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n[ERROR] %s: %s\n", label, message)
 	}
 
-	// Ensure cleanup runs on panic after install has started.
+	// Ensure cleanup runs on panic or error.
+	// The defer in installer.Install() also calls CleanupMounts on any exit
+	// (including Ctrl+C), so no additional signal handling is needed.
 	defer func() {
 		if r := recover(); r != nil {
 			installer.Cleanup()
