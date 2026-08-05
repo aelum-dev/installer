@@ -176,6 +176,9 @@ var runWhitelist = map[string]bool{
 	"sgdisk":    true,
 	"wipefs":    true,
 	"partprobe": true,
+	// Device cleanup
+	"fuser":     true,
+	"dmsetup":   true,
 	// Swap
 	"mkswap":  true,
 	"swapon":  true,

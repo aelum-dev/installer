@@ -34,7 +34,7 @@ func (a *App) StartInstallation() error {
 	helper := core.FindHelper()
 
 	// Cleanup leftover mounts before starting
-	install.CleanupMounts(helper)
+	install.CleanupMounts(helper, logger)
 
 	// Use provided hostname or fall back to default
 	hostname := a.hostname
@@ -80,7 +80,7 @@ func (a *App) StartInstallation() error {
 		}
 
 		// Unmount everything after successful install
-		install.CleanupMounts(helper)
+		install.CleanupMounts(helper, logger)
 
 		// Report completion
 		label := "Installation completed!"

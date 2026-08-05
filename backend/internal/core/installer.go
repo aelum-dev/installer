@@ -72,7 +72,7 @@ func (inst *Installer) Install() error {
 	_ = os.WriteFile(logPath, nil, shared.LogFileMode)
 
 	// Ensure mounts are cleaned up on any failure so the installer is retryable.
-	defer install.CleanupMounts(inst.helperPath)
+	defer install.CleanupMounts(inst.helperPath, inst.Logger)
 
 	ctx := inst.context()
 
@@ -338,7 +338,7 @@ func (inst *Installer) Rollback() error {
 	inst.logInfo("Rolling back: cleaning up %s", inst.diskID)
 
 	// Clean up any mounted filesystems.
-	install.CleanupMounts(inst.helperPath)
+	install.CleanupMounts(inst.helperPath, inst.Logger)
 
 	// Wipe filesystem signatures from both partitions so the disk is clean.
 	for i := 1; i <= 2; i++ {
@@ -365,7 +365,7 @@ func (inst *Installer) Rollback() error {
 // Cleanup runs deferred cleanup (unmounts, swapoff) for this installer.
 // Called on panic recovery to ensure no mounts are left hanging.
 func (inst *Installer) Cleanup() {
-	install.CleanupMounts(inst.helperPath)
+	install.CleanupMounts(inst.helperPath, inst.Logger)
 }
 
 // run executes a privileged command via the helper binary.
