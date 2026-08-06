@@ -1,5 +1,17 @@
 export namespace core {
 	
+	export class Installer {
+	    Logger: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Installer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Logger = source["Logger"];
+	    }
+	}
 	export class RootCheckResult {
 	    authorized: boolean;
 	    error?: string;

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -42,10 +43,13 @@ type Installer struct {
 	// Error callback
 	OnError func(label, message string)
 
-	// interrupted is set to true when SIGINT is received. Used to prevent
-	// double cleanup when both the signal handler and Install()'s defer try
-	// to clean up mounted filesystems.
+	// interrupted is set to true when SIGINT is received. Used by the CLI to
+	// decide the exit code (130 for SIGINT vs 1 for other errors).
 	interrupted atomic.Bool
+
+	// cleanupOnce ensures CleanupMounts runs at most once, regardless of which
+	// path triggers it (defer, OnBeforeClose, SIGTERM handler, panic recovery).
+	cleanupOnce sync.Once
 
 	// cancel is closed when SIGINT is received during a long-running command
 	// (e.g. pacstrap). This unblocks scanner goroutines so they return promptly.
@@ -105,21 +109,9 @@ func (inst *Installer) Install() error {
 	_ = os.WriteFile(logPath, nil, shared.LogFileMode)
 
 	// Ensure mounts are cleaned up on any failure so the installer is retryable.
-	// Skip cleanup on SIGINT — the signal handler already performs it, and
-	// running it twice can race (double unmount, duplicate log output).
-	wasInterrupted := false
-	defer func() {
-		if wasInterrupted {
-			inst.logInfo("Cleanup: skipped (SIGINT)")
-			return
-		}
-		inst.logInfo("Cleanup: running deferred cleanup")
-		if err := install.CleanupMounts(inst.helperPath, inst.Logger, inst.diskID); err != nil {
-			inst.logError("Cleanup: %v", err)
-		} else {
-			inst.logInfo("Cleanup: done")
-		}
-	}()
+	// Cleanup is guarded by sync.Once — only the first caller wins, regardless
+	// of whether it's the defer, OnBeforeClose, a signal handler, or panic recovery.
+	defer inst.RunCleanup()
 
 	ctx := inst.context()
 
@@ -159,12 +151,7 @@ func (inst *Installer) Install() error {
 		close(stopTick) // stop the tick goroutine
 
 		if err != nil {
-			if isInterruptError(err) {
-				// SIGINT — the signal handler already logged the interruption.
-				// Mark so the defer skips its cleanup to avoid duplication.
-				wasInterrupted = true
-				inst.SetInterrupted()
-			} else {
+			if !isInterruptError(err) {
 				inst.logError("Step failed: %s - %v", step.label, err)
 				inst.emitError(step.label, err.Error())
 			}
@@ -508,15 +495,22 @@ func discoverPartitions(diskID string) []string {
 	return partitions
 }
 
-// Cleanup runs deferred cleanup (unmounts) for this installer.
-// Called on panic recovery to ensure no mounts are left hanging.
-func (inst *Installer) Cleanup() {
-	if err := install.CleanupMounts(inst.helperPath, inst.Logger, inst.diskID); err != nil {
-		inst.logError("Cleanup: %v", err)
-	}
+// RunCleanup performs cleanup (unmounts) at most once, regardless of how many
+// paths trigger it. Safe to call from defer, OnBeforeClose, signal handlers,
+// or panic recovery — sync.Once ensures only the first call does work.
+func (inst *Installer) RunCleanup() {
+	inst.cleanupOnce.Do(func() {
+		inst.logInfo("Cleanup: running")
+		if err := install.CleanupMounts(inst.helperPath, inst.Logger, inst.diskID); err != nil {
+			inst.logError("Cleanup: %v", err)
+		} else {
+			inst.logInfo("Cleanup: done")
+		}
+	})
 }
 
 // Interrupted reports whether SIGINT was received during installation.
+// Used by the CLI to decide the exit code (130 for SIGINT vs 1 for other errors).
 func (inst *Installer) Interrupted() bool {
 	return inst.interrupted.Load()
 }

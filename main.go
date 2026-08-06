@@ -4,6 +4,8 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"aestheticos-installer/backend/gui"
 
@@ -37,6 +39,24 @@ func main() {
 			fmt.Printf("[START PAGE] Starting on page %d\n", StartPage)
 		}
 	}
+
+	// Catch SIGINT (Ctrl+C) and SIGTERM (window manager close/killactive) so
+	// we can run cleanup before exiting. Without this, the Go runtime's default
+	// handler prints "shutting down" and hangs because the Wails WebView can't
+	// tear down gracefully.
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		fmt.Println("\nInterrupted — running cleanup...")
+		if installer := app.GetInstaller(); installer != nil {
+			installer.RunCleanup()
+		}
+		os.Exit(0)
+	}()
+
+	// Also catch SIGHUP (terminal hangup) for completeness.
+	signal.Notify(sigChan, syscall.SIGHUP)
 
 	// Create application with options
 	err := wails.Run(&options.App{

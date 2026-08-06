@@ -14,6 +14,10 @@ export function GetCurrentPage() {
   return window['go']['gui']['App']['GetCurrentPage']();
 }
 
+export function GetDiskID() {
+  return window['go']['gui']['App']['GetDiskID']();
+}
+
 export function GetDiskPartitions(arg1) {
   return window['go']['gui']['App']['GetDiskPartitions'](arg1);
 }
@@ -32,6 +36,14 @@ export function GetFileSystem() {
 
 export function GetHostname() {
   return window['go']['gui']['App']['GetHostname']();
+}
+
+export function GetInstallationRunning() {
+  return window['go']['gui']['App']['GetInstallationRunning']();
+}
+
+export function GetInstaller() {
+  return window['go']['gui']['App']['GetInstaller']();
 }
 
 export function GetLanguages() {

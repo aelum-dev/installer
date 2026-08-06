@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"aestheticos-installer/backend/internal/core"
 	"aestheticos-installer/backend/internal/shared"
 )
 
@@ -36,6 +37,7 @@ type App struct {
 	region                shared.Region
 	fileSystem            string // root filesystem: "ext4" or "btrfs"
 	installationRunning   atomic.Bool
+	installer             *core.Installer // nil unless an installation is in progress
 }
 
 // GetCurrentPage returns the current page index (0-based).

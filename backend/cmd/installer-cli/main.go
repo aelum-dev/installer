@@ -170,7 +170,7 @@ func main() {
 	// Ensure cleanup runs on panic or error.
 	defer func() {
 		if r := recover(); r != nil {
-			installer.Cleanup()
+			installer.RunCleanup()
 			fmt.Fprintf(os.Stderr, "\n%s[ERROR]%s panic recovered: %v\n", "\033[31m", "\033[0m", r)
 			os.Exit(1)
 		}

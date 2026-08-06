@@ -55,6 +55,9 @@ func (a *App) StartInstallation() error {
 		a.dryRun,
 	)
 
+	// Store reference so OnBeforeClose can signal interruption.
+	a.installer = installer
+
 	// Set up progress/error callbacks for UI
 	installer.OnProgress = func(label string, percent int, phase string) {
 		progress := InstallationProgress{
@@ -80,7 +83,10 @@ func (a *App) StartInstallation() error {
 	// Run installation in a goroutine so it doesn't block the UI.
 	// Install() already defers CleanupMounts, so no second cleanup is needed here.
 	go func() {
-		defer a.installationRunning.Store(false)
+		defer func() {
+			a.installationRunning.Store(false)
+			a.installer = nil
+		}()
 		err := installer.Install()
 		if err != nil {
 			return

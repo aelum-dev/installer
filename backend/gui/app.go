@@ -3,11 +3,9 @@ package gui
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 
 	"aestheticos-installer/backend/internal/core"
-	"aestheticos-installer/backend/internal/install"
 )
 
 // NewApp creates a new App application struct
@@ -51,17 +49,30 @@ func (a *App) GetDryRun() bool {
 }
 
 // OnBeforeClose is called by Wails when the user attempts to close the window.
-// If an installation is in progress, it runs cleanup before allowing the window to close.
+// Returns false to allow the window to close. If an installation is in progress,
+// triggers the installer's sync.Once cleanup so mounts are torn down before exit.
+// The installer's defer will also call runCleanup, but sync.Once ensures it
+// only runs once — whichever path gets there first wins.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
-	if a.installationRunning.Load() {
-		helper := core.FindHelper()
-		if helper != "" && a.diskSelection.DiskID != "" {
-			if err := install.CleanupMounts(helper, logger, a.diskSelection.DiskID); err != nil {
-				fmt.Fprintf(os.Stderr, "Cleanup warning: %v\n", err)
-			}
-		}
+	if a.installationRunning.Load() && a.installer != nil {
+		a.installer.RunCleanup()
 	}
-	return true
+	return false
+}
+
+// GetInstallationRunning reports whether an installation is currently in progress.
+func (a *App) GetInstallationRunning() bool {
+	return a.installationRunning.Load()
+}
+
+// GetInstaller returns the currently running installer, or nil if none.
+func (a *App) GetInstaller() *core.Installer {
+	return a.installer
+}
+
+// GetDiskID returns the currently selected disk ID.
+func (a *App) GetDiskID() string {
+	return a.diskSelection.DiskID
 }
 
 // RebootAndClose initiates a system reboot and closes the application window.

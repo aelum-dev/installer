@@ -66,6 +66,7 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 	// interrupt handling. Without this, SIGINT would leave the scanner
 	// blocked on Read() until pacstrap exits on its own.
 	scanDone := make(chan struct{})
+	var scanErr error
 	go func() {
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -80,11 +81,15 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 				ctx.ProgressCallback(pct)
 			}
 		}
+		scanErr = scanner.Err()
 		close(scanDone)
 	}()
 
 	select {
 	case <-scanDone:
+		if scanErr != nil {
+			return fmt.Errorf("pacstrap stdout scan: %w", scanErr)
+		}
 		if err := cmd.Wait(); err != nil {
 			return fmt.Errorf("pacstrap failed: %w", err)
 		}

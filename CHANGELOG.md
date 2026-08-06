@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Replace `interrupted` flag coordination with `sync.Once` for cleanup — `RunCleanup()` is now the single entry point, called from defer, `OnBeforeClose`, SIGTERM handler, and panic recovery. Eliminates race conditions from flag synchronization.
+- `OnBeforeClose` now calls `installer.RunCleanup()` instead of running `CleanupMounts` directly
+- SIGTERM handler in `main.go` now calls `installer.RunCleanup()` instead of running cleanup directly
+- Removed `wasInterrupted` local variable, `isInterruptError()` call inside `Install()`, and duplicate cleanup logic from `OnBeforeClose` and SIGTERM handler
+- Renamed `Cleanup()` to `RunCleanup()` (exported) for consistency
+
+### Fixed
+- CLI Ctrl+C now cleanly cancels the child process (pacstrap) and runs full cleanup before exiting — no more interleaved output or race between signal handler and defer
+- GUI window close during installation now triggers mount cleanup via `OnBeforeClose` hook
+- Double cleanup on window close — `sync.Once` ensures cleanup runs exactly once regardless of which path triggers it
+
+### Added
+- `Installer.Cancel()` method and `InstallContext.Cancel` channel for clean interrupt propagation to long-running child processes
+- `App.installationRunning` atomic flag to track in-progress GUI installations
+
+### Changed
 - Add `go mod tidy` to `build.sh` and CI — fails the build early if dependencies drift
 
 ### Security

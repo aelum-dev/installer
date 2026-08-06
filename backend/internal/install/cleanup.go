@@ -27,10 +27,13 @@ func CleanupMounts(helper string, logger Logger, diskID string) error {
 
 	// 2. Kill processes holding open FDs under /mnt (e.g. daemons started in chroot
 	//    like gpg-agent that hold sockets inside the target system).
+	//    -M is a safety belt: only act if /mnt is actually a mountpoint. Without it,
+	//    fuser -m /mnt resolves to the live ISO rootfs when /mnt is unmounted, which
+	//    would kill every process on the system (including Hyprland).
 	if logger != nil {
-		logger.Info("Cleanup: fuser -k -m /mnt")
+		logger.Info("Cleanup: fuser -k -M -m /mnt")
 	}
-	_ = runHelper(helper, HelperCmdRun, "fuser", "-k", "-m", shared.MountRoot)
+	_ = runHelper(helper, HelperCmdRun, "fuser", "-k", "-M", "-m", shared.MountRoot)
 
 	// 3. Kill processes holding open FDs on the disk (and its partitions).
 	if logger != nil {

@@ -10,6 +10,8 @@ export function ClearStartPage():Promise<void>;
 
 export function GetCurrentPage():Promise<number>;
 
+export function GetDiskID():Promise<string>;
+
 export function GetDiskPartitions(arg1:string):Promise<Array<shared.PartitionDetail>>;
 
 export function GetDisks():Promise<Array<shared.DiskInfo>>;
@@ -19,6 +21,10 @@ export function GetDryRun():Promise<boolean>;
 export function GetFileSystem():Promise<string>;
 
 export function GetHostname():Promise<string>;
+
+export function GetInstallationRunning():Promise<boolean>;
+
+export function GetInstaller():Promise<core.Installer>;
 
 export function GetLanguages():Promise<Array<shared.Language>>;
 
