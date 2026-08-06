@@ -47,7 +47,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Unmount anything previously mounted
-	_ = ctx.run(HelperCmdUmount, UmountRecursiveFlag, shared.MountRoot).Run()
+	_ = ctx.run(HelperCmdUmount, "-R", shared.MountRoot).Run()
 
 	// Clear partition table
 	cmd := ctx.run("parted", diskID)
@@ -66,21 +66,21 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 
 		var args []string
 		if p.SizeMB > 0 {
-			args = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:+%dm", num, currentSector, p.SizeMB)}
+			args = []string{"-n", fmt.Sprintf("%d:%d:+%dm", num, currentSector, p.SizeMB)}
 			currentSector += (p.SizeMB * 1024 * 1024) / 512
 		} else {
-			args = []string{SgdiskCreatePartitionFlag, fmt.Sprintf("%d:%d:0", num, currentSector)}
+			args = []string{"-n", fmt.Sprintf("%d:%d:0", num, currentSector)}
 		}
 
 		switch p.Fstype {
 		case FileSystemVfat:
-			args = append(args, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.ESP))
+			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.ESP))
 		case shared.FileSystemExt4, shared.FileSystemBtrfs:
-			args = append(args, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxRootX86_64))
+			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxRootX86_64))
 		default:
-			args = append(args, SgdiskSetTypeFlag, fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxFilesystemGeneric))
+			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxFilesystemGeneric))
 		}
-		args = append(args, SgdiskSetNameFlag, fmt.Sprintf("%d:%s", num, p.Name))
+		args = append(args, "-c", fmt.Sprintf("%d:%s", num, p.Name))
 
 		cmd = ctx.run(HelperCmdRun, "sgdisk")
 		cmd.Args = append(cmd.Args, args...)
@@ -189,7 +189,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("mount btrfs top-level: %w", err)
 	}
-	defer func() { _ = ctx.run(HelperCmdUmount, UmountLazyFlag, tmp).Run() }()
+	defer func() { _ = ctx.run(HelperCmdUmount, tmp).Run() }()
 
 	for _, sv := range subvolumes {
 		cmd = ctx.run(HelperCmdBtrfsSubvolCreate, tmp, sv.Name)

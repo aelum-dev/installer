@@ -32,99 +32,6 @@ const PartitionLayoutEFI = "EFI"
 // PartitionLayoutRoot is the name for the root partition.
 const PartitionLayoutRoot = "Root"
 
-// --- Helper commands ---------------------------------------------------------
-
-// HelperCommand names as registered in the aestheticos-helper.
-const (
-	// Chroot commands
-	HelperCmdChrootRun   = "chroot-run"
-	HelperCmdRunChpasswd = "run-chpasswd"
-
-	// Target filesystem ops
-	HelperCmdWriteFile  = "write-file"
-	HelperCmdAppendFile = "append-file"
-	HelperCmdReadFile   = "read-file"
-	HelperCmdSetSymlink = "set-symlink"
-
-	// Bootctl (consolidated from 6 commands)
-	HelperCmdBootctl = "bootctl"
-
-	// Generic whitelisted command runner
-	HelperCmdRun = "run"
-
-	// Existing commands
-	HelperCmdUdevSettle            = "udev-settle"
-	HelperCmdBtrfsSubvolCreate     = "btrfs-subvol-create"
-	HelperCmdBtrfsSubvolSetDefault = "btrfs-subvol-set-default"
-	HelperCmdBtrfsSetCompression   = "btrfs-set-compression"
-	HelperCmdBtrfsMkswapfile       = "btrfs-mkswapfile"
-	HelperCmdParted                = "parted"
-	HelperCmdPartprobe             = "partprobe"
-	HelperCmdFormat                = "format"
-	HelperCmdMount                 = "mount"
-	HelperCmdUmount                = "umount"
-)
-
-// --- Sgdisk arguments --------------------------------------------------------
-
-// SgdiskClearFlag clears the partition table (removes GPT data).
-const SgdiskClearFlag = "-Z"
-
-// SgdiskCreatePartitionFlag creates a new partition.
-const SgdiskCreatePartitionFlag = "-n"
-
-// SgdiskSetTypeFlag sets a partition type GUID.
-const SgdiskSetTypeFlag = "-t"
-
-// SgdiskSetNameFlag sets a partition name.
-const SgdiskSetNameFlag = "-c"
-
-// --- Wipefs arguments --------------------------------------------------------
-
-// WipefsAllFlag wipes all filesystem signatures.
-const WipefsAllFlag = "--all"
-
-// WipefsForceFlag forces overwrite even if "device busy".
-const WipefsForceFlag = "-f"
-
-// --- Mkfs arguments ----------------------------------------------------------
-
-// MkfsFatForceFlag forces creation of FAT filesystem.
-const MkfsFatForceFlag = "-F"
-
-// MkfsFatTypeFlag sets FAT type (32-bit).
-const MkfsFatTypeFlag = "32"
-
-// MkfsFatLabelFlag sets the filesystem label.
-const MkfsFatLabelFlag = "-n"
-
-// MkfsFatLabelValue is the default label for the EFI partition.
-const MkfsFatLabelValue = "EFI"
-
-// MkfsExt4ForceFlag forces creation of ext4 filesystem.
-const MkfsExt4ForceFlag = "-F"
-
-// MkfsExt4LabelFlag sets the filesystem label.
-const MkfsExt4LabelFlag = "-L"
-
-// MkfsExt4LabelValue is the default label for the root partition.
-const MkfsExt4LabelValue = "aestheticos"
-
-// MkfsBtrfsForceFlag forces creation of btrfs filesystem.
-const MkfsBtrfsForceFlag = "-f"
-
-// MkfsBtrfsLabelFlag sets the filesystem label.
-// NOTE: Same label as MkfsExt4LabelValue. Both filesystems get labeled "aestheticos".
-const MkfsBtrfsLabelValue = "aestheticos"
-
-// --- Umount arguments --------------------------------------------------------
-
-// UmountLazyFlag performs a lazy unmount.
-const UmountLazyFlag = "-l"
-
-// UmountRecursiveFlag unmounts recursively.
-const UmountRecursiveFlag = "-R"
-
 // --- Pacstrap ----------------------------------------------------------------
 
 // PacstrapMountPoint is the target mount point for pacstrap.
@@ -161,32 +68,6 @@ const BtrfsAutodefragOption = "autodefrag"
 // ChrootCommand is the command used to run commands inside the installed system.
 // arch-chroot auto-mounts /proc, /sys, /dev (from arch-install-scripts on the live ISO).
 const ChrootCommand = "arch-chroot"
-
-// --- Bootctl arguments -------------------------------------------------------
-
-// BootctlInstallFlag is the flag for installing systemd-boot.
-const BootctlInstallFlag = "install"
-
-// BootctlGracefulFlag enables graceful mode for bootctl.
-const BootctlGracefulFlag = "--graceful"
-
-// BootctlEspPathFlag sets the ESP path for bootctl.
-const BootctlEspPathFlag = "--esp-path="
-
-// BootctlCleanupFlag runs the ESP cleanup.
-const BootctlCleanupFlag = "cleanup"
-
-// BootctlRandomSeedFlag generates a random seed.
-const BootctlRandomSeedFlag = "random-seed"
-
-// BootctlSetDefaultFlag sets the default boot entry.
-const BootctlSetDefaultFlag = "set-default"
-
-// BootctlIsInstalledFlag checks if systemd-boot is installed.
-const BootctlIsInstalledFlag = "is-installed"
-
-// BootctlStatusFlag shows bootctl status.
-const BootctlStatusFlag = "status"
 
 // --- Kernel / boot entry -----------------------------------------------------
 

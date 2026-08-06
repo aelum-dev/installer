@@ -8,6 +8,37 @@ import (
 	"aestheticos-installer/backend/internal/shared"
 )
 
+// HelperCmd names as registered in the aestheticos-helper.
+const (
+	// Chroot commands
+	HelperCmdChrootRun   = "chroot-run"
+	HelperCmdRunChpasswd = "run-chpasswd"
+
+	// Target filesystem ops
+	HelperCmdWriteFile  = "write-file"
+	HelperCmdAppendFile = "append-file"
+	HelperCmdReadFile   = "read-file"
+	HelperCmdSetSymlink = "set-symlink"
+
+	// Bootctl (consolidated from 6 commands)
+	HelperCmdBootctl = "bootctl"
+
+	// Generic whitelisted command runner
+	HelperCmdRun = "run"
+
+	// Existing commands
+	HelperCmdUdevSettle            = "udev-settle"
+	HelperCmdBtrfsSubvolCreate     = "btrfs-subvol-create"
+	HelperCmdBtrfsSubvolSetDefault = "btrfs-subvol-set-default"
+	HelperCmdBtrfsSetCompression   = "btrfs-set-compression"
+	HelperCmdBtrfsMkswapfile       = "btrfs-mkswapfile"
+	HelperCmdParted                = "parted"
+	HelperCmdPartprobe             = "partprobe"
+	HelperCmdFormat                = "format"
+	HelperCmdMount                 = "mount"
+	HelperCmdUmount                = "umount"
+)
+
 // run executes a privileged command via the helper binary.
 // Wraps: sudo <helper> <args...>
 func (ctx *InstallContext) run(args ...string) *exec.Cmd {

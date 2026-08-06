@@ -97,7 +97,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 // Uses a custom boot option description so entries can be identified later.
 func installSystemdBoot(ctx *InstallContext, esp string) error {
 	cmd := ctx.run(HelperCmdBootctl, "install", esp,
-		BootctlGracefulFlag,
+		"--graceful",
 		"--efi-boot-option-description="+BootOptionDescription,
 	)
 	output, err := cmd.CombinedOutput()
@@ -182,7 +182,7 @@ func writeBootEntry(ctx *InstallContext, esp, rootUUID, kernel, initrd, fsType s
 // belong to the entry token but are not referenced in any boot loader entries."
 func cleanupEsp(ctx *InstallContext, esp string) error {
 	cmd := ctx.run(HelperCmdBootctl, "cleanup", esp,
-		BootctlGracefulFlag,
+		"--graceful",
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

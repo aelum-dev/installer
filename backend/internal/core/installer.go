@@ -105,8 +105,15 @@ func (inst *Installer) Install() error {
 	// running it twice can race (double unmount, duplicate log output).
 	wasInterrupted := false
 	defer func() {
-		if !wasInterrupted {
-			_ = install.CleanupMounts(inst.helperPath, inst.Logger, inst.diskID)
+		if wasInterrupted {
+			inst.logInfo("Cleanup: skipped (SIGINT)")
+			return
+		}
+		inst.logInfo("Cleanup: running deferred cleanup")
+		if err := install.CleanupMounts(inst.helperPath, inst.Logger, inst.diskID); err != nil {
+			inst.logError("Cleanup: %v", err)
+		} else {
+			inst.logInfo("Cleanup: done")
 		}
 	}()
 

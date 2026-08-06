@@ -3,40 +3,108 @@ package install
 import (
 	"fmt"
 	"os/exec"
+	"strings"
+
+	"aestheticos-installer/backend/internal/shared"
 )
 
 // CleanupMounts performs a full teardown of mounts and disk references for the
 // given disk. This is the single cleanup entry point used on install failure,
 // Ctrl+C, and rollback.
-//
-// Steps (all delegated to the helper for safety):
-//   1. sync — flushes all pending kernel writes to disk
-//   2. umount -l -R /mnt — lazy recursive unmount of all mounts under /mnt
-//   3. fuser -k <disk> — kills any process still holding an open file descriptor
-//      on the target disk and its partitions
-//   4. partprobe <disk> — re-reads the partition table so the kernel releases
-//      internal references
-//   5. dmsetup remove_all — removes leftover device-mapper entries (LVM, LUKS,
-//      dm-crypt) that may have been created during installation
-//
-// Every step tolerates no-op cases (nothing mounted, no processes, etc.).
-// Returns an error if the helper binary fails to execute or returns a non-zero
-// exit code. Callers should treat a non-nil return as a warning — mounts may
-// still be active and manual intervention might be needed.
+
 func CleanupMounts(helper string, logger Logger, diskID string) error {
 	if logger != nil {
-		logger.Info("Cleanup: tearing down %s", diskID)
+		logger.Info("Cleanup: unmounting %s", diskID)
 	}
 
-	cmd := exec.Command("sudo", helper, "cleanup", diskID)
-	if output, err := cmd.CombinedOutput(); err != nil {
+	// 1. Sync — flush pending writes.
+	if logger != nil {
+		logger.Info("Cleanup: syncing")
+	}
+	if err := runHelper(helper, HelperCmdRun, "sync"); err != nil {
+		return fmt.Errorf("sync failed: %w", err)
+	}
+
+	// 2. Kill processes holding open FDs under /mnt (e.g. daemons started in chroot
+	//    like gpg-agent that hold sockets inside the target system).
+	if logger != nil {
+		logger.Info("Cleanup: fuser -k -m /mnt")
+	}
+	_ = runHelper(helper, HelperCmdRun, "fuser", "-k", "-m", shared.MountRoot)
+
+	// 3. Kill processes holding open FDs on the disk (and its partitions).
+	if logger != nil {
+		logger.Info("Cleanup: fuser -k %s", diskID)
+	}
+	_ = runHelper(helper, HelperCmdRun, "fuser", "-k", diskID)
+
+	// 4. Recursive unmount of /mnt and all submounts.
+	//    This is the most critical step — if it fails, downstream operations
+	//    (wipefs, sgdisk) may operate on still-mounted filesystems.
+	if logger != nil {
+		logger.Info("Cleanup: umount -R /mnt")
+	}
+	if err := runHelper(helper, HelperCmdUmount, "-R", shared.MountRoot); err != nil {
 		if logger != nil {
-			logger.Error("Cleanup: %v (%s)", err, string(output))
+			logger.Error("Cleanup: umount failed: %v", err)
 		}
-		return fmt.Errorf("cleanup failed: %w", err)
+		return fmt.Errorf("umount failed: %w", err)
 	}
 	if logger != nil {
+		logger.Info("Cleanup: umount success")
+	}
+
+	// 5. Re-read partition table.
+	if logger != nil {
+		logger.Info("Cleanup: partprobe %s", diskID)
+	}
+	if err := runHelper(helper, HelperCmdRun, "partprobe", diskID); err != nil {
+		if logger != nil {
+			logger.Error("Cleanup: partprobe failed: %v", err)
+		}
+		return fmt.Errorf("partprobe failed: %w", err)
+	}
+	if logger != nil {
+		logger.Info("Cleanup: partprobe success")
+	}
+
+	// 6. Remove leftover device-mapper entries (LVM, LUKS, dm-crypt).
+	if logger != nil {
+		logger.Info("Cleanup: dmsetup remove_all")
+	}
+	if err := runHelper(helper, HelperCmdRun, "dmsetup", "remove_all"); err != nil {
+		if logger != nil {
+			logger.Error("Cleanup: dmsetup failed: %v", err)
+		}
+		return fmt.Errorf("dmsetup remove_all failed: %w", err)
+	}
+	if logger != nil {
+		logger.Info("Cleanup: dmsetup success")
+	}
+
+	if logger != nil {
 		logger.Info("Cleanup: complete")
+	}
+	return nil
+}
+
+// runHelperPiped executes a helper command and returns its stdout as a string.
+// Returns empty string if the command fails or produces no output.
+func runHelperPiped(helper string, args ...string) string {
+	cmd := exec.Command("sudo", append([]string{helper}, args...)...)
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
+// runHelper executes a privileged command via the helper binary.
+func runHelper(helper string, args ...string) error {
+	cmd := exec.Command("sudo", append([]string{helper}, args...)...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%v (%s)", err, string(output))
 	}
 	return nil
 }
