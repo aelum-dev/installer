@@ -160,20 +160,16 @@ var runWhitelist = map[string]bool{
 	// System queries
 	"blkid":   true,
 	"findmnt": true,
-	"ls":      true,
 	"test":    true,
 	"find":    true,
 	// Sync
 	"sync": true,
 	// File operations
-	"chmod":     true,
-	"chown":     true,
-	"touch":     true,
-	"mkdir":     true,
-	"rmdir":     true,
-	"cp":        true,
-	"dd":        true,
-	"fallocate": true,
+	"chmod":   true,
+	"touch":   true,
+	"mkdir":   true,
+	"rmdir":   true,
+	"cp":      true,
 	// Partitioning
 	"sgdisk":    true,
 	"wipefs":    true,
@@ -181,17 +177,8 @@ var runWhitelist = map[string]bool{
 	// Device cleanup
 	"fuser":   true,
 	"dmsetup": true,
-	// Swap
-	"mkswap":  true,
-	"swapon":  true,
-	"swapoff": true,
 	// System
 	"reboot": true,
-	// Users
-	"passwd":  true,
-	"useradd": true,
-	// Attributes
-	"chattr": true,
 	// Bootloader
 	"bootctl": true,
 }
@@ -531,7 +518,10 @@ func cmdWriteFile(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: write-file <path> [content]")
 	}
-	path := args[0]
+	path, err := validateTargetPath(args[0])
+	if err != nil {
+		return err
+	}
 	var content string
 	if len(args) > 1 {
 		content = args[1]
@@ -557,7 +547,10 @@ func cmdAppendFile(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: append-file <path> [content]")
 	}
-	path := args[0]
+	path, err := validateTargetPath(args[0])
+	if err != nil {
+		return err
+	}
 	var content string
 	if len(args) > 1 {
 		content = args[1]
@@ -588,7 +581,11 @@ func cmdReadFile(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: read-file <path>")
 	}
-	data, err := os.ReadFile(args[0])
+	path, err := validateTargetPath(args[0])
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -742,4 +739,14 @@ func cmdBtrfsMkswapfile(args []string) error {
 
 func cmdUdevSettle(_ []string) error {
 	return runCommand("udevadm", "settle")
+}
+
+// validateTargetPath ensures the path is under /mnt/ (the installed system)
+// and resolves any path traversal attempts (e.g., /mnt/../etc/shadow).
+func validateTargetPath(path string) (string, error) {
+	cleaned := filepath.Clean(path)
+	if !strings.HasPrefix(cleaned, "/mnt/") {
+		return "", fmt.Errorf("path %q is not allowed: must be under /mnt/", path)
+	}
+	return cleaned, nil
 }
