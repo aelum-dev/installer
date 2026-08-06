@@ -46,6 +46,10 @@ type Installer struct {
 	// double cleanup when both the signal handler and Install()'s defer try
 	// to clean up mounted filesystems.
 	interrupted atomic.Bool
+
+	// cancel is closed when SIGINT is received during a long-running command
+	// (e.g. pacstrap). This unblocks scanner goroutines so they return promptly.
+	cancel chan struct{}
 }
 
 // isInterruptError reports whether err was caused by SIGINT (Ctrl+C).
@@ -332,6 +336,8 @@ func (inst *Installer) context() *install.InstallContext {
 	for k := range inst.password {
 		inst.password[k] = 0
 	}
+	// Create a fresh cancel channel for this installation run.
+	inst.cancel = make(chan struct{})
 	return &install.InstallContext{
 		DiskID:     inst.diskID,
 		ESP:        inst.esp,
@@ -342,6 +348,16 @@ func (inst *Installer) context() *install.InstallContext {
 		Region:     inst.region,
 		FileSystem: inst.fileSystem,
 		Logger:     inst.Logger,
+		Cancel:     inst.cancel,
+	}
+}
+
+// Cancel closes the install cancellation channel, unblocking any scanner
+// goroutines (e.g. pacstrap output reader) that are waiting on input.
+// Called by the CLI signal handler on SIGINT.
+func (inst *Installer) Cancel() {
+	if inst.cancel != nil {
+		close(inst.cancel)
 	}
 }
 

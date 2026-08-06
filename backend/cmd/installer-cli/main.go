@@ -176,20 +176,18 @@ func main() {
 		}
 	}()
 
-	// Catch Ctrl+C (SIGINT) and clean up mounted filesystems before exiting.
-	// The defer in installer.Install() only runs on normal/panic exit — SIGINT
-	// terminates the process before defers fire, so we need explicit handling.
-	// We set the interrupted flag so Install()'s defer skips its cleanup,
-	// avoiding a race where both the signal handler and the defer try to
-	// unmount simultaneously.
+	// Catch Ctrl+C (SIGINT). Cancel any running child process (e.g. pacstrap)
+	// so the scanner unblocks, then let Install()'s defer handle cleanup.
+	// We set the interrupted flag so Install()'s defer knows to skip its own
+	// cleanup attempt, avoiding a race where both the signal handler and the
+	// defer try to unmount simultaneously.
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT)
 	go func() {
 		<-sigChan
-		installer.LogInfo("Interrupted — cleaning up mounts on %s", disk)
+		installer.LogInfo("Interrupted — cancelling child process on %s", disk)
+		installer.Cancel()
 		installer.SetInterrupted()
-		installer.Cleanup()
-		os.Exit(130)
 	}()
 
 	if stepName != "" {

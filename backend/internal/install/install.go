@@ -61,27 +61,41 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 	// the default 64KB scanner buffer when installing many packages.
 	scanner := bufio.NewScanner(stdout)
 	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if ctx.Logger != nil {
-			ctx.Logger.Command(line)
-		}
 
-		// Process all line types: Packages count, downloading, verifying,
-		// installing, and (N/M) hook progress.
-		pct := progress.processLine(line)
-		if ctx.ProgressCallback != nil {
-			ctx.ProgressCallback(pct)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading pacstrap output: %w", err)
-	}
+	// Run scanner in a goroutine so we can select on ctx.cancel for clean
+	// interrupt handling. Without this, SIGINT would leave the scanner
+	// blocked on Read() until pacstrap exits on its own.
+	scanDone := make(chan struct{})
+	go func() {
+		for scanner.Scan() {
+			line := scanner.Text()
+			if ctx.Logger != nil {
+				ctx.Logger.Command(line)
+			}
 
-	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("pacstrap failed: %w", err)
+			// Process all line types: Packages count, downloading, verifying,
+			// installing, and (N/M) hook progress.
+			pct := progress.processLine(line)
+			if ctx.ProgressCallback != nil {
+				ctx.ProgressCallback(pct)
+			}
+		}
+		close(scanDone)
+	}()
+
+	select {
+	case <-scanDone:
+		if err := cmd.Wait(); err != nil {
+			return fmt.Errorf("pacstrap failed: %w", err)
+		}
+		return nil
+	case <-ctx.Cancel:
+		// Kill the child process so the scanner goroutine unblocks and exits.
+		// Cleanup is handled by the Installer's defer, not here.
+		_ = cmd.Process.Kill()
+		<-scanDone
+		return fmt.Errorf("interrupted")
 	}
-	return nil
 }
 
 // parsePacstrapProgressPair extracts the (N, M) pair from a pacstrap progress line.

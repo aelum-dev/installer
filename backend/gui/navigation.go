@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"aestheticos-installer/backend/internal/shared"
 )
@@ -24,16 +25,17 @@ var (
 
 // App struct
 type App struct {
-	ctx              context.Context
-	currentPage      PageID
-	startPage        PageID
-	dryRun           bool
-	userAccount      shared.UserAccountData
-	diskSelection    shared.DiskSelectionData
-	hostname         string
-	selectedLanguage string
-	region           shared.Region
-	fileSystem       string // root filesystem: "ext4" or "btrfs"
+	ctx                   context.Context
+	currentPage           PageID
+	startPage             PageID
+	dryRun                bool
+	userAccount           shared.UserAccountData
+	diskSelection         shared.DiskSelectionData
+	hostname              string
+	selectedLanguage      string
+	region                shared.Region
+	fileSystem            string // root filesystem: "ext4" or "btrfs"
+	installationRunning   atomic.Bool
 }
 
 // GetCurrentPage returns the current page index (0-based).

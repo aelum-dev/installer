@@ -74,9 +74,13 @@ func (a *App) StartInstallation() error {
 		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Install failed. You can reboot or use --rollback flag on aestheticos-installer-cli. For detailed information check installation.log", "")
 	}
 
+	// Mark installation as in-progress so OnBeforeClose can trigger cleanup.
+	a.installationRunning.Store(true)
+
 	// Run installation in a goroutine so it doesn't block the UI.
 	// Install() already defers CleanupMounts, so no second cleanup is needed here.
 	go func() {
+		defer a.installationRunning.Store(false)
 		err := installer.Install()
 		if err != nil {
 			return

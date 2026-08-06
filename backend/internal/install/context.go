@@ -33,4 +33,9 @@ type InstallContext struct {
 	// Called by the installer's tick goroutine to animate long-running steps.
 	// nil when no progress reporting is needed (e.g. CLI without UI).
 	ProgressCallback func(percent int)
+
+	// Cancel is closed when SIGINT is received during a long-running command.
+	// Used to unblock scanner goroutines (e.g. in installPackages) so they
+	// return promptly instead of waiting for the child process to finish.
+	Cancel chan struct{}
 }

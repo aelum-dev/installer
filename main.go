@@ -1,10 +1,9 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"os"
-
-	"embed"
 
 	"aestheticos-installer/backend/gui"
 
@@ -53,6 +52,7 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1}, // dark blue-grey
 		OnStartup:        app.StartUp,
+		OnBeforeClose: app.OnBeforeClose,
 		Bind: []interface{}{
 			app,
 		},

@@ -3,9 +3,11 @@ package gui
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"aestheticos-installer/backend/internal/core"
+	"aestheticos-installer/backend/internal/install"
 )
 
 // NewApp creates a new App application struct
@@ -46,6 +48,20 @@ func (a *App) ClearStartPage() {
 // GetDryRun returns whether the app is running in dry-run mode.
 func (a *App) GetDryRun() bool {
 	return a.dryRun
+}
+
+// OnBeforeClose is called by Wails when the user attempts to close the window.
+// If an installation is in progress, it runs cleanup before allowing the window to close.
+func (a *App) OnBeforeClose(ctx context.Context) bool {
+	if a.installationRunning.Load() {
+		helper := core.FindHelper()
+		if helper != "" && a.diskSelection.DiskID != "" {
+			if err := install.CleanupMounts(helper, logger, a.diskSelection.DiskID); err != nil {
+				fmt.Fprintf(os.Stderr, "Cleanup warning: %v\n", err)
+			}
+		}
+	}
+	return true
 }
 
 // RebootAndClose initiates a system reboot and closes the application window.
