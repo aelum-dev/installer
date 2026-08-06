@@ -3,7 +3,6 @@ package install
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"aestheticos-installer/backend/internal/shared"
 )
@@ -89,17 +88,6 @@ func CleanupMounts(helper string, logger Logger, diskID string) error {
 		logger.Info("Cleanup: complete")
 	}
 	return nil
-}
-
-// runHelperPiped executes a helper command and returns its stdout as a string.
-// Returns empty string if the command fails or produces no output.
-func runHelperPiped(helper string, args ...string) string {
-	cmd := exec.Command("sudo", append([]string{helper}, args...)...)
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(output))
 }
 
 // runHelper executes a privileged command via the helper binary.

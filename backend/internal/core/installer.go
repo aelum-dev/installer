@@ -282,7 +282,7 @@ func validStepNames() []string {
 // On failure, cleans up any mounted filesystems so the step can be retried.
 func (inst *Installer) RunStep(stepName string) (label string, percent int, err error) {
 	// Ensure mounts are cleaned up on failure so the step is retryable.
-	defer install.CleanupMounts(inst.helperPath, inst.Logger, inst.diskID)
+	defer inst.RunCleanup()
 
 	allSteps := inst.installationSteps()
 	for _, s := range allSteps {
