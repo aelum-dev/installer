@@ -16,7 +16,6 @@
 	import { MinDiskSizeBytes } from '$lib/constants';
 
 	let disks = $state<DiskInfo[]>([]);
-	let selectedDiskId = $state<string>('');
 	let partitions = $state<PartitionDetail[]>([]);
 	let partitionsLoading = $state(false);
 	let loading = $state(true);
@@ -35,7 +34,6 @@
 	}
 
 	async function selectDisk(disk: DiskInfo): Promise<void> {
-		selectedDiskId = disk.path;
 		diskSelectionData.diskId = disk.path;
 		diskSelectionData.disk = disk;
 		logInfo(`[DiskSelectionPage] Selected: ${disk.path} (${formatSize(disk.size)})`);
@@ -76,16 +74,7 @@
 		pageValid.value = hasDisk && hasFileSystem;
 	});
 
-	$effect(() => {
-		const handler = () => {
-			const disk = disks.find(d => d.path === selectedDiskId) ?? null;
-			diskSelectionData.diskId = selectedDiskId;
-			diskSelectionData.disk = disk;
-			logInfo(`[DiskSelectionPage] Syncing to store for validation`);
-		};
-		document.addEventListener('sync-to-store', handler);
-		return () => document.removeEventListener('sync-to-store', handler);
-	});
+
 </script>
 
 <PageLayout title="Select Installation Disk" stretch={true}>
@@ -140,7 +129,7 @@
 				{#each disks as disk (disk.path)}
 					<button
 						type="button"
-						class={['disk-card', { selected: selectedDiskId === disk.path }]}
+						class={['disk-card', { selected: diskSelectionData.diskId === disk.path }]}
 						onclick={() => selectDisk(disk)}
 					>
 						<!-- Header: icon + name + radio -->
@@ -170,7 +159,7 @@
 								</div>
 							</div>
 							<div class="card-radio">
-								<div class={['radio', { checked: selectedDiskId === disk.path }]}></div>
+								<div class={['radio', { checked: diskSelectionData.diskId === disk.path }]}></div>
 							</div>
 						</div>
 
@@ -187,7 +176,7 @@
 						{/if}
 
 						<!-- Partition details -->
-						{#if selectedDiskId === disk.path}
+						{#if diskSelectionData.diskId === disk.path}
 							<div class="card-partitions">
 								{#if partitionsLoading}
 									<p class="partition-loading">Scanning partitions...</p>

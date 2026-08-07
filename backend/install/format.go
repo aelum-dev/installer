@@ -174,7 +174,7 @@ func formatPartition(diskID string, num int, p struct {
 	Fstype     string
 	MountPoint string
 }) error {
-	path := derivePartitionPath(diskID, num)
+	path := shared.DerivePartitionPath(diskID, num)
 
 	// Wipe filesystem signatures before formatting
 	wipeOut, err := Run("wipefs", "--all", "-f", path).CombinedOutput()
@@ -202,7 +202,7 @@ func formatPartition(diskID string, num int, p struct {
 }
 
 func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []shared.BtrfsSubvolume) error {
-	rootPath := derivePartitionPath(diskID, 2)
+	rootPath := shared.DerivePartitionPath(diskID, 2)
 	tmp := shared.BtrfsSetupTmpMount
 
 	_ = Run("mkdir", "-p", tmp).Run()
@@ -259,10 +259,6 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 
 	_ = Run("rmdir", tmp).Run()
 	return nil
-}
-
-func derivePartitionPath(diskID string, num int) string {
-	return shared.DerivePartitionPath(diskID, num)
 }
 
 func findPartitionsByFstype(parts []shared.PartitionEntry) (*shared.PartitionEntry, *shared.PartitionEntry) {

@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // zramSizeMaxMiB is the maximum zram swap size in MiB (8 GiB).
@@ -51,7 +52,7 @@ func calculateZramSizeMiB() int {
 	if err != nil {
 		return 2048 // fallback to 2 GiB if we can't read
 	}
-	for _, line := range splitLines(string(data)) {
+	for _, line := range strings.Split(string(data), "\n") {
 		matches := meminfoKBRegex.FindStringSubmatch(line)
 		if matches != nil {
 			kb, err := strconv.ParseInt(matches[1], 10, 64)
@@ -73,17 +74,4 @@ func calculateZramSizeMiB() int {
 	return 2048
 }
 
-func splitLines(s string) []string {
-	var lines []string
-	start := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' {
-			lines = append(lines, s[start:i])
-			start = i + 1
-		}
-	}
-	if start < len(s) {
-		lines = append(lines, s[start:])
-	}
-	return lines
-}
+

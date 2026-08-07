@@ -29,14 +29,18 @@ var ISOCopyJobs = []CopyJob{
 }
 
 // ExecuteCopyJobs copies all static files from the live ISO to the installed system.
-// It iterates over ISOCopyJobs, runs mkdir -p on each destination parent, then cp.
+// It iterates over ISOCopyJobs, runs mkdir -p on each destination parent,
+// then cp. Individual copy failures are collected and reported together so that
+// a single failed file does not prevent the rest from being copied.
 func ExecuteCopyJobs() error {
+	var errs []error
 	for _, job := range ISOCopyJobs {
 
 		// Ensure parent directory exists (idempotent — safe to run unconditionally).
 		parentDir := filepath.Dir(job.Dest)
 		if _, err := Run("mkdir", "-p", parentDir).CombinedOutput(); err != nil {
-			return fmt.Errorf("failed to create dir %s: %w", parentDir, err)
+			errs = append(errs, fmt.Errorf("failed to create dir %s: %w", parentDir, err))
+			continue
 		}
 
 		// Build cp command: cp [flags] source dest
@@ -45,8 +49,12 @@ func ExecuteCopyJobs() error {
 		cmd := Run(cpArgs...)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("failed to copy %s → %s: %w: %s", job.Source, job.Dest, err, strings.TrimSpace(string(output)))
+			errs = append(errs, fmt.Errorf("failed to copy %s → %s: %w: %s", job.Source, job.Dest, err, strings.TrimSpace(string(output))))
+			continue
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("%d copy job(s) failed", len(errs))
 	}
 	return nil
 }
