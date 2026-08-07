@@ -12,7 +12,6 @@
 - When building Go binaries, always use `-o` flag to specify output location:
   ```bash
   go build -o build/bin/aestheticos-installer-cli ./backend/cli/
-  go build -o build/bin/aestheticos-helper ./backend/helper/
   ```
 
 ## Research & Documentation
@@ -29,7 +28,7 @@
 
 | Term | What It Is | Where Code Runs |
 |------|-----------|------------------|
-| **Live ISO** | The bootable Arch Linux environment the user starts from. Contains the installer binaries, helper, and live desktop. | `/etc/sudoers.d/aestheticos` on ISO lets helper run without password. Log file written here. Read-only rootfs (overlay). |
+| **Live ISO** | The bootable Arch Linux environment the user starts from. Contains the installer binaries and live desktop. | User needs passwordless sudo for CLI binary. Log file written here. Read-only rootfs (overlay). |
 | **Installed System** | The Arch Linux being written to the target disk. What the user boots into after installation. | `/mnt/` is the mount point during install. `/etc/sudoers.d/wheel` is written here for the new user. `arch-chroot /mnt` runs commands inside it. |
 | **Host** | The developer's main machine (not the VM). | Where `build.sh` runs, where git lives. |
 | **VM** | QEMU VM booting from the ISO. Used for testing. | `/shared` is mounted from host's `~/Projects/shared`. |
@@ -38,9 +37,7 @@
 - Live ISO root: `/` (read-only, overlay)
 - Installed system root during install: `/mnt/`
 - ESP (EFI System Partition) during install: `/mnt/boot/`
-- Helper binary on ISO: `/usr/local/bin/aestheticos-helper`
-- Helper binary on installed system: none (not needed after install)
-- Sudoers on ISO: `/etc/sudoers.d/aestheticos` (lets installer run helper)
+- Sudoers on ISO: user must have passwordless sudo for `aestheticos-installer-cli`
 - Sudoers on installed system: `/etc/sudoers.d/wheel` (lets new user use sudo)
 
 **When writing code, ask: "Which system am I operating on?"**
@@ -48,7 +45,7 @@
 - Operations on `/mnt/*` → installed system (target)
 - Operations via `arch-chroot /mnt` → installed system (target, as if booted)
 - Operations via `runChroot()` → installed system (target)
-- Operations via `ctx.run()` without chroot → live ISO (host-level)
+- Operations via `Run()` → live ISO (host-level, direct exec.Command)
 
 ## Testing Environments
 - **Host machine** = main development system (where you develop the installer)
@@ -70,4 +67,5 @@
 - **Embrace Corrections:** When the user corrects your architecture, they're usually right. Don't defend your implementation — fix it and learn.
 - **Keep It Simple:** Don't add abstractions unless the user explicitly asks for them. If you find yourself creating 5+ files for a "flexible" system when 2 would do, stop and ask.
 - **Clean Code:** Use only clean code patterns — no magic numbers, no hardcoded strings, no duplicated logic. Extract constants, use named functions, and keep everything DRY.
+- **Constants in one place:** All constants live in `backend/shared/config.go`. Don't duplicate them.
 - **Verify Each Change:** Build and test after every modification. Don't push 10 changes at once and hope they all work.

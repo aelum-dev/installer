@@ -38,14 +38,39 @@ CI runs all of the above on every push/PR via [GitHub Actions](./.github/workflo
 
 ```
 backend/
-├── cmd/
-│   ├── helper/          # Privileged helper (sudo-privileged system ops)
-│   └── installer-cli/   # CLI installer
+├── cli/                 # CLI installer
 ├── gui/                 # Wails GUI layer
-└── internal/
-    ├── core/            # Installer orchestrator (shared by CLI + GUI)
-    ├── install/         # Installation steps
-    └── shared/          # Types, validators, disk detection
+├── install/             # Installation steps + orchestrator
+│   ├── installer.go     # Installer struct + Install()/RunStep()/Rollback()
+│   ├── step.go          # Step interface + step implementations
+│   ├── plan.go          # Plan struct for step weights/percentages
+│   ├── executor.go      # Executor interface
+│   ├── configuration.go # Merged ConfigureSystem step
+│   ├── errors.go        # Error types
+│   ├── logger.go        # Logger interface + ConsoleLogger
+│   ├── format.go        # Partitioning + formatting
+│   ├── mount.go         # Mount filesystem
+│   ├── install.go       # Pacstrap progress tracking
+│   ├── install_base.go  # Base package installation
+│   ├── install_desktop.go # Desktop package installation
+│   ├── fstab.go         # fstab generation
+│   ├── bootloader.go    # systemd-boot configuration
+│   ├── users.go         # User account setup
+│   ├── system.go        # Hostname, locale, timezone, mirrors
+│   ├── greetd.go        # Login manager configuration
+│   ├── greetd/          # greetd package (config, sync, memory)
+│   ├── plymouth.go      # Plymouth BGRT silent boot
+│   ├── services.go      # systemd service enabling
+│   ├── zram.go          # Compressed swap configuration
+│   ├── copy.go          # ISO-to-target file copying
+│   ├── cleanup.go       # Mount cleanup
+│   ├── command.go       # Run(), runChroot(), writeFile(), appendFile()
+│   ├── rollback.go      # Rollback partial installations
+│   ├── context.go       # InstallContext
+│   ├── checks.go        # Validation helpers
+│   └── progress/        # Pacstrap progress tracker
+├── validation/          # Centralized validation
+└── shared/              # Types, validators, disk detection, regions
 
 frontend/src/
 ├── pages/               # 6 wizard pages
@@ -65,9 +90,10 @@ frontend/src/
 
 - **Go**: Follow [Effective Go](https://go.dev/doc/effective_go) and `gofmt`. Run `go vet ./...` and `go test ./...` before submitting.
 - **Svelte/TypeScript**: Follow [Svelte docs](https://svelte.dev/docs) conventions. Run `npm run check` for type checking.
-- **No magic numbers**: Extract constants into named `const` variables.
+- **No magic numbers**: Extract constants into named `const` variables. All constants live in `backend/shared/config.go`.
 - **Single responsibility**: Each function does one thing. Validation functions validate only — they don't mutate state.
 - **Live ISO vs installed system**: Never confuse the two. See `RULES.md` for the full distinction.
+- **Executor pattern**: Use the `Executor` interface for command execution in testable code. Direct `Run()` / `runChroot()` calls are fine for simple cases.
 
 ## Commit Messages
 

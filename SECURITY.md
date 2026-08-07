@@ -28,20 +28,30 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 ## Security Design
 
-The installer uses a **privileged helper binary** pattern to limit root access:
+The installer uses a **CLI-spawn pattern** to limit root access:
 
-- The main GUI/CLI binaries run as the user — no root required
-- Only `aestheticos-helper` runs via `sudo`, and only with explicitly whitelisted commands
-- The helper uses two whitelists:
-  - `runWhitelist` — host-level commands (blkid, sgdisk, wipefs, etc.)
-  - `chrootRunWhitelist` — commands allowed inside `arch-chroot /mnt`
-- All privileged operations go through the helper; no direct root execution elsewhere
+- The GUI runs as root and spawns `aestheticos-installer-cli` via `sudo`
+- The CLI binary handles all privileged operations directly via `exec.Command` and `arch-chroot`
+- No separate helper binary is needed — the CLI is the privileged component
+- Passwords are read from stdin (never CLI flags) to avoid `/proc`, `ps`, and shell history exposure
+- The CLI emits JSON progress events to stderr; the GUI reads these to update the UI
+
+### Sudo Configuration
+
+On the live ISO, the user must have passwordless sudo for the CLI binary. The exact sudoers rule depends on the ISO configuration.
+
+On the installed system, `/etc/sudoers.d/wheel` is written for the new user:
+
+```
+%wheel ALL=(ALL:ALL) ALL
+```
 
 ## Known Security Considerations
 
-- The helper binary requires passwordless sudo for specific commands — ensure the sudoers rule is restricted to the helper path only
-- Disk paths are validated with regex to prevent shell injection, but the helper still runs commands as root — trust the installer binary
+- The CLI binary requires passwordless sudo for privileged operations — ensure the sudoers rule is restricted to the CLI binary path only
+- Disk paths are validated with regex to prevent shell injection, but the CLI still runs commands as root — trust the installer binary
 - The installation log (`~/.local/share/aestheticos-installer/installation.log`) may contain sensitive information — it is not encrypted
+- Passwords are zeroed from memory (`[]byte`) after being copied to `InstallContext` to minimize exposure time
 
 ## Responsible Disclosure Timeline
 

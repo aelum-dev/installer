@@ -8,8 +8,7 @@ Paired with the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) distr
 
 - **6-step wizard** — Welcome, User Account, Disk Selection, Confirmation, Installation, Finish
 - **ext4 and btrfs** — Choose your root filesystem; btrfs includes automatic subvolume layout (`@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap`)
-- **Privileged helper** — All root operations go through a sandboxed helper binary with command whitelists (no full root access for the GUI)
-- **CLI mode** — Headless automated installs via `aestheticos-installer-cli`
+- **CLI mode** — Headless automated installs via `aestheticos-installer-cli` (spawns via sudo from GUI)
 - **Progress tracking** — Line-count-based pacstrap progress for accurate percentages
 - **Dry-run mode** — Simulate the full install for UI testing (`AESTHETIC_DRY_RUN=1`)
 - **Fake disks** — Synthetic disk data for frontend development (`FAKE_DISKS=1`)
@@ -33,20 +32,64 @@ The installed system ships with:
 
 ```
 AestheticOS-Installer/
+├── main.go                  # Wails app entry point
+├── wails.json               # Wails config
+├── build.sh / run.sh        # Build & dev scripts
 ├── backend/
-│   ├── cmd/
-│   │   ├── helper/          # Privileged helper (sudo-privileged system ops)
-│   │   └── installer-cli/   # CLI installer
+│   ├── cli/main.go          # CLI installer
 │   ├── gui/                 # Wails GUI layer (bindings, navigation, validation)
-│   └── internal/
-│       ├── core/            # Installer orchestrator (shared by CLI + GUI)
-│       ├── install/         # Installation steps (format, mount, pacstrap, etc.)
-│       └── shared/          # Types, validators, disk detection, regions
+│   ├── install/             # Installation steps + orchestrator
+│   │   ├── installer.go     # Installer struct + Install()/RunStep()/Rollback()
+│   │   ├── step.go          # Step interface + step implementations
+│   │   ├── plan.go          # Plan struct for step weights/percentages
+│   │   ├── executor.go      # Executor interface (Run, RunChroot, WriteFile, AppendFile)
+│   │   ├── configuration.go # Merged ConfigureSystem step
+│   │   ├── errors.go        # ValidationError, InstallError types
+│   │   ├── logger.go        # Logger interface + ConsoleLogger
+│   │   ├── format.go        # Partitioning + formatting
+│   │   ├── mount.go         # Mount filesystem + verification
+│   │   ├── install_base.go  # pacstrap base packages
+│   │   ├── install_desktop.go # pacstrap desktop packages
+│   │   ├── install.go       # Pacstrap progress tracking
+│   │   ├── fstab.go         # fstab generation + verification
+│   │   ├── bootloader.go    # systemd-boot install + boot entries
+│   │   ├── users.go         # User account creation + ISO copy
+│   │   ├── system.go        # Hostname, locale, timezone, mirrors
+│   │   ├── greetd.go        # Login manager config + DMS sync
+│   │   ├── greetd/          # greetd package (config, sync, memory)
+│   │   ├── plymouth.go      # Silent boot (BGRT theme)
+│   │   ├── services.go      # systemd service enabling
+│   │   ├── zram.go          # Compressed swap via zram-generator
+│   │   ├── copy.go          # ISO-to-target file copying
+│   │   ├── cleanup.go       # Mount cleanup
+│   │   ├── command.go       # Run(), runChroot(), writeFile(), appendFile()
+│   │   ├── rollback.go      # Rollback partial installations
+│   │   ├── context.go       # InstallContext
+│   │   ├── checks.go        # Validation helpers
+│   │   └── progress/        # Pacstrap progress tracker
+│   ├── validation/          # Centralized validation (delegates to shared)
+│   └── shared/              # Types, validators, disk detection, regions
+│       ├── types.go         # Data structures (DiskInfo, Region, etc.)
+│       ├── config.go        # Constants + thresholds
+│       ├── disks.go         # lsblk parsing + fake data
+│       ├── regions.go       # 28 locale/region definitions
+│       ├── locales.go
+│       ├── btrfs.go         # Subvolume definitions
+│       ├── mirrorlist.go    # Mirrorlist handling
+│       ├── mirrorlist_gen.go # Mirrorlist refresh script
+│       ├── validators.go    # Input validation
+│       └── logpath.go
 └── frontend/
     ├── src/
+    │   ├── App.svelte       # Root component
+    │   ├── main.ts          # Entry point
+    │   ├── lib/
+    │   │   ├── state.svelte.ts  # Svelte stores
+    │   │   ├── types.ts         # TS types + constants
+    │   │   ├── navigation.ts    # Nav + validation calls
+    │   │   └── validate.ts      # Client validation
     │   ├── pages/           # 6 wizard pages
-    │   ├── components/      # Reusable UI components
-    │   └── lib/             # State, navigation, validation
+    │   └── components/      # Reusable UI components
     └── wailsjs/             # Auto-generated Wails bindings
 ```
 
@@ -65,13 +108,14 @@ AestheticOS-Installer/
 ./build.sh
 ```
 
-This produces three binaries in `build/bin/`:
+This produces two binaries in `build/bin/`:
 
 | Binary | Purpose |
 |--------|---------|
 | `aestheticos-installer` | GUI wizard (Wails app) |
 | `aestheticos-installer-cli` | CLI automated installer |
-| `aestheticos-helper` | Privileged helper (run via sudo) |
+
+The GUI spawns the CLI binary via `sudo` for all privileged operations — no separate helper binary is needed.
 
 ### Development mode
 
@@ -96,7 +140,7 @@ npm run test     # Run Vitest tests
 ### GUI
 
 ```bash
-# Run as root (helper requires sudo)
+# Run as root (GUI spawns CLI via sudo for privileged ops)
 sudo ./build/bin/aestheticos-installer
 ```
 
@@ -139,6 +183,8 @@ sudo ./build/bin/aestheticos-installer-cli --configure-system /dev/vda
 
 The CLI **never accepts the password as a command-line flag**. Passwords are read from the terminal (masked) or from stdin (piped). This prevents the password from appearing in `/proc`, `ps` output, or shell history.
 
+The GUI spawns the CLI binary via `sudo` for all privileged operations — the GUI itself never runs system commands directly.
+
 ## Installation Steps
 
 The installer runs **6 top-level steps** (12 logical sub-steps). The last step merges 7 configuration tasks into one:
@@ -167,23 +213,17 @@ The installer is **idempotent** — if it fails mid-install, running it again wi
 
 ## Security Design
 
-The installer uses a **privileged helper pattern** to minimize the attack surface:
+The installer uses a **CLI-spawn pattern** for privileged operations:
 
-- The GUI runs as root but cannot directly execute system commands
-- All privileged operations go through `aestheticos-helper`, invoked via sudo
-- The helper uses **command whitelists** — only explicitly allowed commands can run
-- Two whitelists: `runWhitelist` (host-level) and `chrootRunWhitelist` (inside chroot)
-- Passwords are never logged; they're passed via stdin where possible
+- The GUI runs as root and spawns `aestheticos-installer-cli` via `sudo`
+- The CLI binary handles all privileged operations directly via `exec.Command` and `arch-chroot`
+- No separate helper binary is needed — the CLI is the privileged component
+- Passwords are read from stdin (never CLI flags) to avoid `/proc`, `ps`, and shell history exposure
+- The CLI emits JSON progress events to stderr; the GUI reads these to update the UI
 
 ### Sudoers Configuration
 
-On the live ISO, `/etc/sudoers.d/aestheticos` allows the helper to run without a password:
-
-```
-%sudo ALL=(ALL) NOPASSWD: /usr/local/bin/aestheticos-helper
-```
-
-On the installed system, `/etc/sudoers.d/wheel` is written for the new user:
+On the live ISO, the user must have passwordless sudo for the CLI binary. On the installed system, `/etc/sudoers.d/wheel` is written for the new user:
 
 ```
 %wheel ALL=(ALL:ALL) ALL
@@ -211,8 +251,9 @@ See [RULES.md](./RULES.md) for development conventions and [OVERVIEW.md](./OVERV
 ### Key Concepts
 
 - **Live ISO vs Installed System** — Never confuse the two. The installer runs on the live ISO; it writes to `/mnt/` (the target system).
-- **Helper binary** — All privileged ops go through `aestheticos-helper`. See `backend/cmd/helper/main.go` for the full command list.
-- **InstallContext** — Shared state passed through all installation steps. See `backend/internal/install/context.go`.
+- **CLI binary** — All privileged ops run through `aestheticos-installer-cli` (spawned via `sudo` by the GUI). See `backend/cli/main.go`.
+- **InstallContext** — Shared state passed through all installation steps. See `backend/install/context.go`.
+- **Step interface** — Each installation step implements `Step` (Name, Label, Run). See `backend/install/step.go`.
 
 ## License
 

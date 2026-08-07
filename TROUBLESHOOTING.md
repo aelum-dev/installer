@@ -27,7 +27,7 @@ On the live ISO, the path is:
 
 - `[HH:MM:SS]` — timestamp
 - `Starting step:` / `Step completed:` — step boundaries
-- `Running:` — command output from the helper
+- `Running:` — command output
 - `ERROR:` — failure point with command and output
 
 ### Quick Log Inspection
@@ -59,7 +59,7 @@ mount | grep /dev/sda
 sudo umount -R /mnt 2>/dev/null
 
 # Try rollback to clean up
-./aestheticos-installer-cli --rollback /dev/sda
+sudo ./aestheticos-installer-cli --rollback /dev/sda
 ```
 
 ### "pacstrap failed" / "no mirror list available"
@@ -68,7 +68,7 @@ sudo umount -R /mnt 2>/dev/null
 
 **Fix**:
 1. Verify the mirrorlist exists: `ls /etc/pacman.d/mirrorlist-*`
-2. Rebuild mirrorlists: `go run ./backend/internal/shared/mirrorlist_gen.go`
+2. Rebuild mirrorlists: `go run ./backend/shared/mirrorlist_gen.go`
 3. Rebuild the installer: `./build.sh`
 
 ### "bootctl install failed"
@@ -101,9 +101,6 @@ efibootmgr --version
 ```bash
 # Full wipe — removes partition table and all signatures
 sudo sgdisk -Z /dev/sda
-
-# Or use the helper if available
-sudo /usr/local/bin/aestheticos-helper run sgdisk -Z /dev/sda
 ```
 
 ## Hardware-Specific Issues
@@ -130,16 +127,16 @@ If an installation is partially complete and you want to start fresh:
 
 ```bash
 # 1. Roll back the disk
-./aestheticos-installer-cli --rollback /dev/sda
+sudo ./aestheticos-installer-cli --rollback /dev/sda
 
 # 2. Verify it's clean
 lsblk /dev/sda
 # Should show partitions but no mountpoints
 
 # 3. Re-run installation (password entered interactively)
-./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
+sudo ./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
 # Or pipe it for non-interactive use:
-# echo 'mypassword' | ./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
+# echo 'mypassword' | sudo ./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
 ```
 
 ## Reporting Bugs
