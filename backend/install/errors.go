@@ -2,10 +2,13 @@ package install
 
 import "fmt"
 
+// ============================================================================
+// Error types
+// ============================================================================
+
 // ValidationError indicates a user-input or precondition failure.
-// These errors are not transient — the user must fix the input before retrying.
 type ValidationError struct {
-	Field   string // e.g. "username", "disk", "filesystem"
+	Field   string
 	Message string
 }
 
@@ -16,15 +19,13 @@ func (e *ValidationError) Error() string {
 	return e.Message
 }
 
-// NewValidationError creates a new ValidationError.
 func NewValidationError(field, message string) *ValidationError {
 	return &ValidationError{Field: field, Message: message}
 }
 
 // InstallError indicates a runtime failure during installation.
-// These errors are fatal — the installation cannot continue.
 type InstallError struct {
-	Step  string // the step that failed
+	Step  string
 	Cause error
 }
 
@@ -35,12 +36,22 @@ func (e *InstallError) Error() string {
 	return e.Cause.Error()
 }
 
-// Unwrap returns the underlying cause for errors.As/Is compatibility.
 func (e *InstallError) Unwrap() error {
 	return e.Cause
 }
 
-// NewInstallError creates a new InstallError for a step failure.
 func NewInstallError(step string, cause error) *InstallError {
 	return &InstallError{Step: step, Cause: cause}
+}
+
+// ============================================================================
+// Root check result
+// ============================================================================
+
+// RootCheckResult contains the result of a root privilege check.
+type RootCheckResult struct {
+	Authorized bool   `json:"authorized"`
+	Error      string `json:"error,omitempty"`
+	Message    string `json:"message"`
+	Output     string `json:"output,omitempty"`
 }

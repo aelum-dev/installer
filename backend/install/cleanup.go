@@ -9,18 +9,12 @@ import (
 	"aestheticos-installer/backend/shared"
 )
 
+// ============================================================================
+// Cleanup
+// ============================================================================
+
 // CleanupMounts forcefully unmounts everything under /mnt.
-//
-// It handles the case where a process (e.g. gpg-agent) holds a reference to
-// /mnt and prevents umount. The steps are:
-//
-//  1. Find PIDs of processes accessing the /mnt filesystem via fuser -m.
-//  2. Kill all such processes with SIGKILL.
-//  3. Recursively unmount /mnt with umount -R.
-//
-// This is safe to call even if /mnt is not mounted — it will simply no-op.
 func CleanupMounts(logger Logger, diskID string) error {
-	// Step 1: Find PIDs of processes holding /mnt.
 	pids, err := findHoldingPIDs(shared.MountRoot)
 	if err != nil {
 		if logger != nil {
@@ -29,7 +23,6 @@ func CleanupMounts(logger Logger, diskID string) error {
 		return fmt.Errorf("find holding PIDs: %w", err)
 	}
 
-	// Step 2: Kill all holding processes and wait for them to exit.
 	if len(pids) > 0 {
 		if logger != nil {
 			logger.Info("CleanupMounts: killing %d process(es) holding %s: %s",
@@ -45,7 +38,6 @@ func CleanupMounts(logger Logger, diskID string) error {
 		logger.Info("CleanupMounts: no processes holding %s", shared.MountRoot)
 	}
 
-	// Step 3: Recursively unmount /mnt.
 	if err := unmountRecursive(shared.MountRoot); err != nil {
 		if logger != nil {
 			logger.Error("CleanupMounts: umount -R failed: %v", err)
@@ -59,18 +51,10 @@ func CleanupMounts(logger Logger, diskID string) error {
 	return nil
 }
 
-// findHoldingPIDs returns PIDs of processes accessing the filesystem at mountPoint.
-// Uses fuser -m which treats the path as a mount point and lists all processes
-// accessing files on that filesystem. Returns empty slice if no processes found.
 func findHoldingPIDs(mountPoint string) ([]string, error) {
-	// -M ensures we only match if mountPoint is an actual mount point.
-	// Without it, fuser -m /mnt on an unmounted directory would scan the
-	// host filesystem that /mnt sits on, potentially matching live ISO processes.
 	cmd := exec.Command("fuser", "-m", "-M", mountPoint)
 	output, err := cmd.Output()
 	if err != nil {
-		// fuser returns non-zero when no processes are found or the path is
-		// not a mount point — both are not errors for cleanup.
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.ExitCode() == 1 {
 				return nil, nil
@@ -78,52 +62,37 @@ func findHoldingPIDs(mountPoint string) ([]string, error) {
 		}
 		return nil, err
 	}
-
 	trimmed := strings.TrimSpace(string(output))
 	if trimmed == "" {
 		return nil, nil
 	}
-
-	// fuser outputs space-separated PIDs (one line).
-	fields := strings.Fields(trimmed)
-	return fields, nil
+	return strings.Fields(trimmed), nil
 }
 
-// killAndVerifyPIDs sends SIGKILL to each PID and waits until each process
-// has actually exited. Uses kill -0 to poll for process existence.
 func killAndVerifyPIDs(pids []string) error {
 	for _, pid := range pids {
-		// Send SIGKILL.
 		killCmd := exec.Command("kill", "-KILL", pid)
 		if err := killCmd.Run(); err != nil {
-			// If kill itself fails with "No such process", it's already gone.
 			if strings.Contains(err.Error(), "No such process") {
 				continue
 			}
 			return fmt.Errorf("kill -KILL %s: %w", pid, err)
 		}
-
-		// Poll until the process is gone. Max 50 attempts × 20ms = 1 second.
 		for i := 0; i < 50; i++ {
 			checkCmd := exec.Command("kill", "-0", pid)
 			if err := checkCmd.Run(); err != nil {
-				// kill -0 returns non-zero if process doesn't exist — that's success.
 				break
 			}
-			// Process still alive, wait 20ms and retry.
 			time.Sleep(20 * time.Millisecond)
 		}
 	}
 	return nil
 }
 
-// unmountRecursive recursively unmounts everything under mountPoint.
-// Uses umount -R which handles nested mounts (e.g. /mnt/boot unmounts before /mnt).
 func unmountRecursive(mountPoint string) error {
 	cmd := exec.Command("umount", "-R", mountPoint)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// If already unmounted, that's fine.
 		errMsg := strings.ToLower(string(output))
 		if strings.Contains(errMsg, "not mounted") || strings.Contains(errMsg, "no such device") {
 			return nil
@@ -131,4 +100,99 @@ func unmountRecursive(mountPoint string) error {
 		return fmt.Errorf("%w: %s", err, string(output))
 	}
 	return nil
+}
+
+// ============================================================================
+// Rollback
+// ============================================================================
+
+// Rollback cleans up a partial or failed installation.
+func Rollback(logger Logger, diskID string) error {
+	if diskID == "" {
+		return fmt.Errorf("disk ID is required")
+	}
+	if logger != nil {
+		logger.Info("Rolling back: cleaning up %s", diskID)
+	}
+
+	if err := CleanupMounts(logger, diskID); err != nil {
+		if logger != nil {
+			logger.Error("Rollback: cleanup failed: %v", err)
+		}
+		return fmt.Errorf("rollback cleanup failed: %w", err)
+	}
+
+	partitions := discoverPartitions(diskID)
+	if len(partitions) == 0 {
+		if logger != nil {
+			logger.Info("Rollback: no partitions found on %s, skipping wipe", diskID)
+		}
+	} else {
+		for _, part := range partitions {
+			if logger != nil {
+				logger.Info("Wiping signatures on %s", part)
+			}
+			cmd := Run("wipefs", "--all", "-f", part)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				if logger != nil {
+					logger.Error("Failed to wipe %s: %v (%s)", part, err, string(out))
+				}
+			}
+		}
+	}
+
+	if logger != nil {
+		logger.Info("Wiping signatures on %s", diskID)
+	}
+	cmd := Run("wipefs", "--all", "-f", diskID)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		if logger != nil {
+			logger.Error("Failed to wipe disk %s: %v (%s)", diskID, err, string(out))
+		}
+	}
+
+	if logger != nil {
+		logger.Info("Clearing GPT partition table on %s", diskID)
+	}
+	cmd = Run("sgdisk", "-Z", diskID)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		if logger != nil {
+			logger.Error("Failed to clear GPT table on %s: %v (%s)", diskID, err, string(out))
+		}
+	}
+
+	cmd = Run("rmdir", shared.MountRoot)
+	_ = cmd.Run()
+
+	if logger != nil {
+		logger.Info("Rollback complete: %s is ready for a fresh install", diskID)
+	}
+	return nil
+}
+
+func discoverPartitions(diskID string) []string {
+	cmd := exec.Command("lsblk", "-lnbo", "KNAME,TYPE", diskID)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(lines) == 0 {
+		return nil
+	}
+	var partitions []string
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		if fields[1] == "part" {
+			name := fields[0]
+			if !strings.HasPrefix(name, "/dev/") {
+				name = "/dev/" + name
+			}
+			partitions = append(partitions, name)
+		}
+	}
+	return partitions
 }

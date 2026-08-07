@@ -10,6 +10,10 @@ import (
 	"aestheticos-installer/backend/shared"
 )
 
+// ============================================================================
+// Command execution primitives
+// ============================================================================
+
 // Run executes a command directly (no helper needed when running as root).
 func Run(args ...string) *exec.Cmd {
 	return exec.Command(args[0], args[1:]...)
@@ -62,5 +66,65 @@ func appendFile(targetPath string, content string) error {
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to append to %s: %w", targetPath, err)
 	}
+	return nil
+}
+
+// ============================================================================
+// Executor interface and implementation
+// ============================================================================
+
+// Executor abstracts command execution for installation steps.
+// Implementations can be host-based (real) or test-based (mocked).
+type Executor interface {
+	// Run executes a command and returns the prepared Cmd (caller must Run it).
+	Run(args ...string) *exec.Cmd
+	// RunChroot executes a command inside the installed system via arch-chroot.
+	RunChroot(args ...string) ([]byte, error)
+	// WriteFile writes content to a file inside the installed system.
+	WriteFile(path, content string) error
+	// AppendFile appends content to a file inside the installed system.
+	AppendFile(path, content string) error
+}
+
+// HostExecutor is the default implementation that runs commands on the host.
+type HostExecutor struct{}
+
+func (e *HostExecutor) Run(args ...string) *exec.Cmd {
+	return exec.Command(args[0], args[1:]...)
+}
+
+func (e *HostExecutor) RunChroot(args ...string) ([]byte, error) {
+	cmdArgs := append([]string{shared.MountRoot}, args...)
+	cmd := exec.Command("arch-chroot", cmdArgs...)
+	return cmd.CombinedOutput()
+}
+
+func (e *HostExecutor) WriteFile(path, content string) error {
+	return writeFile(path, content)
+}
+
+func (e *HostExecutor) AppendFile(path, content string) error {
+	return appendFile(path, content)
+}
+
+// NewHostExecutor returns the default HostExecutor.
+func NewHostExecutor() *HostExecutor {
+	return &HostExecutor{}
+}
+
+// ============================================================================
+// Validation helpers
+// ============================================================================
+
+// validateMountedSystem checks that /mnt is properly mounted with a root partition.
+// This is a prerequisite for steps that operate on the installed system.
+func validateMountedSystem() error {
+	// Check if /mnt is mounted
+	cmd := Run("findmnt", "-n", "-o", "SOURCE", shared.MountRoot)
+	output, err := cmd.Output()
+	if err != nil || strings.TrimSpace(string(output)) == "" {
+		return fmt.Errorf("/mnt is not mounted. Run --mount-filesystem <disk> first to mount partitions")
+	}
+
 	return nil
 }

@@ -3,10 +3,65 @@ package install
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"aestheticos-installer/backend/shared"
 )
+
+// ============================================================================
+// ISO file copying
+// ============================================================================
+
+// CopyJob defines a source→destination path pair for ISO-to-target file copying.
+type CopyJob struct {
+	Source string
+	Dest   string
+	Flags  []string
+}
+
+// ISOCopyJobs lists all files to copy from the live ISO to the installed system.
+var ISOCopyJobs = []CopyJob{
+	{Source: "/etc/skel/.", Dest: "/mnt/etc/skel/", Flags: []string{"-a"}},
+	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}},
+	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}},
+	{Source: "/usr/share/DankMaterialShell/wallpaper.jpg", Dest: "/mnt/usr/share/DankMaterialShell/wallpaper.jpg", Flags: []string{}},
+	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}},
+	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
+}
+
+// ExecuteCopyJobs copies all static files from the live ISO to the installed system.
+func ExecuteCopyJobs() error {
+	var errs []error
+	for _, job := range ISOCopyJobs {
+		parentDir := filepath.Dir(job.Dest)
+		if _, err := Run("mkdir", "-p", parentDir).CombinedOutput(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to create dir %s: %w", parentDir, err))
+			continue
+		}
+
+		cpArgs := append([]string{"cp"}, job.Flags...)
+		cpArgs = append(cpArgs, job.Source, job.Dest)
+		cmd := Run(cpArgs...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to copy %s → %s: %w: %s", job.Source, job.Dest, err, strings.TrimSpace(string(output))))
+			continue
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("%d copy job(s) failed", len(errs))
+	}
+	return nil
+}
+
+func copyISOFiles() error {
+	return ExecuteCopyJobs()
+}
+
+// ============================================================================
+// User setup
+// ============================================================================
 
 // SetupUsers creates user accounts using sudo.
 func SetupUsers(ctx *InstallContext) error {
@@ -14,7 +69,6 @@ func SetupUsers(ctx *InstallContext) error {
 		return err
 	}
 
-	// Skip user setup if username is not provided (CLI mode)
 	if ctx.Username == "" {
 		return nil
 	}
@@ -23,21 +77,17 @@ func SetupUsers(ctx *InstallContext) error {
 	var output []byte
 	var err error
 
-	// Copy ISO files (skel, dconf, wallpaper, environment, hypr.lua)
 	if err := copyISOFiles(); err != nil {
 		return err
 	}
 
-	// Compile dconf database in installed system
 	output, err = runChroot("dconf", "update")
 	if err != nil {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
 	}
 
-	// Create user inside chroot (skip if already exists)
 	output, err = runChroot("useradd", "-m", "-G", "wheel", ctx.Username)
 	if err != nil {
-		// useradd fails if user already exists — that's ok
 		if !strings.Contains(string(output), "already exists") {
 			return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
 		}
@@ -46,8 +96,6 @@ func SetupUsers(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	// Set password inside chroot (via stdin to avoid shell interpolation of special chars)
-	// chpasswd expects input in format: username:password
 	if len(ctx.Password) > 0 {
 		cmd = Run("arch-chroot", shared.MountRoot, "chpasswd")
 		cmd.Stdin = strings.NewReader(ctx.Username + ":" + string(ctx.Password) + "\n")
@@ -55,15 +103,11 @@ func SetupUsers(ctx *InstallContext) error {
 		if err != nil {
 			return fmt.Errorf("passwd failed: %w: %s", err, string(output))
 		}
-		// Zero the password from the context after use.
 		for k := range ctx.Password {
 			ctx.Password[k] = 0
 		}
 	}
 
-	// Configure sudoers: wheel group requires password for sudo
-	// Write directly to /mnt/etc/sudoers.d/wheel (the mounted installed system),
-	// NOT /etc/sudoers.d/wheel which is on the live ISO.
 	cmd = Run("mkdir", "-p", shared.MountRoot+"/etc/sudoers.d")
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
