@@ -58,7 +58,7 @@ func appendFile(targetPath string, content string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open %s for appending: %w", targetPath, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to append to %s: %w", targetPath, err)
 	}

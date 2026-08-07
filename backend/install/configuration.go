@@ -1,6 +1,5 @@
 package install
 
-
 // ConfigureSystem merges the former separate configuration steps into a single
 // "Configuring system" step. It runs in order:
 //

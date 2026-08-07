@@ -62,7 +62,7 @@ func (e *HostExecutor) AppendFile(path, content string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open %s for appending: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to append to %s: %w", path, err)
 	}
@@ -73,5 +73,3 @@ func (e *HostExecutor) AppendFile(path, content string) error {
 func NewHostExecutor() *HostExecutor {
 	return &HostExecutor{}
 }
-
-

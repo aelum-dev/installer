@@ -25,9 +25,9 @@ const DefaultFileSystem = "ext4"
 
 // Supported root filesystem types.
 const (
-	FileSystemExt4   = "ext4"
-	FileSystemBtrfs  = "btrfs"
-	FileSystemVfat   = "vfat"
+	FileSystemExt4  = "ext4"
+	FileSystemBtrfs = "btrfs"
+	FileSystemVfat  = "vfat"
 )
 
 // --- Language / region -------------------------------------------------------

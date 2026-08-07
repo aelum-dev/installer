@@ -1,6 +1,5 @@
 package install
 
-
 import "fmt"
 
 // ValidationError indicates a user-input or precondition failure.
@@ -25,7 +24,7 @@ func NewValidationError(field, message string) *ValidationError {
 // InstallError indicates a runtime failure during installation.
 // These errors are fatal — the installation cannot continue.
 type InstallError struct {
-	Step string // the step that failed
+	Step  string // the step that failed
 	Cause error
 }
 

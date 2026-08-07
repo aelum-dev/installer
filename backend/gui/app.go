@@ -55,7 +55,7 @@ func (a *App) OnBeforeClose(ctx context.Context) bool {
 		// Send SIGINT to the running CLI process
 		activeCLI.mu.Lock()
 		if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
-			activeCLI.cmd.Process.Signal(os.Interrupt)
+			_ = activeCLI.cmd.Process.Signal(os.Interrupt)
 		}
 		activeCLI.mu.Unlock()
 	}

@@ -1,6 +1,5 @@
 package install
 
-
 // Step defines a single installation step.
 // Each step has a unique name, a human-readable label, and a Run method.
 type Step interface {

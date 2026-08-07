@@ -1,6 +1,5 @@
 package install
 
-
 // desktopPackages are user-space packages installed during the desktop
 // environment step. Split from basePackages so the install progress bar
 // moves smoothly instead of stalling during the long pacstrap call.

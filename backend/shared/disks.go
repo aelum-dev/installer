@@ -303,8 +303,6 @@ func FormatSize(byteStr string) string {
 	}
 }
 
-
-
 // DerivePartitionPath returns the device path for partition num on diskID.
 // NVMe devices use the spN convention (e.g. /dev/nvme0n1p1), everything else
 // uses dN (e.g. /dev/sda1).

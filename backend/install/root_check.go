@@ -1,6 +1,5 @@
 package install
 
-
 // RootCheckResult contains the result of a root privilege check.
 type RootCheckResult struct {
 	Authorized bool   `json:"authorized"`

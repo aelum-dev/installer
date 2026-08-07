@@ -88,5 +88,3 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 		return fmt.Errorf("interrupted")
 	}
 }
-
-

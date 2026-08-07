@@ -340,8 +340,6 @@ func simulateStep() error {
 	return nil
 }
 
-
-
 // Rollback cleans up a partial or failed installation.
 // Delegates to the standalone Rollback function.
 func (inst *Installer) Rollback() error {
@@ -373,5 +371,3 @@ func (inst *Installer) Interrupted() bool {
 func (inst *Installer) SetInterrupted() {
 	inst.interrupted.Store(true)
 }
-
-

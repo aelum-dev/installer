@@ -11,7 +11,7 @@ import (
 // before allowing installation to proceed.
 func (a *App) CheckRoot() install.RootCheckResult {
 	GetLogger().Info("Checking sudo availability...")
-	
+
 	// Check if sudo is available and can run a simple command
 	cmd := exec.Command("sudo", "-n", "true")
 	if err := cmd.Run(); err != nil {

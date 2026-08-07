@@ -35,7 +35,7 @@ func TestInstaller_StepNames(t *testing.T) {
 
 func TestInstaller_RunStep_UnknownStep(t *testing.T) {
 	inst := &Installer{
-		diskID:     "/dev/vda",
+		diskID: "/dev/vda",
 	}
 
 	_, _, err := inst.RunStep("nonexistent_step")
@@ -46,11 +46,11 @@ func TestInstaller_RunStep_UnknownStep(t *testing.T) {
 
 func TestInstaller_Context(t *testing.T) {
 	inst := &Installer{
-		diskID:     "/dev/sda",
-		username:   "testuser",
-		password:   []byte("testpass"),
-		region:     shared.GetRegion("en_US"),
-		esp:        "/mnt/boot",
+		diskID:   "/dev/sda",
+		username: "testuser",
+		password: []byte("testpass"),
+		region:   shared.GetRegion("en_US"),
+		esp:      "/mnt/boot",
 	}
 
 	ctx := inst.context()

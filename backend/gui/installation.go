@@ -59,8 +59,6 @@ func findCLIBinary() string {
 	return "aestheticos-installer-cli" // fallback — should be in PATH
 }
 
-
-
 // StartInstallation begins the installation process by spawning the CLI binary via sudo.
 func (a *App) StartInstallation() error {
 	// Safety check: verify root privileges one more time before starting
@@ -88,6 +86,7 @@ func (a *App) StartInstallation() error {
 	if hostname == "" {
 		hostname = "aestheticos"
 	}
+	_ = hostname // used in CLI args below
 
 	// Build CLI arguments
 	args := []string{
@@ -137,9 +136,9 @@ func (a *App) StartInstallation() error {
 
 	// Write password to stdin in a goroutine
 	go func() {
-		defer stdin.Close()
+		defer func() { _ = stdin.Close() }()
 		if len(a.userAccount.Password) > 0 {
-			stdin.Write([]byte(a.userAccount.Password + "\n"))
+			_, _ = stdin.Write([]byte(a.userAccount.Password + "\n"))
 		}
 	}()
 

@@ -1,6 +1,5 @@
 package install
 
-
 // basePackages are the essential system packages installed during the base
 // system step. Kept minimal so this step finishes quickly and the progress
 // bar moves smoothly.
