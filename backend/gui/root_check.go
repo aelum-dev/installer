@@ -17,7 +17,7 @@ func (a *App) CheckRoot() install.RootCheckResult {
 	if err := cmd.Run(); err != nil {
 		return install.RootCheckResult{
 			Authorized: false,
-			Message:    "sudo is not available or requires a password. Please configure sudoers to allow passwordless sudo for the installer.",
+			Message:    "The installer needs passwordless sudo. Please add your user to the sudoers file.",
 		}
 	}
 

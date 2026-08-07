@@ -45,10 +45,10 @@
 	async function checkRootPrivileges(): Promise<void> {
 		try {
 			rootCheckResult = await CheckRoot();
-		} catch (err) {
+		} catch {
 			rootCheckResult = {
 				authorized: false,
-				message: `Root check failed: ${err}`,
+				message: 'Check failed — see logs for details',
 			};
 		} finally {
 			rootCheckLoading = false;
