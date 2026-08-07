@@ -1,6 +1,10 @@
 package gui
 
-import "aestheticos-installer/backend/install"
+import (
+	"fmt"
+
+	"aestheticos-installer/backend/install"
+)
 
 // logger is the central log orchestrator for the GUI.
 // It wraps the shared logger but suppresses stdout output to prevent

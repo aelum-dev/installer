@@ -37,8 +37,18 @@
 	// Listen for installation events from the backend
 	$effect(() => {
 		const handleProgress = (data: { label: string; percent: number; phase: string }) => {
-			if (data.label !== currentStepLabel) {
-				currentStepLabel = data.label;
+			// Strip any timestamp/percentage prefix — only keep the step name
+			let cleanLabel = data.label;
+			// Remove leading [HH:MM:SS] if present
+			cleanLabel = cleanLabel.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '');
+			// Remove leading [N%] if present
+			cleanLabel = cleanLabel.replace(/^\[\d+%\]\s*/, '');
+			// Remove leading => if present
+			cleanLabel = cleanLabel.replace(/^=>\s*/, '');
+			cleanLabel = cleanLabel.trim();
+
+			if (cleanLabel !== currentStepLabel) {
+				currentStepLabel = cleanLabel;
 				progress = 0;
 			}
 			if (data.phase === 'running') {
