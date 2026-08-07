@@ -38,14 +38,18 @@ type Logger interface {
 	// Error logs an error message to stderr and the log file.
 	Error(format string, args ...interface{})
 	// Command logs a line of command output to stdout and the log file.
+	// If a progress context is active, outputs: [timestamp] [percent%] label => line
 	Command(line string)
-	// CommandNoNewline logs a line of command output without a trailing newline
-	// (used for pacstrap progress lines that continue on the same line).
+	// CommandNoNewline logs a line of command output without a trailing newline.
 	CommandNoNewline(line string)
 	// LogToFile writes a line to the log file only (no console output).
 	LogToFile(line string)
 	// WriteErrorLog writes a formatted error block to the log file.
 	WriteErrorLog(stepLabel, errMsg string)
+	// SetProgressContext sets the current step label and percentage for command output formatting.
+	SetProgressContext(label string, percent int)
+	// Progress logs a progress line: [timestamp] [percent%] label
+	Progress(label string, percent int)
 }
 
 // --- Logging constants -------------------------------------------------------
@@ -69,10 +73,12 @@ const ErrorPrefix = "ERROR: "
 // File writes are asynchronous to avoid blocking the installation process.
 // This is the default logger used by both CLI and GUI.
 type ConsoleLogger struct {
-	mu      sync.Mutex
-	logFile *os.File
-	logChan chan string
-	done    chan struct{}
+	mu              sync.Mutex
+	logFile         *os.File
+	logChan         chan string
+	done            chan struct{}
+	progressLabel   string
+	progressPercent int
 }
 
 func NewConsoleLogger() *ConsoleLogger {
@@ -162,6 +168,14 @@ func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	l.writeToFile(msg)
 }
 
+// Progress logs a progress line: [timestamp] [percent%] label
+func (l *ConsoleLogger) Progress(label string, percent int) {
+	msg := fmt.Sprintf("[%d%%] %s", percent, label)
+	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
+	l.writeToFile(msg)
+	l.SetProgressContext(label, percent)
+}
+
 func (l *ConsoleLogger) Error(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	fmt.Fprintf(os.Stderr, "[%s] %s%s\n", time.Now().Format(shared.TimestampFormatShort), ErrorPrefix, msg)
@@ -173,19 +187,50 @@ func (l *ConsoleLogger) Command(line string) {
 		return
 	}
 	for _, line := range strings.Split(strings.TrimRight(line, "\n"), "\n") {
-		_, _ = fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
-		l.writeToFile(CommandOutputPrefix + line)
+		l.mu.Lock()
+		label := l.progressLabel
+		pct := l.progressPercent
+		l.mu.Unlock()
+
+		if label != "" {
+			// Format: [timestamp] [percent%] label => command
+			msg := fmt.Sprintf("[%d%%] %s => %s", pct, label, line)
+			_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
+			l.writeToFile(msg)
+		} else {
+			_, _ = fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
+			l.writeToFile(CommandOutputPrefix + line)
+		}
 	}
 }
 
 // CommandNoNewline logs a line of command output without a trailing newline.
-// Used for pacstrap progress lines that continue on the same line.
 func (l *ConsoleLogger) CommandNoNewline(line string) {
 	if line == "" {
 		return
 	}
-	_, _ = fmt.Fprintf(os.Stdout, "%s%s", CommandOutputPrefix, line)
-	l.writeToFile(CommandOutputPrefix + line)
+	l.mu.Lock()
+	label := l.progressLabel
+	pct := l.progressPercent
+	l.mu.Unlock()
+
+	if label != "" {
+		msg := fmt.Sprintf("[%d%%] %s => %s", pct, label, line)
+		_, _ = fmt.Fprintf(os.Stdout, "[%s] %s", time.Now().Format(shared.TimestampFormatShort), msg)
+		l.writeToFile(msg)
+	} else {
+		_, _ = fmt.Fprintf(os.Stdout, "%s%s", CommandOutputPrefix, line)
+		l.writeToFile(CommandOutputPrefix + line)
+	}
+}
+
+// SetProgressContext sets the current step label and percentage.
+// Command output will be formatted as: [timestamp] [percent%] label => line
+func (l *ConsoleLogger) SetProgressContext(label string, percent int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.progressLabel = label
+	l.progressPercent = percent
 }
 
 // LogToFile writes a line to the log file only (no console output).
