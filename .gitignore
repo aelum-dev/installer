@@ -2,7 +2,7 @@ build/bin
 node_modules
 frontend/dist
 aesthetic-os-installer
-cli
+/cli
 build-local.sh
 RULES.md
 plan.md
