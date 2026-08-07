@@ -60,8 +60,16 @@ func findCLIBinary() string {
 	return "aestheticos-installer-cli" // fallback — should be in PATH
 }
 
-// progressRegex matches the CLI's progress output: [  0%] Formatting disk
-var progressRegex = regexp.MustCompile(`^\[\s*(\d+)%\]\s+(.+)$`)
+// progressRegex matches the CLI's progress output with optional timestamp prefix:
+//   [  0%] Formatting disk          (old format, no timestamp)
+//   [HH:MM:SS] [  0%] Formatting disk  (new format, with timestamp)
+var progressRegex = regexp.MustCompile(`^(?:\[\d{2}:\d{2}:\d{2}\]\s*)?\[\s*(\d+)%\]\s+(.+)$`)
+
+// hasPrefix checks if a line already has a console prefix (timestamp or command prefix).
+// Used to avoid double-prefixing when teeing CLI output to the GUI console.
+func hasPrefix(line string) bool {
+	return strings.HasPrefix(line, "[") || strings.HasPrefix(line, "  > ")
+}
 
 // StartInstallation begins the installation process by spawning the CLI binary via sudo.
 func (a *App) StartInstallation() error {
@@ -163,20 +171,31 @@ func (a *App) StartInstallation() error {
 				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
 
 				// Progress without newline — pacstrap will append.
-				GetLogger().CommandNoNewline(line)
+				// Don't add prefix — line already has timestamp from CLI.
+				GetLogger().LogToFile(line)
+			} else if strings.TrimSpace(line) == "✓" {
+				// Step completion marker — log it but don't add prefix.
+				GetLogger().LogToFile(line)
+			} else if hasPrefix(line) {
+				// Line already has a prefix (timestamp or "  > ") — log as-is.
+				GetLogger().LogToFile(line)
 			} else {
-				// Pacstrap with newline — appends to progress line.
+				// Unknown line — log with command prefix.
 				GetLogger().Command(line)
 			}
 		}
 	}()
 
 	// Read stderr for error logging.
+	// Filter out non-error lines (e.g. password prompt) to avoid cluttering the log.
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
-			GetLogger().WriteErrorLog("CLI stderr", line)
+			// Skip benign stderr output like the password prompt.
+			if strings.Contains(line, "ERROR") || strings.Contains(line, "Error:") {
+				GetLogger().WriteErrorLog("CLI stderr", line)
+			}
 		}
 	}()
 
