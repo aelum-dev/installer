@@ -49,7 +49,12 @@ type Logger interface {
 	// SetProgressContext sets the current step label and percentage for command output formatting.
 	SetProgressContext(label string, percent int)
 	// Progress logs a progress line: [timestamp] [percent%] label
+	// Does NOT print a trailing newline — Command() appends => line on the same line.
 	Progress(label string, percent int)
+	// ProgressDone logs a completion marker (✓) on its own line.
+	ProgressDone()
+	// Write writes a line to both stdout and the log file (no prefix).
+	Write(line string)
 }
 
 // --- Logging constants -------------------------------------------------------
@@ -168,12 +173,20 @@ func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	l.writeToFile(msg)
 }
 
-// Progress logs a progress line: [timestamp] [percent%] label
+// Progress logs a progress line WITHOUT a trailing newline.
+// Command() will append => line on the same line.
 func (l *ConsoleLogger) Progress(label string, percent int) {
 	msg := fmt.Sprintf("[%d%%] %s", percent, label)
-	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
+	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s", time.Now().Format(shared.TimestampFormatShort), msg)
 	l.writeToFile(msg)
 	l.SetProgressContext(label, percent)
+}
+
+// ProgressDone logs a completion marker (✓) on its own line.
+func (l *ConsoleLogger) ProgressDone() {
+	_, _ = fmt.Fprintf(os.Stdout, "[%s] ✓\n", time.Now().Format(shared.TimestampFormatShort))
+	l.writeToFile("✓")
+	l.SetProgressContext("", 0)
 }
 
 func (l *ConsoleLogger) Error(format string, args ...interface{}) {
@@ -238,6 +251,15 @@ func (l *ConsoleLogger) LogToFile(line string) {
 	if line == "" {
 		return
 	}
+	l.writeToFile(line)
+}
+
+// Write writes a line to both stdout and the log file (no prefix).
+func (l *ConsoleLogger) Write(line string) {
+	if line == "" {
+		return
+	}
+	_, _ = fmt.Fprintf(os.Stdout, "%s\n", line)
 	l.writeToFile(line)
 }
 

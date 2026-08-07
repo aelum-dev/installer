@@ -54,15 +54,17 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 	go func() {
 		for scanner.Scan() {
 			line := scanner.Text()
-			if ctx.Logger != nil {
-				ctx.Logger.Command(line)
-			}
 
 			// Process all line types: Packages count, downloading, verifying,
 			// installing, and (N/M) hook progress.
 			pct := tracker.ProcessLine(line)
 			if ctx.ProgressCallback != nil {
 				ctx.ProgressCallback(pct)
+			}
+
+			// Command output appends to the progress line via => prefix.
+			if ctx.Logger != nil {
+				ctx.Logger.Command(line)
 			}
 		}
 		scanErr = scanner.Err()

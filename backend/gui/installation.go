@@ -172,13 +172,13 @@ func (a *App) StartInstallation() error {
 
 				// Progress without newline — pacstrap will append.
 				// Don't add prefix — line already has timestamp from CLI.
-				GetLogger().LogToFile(line)
+				GetLogger().Write(line)
 			} else if strings.TrimSpace(line) == "✓" {
 				// Step completion marker — log it but don't add prefix.
-				GetLogger().LogToFile(line)
+				GetLogger().Write(line)
 			} else if hasPrefix(line) {
 				// Line already has a prefix (timestamp or "  > ") — log as-is.
-				GetLogger().LogToFile(line)
+				GetLogger().Write(line)
 			} else {
 				// Unknown line — log with command prefix.
 				GetLogger().Command(line)
