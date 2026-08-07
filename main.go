@@ -17,10 +17,6 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-// StartPage is the page to start on (0=Welcome, 1=User Account, 2=Disk Selection, etc.)
-// Set to -1 to start on Welcome page (default behavior)
-const StartPage = -1
-
 func main() {
 	dryRun := os.Getenv("AESTHETIC_DRY_RUN") == "1"
 
@@ -31,12 +27,16 @@ func main() {
 	// Create an instance of the app structure
 	app := gui.NewApp(dryRun)
 
-	// Set start page if configured (>= 0)
-	if StartPage >= 0 {
-		if err := app.SetStartPage(gui.PageID{Value: StartPage}); err != nil {
-			fmt.Printf("Warning: invalid start page %d: %v\n", StartPage, err)
-		} else {
-			fmt.Printf("[START PAGE] Starting on page %d\n", StartPage)
+	// Set start page from AESTHETIC_START_PAGE env var (0-5) for debugging.
+	// Unset or invalid values start on the Welcome page (default).
+	if startPageStr := os.Getenv("AESTHETIC_START_PAGE"); startPageStr != "" {
+		var startPage int
+		if _, err := fmt.Sscanf(startPageStr, "%d", &startPage); err == nil {
+			if err := app.SetStartPage(gui.PageID{Value: startPage}); err != nil {
+				fmt.Printf("Warning: invalid start page %q: %v\n", startPageStr, err)
+			} else {
+				fmt.Printf("[START PAGE] Starting on page %d\n", startPage)
+			}
 		}
 	}
 

@@ -36,6 +36,11 @@ if [ ! -d "frontend/node_modules" ]; then
 fi
 cd frontend && npm run build && cd ..
 
+# Clean previous build artifacts to avoid stale binaries
+echo "=== Cleaning previous build ==="
+mkdir -p build/bin
+rm -f build/bin/aestheticos-installer build/bin/aestheticos-installer-cli
+
 echo "=== Building Go binaries with Wails ==="
 wails build -clean -tags webkit2_41
 

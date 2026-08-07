@@ -1,8 +1,13 @@
 build/bin
 node_modules
 frontend/dist
-aesthetic-os-installer
-/cli
+frontend/.svelte-kit
+frontend/.vite
+frontend/package.json.md5
 build-local.sh
 RULES.md
 plan.md
+
+# OS / editor
+.DS_Store
+*.log
