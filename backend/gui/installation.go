@@ -153,8 +153,9 @@ func (a *App) StartInstallation() error {
 		}
 	}()
 
-	// Read stdout for progress in a goroutine, also tee to console via logger.
-	// Progress lines print without newline, pacstrap logs print with newline (append to progress).
+	// Read stdout for progress in a goroutine.
+	// CLI output goes to the log file only — not stdout, to avoid leaking
+	// into the Wails WebView. Progress events are emitted to the frontend.
 	go func() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -170,18 +171,14 @@ func (a *App) StartInstallation() error {
 				}
 				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
 
-				// Progress without newline — pacstrap will append.
-				// Don't add prefix — line already has timestamp from CLI.
-				GetLogger().Write(line)
+				// Log to file only — don't write to stdout (leaks into WebView).
+				GetLogger().LogToFile(line)
 			} else if strings.TrimSpace(line) == "✓" {
-				// Step completion marker — log it but don't add prefix.
-				GetLogger().Write(line)
+				GetLogger().LogToFile(line)
 			} else if hasPrefix(line) {
-				// Line already has a prefix (timestamp or "  > ") — log as-is.
-				GetLogger().Write(line)
+				GetLogger().LogToFile(line)
 			} else {
-				// Unknown line — log with command prefix.
-				GetLogger().Command(line)
+				GetLogger().LogToFile(line)
 			}
 		}
 	}()
