@@ -48,9 +48,12 @@ type Logger interface {
 	WriteErrorLog(stepLabel, errMsg string)
 	// SetProgressContext sets the current step label and percentage for command output formatting.
 	SetProgressContext(label string, percent int)
-	// Progress logs a progress line: [timestamp] [percent%] label
-	// Does NOT print a trailing newline — Command() appends => line on the same line.
+	// Progress sets context and prints to stdout without newline.
+	// Command() appends => line on the same line. Does NOT write to log file.
 	Progress(label string, percent int)
+	// ProgressLine logs a complete progress line to stdout and log file.
+	// Used by tick goroutine for steps without command output.
+	ProgressLine(label string, percent int)
 	// ProgressDone logs a completion marker (✓) on its own line.
 	ProgressDone()
 	// Write writes a line to both stdout and the log file (no prefix).
@@ -173,11 +176,19 @@ func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	l.writeToFile(msg)
 }
 
-// Progress logs a progress line WITHOUT a trailing newline.
-// Command() will append => line on the same line.
+// Progress sets the current step context and prints to stdout WITHOUT
+// a trailing newline. It does NOT write to the log file — Command()
+// will write the combined line when a command follows.
 func (l *ConsoleLogger) Progress(label string, percent int) {
+	_, _ = fmt.Fprintf(os.Stdout, "[%s] [%d%%] %s ", time.Now().Format(shared.TimestampFormatShort), percent, label)
+	l.SetProgressContext(label, percent)
+}
+
+// ProgressLine logs a complete progress line to both stdout and the log file.
+// Used by the tick goroutine for steps that don't produce command output.
+func (l *ConsoleLogger) ProgressLine(label string, percent int) {
 	msg := fmt.Sprintf("[%d%%] %s", percent, label)
-	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s", time.Now().Format(shared.TimestampFormatShort), msg)
+	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
 	l.writeToFile(msg)
 	l.SetProgressContext(label, percent)
 }
@@ -206,10 +217,9 @@ func (l *ConsoleLogger) Command(line string) {
 		l.mu.Unlock()
 
 		if label != "" {
-			// Format: [timestamp] [percent%] label => command
-			msg := fmt.Sprintf("[%d%%] %s => %s", pct, label, line)
-			_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
-			l.writeToFile(msg)
+			// Append to progress line: ' => command'
+			_, _ = fmt.Fprintf(os.Stdout, "=> %s\n", line)
+			l.writeToFile(fmt.Sprintf("[%d%%] %s => %s", pct, label, line))
 		} else {
 			_, _ = fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
 			l.writeToFile(CommandOutputPrefix + line)

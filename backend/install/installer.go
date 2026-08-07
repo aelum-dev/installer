@@ -37,6 +37,8 @@ type Installer struct {
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
+	// ProgressLine reports a complete progress line (for tick goroutine).
+	ProgressLine func(label string, percent int)
 	// Error callback
 	OnError func(label, message string)
 
@@ -189,7 +191,11 @@ func (inst *Installer) tickProgress(label string, start, end int, stopTick chan 
 			if current > end {
 				current = end
 			}
-			inst.emitProgress(label, current, "running")
+			if inst.ProgressLine != nil {
+				inst.ProgressLine(label, current)
+			} else {
+				inst.emitProgress(label, current, "running")
+			}
 			if current >= end {
 				return
 			}
