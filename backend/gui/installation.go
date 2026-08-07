@@ -64,8 +64,8 @@ func (a *App) StartInstallation() error {
 	// Safety check: verify root privileges one more time before starting
 	rootCheck := a.CheckRoot()
 	if !rootCheck.Authorized {
-		wailsRuntime.LogError(a.ctx, fmt.Sprintf("Root check failed: %s", rootCheck.Message))
-		return fmt.Errorf("root check failed: %s", rootCheck.Message)
+		wailsRuntime.LogError(a.ctx, rootCheck.Message)
+		return fmt.Errorf("%s", rootCheck.Message)
 	}
 
 	// Cancel any previous installation
