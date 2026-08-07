@@ -2,18 +2,19 @@ package gui
 
 import (
 	"aestheticos-installer/backend/shared"
+	"aestheticos-installer/backend/validation"
 )
 
 // --- GUI methods (validate only, no state mutation) ---
 
 // ValidateUserAccount validates user account data.
 func (a *App) ValidateUserAccount(data shared.UserAccountData) error {
-	return shared.ValidateUserAccount(data)
+	return validation.ValidateUserAccount(data)
 }
 
 // ValidateDiskSelection validates disk selection data.
 func (a *App) ValidateDiskSelection(data shared.DiskSelectionData) error {
-	return shared.ValidateDiskSelection(data)
+	return validation.ValidateDiskSelection(data)
 }
 
 // --- GUI methods (state mutation) ---

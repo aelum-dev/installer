@@ -111,8 +111,9 @@ func (inst *Installer) Install() error {
 
 	ctx := inst.context()
 
-	stepList := inst.installationSteps()
-	percentages := cumulativePercentages(stepList)
+	plan := DefaultPlan()
+	stepList := plan.Steps
+	percentages := plan.cumulativePercentages()
 
 	for idx, step := range stepList {
 		label := step.Label()
@@ -198,69 +199,15 @@ func (inst *Installer) tickProgress(label string, start, end int, stopTick chan 
 	}
 }
 
-// stepDefinitions is the canonical list of installation steps.
-// Accessible without instantiating an Installer.
-var stepDefinitions = []Step{
-	&FormatDiskStep{},
-	&MountFilesystemStep{},
-	&InstallBaseStep{},
-	&InstallDesktopStep{},
-	&SetupUsersStep{},
-	&ConfigureSystemStep{},
-}
-
-// stepWeights assigns relative weight to each step for progress bar calculation.
-// The two pacstrap steps (base + desktop) together account for ~80% of total
-// installation time, so they receive proportionally higher weights.
-var stepWeights = []int{
-	WeightFormatDisk,
-	WeightMountFilesystem,
-	WeightInstallBase,
-	WeightInstallDesktop,
-	WeightSetupUsers,
-	WeightConfigureSystem,
-}
-
-// Progress weight constants for installation steps.
-const (
-	WeightFormatDisk      = 3
-	WeightMountFilesystem = 2
-	WeightInstallBase     = 45 // base pacstrap — longest step
-	WeightInstallDesktop  = 35 // desktop pacstrap — second longest
-	WeightSetupUsers      = 2
-	WeightConfigureSystem = 13
-)
-
-// cumulativePercentages calculates the cumulative percentage at each step boundary
-// based on step weights. Returns a slice of length len(steps)+1, where result[0] = 0
-// and result[len] = 100.
-func cumulativePercentages(steps []Step) []int {
-	totalWeight := 0
-	for _, w := range stepWeights {
-		totalWeight += w
-	}
-
-	result := make([]int, len(steps)+1)
-	result[0] = 0
-	cumulativeWeight := 0
-	for i := range steps {
-		if i < len(stepWeights) {
-			cumulativeWeight += stepWeights[i]
-			result[i+1] = int(float64(cumulativeWeight) / float64(totalWeight) * 100)
-		}
-	}
-	return result
-}
-
-// installationSteps returns the list of installation steps.
+// installationSteps returns the list of installation steps from the default plan.
 func (inst *Installer) installationSteps() []Step {
-	return stepDefinitions
+	return DefaultPlan().Steps
 }
 
 // validStepNames returns the list of valid step names for error messages.
 func validStepNames() []string {
-	names := make([]string, len(stepDefinitions))
-	for i, s := range stepDefinitions {
+	names := make([]string, len(DefaultPlan().Steps))
+	for i, s := range DefaultPlan().Steps {
 		names[i] = s.Name()
 	}
 	return names
@@ -387,100 +334,12 @@ func simulateStep() error {
 	return nil
 }
 
-// Rollback cleans up a partial or failed installation:
-// unmounts everything under /mnt, wipes filesystem signatures from all
-// partitions and the disk itself, then removes the /mnt mount point.
-// After rollback the disk is ready for a fresh installation.
+
+
+// Rollback cleans up a partial or failed installation.
+// Delegates to the standalone Rollback function.
 func (inst *Installer) Rollback() error {
-	if inst.diskID == "" {
-		return fmt.Errorf("disk ID is required")
-	}
-
-	inst.logInfo("Rolling back: cleaning up %s", inst.diskID)
-
-	// 1. Unmount everything under /mnt (lazy recursive), kill processes,
-	//    partprobe, dmsetup remove_all.
-	//    Fail fast if cleanup fails — proceeding to wipe mounted filesystems
-	//    can cause kernel panics or silent corruption.
-	if err := CleanupMounts(inst.Logger, inst.diskID); err != nil {
-		inst.logError("Rollback: cleanup failed: %v", err)
-		return fmt.Errorf("rollback cleanup failed: %w", err)
-	}
-
-	// 2. Wipe filesystem signatures from all partitions.
-	//    Use lsblk to discover partitions (handles any number, not just 2).
-	//    If the disk has no partitions (FormatDisk never completed), skip.
-	partitions := discoverPartitions(inst.diskID)
-	if len(partitions) == 0 {
-		inst.logInfo("Rollback: no partitions found on %s, skipping wipe", inst.diskID)
-	} else {
-		for _, part := range partitions {
-			inst.logInfo("Wiping signatures on %s", part)
-			cmd := Run("wipefs", "--all", "-f", part)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				inst.logError("Failed to wipe %s: %v (%s)", part, err, string(out))
-				// Don't fail — some partitions may not exist yet if FormatDisk
-				// failed early. Continue wiping the rest.
-			}
-		}
-	}
-
-	// 3. Wipe signatures on the disk itself (GPT backup, etc.).
-	inst.logInfo("Wiping signatures on %s", inst.diskID)
-	cmd := Run("wipefs", "--all", "-f", inst.diskID)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		inst.logError("Failed to wipe disk %s: %v (%s)", inst.diskID, err, string(out))
-		// Non-fatal — disk may not have been partitioned yet.
-	}
-
-	// 4. Clear the GPT partition table so no stale partition entries remain.
-	//    wipefs removes signatures but leaves partition entries intact;
-	//    sgdisk -Z removes everything for a completely clean slate.
-	inst.logInfo("Clearing GPT partition table on %s", inst.diskID)
-	cmd = Run("sgdisk", "-Z", inst.diskID)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		inst.logError("Failed to clear GPT table on %s: %v (%s)", inst.diskID, err, string(out))
-		// Non-fatal — disk may not have a GPT table yet.
-	}
-
-	// 5. Remove the /mnt mount point directory.
-	cmd = Run("rmdir", shared.MountRoot)
-	_ = cmd.Run()
-
-	inst.logInfo("Rollback complete: %s is ready for a fresh install", inst.diskID)
-	return nil
-}
-
-// discoverPartitions uses lsblk to find all partition devices for a given disk.
-// Returns device paths like /dev/vda1, /dev/vda2, etc.
-func discoverPartitions(diskID string) []string {
-	cmd := exec.Command("lsblk", "-lnbo", "KNAME,TYPE", diskID)
-	output, err := cmd.Output()
-	if err != nil {
-		return nil
-	}
-
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(lines) == 0 {
-		return nil
-	}
-
-	var partitions []string
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		if len(fields) < 2 {
-			continue
-		}
-		if fields[1] == "part" {
-			name := fields[0]
-			// Avoid double-prefixing if lsblk already returns an absolute path.
-			if !strings.HasPrefix(name, "/dev/") {
-				name = "/dev/" + name
-			}
-			partitions = append(partitions, name)
-		}
-	}
-	return partitions
+	return Rollback(inst.Logger, inst.diskID)
 }
 
 // RunCleanup performs cleanup (unmounts) at most once, regardless of how many

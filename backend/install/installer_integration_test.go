@@ -271,8 +271,8 @@ func TestRunStep_DryRun(t *testing.T) {
 // TestCumulativePercentages verifies the percentage calculation
 // across all 12 installation steps.
 func TestCumulativePercentages(t *testing.T) {
-	steps := stepDefinitions
-	pcts := cumulativePercentages(steps)
+	steps := DefaultPlan().Steps
+	pcts := DefaultPlan().cumulativePercentages()
 
 	if len(pcts) != len(steps)+1 {
 		t.Fatalf("expected %d percentages for %d steps, got %d", len(steps)+1, len(steps), len(pcts))
@@ -294,7 +294,7 @@ func TestCumulativePercentages(t *testing.T) {
 // TestStepWeightsSum verifies that step weights sum to the expected total.
 func TestStepWeightsSum(t *testing.T) {
 	total := 0
-	for _, w := range stepWeights {
+	for _, w := range stepWeights() {
 		total += w
 	}
 	if total != 100 {
@@ -305,9 +305,9 @@ func TestStepWeightsSum(t *testing.T) {
 // TestStepWeights_PacstrapDominates verifies that the two pacstrap steps
 // account for the majority of the weight.
 func TestStepWeights_PacstrapDominates(t *testing.T) {
-	pacstrapWeight := WeightInstallBase + WeightInstallDesktop
+	pacstrapWeight := shared.WeightInstallBase + shared.WeightInstallDesktop
 	total := 0
-	for _, w := range stepWeights {
+	for _, w := range stepWeights() {
 		total += w
 	}
 	pct := float64(pacstrapWeight) / float64(total) * 100

@@ -195,6 +195,28 @@ const ProgressTickIntervalMs = 8000
 // ProgressTickMaxPercent is the maximum percentage the tick goroutine will reach.
 const ProgressTickMaxPercent = 99
 
+// --- Installation step weights ----------------------------------------------
+// Relative weights for progress bar calculation. The two pacstrap steps
+// (base + desktop) together account for ~80% of total installation time.
+
+// WeightFormatDisk is the weight for the format disk step.
+const WeightFormatDisk = 3
+
+// WeightMountFilesystem is the weight for the mount filesystem step.
+const WeightMountFilesystem = 2
+
+// WeightInstallBase is the weight for the base system pacstrap step.
+const WeightInstallBase = 45
+
+// WeightInstallDesktop is the weight for the desktop environment pacstrap step.
+const WeightInstallDesktop = 35
+
+// WeightSetupUsers is the weight for the user setup step.
+const WeightSetupUsers = 2
+
+// WeightConfigureSystem is the weight for the system configuration step.
+const WeightConfigureSystem = 13
+
 // --- DMS Greeter -------------------------------------------------------------
 
 // DmsWallpaperSource is the wallpaper file path on the live ISO.
