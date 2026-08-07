@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"aestheticos-installer/backend/shared"
+	"golang.org/x/term"
 )
 
 // defaultLogger is the shared logger instance used by both CLI and GUI.
@@ -56,6 +57,9 @@ type Logger interface {
 	ProgressLine(label string, percent int)
 	// ProgressDone logs a completion marker (✓) on its own line.
 	ProgressDone()
+	// ProgressJSON emits a JSON progress event to stderr.
+	// Used by the GUI to receive clean step-name events without parsing logs.
+	ProgressJSON(label string, percent int, phase string)
 	// Write writes a line to both stdout and the log file (no prefix).
 	Write(line string)
 }
@@ -182,6 +186,7 @@ func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 func (l *ConsoleLogger) Progress(label string, percent int) {
 	_, _ = fmt.Fprintf(os.Stdout, "[%s] [%d%%] %s ", time.Now().Format(shared.TimestampFormatShort), percent, label)
 	l.SetProgressContext(label, percent)
+	l.ProgressJSON(label, percent, "running")
 }
 
 // ProgressLine logs a complete progress line to both stdout and the log file.
@@ -191,6 +196,28 @@ func (l *ConsoleLogger) ProgressLine(label string, percent int) {
 	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
 	l.writeToFile(msg)
 	l.SetProgressContext(label, percent)
+	l.ProgressJSON(label, percent, "running")
+}
+
+// ProgressJSON emits a JSON progress event to stderr when running under the GUI.
+// When stderr is a terminal (CLI mode), JSON is suppressed so terminal output stays clean.
+// The GUI reads JSON from stderr and forwards stdout to the terminal.
+func (l *ConsoleLogger) ProgressJSON(label string, percent int, phase string) {
+	if term.IsTerminal(int(os.Stderr.Fd())) {
+		return
+	}
+	_, _ = fmt.Fprintf(os.Stderr, `{"label":"%s","percent":%d,"phase":"%s"}
+`, escapeJSON(label), percent, phase)
+}
+
+// escapeJSON escapes special characters in a string for JSON output.
+func escapeJSON(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	s = strings.ReplaceAll(s, "\n", `\n`)
+	s = strings.ReplaceAll(s, "\r", `\r`)
+	s = strings.ReplaceAll(s, "\t", `\t`)
+	return s
 }
 
 // ProgressDone logs a completion marker (✓) on its own line.

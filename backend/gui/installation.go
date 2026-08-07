@@ -3,12 +3,11 @@ package gui
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -60,16 +59,7 @@ func findCLIBinary() string {
 	return "aestheticos-installer-cli" // fallback — should be in PATH
 }
 
-// progressRegex matches the CLI's progress output with optional timestamp prefix:
-//   [  0%] Formatting disk          (old format, no timestamp)
-//   [HH:MM:SS] [  0%] Formatting disk  (new format, with timestamp)
-var progressRegex = regexp.MustCompile(`^(?:\[\d{2}:\d{2}:\d{2}\]\s*)?\[\s*(\d+)%\]\s+(.+)$`)
 
-// hasPrefix checks if a line already has a console prefix (timestamp or command prefix).
-// Used to avoid double-prefixing when teeing CLI output to the GUI console.
-func hasPrefix(line string) bool {
-	return strings.HasPrefix(line, "[") || strings.HasPrefix(line, "  > ")
-}
 
 // StartInstallation begins the installation process by spawning the CLI binary via sudo.
 func (a *App) StartInstallation() error {
@@ -153,43 +143,27 @@ func (a *App) StartInstallation() error {
 		}
 	}()
 
-	// Read stdout for progress in a goroutine.
-	// CLI output goes to the log file only — not stdout, to avoid leaking
-	// into the Wails WebView. Progress events are emitted to the frontend.
+	// Read stdout and forward to terminal — clean human-readable output.
 	go func() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
-			line := scanner.Text()
-			if match := progressRegex.FindStringSubmatch(line); match != nil {
-				percent, _ := strconv.Atoi(match[1])
-				label := strings.TrimSpace(match[2])
-
-				progress := InstallationProgress{
-					Label:   label,
-					Percent: percent,
-					Phase:   "running",
-				}
-				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
-
-				// Log to file only — don't write to stdout (leaks into WebView).
-				GetLogger().LogToFile(line)
-			} else if strings.TrimSpace(line) == "✓" {
-				GetLogger().LogToFile(line)
-			} else if hasPrefix(line) {
-				GetLogger().LogToFile(line)
-			} else {
-				GetLogger().LogToFile(line)
-			}
+			fmt.Fprintf(os.Stderr, "%s\n", scanner.Text())
 		}
 	}()
 
-	// Read stderr for error logging.
-	// Filter out non-error lines (e.g. password prompt) to avoid cluttering the log.
+	// Read stderr for JSON progress events and error logging.
+	// The CLI emits JSON progress lines to stderr alongside error messages.
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
-			// Skip benign stderr output like the password prompt.
+			var progress InstallationProgress
+			if err := json.Unmarshal([]byte(line), &progress); err == nil {
+				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
+				continue
+			}
+			// Forward non-JSON lines (errors, password prompt) to terminal.
+			fmt.Fprintf(os.Stderr, "%s\n", line)
 			if strings.Contains(line, "ERROR") || strings.Contains(line, "Error:") {
 				GetLogger().WriteErrorLog("CLI stderr", line)
 			}

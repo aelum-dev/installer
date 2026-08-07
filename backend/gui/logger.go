@@ -71,6 +71,10 @@ func (l *GUILogger) ProgressDone() {
 	l.next.LogToFile("✓")
 }
 
+func (l *GUILogger) ProgressJSON(label string, percent int, phase string) {
+	l.next.ProgressJSON(label, percent, phase)
+}
+
 func (l *GUILogger) Write(line string) {
 	l.next.LogToFile(line)
 }
