@@ -3,9 +3,8 @@ package gui
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
-
-	"aestheticos-installer/backend/internal/core"
 )
 
 // NewApp creates a new App application struct
@@ -50,12 +49,15 @@ func (a *App) GetDryRun() bool {
 
 // OnBeforeClose is called by Wails when the user attempts to close the window.
 // Returns false to allow the window to close. If an installation is in progress,
-// triggers the installer's sync.Once cleanup so mounts are torn down before exit.
-// The installer's defer will also call runCleanup, but sync.Once ensures it
-// only runs once — whichever path gets there first wins.
+// sends SIGINT to the CLI process so it can clean up mounts before exiting.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
-	if a.installationRunning.Load() && a.installer != nil {
-		a.installer.RunCleanup()
+	if a.installationRunning.Load() {
+		// Send SIGINT to the running CLI process
+		activeCLI.mu.Lock()
+		if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
+			activeCLI.cmd.Process.Signal(os.Interrupt)
+		}
+		activeCLI.mu.Unlock()
 	}
 	return false
 }
@@ -63,11 +65,6 @@ func (a *App) OnBeforeClose(ctx context.Context) bool {
 // GetInstallationRunning reports whether an installation is currently in progress.
 func (a *App) GetInstallationRunning() bool {
 	return a.installationRunning.Load()
-}
-
-// GetInstaller returns the currently running installer, or nil if none.
-func (a *App) GetInstaller() *core.Installer {
-	return a.installer
 }
 
 // GetDiskID returns the currently selected disk ID.
@@ -83,9 +80,8 @@ func (a *App) RebootAndClose() error {
 		return nil
 	}
 
-	// Use aestheticos-helper to reboot (requires root via sudo)
-	helper := core.FindHelper()
-	cmd := exec.Command("sudo", helper, "run", "reboot")
+	// Reboot via sudo
+	cmd := exec.Command("sudo", "reboot")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to reboot: %w", err)
 	}

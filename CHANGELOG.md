@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Privileged helper binary** — Removed `aestheticos-helper` entirely. All privileged operations now run directly via `exec.Command` (running as root on the live ISO) or `arch-chroot` for installed-system operations. This eliminates the sudo wrapper layer, simplifies the build pipeline (one fewer binary), and removes the command whitelist/security surface area. The helper source (`backend/cmd/helper/`) and binary have been deleted.
+- `FindHelper()` and `CheckRoot(helperPath)` — replaced with direct sudo checks (`sudo -n true`)
+- `HelperCmd*` constants and `runHelper()` function from `cleanup.go`
+- `ctx.Helper` field from `InstallContext` — all `ctx.run()` calls replaced with direct `Run()` or native Go file operations
+- `helperPath` field from `Installer` struct — `NewInstaller()` signature simplified
+
 ### Changed
+- **GUI now spawns CLI binary** — `StartInstallation()` no longer runs install logic directly. Instead it spawns `sudo aestheticos-installer-cli --install <disk> --filesystem <type>` and parses its stdout for progress events. This ensures all privileged operations run as root via the CLI.
+- `OnBeforeClose` now sends SIGINT to the CLI process instead of calling `installer.RunCleanup()`
+- `writeFile()` / `appendFile()` now use native Go `os.WriteFile` / `os.OpenFile` instead of helper commands
+- `runChroot()` now calls `arch-chroot /mnt <args...>` directly instead of via helper's `chroot-run`
+- `formatPartition()` uses explicit `mkfs.fat` / `mkfs.ext4` / `mkfs.btrfs` instead of generic `mkfs` via helper
+- `setupBtrfsSubvolumes()` uses `btrfs subvolume create/set-default/property set` instead of helper subcommands
+- `ConfigureSystemBase()` uses `ln -sf` directly instead of helper's `set-symlink`
+- `validateMountedSystem()` no longer checks for helper path
+- Root check now verifies `sudo -n true` instead of helper sudoers configuration
+- `build.sh` no longer builds or copies `aestheticos-helper`
+- Integration tests updated: `NewInstaller()` calls no longer pass helper path; fake disk data includes QEMU VirtIO disk (`vda`)
 - Replace `interrupted` flag coordination with `sync.Once` for cleanup — `RunCleanup()` is now the single entry point, called from defer, `OnBeforeClose`, SIGTERM handler, and panic recovery. Eliminates race conditions from flag synchronization.
 - `OnBeforeClose` now calls `installer.RunCleanup()` instead of running `CleanupMounts` directly
 - SIGTERM handler in `main.go` now calls `installer.RunCleanup()` instead of running cleanup directly
@@ -15,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `Cleanup()` to `RunCleanup()` (exported) for consistency
 
 ### Fixed
+- Remove useless `parted` call in `FormatDisk` (was starting interactive mode and doing nothing)
+- Add `sgdisk -Z` to clear partition table before creating partitions in `FormatDisk`
+- Fix `chpasswd` in `SetupUsers` — now passes `username:password` format (was only passing password)
+- Fix pre-format cleanup — uses `CleanupMounts()` instead of duplicating logic; fails clearly if unmount fails instead of silently continuing
 - CLI Ctrl+C now cleanly cancels the child process (pacstrap) and runs full cleanup before exiting — no more interleaved output or race between signal handler and defer
 - GUI window close during installation now triggers mount cleanup via `OnBeforeClose` hook
 - Double cleanup on window close — `sync.Once` ensures cleanup runs exactly once regardless of which path triggers it

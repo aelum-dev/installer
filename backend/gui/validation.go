@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"aestheticos-installer/backend/internal/shared"
+	"aestheticos-installer/backend/shared"
 )
 
 // --- GUI methods (validate only, no state mutation) ---

@@ -1,0 +1,84 @@
+package install
+
+import (
+	"fmt"
+	"os/exec"
+	"strings"
+
+	"aestheticos-installer/backend/shared"
+)
+
+// SetupUsers creates user accounts using sudo.
+func SetupUsers(ctx *InstallContext) error {
+	if err := validateMountedSystem(); err != nil {
+		return err
+	}
+
+	// Skip user setup if username is not provided (CLI mode)
+	if ctx.Username == "" {
+		return nil
+	}
+
+	var cmd *exec.Cmd
+	var output []byte
+	var err error
+
+	// Copy ISO files (skel, dconf, wallpaper, environment, hypr.lua)
+	if err := copyISOFiles(); err != nil {
+		return err
+	}
+
+	// Compile dconf database in installed system
+	output, err = runChroot("dconf", "update")
+	if err != nil {
+		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
+	}
+
+	// Create user inside chroot (skip if already exists)
+	output, err = runChroot("useradd", "-m", "-G", "wheel", ctx.Username)
+	if err != nil {
+		// useradd fails if user already exists — that's ok
+		if !strings.Contains(string(output), "already exists") {
+			return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
+		}
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
+
+	// Set password inside chroot (via stdin to avoid shell interpolation of special chars)
+	// chpasswd expects input in format: username:password
+	if len(ctx.Password) > 0 {
+		cmd = Run("arch-chroot", shared.MountRoot, "chpasswd")
+		cmd.Stdin = strings.NewReader(ctx.Username + ":" + string(ctx.Password) + "\n")
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("passwd failed: %w: %s", err, string(output))
+		}
+		// Zero the password from the context after use.
+		for k := range ctx.Password {
+			ctx.Password[k] = 0
+		}
+	}
+
+	// Configure sudoers: wheel group requires password for sudo
+	// Write directly to /mnt/etc/sudoers.d/wheel (the mounted installed system),
+	// NOT /etc/sudoers.d/wheel which is on the live ISO.
+	cmd = Run("mkdir", "-p", shared.MountRoot+"/etc/sudoers.d")
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
+	}
+	if err := writeFile("/etc/sudoers.d/wheel", "%wheel ALL=(ALL:ALL) ALL\n"); err != nil {
+		return err
+	}
+	cmd = Run("chmod", "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to chmod sudoers: %w: %s", err, string(output))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
+
+	return nil
+}

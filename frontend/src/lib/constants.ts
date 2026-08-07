@@ -1,5 +1,5 @@
 // AUTO-GENERATED — do not edit. Run go run ./backend/scripts/gen-ts-constants.go to regenerate.
-// Source: backend/internal/shared/config.go
+// Source: backend/shared/config.go
 
 export const MinUsernameLength = 3;
 export const MinPasswordLength = 6;
@@ -7,12 +7,14 @@ export const MinDiskSizeBytes = (((16 * 1024) * 1024) * 1024);
 export const DefaultFileSystem = "ext4";
 export const FileSystemExt4 = "ext4";
 export const FileSystemBtrfs = "btrfs";
+export const FileSystemVfat = "vfat";
 export const DefaultLanguageCode = "en_US";
 export const DefaultBtrfsCompression = "zstd";
+export const MountRoot = "/mnt";
+export const BootMountPoint = "/mnt/boot";
+export const LogFileName = "installation.log";
 export const TimestampFormatFull = "2006-01-02 15:04:05";
 export const TimestampFormatShort = "15:04:05";
-export const MountRoot = "/mnt";
-export const LogFileName = "installation.log";
 export const LogFileMode = 0o644;
 export const SudoersFileMode = 0o440;
 export const MirrorListDirMode = 0o755;
@@ -27,3 +29,27 @@ export const DefaultHostname = "aestheticos";
 export const DefaultCLIUsername = "aesthetic";
 export const EFIPartitionSizeMB = 128;
 export const GPTPartitionStartSector = 2048;
+export const PartitionLayoutEFI = "EFI";
+export const PartitionLayoutRoot = "Root";
+export const DefaultMountOptions = "defaults,noatime";
+export const EfiPartitionUmask = "umask=0077";
+export const BtrfsSubvolumeMountPrefix = "subvol=";
+export const BtrfsAutodefragOption = "autodefrag";
+export const BtrfsTopLevelSubvolumeID = 5;
+export const BtrfsSetupTmpMount = "/tmp/btrfs-setup";
+export const KernelFilePrefix = "vmlinuz-";
+export const InitrdFilePrefix = "initramfs-";
+export const InitrdFileExtension = ".img";
+export const KernelPresetName = "linux-lts";
+export const BootEntryFileName = "aestheticos";
+export const BootEntryTitle = "Aesthetic OS";
+export const BootOptionDescription = "Aesthetic OS";
+export const BootLoaderEntriesDir = "loader/entries";
+export const SimulateStepSleepDuration = 200;
+export const ProgressTickDelayMs = 2000;
+export const ProgressTickIntervalMs = 8000;
+export const ProgressTickMaxPercent = 99;
+export const DmsWallpaperSource = "/usr/share/DankMaterialShell/wallpaper.jpg";
+export const DmsWallpaperDest = "/mnt/usr/share/DankMaterialShell/wallpaper.jpg";
+export const EnvironmentFileSource = "/etc/environment";
+export const ChrootCommand = "arch-chroot";

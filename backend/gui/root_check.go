@@ -1,23 +1,29 @@
 package gui
 
 import (
-	"aestheticos-installer/backend/internal/core"
+	"os/exec"
+
+	"aestheticos-installer/backend/install"
 )
 
-// CheckRoot verifies that the aestheticos-helper can be executed via sudo without a password.
-// This is called by the GUI to ensure the user has properly configured sudo
+// CheckRoot verifies that sudo is available and can run commands.
+// This is called by the GUI to ensure the user has sudo access
 // before allowing installation to proceed.
-func (a *App) CheckRoot() core.RootCheckResult {
-	helper := core.FindHelper()
-
-	logger.Info("Checking root privileges with helper: %s", helper)
-	result := core.CheckRoot(helper)
-
-	if result.Authorized {
-		logger.Info("Root check passed: sudo can run helper without password")
-	} else {
-		logger.Error("Root check failed: %s", result.Message)
+func (a *App) CheckRoot() install.RootCheckResult {
+	logger.Info("Checking sudo availability...")
+	
+	// Check if sudo is available and can run a simple command
+	cmd := exec.Command("sudo", "-n", "true")
+	if err := cmd.Run(); err != nil {
+		return install.RootCheckResult{
+			Authorized: false,
+			Message:    "sudo is not available or requires a password. Please configure sudoers to allow passwordless sudo for the installer.",
+		}
 	}
 
-	return result
+	logger.Info("Root check passed: sudo is available")
+	return install.RootCheckResult{
+		Authorized: true,
+		Message:    "",
+	}
 }

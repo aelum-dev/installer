@@ -3,7 +3,7 @@ package gui
 import (
 	"testing"
 
-	"aestheticos-installer/backend/internal/shared"
+	"aestheticos-installer/backend/shared"
 )
 
 func TestValidateUserAccount(t *testing.T) {

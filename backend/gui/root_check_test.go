@@ -3,12 +3,12 @@ package gui
 import (
 	"testing"
 
-	"aestheticos-installer/backend/internal/core"
+	"aestheticos-installer/backend/install"
 )
 
 func TestRootCheckResult_Structure(t *testing.T) {
 	// Verify RootCheckResult structure is valid
-	result := core.RootCheckResult{
+	result := install.RootCheckResult{
 		Authorized: true,
 		Message:    "Ready to install",
 	}
@@ -18,7 +18,7 @@ func TestRootCheckResult_Structure(t *testing.T) {
 	}
 
 	// Test unauthorized result
-	result2 := core.RootCheckResult{
+	result2 := install.RootCheckResult{
 		Authorized: false,
 		Error:      "sudo_not_configured",
 		Message:    "Please configure sudo to run without a password for the helper program.",

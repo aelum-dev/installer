@@ -48,10 +48,9 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
-		fmt.Println("\nInterrupted — running cleanup...")
-		if installer := app.GetInstaller(); installer != nil {
-			installer.RunCleanup()
-		}
+		fmt.Println("\nInterrupted — cancelling installation...")
+		// Send SIGINT to the running CLI process so it can clean up
+		gui.CancelActiveCLI()
 		os.Exit(0)
 	}()
 

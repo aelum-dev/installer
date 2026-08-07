@@ -1,10 +1,16 @@
 package gui
 
 import (
+	"bufio"
+	"context"
 	"fmt"
-
-	"aestheticos-installer/backend/internal/core"
-	"aestheticos-installer/backend/internal/install"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -22,7 +28,42 @@ type InstallationProgress struct {
 	Phase   string `json:"phase"` // "running" | "done" | "error"
 }
 
-// StartInstallation begins the installation process using the shared Installer.
+// cliProcess tracks the running CLI subprocess for cancellation.
+type cliProcess struct {
+	mu     sync.Mutex
+	cmd    *exec.Cmd
+	cancel func()
+}
+
+var activeCLI = &cliProcess{}
+
+// findCLIBinary locates the aestheticos-installer-cli binary.
+// Checks next to the GUI binary first, then PATH.
+func findCLIBinary() string {
+	// Check next to the GUI binary
+	exe, err := os.Executable()
+	if err == nil {
+		cliPath := filepath.Join(filepath.Dir(exe), "aestheticos-installer-cli")
+		if _, err := os.Stat(cliPath); err == nil {
+			return cliPath
+		}
+	}
+
+	// Check common install locations
+	for _, dir := range []string{"/usr/local/bin", "/usr/bin", "."} {
+		cliPath := filepath.Join(dir, "aestheticos-installer-cli")
+		if _, err := os.Stat(cliPath); err == nil {
+			return cliPath
+		}
+	}
+
+	return "aestheticos-installer-cli" // fallback — should be in PATH
+}
+
+// progressRegex matches the CLI's progress output: [  0%] Formatting disk
+var progressRegex = regexp.MustCompile(`^\[\s*(\d+)%\]\s+(.+)$`)
+
+// StartInstallation begins the installation process by spawning the CLI binary via sudo.
 func (a *App) StartInstallation() error {
 	// Safety check: verify root privileges one more time before starting
 	rootCheck := a.CheckRoot()
@@ -31,11 +72,17 @@ func (a *App) StartInstallation() error {
 		return fmt.Errorf("root check failed: %s", rootCheck.Message)
 	}
 
-	helper := core.FindHelper()
+	// Cancel any previous installation
+	activeCLI.mu.Lock()
+	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
+		activeCLI.cancel()
+	}
+	activeCLI.mu.Unlock()
 
-	// Cleanup leftover mounts before starting (non-fatal — installation will retry anyway)
-	if err := install.CleanupMounts(helper, logger, a.diskSelection.DiskID); err != nil {
-		logger.WriteErrorLog("pre-install cleanup", err.Error())
+	// Find the CLI binary
+	cliBinary := findCLIBinary()
+	if cliBinary == "" {
+		return fmt.Errorf("aestheticos-installer-cli not found. Ensure it is installed next to the GUI binary or in PATH")
 	}
 
 	// Use provided hostname or fall back to default
@@ -44,55 +91,125 @@ func (a *App) StartInstallation() error {
 		hostname = "aestheticos"
 	}
 
-	installer := core.NewInstaller(
-		a.diskSelection.DiskID,
-		helper,
-		a.userAccount.Username,
-		a.userAccount.Password,
-		hostname,
-		a.region,
-		a.fileSystem,
-		a.dryRun,
-	)
-
-	// Store reference so OnBeforeClose can signal interruption.
-	a.installer = installer
-
-	// Set up progress/error callbacks for UI
-	installer.OnProgress = func(label string, percent int, phase string) {
-		progress := InstallationProgress{
-			Label:   label,
-			Percent: percent,
-			Phase:   phase,
-		}
-		wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
-	}
-	installer.OnError = func(label, message string) {
-		logger.WriteErrorLog(label, message)
-		progress := InstallationProgress{
-			Label:   label,
-			Percent: 0,
-			Phase:   "error",
-		}
-		wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Install failed. You can reboot or use --rollback flag on aestheticos-installer-cli. For detailed information check installation.log", "")
+	// Build CLI arguments
+	args := []string{
+		"--install", a.diskSelection.DiskID,
+		"--filesystem", a.fileSystem,
 	}
 
-	// Mark installation as in-progress so OnBeforeClose can trigger cleanup.
+	if a.dryRun {
+		args = append(args, "--dry-run")
+	}
+
+	// Create sudo command to run the CLI
+	cmd := exec.Command("sudo", append([]string{cliBinary}, args...)...)
+
+	// Set up stdin for password
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdin pipe: %w", err)
+	}
+
+	// Set up stdout reader for progress
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+
+	// Set up stderr for error logging
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start CLI: %w", err)
+	}
+
+	// Store process reference for cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	activeCLI.mu.Lock()
+	activeCLI.cmd = cmd
+	activeCLI.cancel = cancel
+	activeCLI.mu.Unlock()
+
+	// Mark installation as in-progress
 	a.installationRunning.Store(true)
 
-	// Run installation in a goroutine so it doesn't block the UI.
-	// Install() already defers CleanupMounts, so no second cleanup is needed here.
+	// Write password to stdin in a goroutine
+	go func() {
+		defer stdin.Close()
+		if len(a.userAccount.Password) > 0 {
+			stdin.Write([]byte(a.userAccount.Password + "\n"))
+		}
+	}()
+
+	// Read stdout for progress in a goroutine, also tee to console via logger.
+	// Progress lines print without newline, pacstrap logs print with newline (append to progress).
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if match := progressRegex.FindStringSubmatch(line); match != nil {
+				percent, _ := strconv.Atoi(match[1])
+				label := strings.TrimSpace(match[2])
+
+				progress := InstallationProgress{
+					Label:   label,
+					Percent: percent,
+					Phase:   "running",
+				}
+				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
+
+				// Progress without newline — pacstrap will append.
+				logger.CommandNoNewline(line)
+			} else {
+				// Pacstrap with newline — appends to progress line.
+				logger.Command(line)
+			}
+		}
+	}()
+
+	// Read stderr for error logging.
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			logger.WriteErrorLog("CLI stderr", line)
+		}
+	}()
+
+	// Wait for completion in a goroutine
 	go func() {
 		defer func() {
 			a.installationRunning.Store(false)
-			a.installer = nil
+			activeCLI.mu.Lock()
+			activeCLI.cmd = nil
+			activeCLI.cancel = nil
+			activeCLI.mu.Unlock()
 		}()
-		err := installer.Install()
+
+		err := cmd.Wait()
+		cancel()
+
 		if err != nil {
+			// Check if cancelled
+			if ctx.Err() == context.Canceled {
+				return
+			}
+
+			// Report error
+			progress := InstallationProgress{
+				Label:   "Installation failed",
+				Percent: 0,
+				Phase:   "error",
+			}
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Install failed. You can reboot or use --rollback flag on aestheticos-installer-cli. For detailed information check installation.log", err.Error())
 			return
 		}
 
-		// Report completion
+		// Report success
 		label := "Installation completed!"
 		if a.dryRun {
 			label = "[DRY RUN] Installation completed!"
@@ -105,4 +222,21 @@ func (a *App) StartInstallation() error {
 	}()
 
 	return nil
+}
+
+// CancelInstallation sends SIGINT to the running CLI process.
+func (a *App) CancelInstallation() error {
+	CancelActiveCLI()
+	return nil
+}
+
+// CancelActiveCLI sends SIGINT to the currently running CLI process.
+// Exported for use by main.go's signal handler.
+func CancelActiveCLI() {
+	activeCLI.mu.Lock()
+	defer activeCLI.mu.Unlock()
+
+	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
+		_ = activeCLI.cmd.Process.Signal(os.Interrupt)
+	}
 }

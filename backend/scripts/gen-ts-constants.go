@@ -1,6 +1,6 @@
 //go:build ignore
 
-// gen-ts-constants — Parses backend/internal/shared/config.go and emits
+// gen-ts-constants — Parses backend/shared/config.go and emits
 // frontend/src/lib/constants.ts so that shared constants stay in sync.
 //
 // Usage: go run ./backend/scripts/gen-ts-constants.go
@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	inputPath  = "backend/internal/shared/config.go"
+	inputPath  = "backend/shared/config.go"
 	outputPath = "frontend/src/lib/constants.ts"
 )
 

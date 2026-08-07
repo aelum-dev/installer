@@ -1,17 +1,22 @@
-export namespace core {
+export namespace gui {
 	
-	export class Installer {
-	    Logger: any;
+	export class PageID {
+	    Value: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new Installer(source);
+	        return new PageID(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Logger = source["Logger"];
+	        this.Value = source["Value"];
 	    }
 	}
+
+}
+
+export namespace install {
+	
 	export class RootCheckResult {
 	    authorized: boolean;
 	    error?: string;
@@ -28,23 +33,6 @@ export namespace core {
 	        this.error = source["error"];
 	        this.message = source["message"];
 	        this.output = source["output"];
-	    }
-	}
-
-}
-
-export namespace gui {
-	
-	export class PageID {
-	    Value: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new PageID(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Value = source["Value"];
 	    }
 	}
 
