@@ -10,6 +10,27 @@ import (
 	"aestheticos-installer/backend/shared"
 )
 
+// defaultLogger is the shared logger instance used by both CLI and GUI.
+// It is initialized lazily on first use to avoid early file handle creation.
+var defaultLogger Logger = NewConsoleLogger()
+
+// mu protects defaultLogger from concurrent access during initialization.
+var mu sync.RWMutex
+
+// GetLogger returns the shared logger instance used by both CLI and GUI.
+func GetLogger() Logger {
+	mu.RLock()
+	defer mu.RUnlock()
+	return defaultLogger
+}
+
+// SetLogger sets the shared logger instance. Must be called before any logging.
+func SetLogger(l Logger) {
+	mu.Lock()
+	defer mu.Unlock()
+	defaultLogger = l
+}
+
 // Logger is the shared logging interface used by installation steps and the GUI.
 type Logger interface {
 	// Info logs an informational message to stdout and the log file.

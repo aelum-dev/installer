@@ -163,10 +163,10 @@ func (a *App) StartInstallation() error {
 				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
 
 				// Progress without newline — pacstrap will append.
-				logger.CommandNoNewline(line)
+				GetLogger().CommandNoNewline(line)
 			} else {
 				// Pacstrap with newline — appends to progress line.
-				logger.Command(line)
+				GetLogger().Command(line)
 			}
 		}
 	}()
@@ -176,7 +176,7 @@ func (a *App) StartInstallation() error {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
-			logger.WriteErrorLog("CLI stderr", line)
+			GetLogger().WriteErrorLog("CLI stderr", line)
 		}
 	}()
 

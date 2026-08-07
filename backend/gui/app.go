@@ -76,7 +76,7 @@ func (a *App) GetDiskID() string {
 // In dry-run mode, it only logs the action without rebooting.
 func (a *App) RebootAndClose() error {
 	if a.dryRun {
-		logger.Info("Rebooting...")
+		GetLogger().Info("Rebooting...")
 		return nil
 	}
 
@@ -86,6 +86,6 @@ func (a *App) RebootAndClose() error {
 		return fmt.Errorf("failed to reboot: %w", err)
 	}
 
-	logger.Info("Rebooting...")
+	GetLogger().Info("Rebooting...")
 	return nil
 }
