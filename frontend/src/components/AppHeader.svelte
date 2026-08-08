@@ -15,7 +15,7 @@
 		justify-content: space-between;
 		padding: var(--spacing-md) var(--spacing-xl) var(--spacing-md) calc(var(--spacing-xl) + var(--spacing-md));
 		min-height: var(--header-height);
-		background-color: var(--color-bg-header);
+		background-color: var(--color-bg-light);
 	}
 
 	.brand {

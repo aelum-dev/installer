@@ -10,7 +10,7 @@
 	const isWelcomePage = $derived(currentPage === PAGE_IDS.WELCOME);
 	const isInstallationPage = $derived(currentPage === PAGE_IDS.INSTALLATION);
 	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage && !isInstallationPage);
-	const showNext = $derived(!isLastPage && !isWelcomePage && !isInstallationPage);
+	const showNext = $derived(!isLastPage && !isInstallationPage);
 	const diskSizeOk = $derived.by(() => {
 		if (!diskSelectionData.disk) return false;
 		const size = parseInt(diskSelectionData.disk.size, 10);
@@ -47,7 +47,7 @@
 		justify-content: space-between;
 		padding: var(--spacing-md) var(--spacing-xl);
 		min-height: var(--footer-height);
-		background-color: var(--color-bg-footer);
+		background-color: var(--color-bg-light);
 	}
 
 	.footer-left,

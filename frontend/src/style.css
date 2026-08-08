@@ -16,8 +16,8 @@
     --color-text-light: #9ca0b0;            /* Overlay0 (light text) */
 
     /* —— Primary / Accent —— */
-    --color-primary: #1e66f5;               /* Blue */
-    --color-primary-hover: #2a7bf7;         /* Blue + brightness */
+    --color-primary: #c5e1fb;               /* Pastel blue */
+    --color-primary-hover: #b3d4f9;         /* Pastel blue (hover) */
 
     /* —— Danger / Error —— */
     --color-danger: #d20f39;                /* Red */
@@ -79,7 +79,7 @@
     /* Shadows */
     --shadow-sm: 0 2px 6px rgba(76, 79, 105, 0.08);
     --shadow-md: 0 4px 12px rgba(76, 79, 105, 0.12);
-    --shadow-primary: 0 4px 12px rgba(30, 102, 245, 0.25);
+    --shadow-primary: 0 4px 12px rgba(197, 225, 251, 0.4);
 
     /* Mono font for code elements */
     --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
