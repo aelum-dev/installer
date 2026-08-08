@@ -87,7 +87,6 @@ const ErrorPrefix = "ERROR: "
 // This is the default logger used by both CLI and GUI.
 type ConsoleLogger struct {
 	mu              sync.Mutex
-	stdoutMu        sync.Mutex // protects stdout writes from concurrent goroutines
 	logFile         *os.File
 	logChan         chan string
 	done            chan struct{}
@@ -186,9 +185,7 @@ func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 // a trailing newline. It does NOT write to the log file — Command()
 // will write the combined line when a command follows.
 func (l *ConsoleLogger) Progress(label string, percent int) {
-	l.stdoutMu.Lock()
 	_, _ = fmt.Fprintf(os.Stdout, "[%s] [%d%%] %s ", time.Now().Format(shared.TimestampFormatShort), percent, label)
-	l.stdoutMu.Unlock()
 	l.SetProgressContext(label, percent)
 	l.ProgressJSON(label, percent, "running")
 }
@@ -197,9 +194,7 @@ func (l *ConsoleLogger) Progress(label string, percent int) {
 // Used by the tick goroutine for steps that don't produce command output.
 func (l *ConsoleLogger) ProgressLine(label string, percent int) {
 	msg := fmt.Sprintf("[%d%%] %s", percent, label)
-	l.stdoutMu.Lock()
 	_, _ = fmt.Fprintf(os.Stdout, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
-	l.stdoutMu.Unlock()
 	l.writeToFile(msg)
 	l.SetProgressContext(label, percent)
 	l.ProgressJSON(label, percent, "running")
@@ -228,9 +223,7 @@ func escapeJSON(s string) string {
 
 // ProgressDone logs a completion marker (✓) on its own line.
 func (l *ConsoleLogger) ProgressDone() {
-	l.stdoutMu.Lock()
 	_, _ = fmt.Fprintf(os.Stdout, "[%s] ✓\n", time.Now().Format(shared.TimestampFormatShort))
-	l.stdoutMu.Unlock()
 	l.writeToFile("✓")
 	l.SetProgressContext("", 0)
 }
@@ -253,14 +246,10 @@ func (l *ConsoleLogger) Command(line string) {
 
 		if label != "" {
 			// Append to progress line: ' => command'
-			l.stdoutMu.Lock()
 			_, _ = fmt.Fprintf(os.Stdout, "=> %s\n", line)
-			l.stdoutMu.Unlock()
 			l.writeToFile(fmt.Sprintf("[%d%%] %s => %s", pct, label, line))
 		} else {
-			l.stdoutMu.Lock()
 			_, _ = fmt.Fprintf(os.Stdout, "%s%s\n", CommandOutputPrefix, line)
-			l.stdoutMu.Unlock()
 			l.writeToFile(CommandOutputPrefix + line)
 		}
 	}
@@ -278,14 +267,10 @@ func (l *ConsoleLogger) CommandNoNewline(line string) {
 
 	if label != "" {
 		msg := fmt.Sprintf("[%d%%] %s => %s", pct, label, line)
-		l.stdoutMu.Lock()
 		_, _ = fmt.Fprintf(os.Stdout, "[%s] %s", time.Now().Format(shared.TimestampFormatShort), msg)
-		l.stdoutMu.Unlock()
 		l.writeToFile(msg)
 	} else {
-		l.stdoutMu.Lock()
 		_, _ = fmt.Fprintf(os.Stdout, "%s%s", CommandOutputPrefix, line)
-		l.stdoutMu.Unlock()
 		l.writeToFile(CommandOutputPrefix + line)
 	}
 }
@@ -312,9 +297,7 @@ func (l *ConsoleLogger) Write(line string) {
 	if line == "" {
 		return
 	}
-	l.stdoutMu.Lock()
 	_, _ = fmt.Fprintf(os.Stdout, "%s\n", line)
-	l.stdoutMu.Unlock()
 	l.writeToFile(line)
 }
 
