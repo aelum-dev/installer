@@ -456,7 +456,7 @@
 	.tag {
 		font-size: 0.68rem;
 		padding: 2px var(--spacing-sm);
-		border-radius: 4px;
+		border-radius: var(--radius-sm);
 		font-weight: 500;
 		background: var(--color-bg-light);
 		color: var(--color-text-muted);
@@ -536,7 +536,7 @@
 		color: var(--color-warning-text);
 		background: var(--color-warning-bg);
 		padding: 1px 5px;
-		border-radius: 3px;
+		border-radius: var(--radius-sm);
 	}
 
 	.part-unknown,

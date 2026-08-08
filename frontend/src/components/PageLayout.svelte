@@ -23,7 +23,7 @@
 
 	.page-title {
 		margin: 0;
-		padding: var(--spacing-lg, 20px) 0 0;
+		padding: 0;
 		font-size: var(--font-size-lg, 1.5rem);
 		color: var(--color-text, #333);
 		font-weight: var(--font-weight-700, 700);

@@ -73,7 +73,7 @@
 	});
 </script>
 
-<PageLayout title="Create User Account">
+<PageLayout title="Create user account">
 	<form class="form" onsubmit={(e) => e.preventDefault()}>
 		<div class="field">
 			<label for="username">Username</label>

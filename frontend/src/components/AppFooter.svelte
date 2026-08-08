@@ -65,8 +65,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 10px var(--spacing-xl);
-		height: 68px;
+		min-height: var(--footer-height);
 		background-color: var(--color-bg-light);
 	}
 

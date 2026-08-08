@@ -107,7 +107,7 @@
 	.language-list {
 		list-style: none;
 		margin: 0;
-		padding: 0 8px 0 0;
+		padding: 0 var(--spacing-lg) 0 0;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;

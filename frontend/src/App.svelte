@@ -145,6 +145,9 @@
 		height: 100vh;
 		width: 100vw;
 		overflow: hidden;
+		padding: var(--spacing-lg);
+		box-sizing: border-box;
+		background-color: var(--color-bg-light);
 	}
 
 	.content-area {

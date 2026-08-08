@@ -13,7 +13,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--spacing-md) var(--spacing-xl) var(--spacing-md) calc(var(--spacing-xl) + var(--spacing-md));
 		min-height: var(--header-height);
 		background-color: var(--color-bg-light);
 	}
@@ -24,5 +23,6 @@
 		color: var(--color-text);
 		text-transform: uppercase;
 		letter-spacing: 1px;
+		margin-left: var(--spacing-lg);
 	}
 </style>
