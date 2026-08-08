@@ -543,7 +543,7 @@ func calculateZramSizeMiB() int {
 // Service management
 // ============================================================================
 
-var servicesToEnable = []string{"NetworkManager", "greetd", "bluetooth", "plymouth-wait-for-animation.service"}
+var servicesToEnable = []string{"NetworkManager", "greetd", "bluetooth", "plymouth-wait-for-animation"}
 
 // EnableServices enables all essential systemd services in the installed system.
 func EnableServices(ctx *InstallContext) error {
