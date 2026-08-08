@@ -29,7 +29,6 @@ var ISOCopyJobs = []CopyJob{
 	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}},
 	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
 	{Source: "/etc/systemd/system/plymouth-wait-for-animation.service", Dest: "/mnt/etc/systemd/system/plymouth-wait-for-animation.service", Flags: []string{}},
-	{Source: "/etc/systemd/system/shared-mount.service", Dest: "/mnt/etc/systemd/system/shared-mount.service", Flags: []string{}},
 }
 
 // ExecuteCopyJobs copies all static files from the live ISO to the installed system.

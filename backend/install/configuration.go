@@ -467,6 +467,8 @@ UseFirmwareBackground=true
 		if ctx.Logger != nil {
 			ctx.Logger.Error("Warning: failed to enable plymouth-wait-for-animation: %v", err)
 		}
+	} else if ctx.Logger != nil {
+		ctx.Logger.Info("Enabling service: plymouth-wait-for-animation")
 	}
 
 	if ctx.Username != "" {
