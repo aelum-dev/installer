@@ -66,7 +66,8 @@ func main() {
 	}
 
 	// Check for root privileges early — all disk operations require it.
-	if os.Getuid() != 0 {
+	// Skip in dry-run mode — no real privileged commands are executed.
+	if !*dryRun && os.Getuid() != 0 {
 		fmt.Fprintf(os.Stderr, "Error: this command requires root privileges.\n")
 		fmt.Fprintf(os.Stderr, "Run with sudo: sudo %s %s\n", os.Args[0], strings.Join(os.Args[1:], " "))
 		os.Exit(1)

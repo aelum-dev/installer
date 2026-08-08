@@ -141,11 +141,17 @@ func (inst *Installer) Install() error {
 		// Launch tick goroutine: slowly advances percentage during long steps.
 		// Fast steps (format, mount) finish before the first tick fires.
 		stopTick := make(chan struct{})
-		go inst.tickProgress(label, startPercent, endPercent, stopTick)
+		var stepDuration time.Duration
+		if inst.dryRun {
+			weight := stepWeights()[idx]
+			stepDuration = time.Duration(weight) * 600 * time.Millisecond
+		}
+		go inst.tickProgress(label, startPercent, endPercent, stepDuration, stopTick)
 
 		var err error
 		if inst.dryRun {
-			err = simulateStep()
+			weight := stepWeights()[idx]
+			err = simulateStep(time.Duration(weight) * 600 * time.Millisecond)
 		} else {
 			err = step.Run(ctx)
 		}
@@ -170,20 +176,36 @@ func (inst *Installer) Install() error {
 // tickProgress slowly advances the percentage from start to end, emitting
 // progress events at regular intervals. Used to keep the UI feeling alive
 // during long-running steps (e.g. pacstrap). Stops when stopTick is closed.
-func (inst *Installer) tickProgress(label string, start, end int, stopTick chan struct{}) {
+// In dry-run mode, stepDuration controls the total sleep time and tick interval
+// is calculated so that 1% is emitted per tick (e.g. 22s step → ~1 tick/sec).
+func (inst *Installer) tickProgress(label string, start, end int, stepDuration time.Duration, stopTick chan struct{}) {
 	if start >= end {
 		return
 	}
 
-	// Initial delay — fast steps finish before the first tick fires.
-	select {
-	case <-time.After(time.Duration(shared.ProgressTickDelayMs) * time.Millisecond):
-	case <-stopTick:
-		return
-	}
-
 	current := start
-	ticker := time.NewTicker(time.Duration(shared.ProgressTickIntervalMs) * time.Millisecond)
+	var ticker *time.Ticker
+
+	if stepDuration > 0 {
+		// Dry-run: tick interval proportional to step duration so 1% ≈ 1 tick.
+		percentRange := end - start
+		if percentRange <= 0 {
+			return
+		}
+		intervalMs := int(stepDuration.Milliseconds()) / percentRange
+		if intervalMs < 100 {
+			intervalMs = 100
+		}
+		ticker = time.NewTicker(time.Duration(intervalMs) * time.Millisecond)
+	} else {
+		// Real install: initial delay then slow ticks (pacstrap drives progress).
+		select {
+		case <-time.After(time.Duration(shared.ProgressTickDelayMs) * time.Millisecond):
+		case <-stopTick:
+			return
+		}
+		ticker = time.NewTicker(time.Duration(shared.ProgressTickIntervalMs) * time.Millisecond)
+	}
 	defer ticker.Stop()
 
 	for {
@@ -193,10 +215,9 @@ func (inst *Installer) tickProgress(label string, start, end int, stopTick chan 
 			if current > end {
 				current = end
 			}
-			// Only update context — Command() already shows the percentage.
-			// Emitting Progress() would create duplicate standalone lines.
 			if inst.Logger != nil {
 				inst.Logger.UpdateContext(label, current)
+				inst.Logger.ProgressJSON(label, current, "running")
 			}
 			if current >= end {
 				return
@@ -229,7 +250,7 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 	defer inst.RunCleanup()
 
 	allSteps := inst.installationSteps()
-	for _, s := range allSteps {
+	for idx, s := range allSteps {
 		if s.Name() == stepName {
 			label = s.Label()
 			if inst.dryRun {
@@ -239,7 +260,8 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 			inst.logInfo("Starting step: %s", s.Label())
 			var stepErr error
 			if inst.dryRun {
-				stepErr = simulateStep()
+				weight := stepWeights()[idx]
+				stepErr = simulateStep(time.Duration(weight) * 600 * time.Millisecond)
 			} else {
 				stepErr = s.Run(inst.context())
 			}
@@ -335,10 +357,10 @@ func (inst *Installer) LogError(format string, args ...interface{}) {
 	}
 }
 
-// simulateStep simulates a step by sleeping for a short duration.
+// simulateStep simulates a step by sleeping for the given duration.
 // Used in dry-run mode to give the user a sense of progress.
-func simulateStep() error {
-	time.Sleep(time.Duration(shared.SimulateStepSleepDuration) * time.Millisecond)
+func simulateStep(duration time.Duration) error {
+	time.Sleep(duration)
 	return nil
 }
 

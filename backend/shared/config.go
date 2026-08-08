@@ -178,11 +178,6 @@ const BootOptionDescription = "Aesthetic OS"
 // BootLoaderEntriesDir is the subdirectory under the ESP for boot entries.
 const BootLoaderEntriesDir = "loader/entries"
 
-// --- Simulate ---------------------------------------------------------------
-
-// SimulateStepSleepDuration is how long simulateStep sleeps in dry-run mode (ms).
-const SimulateStepSleepDuration = 200
-
 // --- Progress tick ----------------------------------------------------------
 
 // ProgressTickDelayMs is the initial delay before the progress tick starts.

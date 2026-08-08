@@ -199,7 +199,7 @@
 	.progress-bar-fill {
 		height: 100%;
 		width: var(--progress);
-		background: linear-gradient(90deg, var(--color-primary), var(--color-sky));
+		background: var(--color-primary-hover);
 		border-radius: 999px;
 		transition: width 0.5s ease;
 		position: relative;
@@ -236,7 +236,7 @@
 
 	.progress-percent {
 		font-weight: var(--font-weight-700);
-		color: var(--color-primary);
+		color: var(--color-primary-hover);
 	}
 
 	/* ── Step label ── */

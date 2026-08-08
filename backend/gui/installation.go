@@ -62,10 +62,13 @@ func findCLIBinary() string {
 // StartInstallation begins the installation process by spawning the CLI binary via sudo.
 func (a *App) StartInstallation() error {
 	// Safety check: verify root privileges one more time before starting
-	rootCheck := a.CheckRoot()
-	if !rootCheck.Authorized {
-		wailsRuntime.LogError(a.ctx, rootCheck.Message)
-		return fmt.Errorf("%s", rootCheck.Message)
+	// Skip in dry-run mode — no real privileged commands are executed.
+	if !a.dryRun {
+		rootCheck := a.CheckRoot()
+		if !rootCheck.Authorized {
+			wailsRuntime.LogError(a.ctx, rootCheck.Message)
+			return fmt.Errorf("%s", rootCheck.Message)
+		}
 	}
 
 	// Cancel any previous installation
@@ -98,8 +101,13 @@ func (a *App) StartInstallation() error {
 		args = append(args, "--dry-run")
 	}
 
-	// Create sudo command to run the CLI
-	cmd := exec.Command("sudo", append([]string{cliBinary}, args...)...)
+	// In dry-run mode, run the CLI directly without sudo — no real privileged ops.
+	var cmd *exec.Cmd
+	if a.dryRun {
+		cmd = exec.Command(cliBinary, args...)
+	} else {
+		cmd = exec.Command("sudo", append([]string{cliBinary}, args...)...)
+	}
 
 	// Set up stdin for password
 	stdin, err := cmd.StdinPipe()
