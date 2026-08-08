@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Remove `--password` CLI flag — password is now read interactively from the terminal (masked) or via stdin pipe.
 
 ### Fixed
+- **GUI error handling** — `StartInstallation` now correctly emits `installation:error` when the CLI fails. This ensures the GUI displays "Install failed" and stops the timer.
+- **Progress logging** — `tickProgress` now only emits JSON progress events during dry-run mode, preventing redundant JSON output during real installations where progress is driven by `pacstrap`.
+- **Wallpaper path** — Corrected the source path for the wallpaper in `SetupUsers`.
+- **Disk validation** — Refined disk validation logic to handle permission/exit status errors more gracefully.
 - Remove useless `parted` call in `FormatDisk` (was starting interactive mode and doing nothing)
 - Add `sgdisk -Z` to clear partition table before creating partitions in `FormatDisk`
 - Fix `chpasswd` in `SetupUsers` — now passes `username:password` format (was only passing password)
