@@ -92,8 +92,13 @@ func (a *App) StartInstallation() error {
 	_ = hostname // used in CLI args below
 
 	// Build CLI arguments
+	diskID := a.diskSelection.DiskID
+	// In dry-run mode, use a dummy disk if none was selected (e.g. started directly on install page).
+	if diskID == "" && a.dryRun {
+		diskID = "/dev/loop0"
+	}
 	args := []string{
-		"--install", a.diskSelection.DiskID,
+		"--install", diskID,
 		"--filesystem", a.fileSystem,
 	}
 
@@ -156,6 +161,9 @@ func (a *App) StartInstallation() error {
 		for scanner.Scan() {
 			fmt.Fprintf(os.Stderr, "%s\n", scanner.Text())
 		}
+		if err := scanner.Err(); err != nil {
+			// Error reading from stdout pipe.
+		}
 	}()
 
 	// Read stderr for JSON progress events and error logging.
@@ -175,6 +183,9 @@ func (a *App) StartInstallation() error {
 				GetLogger().WriteErrorLog("CLI stderr", line)
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			// Error reading from stderr pipe.
+		}
 	}()
 
 	// Wait for completion in a goroutine
@@ -188,7 +199,6 @@ func (a *App) StartInstallation() error {
 		}()
 
 		err := cmd.Wait()
-		cancel()
 
 		if err != nil {
 			// Check if cancelled
@@ -202,9 +212,14 @@ func (a *App) StartInstallation() error {
 				Percent: 0,
 				Phase:   "error",
 			}
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Install failed. You can reboot or use --rollback flag on aestheticos-installer-cli. For detailed information check installation.log", err.Error())
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Installation failed. For detailed information check installation.log", err.Error())
+
+			cancel()
+
 			return
 		}
+
+		cancel()
 
 		// Report success
 		label := "Installation completed!"
