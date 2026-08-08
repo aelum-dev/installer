@@ -206,10 +206,10 @@ const WeightFormatDisk = 3
 const WeightMountFilesystem = 2
 
 // WeightInstallBase is the weight for the base system pacstrap step.
-const WeightInstallBase = 45
+const WeightInstallBase = 35
 
 // WeightInstallDesktop is the weight for the desktop environment pacstrap step.
-const WeightInstallDesktop = 35
+const WeightInstallDesktop = 45
 
 // WeightSetupUsers is the weight for the user setup step.
 const WeightSetupUsers = 2
