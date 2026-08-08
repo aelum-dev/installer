@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Logging system rewritten** — Terminal output is now byte-identical to `installation.log`. A single atomic `writeLine()` path formats each message once with a full timestamp and writes the exact same bytes to both stdout and the log file. The tick goroutine no longer emits standalone progress lines during pacstrap (only updates the context), eliminating duplicate percentage lines.
+
 ### Removed
 - **Privileged helper binary** — Removed `aestheticos-helper` entirely. All privileged operations now run directly via `exec.Command` (running as root on the live ISO) or `arch-chroot` for installed-system operations. This eliminates the sudo wrapper layer, simplifies the build pipeline (one fewer binary), and removes the command whitelist/security surface area. The helper source (`backend/cmd/helper/`) and binary have been deleted.
 - `FindHelper()` and `CheckRoot(helperPath)` — replaced with direct sudo checks (`sudo -n true`)
