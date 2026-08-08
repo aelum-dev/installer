@@ -3,20 +3,21 @@ package gui
 import (
 	"fmt"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"aestheticos-installer/backend/install"
 	"aestheticos-installer/backend/shared"
 )
 
-// logger is the central log orchestrator for the GUI.
-// GUI logs go to stderr (terminal) + log file.
-// CLI output goes to log file ONLY — never to stdout/stderr (would leak to WebView).
 var logger = NewGUILogger()
 
-// GUILogger writes GUI-originated logs to stderr + log file.
-// CLI output is filtered out — only log file writes for CLI data.
+// GUILogger wraps the shared console logger.
+// GUI-originated messages go to stderr + log file (byte-identical).
+// CLI output goes to log file only (terminal gets it from CLI stdout).
 type GUILogger struct {
+	mu   sync.Mutex
 	next install.Logger
 }
 
@@ -25,21 +26,26 @@ func NewGUILogger() *GUILogger {
 }
 
 func (l *GUILogger) Info(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	// Write to stderr for terminal visibility
-	fmt.Fprintf(os.Stderr, "[%s] %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
-	// Write to log file
-	l.next.LogToFile(msg)
+	l.mu.Lock()
+	var msg strings.Builder
+	fmt.Fprintf(&msg, format, args...)
+	line := fmt.Sprintf("[%s] %s", time.Now().Format(shared.TimestampFormatFull), msg.String())
+	fmt.Fprintf(os.Stderr, "%s\n", line)
+	l.next.LogToFile(line)
+	l.mu.Unlock()
 }
 
 func (l *GUILogger) Error(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, "[%s] ERROR: %s\n", time.Now().Format(shared.TimestampFormatShort), msg)
-	l.next.LogToFile("ERROR: " + msg)
+	l.mu.Lock()
+	var msg strings.Builder
+	fmt.Fprintf(&msg, format, args...)
+	line := fmt.Sprintf("[%s] ERROR: %s", time.Now().Format(shared.TimestampFormatFull), msg.String())
+	fmt.Fprintf(os.Stderr, "%s\n", line)
+	l.next.LogToFile(line)
+	l.mu.Unlock()
 }
 
 func (l *GUILogger) Command(line string) {
-	// CLI command output — log file only, never stdout/stderr
 	l.next.LogToFile(line)
 }
 
@@ -59,16 +65,32 @@ func (l *GUILogger) SetProgressContext(label string, percent int) {
 	l.next.SetProgressContext(label, percent)
 }
 
+func (l *GUILogger) UpdateContext(label string, percent int) {
+	l.next.SetProgressContext(label, percent)
+}
+
 func (l *GUILogger) Progress(label string, percent int) {
-	l.next.LogToFile(fmt.Sprintf("[%d%%] %s", percent, label))
+	l.mu.Lock()
+	line := fmt.Sprintf("[%s] [%d%%] %s", time.Now().Format(shared.TimestampFormatFull), percent, label)
+	fmt.Fprintf(os.Stderr, "%s\n", line)
+	l.next.LogToFile(line)
+	l.mu.Unlock()
 }
 
 func (l *GUILogger) ProgressLine(label string, percent int) {
-	l.next.LogToFile(fmt.Sprintf("[%d%%] %s", percent, label))
+	l.mu.Lock()
+	line := fmt.Sprintf("[%s] [%d%%] %s", time.Now().Format(shared.TimestampFormatFull), percent, label)
+	fmt.Fprintf(os.Stderr, "%s\n", line)
+	l.next.LogToFile(line)
+	l.mu.Unlock()
 }
 
 func (l *GUILogger) ProgressDone() {
-	l.next.LogToFile("✓")
+	l.mu.Lock()
+	line := fmt.Sprintf("[%s] ✓", time.Now().Format(shared.TimestampFormatFull))
+	fmt.Fprintf(os.Stderr, "%s\n", line)
+	l.next.LogToFile(line)
+	l.mu.Unlock()
 }
 
 func (l *GUILogger) ProgressJSON(label string, percent int, phase string) {
@@ -76,12 +98,13 @@ func (l *GUILogger) ProgressJSON(label string, percent int, phase string) {
 }
 
 func (l *GUILogger) Write(line string) {
+	l.mu.Lock()
+	line = fmt.Sprintf("[%s] %s", time.Now().Format(shared.TimestampFormatFull), line)
+	fmt.Fprintf(os.Stderr, "%s\n", line)
 	l.next.LogToFile(line)
+	l.mu.Unlock()
 }
 
-// GetLogger returns the GUI logger.
-// GUI-originated logs go to stderr (terminal) + log file.
-// CLI output goes to log file only.
 func GetLogger() install.Logger {
 	return logger
 }

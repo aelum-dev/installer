@@ -37,8 +37,6 @@ type Installer struct {
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
-	// ProgressLine reports a complete progress line (for tick goroutine).
-	ProgressLine func(label string, percent int)
 	// Error callback
 	OnError func(label, message string)
 
@@ -126,11 +124,15 @@ func (inst *Installer) Install() error {
 		startPercent := percentages[idx]
 		endPercent := percentages[idx+1]
 
-		// Wire progress callback so the tick goroutine can update the UI.
+		// Wire progress callback to update context + emit JSON only.
+		// Command() already writes the percentage to stdout, so we don't call Progress() here.
 		ctx.ProgressCallback = func(percent int) {
 			// Convert step-relative percentage (0-100) to absolute percentage (startPercent-endPercent)
 			absPercent := int(float64(startPercent) + (float64(percent) * float64(endPercent-startPercent) / 100.0))
-			inst.emitProgress(label, absPercent, "running")
+			if inst.Logger != nil {
+				inst.Logger.SetProgressContext(label, absPercent)
+				inst.Logger.ProgressJSON(label, absPercent, "running")
+			}
 		}
 
 		inst.emitProgress(label, startPercent, "running")
@@ -191,10 +193,10 @@ func (inst *Installer) tickProgress(label string, start, end int, stopTick chan 
 			if current > end {
 				current = end
 			}
-			if inst.ProgressLine != nil {
-				inst.ProgressLine(label, current)
-			} else {
-				inst.emitProgress(label, current, "running")
+			// Only update context — Command() already shows the percentage.
+			// Emitting Progress() would create duplicate standalone lines.
+			if inst.Logger != nil {
+				inst.Logger.UpdateContext(label, current)
 			}
 			if current >= end {
 				return

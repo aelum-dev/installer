@@ -161,9 +161,6 @@ func main() {
 			log.Progress(label, percent)
 		}
 	}
-	installer.ProgressLine = func(label string, percent int) {
-		log.ProgressLine(label, percent)
-	}
 	installer.OnError = func(label, message string) {
 		log.Error("%s: %s", label, message)
 	}
@@ -197,7 +194,7 @@ func main() {
 		_, _, err = installer.RunStep(stepName)
 	} else {
 		// Run full installation
-		log.Info("Installing Arch Linux to %s...", disk)
+		log.Info("Installing AestheticOS to %s...", disk)
 		err = installer.Install()
 	}
 
