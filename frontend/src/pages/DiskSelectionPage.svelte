@@ -390,14 +390,14 @@
 		width: 30px;
 		height: 30px;
 		border-radius: var(--radius-md);
-		background: var(--color-bg-light);
+		background: var(--color-bg-hover);
 		color: var(--color-text-muted);
 		flex-shrink: 0;
 	}
 
 	.disk-card.selected .disk-icon {
-		color: var(--color-primary);
-		background: var(--color-primary-light);
+		color: var(--color-text);
+		background: var(--color-primary);
 	}
 
 	.card-title {

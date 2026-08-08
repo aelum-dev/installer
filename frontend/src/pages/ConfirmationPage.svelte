@@ -301,7 +301,7 @@
 
 	.fs-tag {
 		background-color: var(--color-info-bg);
-		color: var(--color-primary);
+		color: var(--color-text);
 		font-family: var(--font-mono);
 	}
 
