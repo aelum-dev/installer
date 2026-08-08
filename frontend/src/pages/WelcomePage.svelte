@@ -107,7 +107,7 @@
 	.language-list {
 		list-style: none;
 		margin: 0;
-		padding: 0;
+		padding: 0 8px 0 0;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
@@ -119,9 +119,9 @@
 
 	.lang-item {
 		width: 100%;
-		padding: 10px 16px;
+		padding: 10px 20px;
 		border: none;
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-xl);
 		background: transparent;
 		font-size: var(--font-size-base);
 		font-family: inherit;

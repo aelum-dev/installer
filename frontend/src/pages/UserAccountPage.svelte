@@ -148,8 +148,8 @@
 	.line-edit {
 		background-color: var(--color-bg-white);
 		border: 1px solid var(--color-border);
-		border-radius: var(--radius-lg);
-		padding: 11px 16px;
+		border-radius: var(--radius-xl);
+		padding: 11px 20px;
 		font-family: inherit;
 		font-size: var(--font-size-base);
 		color: var(--color-text);
