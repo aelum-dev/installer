@@ -49,7 +49,7 @@
 	.dialog-overlay {
 		position: fixed;
 		inset: 0;
-		background-color: rgba(0, 0, 0, 0.6);
+		background-color: var(--color-overlay);
 		backdrop-filter: blur(4px);
 		display: flex;
 		align-items: center;
@@ -64,7 +64,7 @@
 		padding: 32px;
 		max-width: 440px;
 		width: 90%;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		box-shadow: 0 20px 60px var(--color-overlay-shadow);
 		animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
@@ -127,9 +127,9 @@
 	}
 
 	.btn-confirm:hover {
-		background-color: #e01340;
+		background-color: var(--color-danger-hover);
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(210, 15, 57, 0.25);
+		box-shadow: 0 4px 12px var(--color-danger-shadow);
 	}
 
 	@keyframes fadeIn {

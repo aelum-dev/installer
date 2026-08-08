@@ -191,7 +191,7 @@
 	.progress-bar-bg {
 		width: 100%;
 		height: 14px;
-		background: rgba(255, 255, 255, 0.15);
+		background: var(--color-white-glow);
 		border-radius: 999px;
 		overflow: hidden;
 	}
@@ -214,7 +214,7 @@
 		left: -40%;
 		width: 40%;
 		height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+		background: linear-gradient(90deg, transparent, var(--color-white-glow-strong), transparent);
 		animation: slide 1.8s ease-in-out infinite;
 	}
 

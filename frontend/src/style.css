@@ -1,49 +1,69 @@
 :root {
-    /* Catppuccin Latte Color Palette */
-    /* https://github.com/catppuccin/catppuccin */
+    /* Soft Warm Latte-inspired Color Palette */
 
     /* —— Surface & Background —— */
-    --color-bg: #eff1f5;                    /* Base */
+    --color-bg: #f5f0ef;                    /* Base — warm off-white */
     --color-bg-white: #ffffff;              /* White overlay */
-    --color-bg-light: #e6e9ef;              /* Mantle (lighter surface) */
-    --color-bg-hover: #ccd0da;              /* Surface0 (interactive hover) */
-    --color-bg-header: #dce0e8;             /* Crust (header background) */
-    --color-bg-footer: #dce0e8;             /* Crust (footer background) */
+    --color-bg-light: #fefafb;              /* Mantle — warm beige-gray */
+    --color-bg-hover: #f3e9ec;              /* Surface0 — hover state */
 
     /* —— Text —— */
-    --color-text: #4c4f69;                  /* Text dark */
-    --color-text-muted: #6c6f85;            /* Text muted */
-    --color-text-light: #9ca0b0;            /* Overlay0 (light text) */
+    --color-text: #5c5458;                  /* Text — warm dark plum */
+    --color-text-muted: #7e7478;            /* Text muted */
+    --color-text-light: #a89ea2;            /* Light text */
 
     /* —— Primary / Accent —— */
-    --color-primary: #c5e1fb;               /* Pastel blue */
-    --color-primary-hover: #b3d4f9;         /* Pastel blue (hover) */
+    --color-primary: #f8eaee;               /* Soft dusty rose */
+    --color-primary-hover: #ecdde2;         /* Soft dusty rose (hover) */
+    --color-primary-light: rgba(248, 234, 238, 0.08);
+    --color-primary-lighter: rgba(248, 234, 238, 0.02);
+    --color-primary-shadow: rgba(248, 234, 238, 0.35);
+
+    /* —— Focus —— */
+    --color-focus: rgba(164, 148, 176, 0.2);
+    --color-focus-strong: rgba(164, 148, 176, 0.3);
 
     /* —— Danger / Error —— */
-    --color-danger: #d20f39;                /* Red */
-    --color-danger-light: #fdedef;          /* Red tint */
-    --color-danger-border: #f6c3c8;         /* Red border */
+    --color-danger: #d48a8a;                /* Muted rose-red */
+    --color-danger-hover: #c07a7a;          /* Muted rose-red (hover) */
+    --color-danger-shadow: rgba(192, 122, 122, 0.3);
+    --color-danger-bg: rgba(192, 122, 122, 0.1);
+    --color-danger-text: #b06a6a;           /* Darker rose for text */
+    --color-danger-focus: rgba(192, 122, 122, 0.15);
+    --color-danger-error-bg: rgba(192, 122, 122, 0.08);
+    --color-danger-error-hover: rgba(192, 122, 122, 0.12);
 
     /* —— Warning / Caution —— */
-    --color-warning: #fe640b;               /* Peach */
-    --color-warning-light: rgba(223, 142, 29, 0.12); /* Yellow tint */
+    --color-warning: #d4a888;               /* Muted peach */
+    --color-warning-light: rgba(212, 168, 136, 0.12);
+    --color-warning-bg: rgba(212, 168, 136, 0.1);
+    --color-warning-text: #b8730a;          /* Darker peach for text */
+
+    /* —— Success —— */
+    --color-success: #8ab89a;               /* Soft sage green */
+    --color-success-light: #e4efe8;         /* Green tint */
+
+    /* —— Info —— */
+    --color-info: #9aa8c0;                  /* Soft blue-gray */
+    --color-info-light: #e4e8f0;            /* Blue tint */
+    --color-info-bg: rgba(154, 168, 192, 0.12);
+
+    /* —— Mauve —— */
+    --color-mauve: #b8a0d8;                 /* Soft mauve */
+    --color-mauve-light: rgba(184, 160, 216, 0.12);
+    --color-mauve-text: #9a7ab8;            /* Darker mauve for text */
 
     /* —— Borders & Dividers —— */
-    --color-border: #9ca0b0;                /* Dust */
-    --color-border-light: #bcc0cc;          /* Subtle border */
+    --color-border: #c8c0be;                /* Soft warm border */
+    --color-border-light: #ddd8d6;          /* Subtle border */
+    --color-border-dark: #a8a0a2;           /* Dark border */
+    --color-border-subtle: rgba(0, 0, 0, 0.04);
 
-    /* —— Semantic Surfaces —— */
-    --color-surface-0: #ccd0da;             /* Surface0 */
-    --color-surface-1: #c6c9d1;             /* Surface1 */
-    --color-surface-2: #a5adba;             /* Surface2 */
-
-    /* —— Additional Catppuccin Colors —— */
-    --color-mauve: #8839ef;                 /* Mauve (tags, accents) */
-    --color-pink: #ea76cb;                  /* Pink (secondary accent) */
-    --color-teal: #179299;                  /* Teal (success hints) */
-    --color-sky: #04a5e5;                   /* Sky (info hints) */
-    --color-yellow: #df8e1d;                /* Yellow (warnings) */
-    --color-green: #40a02b;                 /* Green (success) */
+    /* —— Overlay & Shadows —— */
+    --color-overlay: rgba(0, 0, 0, 0.6);
+    --color-overlay-shadow: rgba(0, 0, 0, 0.3);
+    --color-white-glow: rgba(255, 255, 255, 0.15);
+    --color-white-glow-strong: rgba(255, 255, 255, 0.25);
 
     /* Typography */
     --font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
@@ -77,9 +97,9 @@
     --radius-xl: 30px;
 
     /* Shadows */
-    --shadow-sm: 0 2px 6px rgba(76, 79, 105, 0.08);
-    --shadow-md: 0 4px 12px rgba(76, 79, 105, 0.12);
-    --shadow-primary: 0 4px 12px rgba(197, 225, 251, 0.4);
+    --shadow-sm: 0 2px 6px rgba(92, 84, 88, 0.08);
+    --shadow-md: 0 4px 12px rgba(92, 84, 88, 0.12);
+    --shadow-primary: 0 4px 12px rgba(248, 234, 238, 0.5);
 
     /* Mono font for code elements */
     --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;

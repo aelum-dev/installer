@@ -163,7 +163,7 @@
 
 	.line-edit:focus {
 		border-color: var(--color-primary);
-		box-shadow: 0 0 0 2px rgba(30, 102, 245, 0.15);
+		box-shadow: 0 0 0 2px var(--color-focus);
 		outline: none;
 	}
 
@@ -177,7 +177,7 @@
 
 	.line-edit--error:focus {
 		border-color: var(--color-danger);
-		box-shadow: 0 0 0 2px rgba(210, 15, 57, 0.15);
+		box-shadow: 0 0 0 2px var(--color-danger-focus);
 	}
 
 	.error {

@@ -187,7 +187,7 @@
 	}
 
 	.dropdown-button:focus-visible {
-		box-shadow: 0 0 0 2px rgba(30, 102, 245, 0.15);
+		box-shadow: 0 0 0 2px var(--color-focus);
 		outline: none;
 	}
 

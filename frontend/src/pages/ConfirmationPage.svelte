@@ -295,12 +295,12 @@
 	}
 
 	.serial-tag {
-		background-color: rgba(136, 57, 239, 0.12);
-		color: #8839ef;
+		background-color: var(--color-mauve-light);
+		color: var(--color-mauve-text);
 	}
 
 	.fs-tag {
-		background-color: rgba(30, 102, 245, 0.12);
+		background-color: var(--color-info-bg);
 		color: var(--color-primary);
 		font-family: var(--font-mono);
 	}

@@ -14,7 +14,7 @@
 	.error-banner {
 		width: 100%;
 		max-width: 480px;
-		background-color: rgba(210, 15, 57, 0.08);
+		background-color: var(--color-danger-error-bg);
 		border: 1px solid var(--color-danger);
 		border-radius: var(--radius-md);
 		padding: 6px 12px;
@@ -76,6 +76,6 @@
 	}
 
 	.error-close:hover {
-		background-color: rgba(210, 15, 57, 0.12);
+		background-color: var(--color-danger-error-hover);
 	}
 </style>

@@ -136,7 +136,7 @@
 	}
 
 	.lang-item:focus-visible {
-		box-shadow: 0 0 0 2px rgba(30, 102, 245, 0.2);
+		box-shadow: 0 0 0 2px var(--color-focus);
 		outline: none;
 	}
 

@@ -368,12 +368,12 @@
 
 	.disk-card:hover {
 		border-color: var(--color-primary);
-		box-shadow: 0 2px 8px rgba(30, 102, 245, 0.08);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.disk-card.selected {
 		border-color: var(--color-primary);
-		background: rgba(30, 102, 245, 0.02);
+		background: var(--color-primary-lighter);
 	}
 
 	.card-header {
@@ -396,7 +396,7 @@
 
 	.disk-card.selected .disk-icon {
 		color: var(--color-primary);
-		background: rgba(30, 102, 245, 0.08);
+		background: var(--color-primary-light);
 	}
 
 	.card-title {
@@ -462,13 +462,13 @@
 	}
 
 	.tag.fstype {
-		background: rgba(223, 142, 29, 0.1);
-		color: #b8730a;
+		background: var(--color-warning-bg);
+		color: var(--color-warning-text);
 	}
 
 	.tag.mounted {
-		background: rgba(192, 57, 43, 0.1);
-		color: #c0392b;
+		background: var(--color-danger-bg);
+		color: var(--color-danger-text);
 	}
 
 	/* ── Partition section ── */
@@ -509,7 +509,7 @@
 	.partition-table td {
 		padding: 5px 6px;
 		color: var(--color-text);
-		border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+		border-bottom: 1px solid var(--color-border-subtle);
 		vertical-align: middle;
 	}
 
@@ -532,8 +532,8 @@
 		font-size: 0.7rem;
 		font-weight: 600;
 		text-transform: uppercase;
-		color: #b8730a;
-		background: rgba(223, 142, 29, 0.1);
+		color: var(--color-warning-text);
+		background: var(--color-warning-bg);
 		padding: 1px 5px;
 		border-radius: 3px;
 	}
@@ -544,7 +544,7 @@
 	}
 
 	.part-mount {
-		color: #c0392b;
+		color: var(--color-danger-text);
 		font-weight: 500;
 	}
 </style>

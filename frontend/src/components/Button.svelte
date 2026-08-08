@@ -46,7 +46,7 @@
 	}
 
 	.btn:focus-visible {
-		box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.3);
+		box-shadow: 0 0 0 3px var(--color-focus-strong);
 	}
 
 	/* svelte-ignore css_unused_selector */
@@ -80,7 +80,7 @@
 		background-color: var(--color-bg-light);
 		border-color: var(--color-border);
 		transform: translateY(-1px);
-		box-shadow: 0 2px 8px rgba(76, 79, 105, 0.08);
+		box-shadow: var(--shadow-sm);
 	}
 
 	/* svelte-ignore css_unused_selector */
