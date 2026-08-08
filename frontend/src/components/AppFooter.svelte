@@ -28,12 +28,32 @@
 <footer class="footer">
 	<div class="footer-left">
 		{#if showBack}
-			<Button variant="ghost" onClick={() => document.dispatchEvent(new CustomEvent('go-back', { cancelable: true }))}>← Back</Button>
+			<button
+				type="button"
+				class="nav-btn nav-btn--back"
+				disabled={false}
+				aria-label="Back"
+				onclick={() => document.dispatchEvent(new CustomEvent('go-back', { cancelable: true }))}
+			>
+				<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M15 18l-6-6 6-6"/>
+				</svg>
+			</button>
 		{/if}
 	</div>
 	<div class="footer-right">
 		{#if showNext}
-			<Button variant="secondary" onClick={buttonHandler} disabled={nextDisabled}>Next →</Button>
+			<button
+				type="button"
+				class={['nav-btn', { 'nav-btn--disabled': nextDisabled }]}
+				disabled={nextDisabled}
+				aria-label="Next"
+				onclick={buttonHandler}
+			>
+				<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M9 18l6-6-6-6"/>
+				</svg>
+			</button>
 		{:else if isLastPage}
 			<Button variant="secondary" onClick={buttonHandler}>Reboot</Button>
 		{/if}
@@ -45,8 +65,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--spacing-md) var(--spacing-xl);
-		min-height: var(--footer-height);
+		padding: 10px var(--spacing-xl);
+		height: 68px;
 		background-color: var(--color-bg-light);
 	}
 
@@ -55,5 +75,38 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		flex: 1;
+	}
+
+	.footer-right {
+		justify-content: flex-end;
+	}
+
+	.nav-btn {
+		background: transparent;
+		border: none;
+		border-radius: 50%;
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--color-text);
+		cursor: pointer;
+		transition: background-color 0.15s ease, color 0.15s ease;
+		outline: none;
+	}
+
+	.nav-btn:hover:not(:disabled) {
+		background-color: var(--color-bg-hover);
+	}
+
+	.nav-btn:focus-visible {
+		box-shadow: 0 0 0 2px var(--color-focus);
+	}
+
+	.nav-btn--disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
 	}
 </style>

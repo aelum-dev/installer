@@ -34,7 +34,7 @@
 		font-family: inherit;
 		font-weight: var(--font-weight-600);
 		border: none;
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-xl);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		display: inline-flex;
@@ -121,8 +121,7 @@
 	/* svelte-ignore css_unused_selector */
 	.btn-small {
 		font-size: 0.8rem;
-		padding: 4px 12px;
-		border-radius: 6px;
+		padding: 4px 16px;
 	}
 
 	/* svelte-ignore css_unused_selector */
@@ -135,7 +134,6 @@
 	.btn-large {
 		font-size: 1rem;
 		padding: 11px 32px;
-		border-radius: 10px;
 	}
 
 	/* svelte-ignore css_unused_selector */
