@@ -45,7 +45,6 @@ export const BootEntryFileName = "aestheticos";
 export const BootEntryTitle = "Aesthetic OS";
 export const BootOptionDescription = "Aesthetic OS";
 export const BootLoaderEntriesDir = "loader/entries";
-export const SimulateStepSleepDuration = 200;
 export const ProgressTickDelayMs = 2000;
 export const ProgressTickIntervalMs = 8000;
 export const ProgressTickMaxPercent = 99;

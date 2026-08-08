@@ -116,24 +116,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := shared.ValidateDiskSize(disk); err != nil {
-		log.Error("%v", err)
-		// If lsblk failed with a permission/device error, give a more helpful hint.
-		if strings.Contains(err.Error(), "exit status") {
-			fmt.Fprintf(os.Stderr, "Hint: ensure the disk path is correct and you have permission to read it.\n")
+	// Skip size validation in dry-run mode — no real disk is used.
+	if !*dryRun {
+		if err := shared.ValidateDiskSize(disk); err != nil {
+			log.Error("%v", err)
+			// If lsblk failed with a permission/device error, give a more helpful hint.
+			if strings.Contains(err.Error(), "exit status") {
+				fmt.Fprintf(os.Stderr, "Hint: ensure the disk path is correct and you have permission to read it.\n")
+			}
+			os.Exit(1)
 		}
-		os.Exit(1)
 	}
 
-	// Read password from stdin (never accept via flag — avoids /proc, ps, and shell history exposure)
-	password, err := readPassword()
-	if err != nil {
-		log.Error("failed to read password: %v", err)
-		os.Exit(1)
-	}
-	if password == "" {
-		log.Error("password cannot be empty")
-		os.Exit(1)
+	// Read password from stdin (never accept via flag — avoids /proc, ps, and shell history exposure).
+	// In dry-run mode, skip password — no real accounts are created.
+	var password string
+	var err error
+	if !*dryRun {
+		password, err = readPassword()
+		if err != nil {
+			log.Error("failed to read password: %v", err)
+			os.Exit(1)
+		}
+		if password == "" {
+			log.Error("password cannot be empty")
+			os.Exit(1)
+		}
 	}
 
 	if *dryRun {

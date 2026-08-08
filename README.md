@@ -179,6 +179,7 @@ sudo ./build/bin/aestheticos-installer-cli --configure-system /dev/vda
 | Variable | Purpose |
 |----------|---------|
 | `AESTHETIC_DRY_RUN=1` | Simulate installation (steps sleep 200ms instead of executing) |
+| `AESTHETIC_START_PAGE=1` | Select which page will be starting page |
 | `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
 | `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
 | `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |

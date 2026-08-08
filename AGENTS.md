@@ -15,76 +15,133 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
 
 ## Architecture — Where Everything Lives
 ```
-backend/
-  cli/main.go                 — CLI installer. Password read from stdin (never flags).
-  gui/
-    app.go                    — Wails app struct, StartUp, RebootAndClose
-    bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
-    installation.go           — StartInstallation (spawns CLI via sudo, reads JSON progress from stderr)
-    navigation.go             — Page IDs, navigation state
-    root_check.go             — Sudo verification
-    validation.go             — Validate + Save methods (validate = no state mutation)
-    logger.go                 — GUILogger (GUI logs → stderr+log; CLI output → log only)
-  install/
-    installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 6 steps.
-    step.go                   — Step interface + step implementations (FormatDiskStep, etc.)
-    plan.go                   — Plan struct for step weights and cumulative percentages
-    executor.go               — Executor interface (Run, RunChroot, WriteFile, AppendFile)
-    configuration.go          — ConfigureSystem (merged step: fstab→bootloader→system→greetd→plymouth→zram→services)
-    errors.go                 — ValidationError, InstallError types
-    logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
-    format.go                 — FormatDisk() + setupBtrfsSubvolumes()
-    mount.go                  — MountFilesystem() + verifyMount()
-    install.go                — installPackages() (pacstrap with line-count progress tracking)
-    install_base.go           — Install() for base packages
-    install_desktop.go        — InstallDesktop() for desktop packages
-    fstab.go                  — GenerateFstab() (custom for btrfs, standard for ext4)
-    bootloader.go             — ConfigureBootloader() (systemd-boot install + boot entry)
-    users.go                  — SetupUsers() (useradd, chpasswd, sudoers, ISO file copy)
-    system.go                 — ConfigureSystemBase() (hostname, locale, timezone, keymap, mirrors)
-    greetd.go                 — ConfigureGreetd() + syncDmsGreeter()
-    greetd/                   — greetd package (config.go, sync.go, memory.go, data/)
-    plymouth.go               — ConfigurePlymouth() (BGRT theme, mkinitcpio hook)
-    services.go               — EnableServices() (NetworkManager, greetd, bluetooth)
-    zram.go                   — ConfigureZram() (compressed swap via zram-generator)
-    copy.go                   — copyISOFiles() (ISO → target file copying)
-    cleanup.go                — CleanupMounts() (lazy recursive unmount)
-    command.go                — Run(), runChroot(), writeFile(), appendFile() helpers
-    rollback.go               — Rollback() (unmounts + wipes partition signatures)
-    context.go                — InstallContext struct (shared state for all steps)
-    checks.go                 — validateMountedSystem() and other validation helpers
-    root_check.go             — RootCheckResult type
-    progress/
-      pacstrap.go             — PacstrapProgressTracker (line-count-based progress)
-  validation/
-    validation.go             — Centralized validation (delegates to shared package)
-  shared/
-    types.go                  — DiskInfo, PartitionInfo, UserAccountData, DiskSelectionData
-    config.go                 — ALL constants: paths, command names, weights, thresholds, etc.
-    disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath(), fakeDisks()
-    regions.go                — 28 locale/region definitions
-    locales.go                — Language list
-    btrfs.go                  — BtrfsSubvolume definitions + GetBtrfsSubvolumes()
-    validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection()
-    mirrorlist.go             — Embedded mirrorlists per region
-    mirrorlist_gen.go         — Mirrorlist refresh script
-    logpath.go                — GetLogPath()
+.                               — Project root
+  main.go                       — Wails app entry point (embeds frontend/dist, runs gui.NewApp)
+  backend/
+    cli/main.go                 — CLI installer. Password read from stdin (never flags).
+    gui/
+      app.go                    — Wails app struct, StartUp, OnBeforeClose
+      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
+      installation.go           — StartInstallation (spawns CLI via sudo, reads JSON progress from stderr)
+      navigation.go             — Page IDs, navigation state
+      root_check.go             — Sudo verification
+      validation.go             — Validate + Save methods (validate = no state mutation)
+      logger.go                 — GUILogger (GUI logs → stderr+log; CLI output → log only)
+      root_check_test.go        — Root check tests
+      validation_test.go        — Validation tests
+    install/
+      installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 6 steps.
+      step.go                   — Step interface + step implementations (FormatDiskStep, etc.) + Plan
+      configuration.go          — ConfigureSystem (merged step: fstab→bootloader→system→greetd→plymouth→zram→services)
+      errors.go                 — ValidationError, InstallError types
+      logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
+      format.go                 — FormatDisk() + setupBtrfsSubvolumes()
+      mount.go                  — MountFilesystem() + verifyMount()
+      install.go                — installPackages(), Install(), InstallDesktop() (pacstrap with line-count progress)
+      fstab.go                  — GenerateFstab() (custom for btrfs, standard for ext4)
+      users.go                  — SetupUsers() (useradd, chpasswd, sudoers, ISO file copy)
+      cleanup.go                — CleanupMounts() (lazy recursive unmount)
+      command.go                — Run(), runChroot(), writeFile(), appendFile() helpers
+      context.go                — InstallContext struct (shared state for all steps)
+      greetd/
+        greetd.go               — Greetd configuration type
+        config.go               — Config struct
+        sync.go                 — syncDmsGreeter()
+        memory.go               — Memory type
+        data/greetd/
+          config.toml           — Embedded greetd config template
+          memory.json           — Embedded greetd memory template
+      progress/
+        pacstrap.go             — PacstrapProgressTracker (line-count-based progress)
+        pacstrap_test.go        — Progress tracker tests
+      installer_test.go         — Installer unit tests
+      installer_integration_test.go — Integration tests
+      install_test.go           — Install function tests
+      fstab_test.go             — Fstab tests
+      swap_test.go              — Swap/zram tests
+      plan_test.go              — Plan/weight tests
+    shared/
+      types.go                  — DiskInfo, PartitionInfo, UserAccountData, DiskSelectionData
+      config.go                 — ALL constants: paths, command names, weights, thresholds, etc.
+      disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath()
+      disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1)
+      regions.go                — 28 locale/region definitions
+      locales.go                — Language list
+      btrfs.go                  — BtrfsSubvolume definitions + GetBtrfsSubvolumes()
+      validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection()
+      mirrorlist.go             — Embedded mirrorlists per region
+      mirrorlist_gen.go         — Mirrorlist refresh script
+      logpath.go                — GetLogPath()
+      mirrorlist/               — Mirrorlist data files per locale (en_US.list, de_DE.list, etc.)
+      disks_test.go             — Disk tests
+      validators_test.go        — Validator tests
+    validation/
+      validation.go             — Centralized validation (delegates to shared package)
+    scripts/
+      gen-ts-constants.go       — Generates frontend wailsjs/go models from Go constants
+  frontend/
+    src/
+      App.svelte                — Root component (wizard page router)
+      App.test.ts               — App component tests
+      main.ts                   — Vite entry point
+      style.css                 — Global styles
+      vite-env.d.ts             — Vite type declarations
+      components/
+        AppHeader.svelte        — Top bar with page title
+        AppFooter.svelte        — Bottom bar with back/next buttons
+        Button.svelte           — Reusable button component
+        ConfirmDialog.svelte    — Confirmation dialog modal
+        Dropdown.svelte         — Dropdown/select component
+        ErrorBanner.svelte      — Error message display
+        PageLayout.svelte       — Page wrapper with header/footer
+      lib/
+        constants.ts            — Frontend constants (auto-generated from Go via gen-ts-constants.go)
+        navigation.ts           — Page navigation state
+        state.svelte.ts         — Svelte 5 store for installer state
+        types.ts                — TypeScript type definitions
+        validate.ts             — Frontend validation helpers
+        validate.test.ts        — Validation tests
+      pages/
+        WelcomePage.svelte      — Language/region selection
+        UserAccountPage.svelte  — Username + password
+        DiskSelectionPage.svelte — Disk cards + filesystem pills
+        ConfirmationPage.svelte — Summary + root check + confirm dialog
+        InstallationPage.svelte — Progress bar + live events
+        FinishPage.svelte       — Success screen
+    wailsjs/
+      go/gui/App.d.ts           — Wails-generated TypeScript bindings
+      go/gui/App.js             — Wails-generated JS bindings
+      go/models.ts              — Wails-generated TypeScript models
+      runtime/                  — Wails runtime JS+TS
+  build/
+    bin/                        — Built binaries (aestheticos-installer, aestheticos-installer-cli)
+    darwin/                     — macOS build output
+    windows/                    — Windows build output
+    appicon.png                 — Application icon
+  .agents/                      — Agent skills directory
+  .github/                      — GitHub workflows
+  wails.json                    — Wails configuration
+  go.mod / go.sum               — Go module files
+  Makefile                      — Build targets
+  build.sh                      — Build script (builds all binaries to build/bin/)
+  build-local.sh                — Local build script
+  run.sh                        — Run script
 ```
 
-## Installation Steps (6 top-level, 12 logical)
-`install/installer.go` `DefaultPlan()` controls the step order. Weights control progress bar:
+## Installation Steps (6 top-level)
+`install/step.go` `DefaultPlan()` controls the step order. Weights control progress bar:
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot`
-3. **Install** (weight 45) — `pacstrap /mnt base linux-lts linux-firmware ...`
-4. **InstallDesktop** (weight 35) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc.
+3. **InstallBase** (weight 45) — `pacstrap /mnt base linux-lts linux-firmware ...` (basePackages in `install/install.go`)
+4. **InstallDesktop** (weight 35) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktopPackages in `install/install.go`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files
-6. **ConfigureSystem** (weight 13) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services
+6. **ConfigureSystem** (weight 13) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configuration.go`)
 
 ## Build & Test
 ```bash
 ./build.sh                          # Build all binaries to build/bin/
 go test ./...                       # Run all Go tests
-cd frontend && npm run test         # Run frontend tests
+cd frontend && npm run test         # Run frontend tests (Vitest)
 cd frontend && npm run check        # TypeScript type checking
 ```
 Binaries: `build/bin/aestheticos-installer` (GUI), `build/bin/aestheticos-installer-cli` (CLI)
@@ -111,6 +168,7 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 - Binaries go in `build/bin/` — never in project root.
 - **Run git commands one at a time.** Never chain multiple git operations in a single bash call — each can acquire locks and batching causes `index.lock` errors.
 - **Constants live in `backend/shared/config.go`** — never duplicate constants across packages.
+- **Frontend constants are auto-generated** from Go via `backend/scripts/gen-ts-constants.go` → `frontend/src/lib/constants.ts`. Regenerate after changing Go constants.
 
 ## Security
 - Passwords read from stdin (never CLI flags — avoids /proc, ps, shell history).

@@ -215,9 +215,12 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 			if current > end {
 				current = end
 			}
+			// Only emit JSON in dry-run mode — normal mode gets progress from pacstrap output.
 			if inst.Logger != nil {
 				inst.Logger.UpdateContext(label, current)
-				inst.Logger.ProgressJSON(label, current, "running")
+				if stepDuration > 0 {
+					inst.Logger.ProgressJSON(label, current, "running")
+				}
 			}
 			if current >= end {
 				return
