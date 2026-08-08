@@ -462,15 +462,6 @@ UseFirmwareBackground=true
 		return fmt.Errorf("failed to set Plymouth BGRT theme: %w: %s", err, string(output))
 	}
 
-	_, err = runChroot("systemctl", "enable", "plymouth-wait-for-animation.service")
-	if err != nil {
-		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: failed to enable plymouth-wait-for-animation: %v", err)
-		}
-	} else if ctx.Logger != nil {
-		ctx.Logger.Info("Enabling service: plymouth-wait-for-animation")
-	}
-
 	if ctx.Username != "" {
 		if err := createHushlogin(ctx.Username); err != nil {
 			if ctx.Logger != nil {
@@ -552,7 +543,7 @@ func calculateZramSizeMiB() int {
 // Service management
 // ============================================================================
 
-var servicesToEnable = []string{"NetworkManager", "greetd", "bluetooth"}
+var servicesToEnable = []string{"NetworkManager", "greetd", "bluetooth", "plymouth-wait-for-animation.service"}
 
 // EnableServices enables all essential systemd services in the installed system.
 func EnableServices(ctx *InstallContext) error {
