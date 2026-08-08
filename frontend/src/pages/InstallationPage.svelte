@@ -92,7 +92,9 @@
 	$effect(() => {
 		if (!isComplete || hasTransitioned) return;
 		hasTransitioned = true;
-		document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
+		setTimeout(() => {
+			document.dispatchEvent(new CustomEvent('go-next', { cancelable: true }));
+		}, 1000);
 	});
 
 	// Auto-start installation when page is reached
