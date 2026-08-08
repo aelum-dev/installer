@@ -3,7 +3,6 @@
 [![CI](https://github.com/KornienkoDev/AestheticOS-Installer/actions/workflows/ci.yml/badge.svg)](https://github.com/KornienkoDev/AestheticOS-Installer/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/go-1.25+-blue)](https://go.dev/dl/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-yellow.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Go Report Card](https://goreportcard.com/badge/github.com/KornienkoDev/AestheticOS-Installer)](https://goreportcard.com/report/github.com/KornienkoDev/AestheticOS-Installer)
 
 A graphical Arch Linux installer with a polished UI, built with [Wails v2](https://wails.io/) (Go + Svelte 5).
 
