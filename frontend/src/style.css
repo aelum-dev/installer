@@ -13,8 +13,8 @@
     --color-text-light: #a89ea2;            /* Light text */
 
     /* —— Primary / Accent —— */
-    --color-primary: #f8eaee;               /* Soft dusty rose */
-    --color-primary-hover: #ecdde2;         /* Soft dusty rose (hover) */
+    --color-primary: #f5d9e0;               /* Soft pink */
+    --color-primary-hover: #eac8d0;         /* Soft pink (hover) */
     --color-primary-light: rgba(248, 234, 238, 0.08);
     --color-primary-lighter: rgba(248, 234, 238, 0.02);
     --color-primary-shadow: rgba(248, 234, 238, 0.35);

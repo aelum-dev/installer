@@ -333,13 +333,14 @@
 
 	.fs-pill:hover {
 		border-color: var(--color-primary);
-		color: var(--color-primary);
+		background: var(--color-bg-hover);
+		color: var(--color-text);
 	}
 
 	.fs-pill.selected {
 		border-color: var(--color-primary);
 		background: var(--color-primary);
-		color: white;
+		color: var(--color-text);
 	}
 
 	/* ── Disk list (scrollable) ── */
