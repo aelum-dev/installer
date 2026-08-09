@@ -25,10 +25,10 @@ var ISOCopyJobs = []CopyJob{
 	{Source: "/etc/skel/.", Dest: "/mnt/etc/skel/", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}},
-	{Source: "/usr/share/DankMaterialShell/wallpaper.png", Dest: "/mnt/usr/share/DankMaterialShell/wallpaper.png", Flags: []string{}},
 	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}},
 	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
 	{Source: "/etc/systemd/system/plymouth-wait-for-animation.service", Dest: "/mnt/etc/systemd/system/plymouth-wait-for-animation.service", Flags: []string{}},
+	{Source: shared.DmsWallpaperSource, Dest: shared.DmsWallpaperDest, Flags: []string{}},
 }
 
 // ExecuteCopyJobs copies all static files from the live ISO to the installed system.

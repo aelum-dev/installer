@@ -215,16 +215,11 @@ const WeightConfigureSystem = 4
 // --- DMS Greeter -------------------------------------------------------------
 
 // DmsWallpaperSource is the wallpaper file path on the live ISO.
-const DmsWallpaperSource = "/usr/share/DankMaterialShell/wallpaper.jpg"
+const DmsWallpaperSource = "/usr/share/DankMaterialShell/wallpaper.png"
 
 // DmsWallpaperDest is the destination path for the wallpaper inside the
 // installed system's DMS configuration directory.
-const DmsWallpaperDest = "/mnt/usr/share/DankMaterialShell/wallpaper.jpg"
-
-// --- Environment file -------------------------------------------------------
-
-// EnvironmentFileSource is the path to the environment file on the live ISO.
-const EnvironmentFileSource = "/etc/environment"
+const DmsWallpaperDest = "/mnt/usr/share/DankMaterialShell/wallpaper.png"
 
 // --- Chroot ------------------------------------------------------------------
 
