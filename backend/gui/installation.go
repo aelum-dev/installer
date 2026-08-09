@@ -244,5 +244,6 @@ func CancelActiveCLI() {
 
 	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
 		_ = activeCLI.cmd.Process.Signal(os.Interrupt)
+		activeCLI.cancel()
 	}
 }

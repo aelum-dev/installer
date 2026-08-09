@@ -3,7 +3,6 @@ package gui
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 )
 
@@ -53,11 +52,7 @@ func (a *App) GetDryRun() bool {
 func (a *App) OnBeforeClose(ctx context.Context) bool {
 	if a.installationRunning.Load() {
 		// Send SIGINT to the running CLI process
-		activeCLI.mu.Lock()
-		if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
-			_ = activeCLI.cmd.Process.Signal(os.Interrupt)
-		}
-		activeCLI.mu.Unlock()
+		CancelActiveCLI()
 	}
 	return false
 }
