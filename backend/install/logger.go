@@ -46,6 +46,8 @@ type Logger interface {
 	ProgressDone()
 	ProgressJSON(label string, percent int, phase string)
 	Write(line string)
+	// Close flushes any buffered log entries and waits for the writer goroutine.
+	Close()
 }
 
 const (

@@ -51,6 +51,10 @@ func main() {
 		fmt.Println("\nInterrupted — cancelling installation...")
 		// Send SIGINT to the running CLI process so it can clean up
 		gui.CancelActiveCLI()
+		// Wait for cleanup to complete before exiting
+		gui.WaitForCleanup()
+		// Flush remaining log entries before exiting
+		gui.GetLogger().Close()
 		os.Exit(0)
 	}()
 

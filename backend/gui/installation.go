@@ -32,6 +32,7 @@ type cliProcess struct {
 	mu     sync.Mutex
 	cmd    *exec.Cmd
 	cancel func()
+	done   chan struct{} // closed when completion goroutine finishes (cleanup done)
 }
 
 var activeCLI = &cliProcess{}
@@ -133,9 +134,11 @@ func (a *App) StartInstallation() error {
 
 	// Store process reference for cancellation
 	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
 	activeCLI.mu.Lock()
 	activeCLI.cmd = cmd
 	activeCLI.cancel = cancel
+	activeCLI.done = done
 	activeCLI.mu.Unlock()
 
 	// Mark installation as in-progress
@@ -185,6 +188,7 @@ func (a *App) StartInstallation() error {
 	// Wait for completion in a goroutine
 	go func() {
 		defer func() {
+			close(done)
 			a.installationRunning.Store(false)
 			activeCLI.mu.Lock()
 			activeCLI.cmd = nil
@@ -245,5 +249,16 @@ func CancelActiveCLI() {
 	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
 		_ = activeCLI.cmd.Process.Signal(os.Interrupt)
 		activeCLI.cancel()
+	}
+}
+
+// WaitForCleanup blocks until the current installation's cleanup has completed.
+// If no installation is running, returns immediately.
+func WaitForCleanup() {
+	activeCLI.mu.Lock()
+	done := activeCLI.done
+	activeCLI.mu.Unlock()
+	if done != nil {
+		<-done
 	}
 }

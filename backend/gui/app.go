@@ -53,6 +53,17 @@ func (a *App) OnBeforeClose(ctx context.Context) bool {
 	if a.installationRunning.Load() {
 		// Send SIGINT to the running CLI process
 		CancelActiveCLI()
+
+		// Wait for cleanup to complete before allowing the window to close
+		activeCLI.mu.Lock()
+		done := activeCLI.done
+		activeCLI.mu.Unlock()
+		if done != nil {
+			<-done
+		}
+
+		// Flush remaining log entries before the app exits
+		GetLogger().Close()
 	}
 	return false
 }

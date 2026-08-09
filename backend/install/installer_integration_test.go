@@ -5,9 +5,20 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"aestheticos-installer/backend/shared"
 )
+
+// TestMain overrides simulateStep to use 100ms per step instead of the real duration.
+// This makes integration tests run in ~6 seconds instead of ~60 seconds.
+func TestMain(m *testing.M) {
+	simulateStep = func(duration time.Duration) error {
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}
+	os.Exit(m.Run())
+}
 
 // TestInstall_DryRun_FullFlow verifies the full installation orchestration
 // in dry-run mode. No real commands are executed — steps simulate with a

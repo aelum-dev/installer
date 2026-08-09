@@ -61,6 +61,10 @@ func (l *GUILogger) WriteErrorLog(stepLabel, errMsg string) {
 	l.next.WriteErrorLog(stepLabel, errMsg)
 }
 
+func (l *GUILogger) Close() {
+	l.next.Close()
+}
+
 func (l *GUILogger) SetProgressContext(label string, percent int) {
 	l.next.SetProgressContext(label, percent)
 }

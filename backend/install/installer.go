@@ -362,7 +362,8 @@ func (inst *Installer) LogError(format string, args ...interface{}) {
 
 // simulateStep simulates a step by sleeping for the given duration.
 // Used in dry-run mode to give the user a sense of progress.
-func simulateStep(duration time.Duration) error {
+// Can be overridden in tests for faster execution.
+var simulateStep = func(duration time.Duration) error {
 	time.Sleep(duration)
 	return nil
 }
