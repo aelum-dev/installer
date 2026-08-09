@@ -40,19 +40,9 @@
     --color-warning-bg: rgba(212, 168, 136, 0.1);
     --color-warning-text: #b8730a;          /* Darker peach for text */
 
-    /* —— Success —— */
-    --color-success: #8ab89a;               /* Soft sage green */
-    --color-success-light: #e4efe8;         /* Green tint */
-
     /* —— Info —— */
-    --color-info: #9aa8c0;                  /* Soft blue-gray */
-    --color-info-light: #e4e8f0;            /* Blue tint */
     --color-info-bg: rgba(154, 168, 192, 0.12);
-
-    /* —— Mauve —— */
-    --color-mauve: #b8a0d8;                 /* Soft mauve */
     --color-mauve-light: rgba(184, 160, 216, 0.12);
-    --color-mauve-text: #9a7ab8;            /* Darker mauve for text */
 
     /* —— Borders & Dividers —— */
     --color-border: #c8c0be;                /* Soft warm border */

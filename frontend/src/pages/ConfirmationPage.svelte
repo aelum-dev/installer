@@ -198,7 +198,7 @@
 
 	.serial-tag {
 		background-color: var(--color-mauve-light);
-		color: var(--color-mauve-text);
+		color: var(--color-text);
 	}
 
 	.fs-tag {
