@@ -18,20 +18,21 @@
     --color-primary-light: rgba(248, 234, 238, 0.08);
     --color-primary-lighter: rgba(248, 234, 238, 0.02);
     --color-primary-shadow: rgba(248, 234, 238, 0.35);
+    --color-progress: #b06a6a;              /* Progress bar fill */
 
     /* —— Focus —— */
     --color-focus: rgba(164, 148, 176, 0.2);
     --color-focus-strong: rgba(164, 148, 176, 0.3);
 
     /* —— Danger / Error —— */
-    --color-danger: #d48a8a;                /* Muted rose-red */
-    --color-danger-hover: #c07a7a;          /* Muted rose-red (hover) */
-    --color-danger-shadow: rgba(192, 122, 122, 0.3);
-    --color-danger-bg: rgba(192, 122, 122, 0.1);
-    --color-danger-text: #b06a6a;           /* Darker rose for text */
-    --color-danger-focus: rgba(192, 122, 122, 0.15);
-    --color-danger-error-bg: rgba(192, 122, 122, 0.08);
-    --color-danger-error-hover: rgba(192, 122, 122, 0.12);
+    --color-danger: #8b3a4a;                /* Dark pink */
+    --color-danger-hover: #a85060;          /* Dark pink (hover, lighter) */
+    --color-danger-shadow: rgba(139, 58, 74, 0.3);
+    --color-danger-bg: rgba(139, 58, 74, 0.1);
+    --color-danger-text: #f5d0d5;           /* Light pink for text on danger */
+    --color-danger-focus: rgba(139, 58, 74, 0.35);
+    --color-danger-error-bg: rgba(139, 58, 74, 0.08);
+    --color-danger-error-hover: rgba(139, 58, 74, 0.12);
 
     /* —— Warning / Caution —— */
     --color-warning: #d4a888;               /* Muted peach */

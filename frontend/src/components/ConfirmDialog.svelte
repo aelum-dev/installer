@@ -20,7 +20,13 @@
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
 		>
-			<div class="dialog-icon">⚠️</div>
+			<div class="dialog-icon">
+				<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M12 2L2 20H22L12 2Z" fill="var(--color-danger)" stroke="var(--color-danger)" stroke-width="1.5" stroke-linejoin="round"/>
+					<line x1="12" y1="8" x2="12" y2="13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+					<circle cx="12" cy="16.5" r="1" fill="white"/>
+				</svg>
+			</div>
 			<h2 id="dialog-title" class="dialog-title">Confirm Installation</h2>
 			<p class="dialog-message">
 				Are you sure you want to install AestheticOS on
@@ -69,9 +75,13 @@
 	}
 
 	.dialog-icon {
-		font-size: 2.5rem;
 		text-align: center;
 		margin-bottom: 16px;
+	}
+
+	.dialog-icon svg {
+		width: 64px;
+		height: 64px;
 	}
 
 	.dialog-title {
@@ -106,19 +116,21 @@
 		font-weight: 600;
 		font-size: var(--font-size-md);
 		padding: 10px 24px;
-		border-radius: var(--radius-md);
+		border-radius: var(--radius-xl);
 		border: none;
 		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
 	.btn-cancel {
-		background-color: var(--color-bg-light);
+		background-color: var(--color-bg-white);
 		color: var(--color-text);
+		border: 1.5px solid var(--color-border-light);
 	}
 
 	.btn-cancel:hover {
-		background-color: var(--color-bg-hover);
+		background-color: var(--color-bg-light);
+		border-color: var(--color-border);
 	}
 
 	.btn-confirm {
@@ -128,8 +140,6 @@
 
 	.btn-confirm:hover {
 		background-color: var(--color-danger-hover);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px var(--color-danger-shadow);
 	}
 
 	@keyframes fadeIn {

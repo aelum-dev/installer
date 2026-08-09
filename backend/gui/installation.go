@@ -84,13 +84,6 @@ func (a *App) StartInstallation() error {
 		return fmt.Errorf("aestheticos-installer-cli not found. Ensure it is installed next to the GUI binary or in PATH")
 	}
 
-	// Use provided hostname or fall back to default
-	hostname := a.hostname
-	if hostname == "" {
-		hostname = "aestheticos"
-	}
-	_ = hostname // used in CLI args below
-
 	// Build CLI arguments
 	diskID := a.diskSelection.DiskID
 	// In dry-run mode, use a dummy disk if none was selected (e.g. started directly on install page).
@@ -99,6 +92,7 @@ func (a *App) StartInstallation() error {
 	}
 	args := []string{
 		"--install", diskID,
+		"--username", a.userAccount.Username,
 		"--filesystem", a.fileSystem,
 	}
 

@@ -57,6 +57,7 @@ func main() {
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
+	usernameFlag := flag.String("username", "", "Username for the new user account")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
 
@@ -111,6 +112,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Resolve username: CLI flag takes priority; otherwise read from stdin.
+	// In dry-run mode, skip username — no real accounts are created.
+	var username string
+	var err error
+	if !*dryRun {
+		if *usernameFlag == "" {
+			username, err = readUsername()
+			if err != nil {
+				log.Error("failed to read username: %v", err)
+				os.Exit(1)
+			}
+		} else {
+			username = *usernameFlag
+		}
+		if username == "" {
+			log.Error("username cannot be empty")
+			os.Exit(1)
+		}
+	} else {
+		username = *usernameFlag
+	}
+
 	if err := shared.ValidateDiskPath(disk); err != nil {
 		log.Error("%v", err)
 		os.Exit(1)
@@ -131,7 +154,6 @@ func main() {
 	// Read password from stdin (never accept via flag — avoids /proc, ps, and shell history exposure).
 	// In dry-run mode, skip password — no real accounts are created.
 	var password string
-	var err error
 	if !*dryRun {
 		password, err = readPassword()
 		if err != nil {
@@ -150,7 +172,7 @@ func main() {
 
 	installer := install.NewInstaller(
 		disk,
-		shared.DefaultCLIUsername, // username
+		username,                  // username (from flag or stdin)
 		password,                  // password (read from stdin)
 		shared.DefaultHostname,    // hostname
 		shared.GetRegion(shared.DefaultLanguageCode), // region (default)
@@ -252,14 +274,15 @@ func resolveDiskAndStep(args ...string) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--dry-run]   Full installation\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                       Clean up partial install\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                        Format disk partitions\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                   Mount partitions\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                     Install base system\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                        Set up user accounts\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                   Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--username <user>] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                            Install base system\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                               Set up user accounts\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                          Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "Username: passed via --username flag or read interactively from the terminal.\n")
 	fmt.Fprintf(os.Stderr, "Password: entered interactively from the terminal (never passed as a flag).\n")
 	fmt.Fprintf(os.Stderr, "         Pipe a password via stdin for non-interactive use: echo 'pass' | %s --install /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
@@ -273,6 +296,29 @@ func printUsage() {
 // readPassword prompts the user for a password on the terminal and returns it.
 // If stdin is not a terminal (e.g. piped input), it reads the password from stdin directly.
 // The password is never stored in a flag and therefore never appears in /proc, ps, or shell history.
+func readUsername() (string, error) {
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		fmt.Fprintf(os.Stderr, "Enter username: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			return strings.TrimSpace(scanner.Text()), nil
+		}
+		if err := scanner.Err(); err != nil {
+			return "", err
+		}
+		return "", fmt.Errorf("empty input")
+	}
+	// Non-interactive: read from stdin (piped or redirected)
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return "", nil
+}
+
 func readPassword() (string, error) {
 	if term.IsTerminal(int(os.Stdin.Fd())) {
 		fmt.Fprintf(os.Stderr, "Enter password: ")
