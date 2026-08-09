@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"aestheticos-installer/backend/gui"
+	"aestheticos-installer/backend/install"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -54,7 +55,7 @@ func main() {
 		// Wait for cleanup to complete before exiting
 		gui.WaitForCleanup()
 		// Flush remaining log entries before exiting
-		gui.GetLogger().Close()
+		install.GetLogger().Close()
 		os.Exit(0)
 	}()
 

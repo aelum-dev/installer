@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -74,8 +73,13 @@ func (a *App) StartInstallation() error {
 
 	// Cancel any previous installation
 	activeCLI.mu.Lock()
-	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
-		activeCLI.cancel()
+	if activeCLI.cmd != nil {
+		if activeCLI.cmd.Process != nil {
+			_ = activeCLI.cmd.Process.Signal(os.Interrupt)
+		}
+		if activeCLI.cancel != nil {
+			activeCLI.cancel()
+		}
 	}
 	activeCLI.mu.Unlock()
 
@@ -101,12 +105,15 @@ func (a *App) StartInstallation() error {
 		args = append(args, "--dry-run")
 	}
 
+	// Context for the new command
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// In dry-run mode, run the CLI directly without sudo — no real privileged ops.
 	var cmd *exec.Cmd
 	if a.dryRun {
-		cmd = exec.Command(cliBinary, args...)
+		cmd = exec.CommandContext(ctx, cliBinary, args...)
 	} else {
-		cmd = exec.Command("sudo", append([]string{cliBinary}, args...)...)
+		cmd = exec.CommandContext(ctx, "sudo", append([]string{cliBinary}, args...)...)
 	}
 
 	// Set up stdin for password
@@ -133,7 +140,6 @@ func (a *App) StartInstallation() error {
 	}
 
 	// Store process reference for cancellation
-	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	activeCLI.mu.Lock()
 	activeCLI.cmd = cmd
@@ -152,20 +158,23 @@ func (a *App) StartInstallation() error {
 		}
 	}()
 
+	// Use a local WaitGroup for this installation's readers to avoid blocking new installations
+	var readers sync.WaitGroup
+
 	// Read stdout and forward to terminal — clean human-readable output.
+	readers.Add(1)
 	go func() {
+		defer readers.Done()
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			fmt.Fprintf(os.Stderr, "%s\n", scanner.Text())
 		}
-		if err := scanner.Err(); err != nil {
-			// Error reading from stdout pipe.
-		}
 	}()
 
 	// Read stderr for JSON progress events and error logging.
-	// The CLI emits JSON progress lines to stderr alongside error messages.
+	readers.Add(1)
 	go func() {
+		defer readers.Done()
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -176,18 +185,14 @@ func (a *App) StartInstallation() error {
 			}
 			// Forward non-JSON lines (errors, password prompt) to terminal.
 			fmt.Fprintf(os.Stderr, "%s\n", line)
-			if strings.Contains(line, "ERROR") || strings.Contains(line, "Error:") {
-				GetLogger().WriteErrorLog("CLI stderr", line)
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			// Error reading from stderr pipe.
 		}
 	}()
 
 	// Wait for completion in a goroutine
 	go func() {
 		defer func() {
+			// Wait for all readers to finish before signaling cleanup complete
+			readers.Wait()
 			close(done)
 			a.installationRunning.Store(false)
 			activeCLI.mu.Lock()
@@ -248,6 +253,8 @@ func CancelActiveCLI() {
 
 	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
 		_ = activeCLI.cmd.Process.Signal(os.Interrupt)
+	}
+	if activeCLI.cancel != nil {
 		activeCLI.cancel()
 	}
 }

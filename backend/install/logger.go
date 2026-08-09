@@ -107,15 +107,19 @@ func (l *ConsoleLogger) startWriter() {
 	}()
 }
 
+// Close flushes any buffered log entries and waits for the writer goroutine.
 func (l *ConsoleLogger) Close() {
 	l.mu.Lock()
 	ch := l.logChan
+	if ch == nil {
+		l.mu.Unlock()
+		return
+	}
+	l.logChan = nil
 	l.mu.Unlock()
 
-	if ch != nil {
-		close(ch)
-		<-l.done
-	}
+	close(ch)
+	<-l.done
 }
 
 // sendToLog queues msg for async log writing. Must be called with l.mu held.

@@ -10,7 +10,7 @@ import (
 // This is called by the GUI to ensure the user has sudo access
 // before allowing installation to proceed.
 func (a *App) CheckRoot() install.RootCheckResult {
-	GetLogger().Info("Checking sudo availability...")
+	install.GetLogger().Info("Checking sudo availability...")
 
 	// Check if sudo is available and can run a simple command
 	cmd := exec.Command("sudo", "-n", "true")
@@ -21,7 +21,7 @@ func (a *App) CheckRoot() install.RootCheckResult {
 		}
 	}
 
-	GetLogger().Info("Root check passed: sudo is available")
+	install.GetLogger().Info("Root check passed: sudo is available")
 	return install.RootCheckResult{
 		Authorized: true,
 		Message:    "",

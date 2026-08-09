@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+
+	"aestheticos-installer/backend/install"
 )
 
 // NewApp creates a new App application struct
@@ -63,7 +65,7 @@ func (a *App) OnBeforeClose(ctx context.Context) bool {
 		}
 
 		// Flush remaining log entries before the app exits
-		GetLogger().Close()
+		install.GetLogger().Close()
 	}
 	return false
 }
@@ -82,7 +84,7 @@ func (a *App) GetDiskID() string {
 // In dry-run mode, it only logs the action without rebooting.
 func (a *App) RebootAndClose() error {
 	if a.dryRun {
-		GetLogger().Info("Rebooting...")
+		install.GetLogger().Info("Rebooting...")
 		return nil
 	}
 
@@ -92,6 +94,6 @@ func (a *App) RebootAndClose() error {
 		return fmt.Errorf("failed to reboot: %w", err)
 	}
 
-	GetLogger().Info("Rebooting...")
+	install.GetLogger().Info("Rebooting...")
 	return nil
 }
