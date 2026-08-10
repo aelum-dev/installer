@@ -139,12 +139,12 @@ func TestResolveDiskAndStep_PriorityOrder(t *testing.T) {
 	configureSysFlag := "/dev/vda"
 
 	disk, stepName := resolveDiskAndStep(resolveFlags(
-		&installFlag, "",                                    // --install
-		&formatFlag, "format_disk",                         // --format-disk
-		&mountFlag, "mount_filesystem",                    // --mount-filesystem
-		&installSystemFlag, "install",                             // --install-system
-		&setupUsersFlag, "setup_users",                         // --setup-users
-		&configureSysFlag, "configure_system",            // --configure-system
+		&installFlag, "", // --install
+		&formatFlag, "format_disk", // --format-disk
+		&mountFlag, "mount_filesystem", // --mount-filesystem
+		&installSystemFlag, "install", // --install-system
+		&setupUsersFlag, "setup_users", // --setup-users
+		&configureSysFlag, "configure_system", // --configure-system
 	)...)
 
 	if disk != "/dev/vda" {
@@ -238,11 +238,6 @@ func TestRun_NoArgs(t *testing.T) {
 func TestRun_DryRunCleanup(t *testing.T) {
 	exitCode = func(code int) {
 		// Don't actually exit
-	}
-
-	// Mock isTerminal to return false for non-interactive
-	isTerminal = func(fd int) bool {
-		return false
 	}
 
 	args := []string{"test", "--cleanup", "--dry-run"}

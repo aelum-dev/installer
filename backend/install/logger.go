@@ -42,8 +42,8 @@ type Logger interface {
 }
 
 const (
-	CommandOutputPrefix  = "  > "
-	ErrorPrefix          = "ERROR: "
+	CommandOutputPrefix = "  > "
+	ErrorPrefix         = "ERROR: "
 )
 
 // ConsoleLogger writes every log entry to both stdout and the log file

@@ -120,41 +120,13 @@ func run(args []string) int {
 	// Cleanup — unmount /mnt without any other operations.
 	// Skip in dry-run mode — no real mounts exist.
 	if *cleanupFlag {
-		if *dryRun {
-			log.Info("Cleanup complete (dry-run).")
-			return 0
-		}
-		if err := cleanupMountsFunc(log); err != nil {
-			log.Error("%v", err)
-			return 1
-		}
-		log.Info("Cleanup complete.")
-		return 0
+		return handleCleanup(dryRun)
 	}
 
 	// Rollback is handled separately — it doesn't use resolveDiskAndStep
 	// Skip in dry-run mode — no real disk operations.
 	if *rollbackFlag != "" {
-		if *dryRun {
-			log.Info("Rollback complete (dry-run). %s is ready for a fresh install.", *rollbackFlag)
-			return 0
-		}
-		log.Info("Rolling back %s...", *rollbackFlag)
-		if err := validateDiskPathFunc(*rollbackFlag); err != nil {
-			log.Error("%v", err)
-			return 1
-		}
-		installer := install.NewInstaller(
-			*rollbackFlag, shared.DefaultCLIUsername, "", shared.DefaultHostname,
-			shared.GetRegion(shared.DefaultLanguageCode), *fileSystemFlag, false,
-		)
-		installer.Logger = log
-		if err := rollbackFunc(installer.Logger, *rollbackFlag); err != nil {
-			log.Error("%v", err)
-			return 1
-		}
-		log.Info("Rollback complete. %s is ready for a fresh install.", *rollbackFlag)
-		return 0
+		return handleRollback(*rollbackFlag, dryRun)
 	}
 
 	// Determine which flag was provided (first one wins)
@@ -174,33 +146,40 @@ func run(args []string) int {
 
 	// Resolve username: CLI flag takes priority; otherwise read from stdin.
 	// In dry-run mode, skip username — no real accounts are created.
-	var username string
-	var err error
-	if !*dryRun {
-		if *usernameFlag == "" {
-			username, err = readUsernameFunc()
-			if err != nil {
-				log.Error("failed to read username: %v", err)
-				return 1
-			}
-		} else {
-			username = *usernameFlag
-		}
-		if username == "" {
-			log.Error("username cannot be empty")
-			return 1
-		}
-	} else {
-		username = *usernameFlag
+	_, err := resolveUsername(*usernameFlag, *dryRun)
+	if err != nil {
+		return 1
 	}
 
+	// Run the installation
+	return runInstallation(disk, stepName, *fileSystemFlag, *languageFlag, *dryRun)
+}
+
+// resolveUsername resolves the username from flag or stdin.
+func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
+	if !dryRun {
+		if usernameFlag == "" {
+			username, err := readUsernameFunc()
+			if err != nil {
+				log.Error("failed to read username: %v", err)
+				return "", err
+			}
+			return username, nil
+		}
+		return usernameFlag, nil
+	}
+	return usernameFlag, nil
+}
+
+// runInstallation performs validation and runs the installation.
+func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) int {
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
 	}
 
 	// Skip size validation in dry-run mode — no real disk is used.
-	if !*dryRun {
+	if !dryRun {
 		if err := validateDiskSizeFunc(disk); err != nil {
 			log.Error("%v", err)
 			// If lsblk failed with a permission/device error, give a more helpful hint.
@@ -214,8 +193,8 @@ func run(args []string) int {
 	// Read password from stdin (never accept via flag — avoids /proc, ps, and shell history exposure).
 	// In dry-run mode, skip password — no real accounts are created.
 	var password string
-	if !*dryRun {
-		password, err = readPasswordFunc()
+	if !dryRun {
+		password, err := readPasswordFunc()
 		if err != nil {
 			log.Error("failed to read password: %v", err)
 			return 1
@@ -226,22 +205,22 @@ func run(args []string) int {
 		}
 	}
 
-	if *dryRun {
+	if dryRun {
 		log.Info("[DRY RUN MODE] Installation steps will be simulated.")
 	}
 
-	lang := *languageFlag
+	lang := language
 	if lang == "" {
 		lang = shared.DefaultLanguageCode
 	}
 	installer := install.NewInstaller(
 		disk,
-		username,           // username (from flag or stdin)
-		password,           // password (read from stdin)
+		"",                     // username (not needed for validation)
+		password,               // password (read from stdin)
 		shared.DefaultHostname, // hostname
 		shared.GetRegion(lang), // region (from --language or default)
-		*fileSystemFlag,
-		*dryRun,
+		fileSystem,
+		dryRun,
 	)
 
 	// Wire the installer to use the shared logger.
@@ -283,13 +262,21 @@ func run(args []string) int {
 	if stepName != "" {
 		// Run a single step
 		log.Info("Running step on %s...", disk)
-		_, _, err = installer.RunStep(stepName)
-	} else {
-		// Run full installation
-		log.Info("Installing AestheticOS to %s...", disk)
-		err = installer.Install()
+		_, _, err := installer.RunStep(stepName)
+		if err != nil {
+			if installer.Interrupted() {
+				return 130
+			}
+			log.Error("%v", err)
+			return 1
+		}
+		log.Info("Step completed successfully!")
+		return 0
 	}
 
+	// Run full installation
+	log.Info("Installing AestheticOS to %s...", disk)
+	err := installer.Install()
 	if err != nil {
 		// If interrupted by SIGINT, exit with 130 (standard POSIX signal exit code)
 		// instead of 1. The signal handler already logged the interruption and
@@ -301,11 +288,45 @@ func run(args []string) int {
 		return 1
 	}
 
-	if stepName != "" {
-		log.Info("Step completed successfully!")
-	} else {
-		log.Info("Installation completed successfully!")
+	log.Info("Installation completed successfully!")
+	return 0
+}
+
+// handleCleanup performs cleanup operations (unmount /mnt).
+func handleCleanup(dryRun *bool) int {
+	if *dryRun {
+		log.Info("Cleanup complete (dry-run).")
+		return 0
 	}
+	if err := cleanupMountsFunc(log); err != nil {
+		log.Error("%v", err)
+		return 1
+	}
+	log.Info("Cleanup complete.")
+	return 0
+}
+
+// handleRollback performs rollback operations (unmount and wipe partitions).
+func handleRollback(disk string, dryRun *bool) int {
+	if *dryRun {
+		log.Info("Rollback complete (dry-run). %s is ready for a fresh install.", disk)
+		return 0
+	}
+	log.Info("Rolling back %s...", disk)
+	if err := validateDiskPathFunc(disk); err != nil {
+		log.Error("%v", err)
+		return 1
+	}
+	installer := install.NewInstaller(
+		disk, shared.DefaultCLIUsername, "", shared.DefaultHostname,
+		shared.GetRegion(shared.DefaultLanguageCode), "ext4", false,
+	)
+	installer.Logger = log
+	if err := rollbackFunc(installer.Logger, disk); err != nil {
+		log.Error("%v", err)
+		return 1
+	}
+	log.Info("Rollback complete. %s is ready for a fresh install.", disk)
 	return 0
 }
 

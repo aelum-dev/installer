@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os/exec"
 
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+
 	"aestheticos-installer/backend/install"
 	"aestheticos-installer/backend/shared"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // NewApp creates a new App application struct

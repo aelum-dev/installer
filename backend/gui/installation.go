@@ -100,11 +100,13 @@ func (a *App) StartInstallation() error {
 
 	// Write password to stdin.
 	go func() {
-		defer stdin.Close()
 		if len(a.userAccount.Password) > 0 {
 			if _, err := stdin.Write([]byte(a.userAccount.Password + "\n")); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to write password to CLI: %v\n", err)
 			}
+		}
+		if err := stdin.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to close CLI stdin: %v\n", err)
 		}
 	}()
 
