@@ -169,6 +169,7 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 - **Run git commands one at a time.** Never chain multiple git operations in a single bash call — each can acquire locks and batching causes `index.lock` errors.
 - **Constants live in `backend/shared/config.go`** — never duplicate constants across packages.
 - **Frontend constants are auto-generated** from Go via `backend/scripts/gen-ts-constants.go` → `frontend/src/lib/constants.ts`. Regenerate after changing Go constants.
+- **Run `golangci-lint run ./... --fix` after every Go code change.** This lints the code and auto-fixes formatting issues. Fix any remaining lint errors before committing.
 
 ## Security
 - Passwords read from stdin (never CLI flags — avoids /proc, ps, shell history).
