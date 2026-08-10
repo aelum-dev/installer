@@ -14,9 +14,19 @@ func NewApp(dryRun bool) *App {
 	return &App{currentPage: PageWelcome, dryRun: dryRun}
 }
 
-// StartUp is called when the app starts. The context is saved.
+// StartUp is called when the app starts. The context is saved and root
+// privileges are checked. If sudo is not available, dry-run mode is enabled
+// automatically so the user can still explore the installer.
 func (a *App) StartUp(ctx context.Context) {
 	a.ctx = ctx
+
+	// Check root privileges early. If not available, enable dry-run mode
+	// so the user can still use the installer without real side effects.
+	result := a.CheckRoot()
+	if !result.Authorized {
+		install.GetLogger().Info("No sudo access — enabling dry-run mode")
+		a.dryRun = true
+	}
 }
 
 // SetStartPage sets the page to start on (bypasses welcome page).

@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { PAGE_NAMES } from '$lib/types';
+	import { getIsDryRun } from '$lib/state.svelte';
 
 	let { currentPage }: { currentPage: number } = $props();
 </script>
 
 <header class="header">
 	<span class="brand">AestheticOS</span>
+	{#if getIsDryRun()}
+		<span class="dry-run-badge">DRY RUN</span>
+	{/if}
 </header>
 
 <style>
@@ -24,5 +28,16 @@
 		text-transform: uppercase;
 		letter-spacing: 1px;
 		margin-left: var(--spacing-lg);
+	}
+
+	.dry-run-badge {
+		padding: 4px 12px;
+		background: var(--color-warning);
+		color: white;
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-700);
+		border-radius: var(--radius-sm);
+		letter-spacing: 0.05em;
+		margin-right: var(--spacing-lg);
 	}
 </style>

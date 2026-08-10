@@ -52,11 +52,6 @@ func (a *App) StartInstallation() error {
 		return fmt.Errorf("an installation is already in progress")
 	}
 
-	if !a.dryRun && !a.CheckRoot().Authorized {
-		wailsRuntime.LogError(a.ctx, "The installer needs sudo access. Please add your user to the sudoers file.")
-		return fmt.Errorf("sudo access required")
-	}
-
 	cliBinary := findCLIBinary()
 
 	diskID := a.diskSelection.DiskID

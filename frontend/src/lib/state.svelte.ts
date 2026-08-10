@@ -1,5 +1,10 @@
 import type { DiskInfo, FileSystem } from '$lib/types';
 
+// Dry-run state (set by backend on startup if no sudo access)
+let _isDryRun = $state(false);
+export function setDryRun(value: boolean) { _isDryRun = value; }
+export function getIsDryRun(): boolean { return _isDryRun; }
+
 // User account state
 export let userAccountData = $state({
 	username: '',
