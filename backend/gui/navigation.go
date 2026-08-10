@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"sync/atomic"
 
 	"aestheticos-installer/backend/shared"
@@ -36,6 +37,13 @@ type App struct {
 	region              shared.Region
 	fileSystem          string // root filesystem: "ext4" or "btrfs"
 	installationRunning atomic.Bool
+
+	// installCmd is the currently running CLI subprocess, or nil.
+	installCmd *exec.Cmd
+	// installCancel cancels the context for the current CLI subprocess.
+	installCancel func()
+	// installDone is closed when the CLI process has exited and cleanup is complete.
+	installDone chan struct{}
 }
 
 // GetCurrentPage returns the current page index (0-based).

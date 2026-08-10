@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"aestheticos-installer/backend/install"
@@ -10,13 +11,10 @@ import (
 
 // NewApp creates a new App application struct
 func NewApp(dryRun bool) *App {
-	return &App{
-		currentPage: PageWelcome,
-		dryRun:      dryRun,
-	}
+	return &App{currentPage: PageWelcome, dryRun: dryRun}
 }
 
-// StartUp is called when the app starts. The context is saved
+// StartUp is called when the app starts. The context is saved.
 func (a *App) StartUp(ctx context.Context) {
 	a.ctx = ctx
 }
@@ -49,24 +47,23 @@ func (a *App) GetDryRun() bool {
 }
 
 // OnBeforeClose is called by Wails when the user attempts to close the window.
-// Returns false to allow the window to close. If an installation is in progress,
-// sends SIGINT to the CLI process so it can clean up mounts before exiting.
+// If an installation is in progress, sends SIGINT to the CLI and waits for
+// cleanup before allowing the window to close. Then unmounts any leftover
+// mounts under /mnt via sudo.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
 	if a.installationRunning.Load() {
-		// Send SIGINT to the running CLI process
-		CancelActiveCLI()
-
-		// Wait for cleanup to complete before allowing the window to close
-		activeCLI.mu.Lock()
-		done := activeCLI.done
-		activeCLI.mu.Unlock()
-		if done != nil {
-			<-done
-		}
-
-		// Flush remaining log entries before the app exits
+		a.CancelInstallation()
+		a.WaitForCleanup()
 		install.GetLogger().Close()
 	}
+
+	// GUI runs as a normal user, so spawn the CLI via sudo for root privileges.
+	cliBinary := findCLIBinary()
+	cmd := exec.Command("sudo", cliBinary, "--cleanup")
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	_ = cmd.Run()
+
 	return false
 }
 
@@ -80,15 +77,19 @@ func (a *App) GetDiskID() string {
 	return a.diskSelection.DiskID
 }
 
-// RebootAndClose initiates a system reboot and closes the application window.
-// In dry-run mode, it only logs the action without rebooting.
+// RebootAndClose reboots the system. If an installation is in progress, waits
+// for cleanup to finish first. In dry-run mode, only logs the action.
 func (a *App) RebootAndClose() error {
 	if a.dryRun {
 		install.GetLogger().Info("Rebooting...")
 		return nil
 	}
 
-	// Reboot via sudo
+	if a.installationRunning.Load() {
+		a.CancelInstallation()
+		a.WaitForCleanup()
+	}
+
 	cmd := exec.Command("sudo", "reboot")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to reboot: %w", err)

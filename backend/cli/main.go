@@ -56,6 +56,7 @@ func main() {
 
 	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
 	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
+	cleanupFlag := flag.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
 	usernameFlag := flag.String("username", "", "Username for the new user account")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
@@ -76,6 +77,16 @@ func main() {
 
 	// Layout is now determined by filesystem type (ext4 or btrfs)
 	// No separate layout flag needed
+
+	// Cleanup — unmount /mnt without any other operations.
+	if *cleanupFlag {
+		if err := install.CleanupMounts(log, ""); err != nil {
+			log.Error("%v", err)
+			os.Exit(1)
+		}
+		log.Info("Cleanup complete.")
+		return
+	}
 
 	// Rollback is handled separately — it doesn't use resolveDiskAndStep
 	if *rollbackFlag != "" {
@@ -205,11 +216,10 @@ func main() {
 		}
 	}()
 
-	// Catch Ctrl+C (SIGINT). Cancel any running child process (e.g. pacstrap)
-	// so the scanner unblocks, then let Install()'s defer handle cleanup.
-	// We set the interrupted flag so Install()'s defer knows to skip its own
-	// cleanup attempt, avoiding a race where both the signal handler and the
-	// defer try to unmount simultaneously.
+	
+
+	// If running in a terminal and not already interrupted, handle SIGINT so
+	// Ctrl+C during a GUI-launched CLI installation also cancels and cleans up.
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT)
 	go func() {
@@ -281,6 +291,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                            Install base system\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                               Set up user accounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                          Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --cleanup                                                    Unmount /mnt and clean up stale mounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Username: passed via --username flag or read interactively from the terminal.\n")
 	fmt.Fprintf(os.Stderr, "Password: entered interactively from the terminal (never passed as a flag).\n")

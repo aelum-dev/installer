@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -26,246 +25,139 @@ type InstallationProgress struct {
 	Phase   string `json:"phase"` // "running" | "done" | "error"
 }
 
-// cliProcess tracks the running CLI subprocess for cancellation.
-type cliProcess struct {
-	mu     sync.Mutex
-	cmd    *exec.Cmd
-	cancel func()
-	done   chan struct{} // closed when completion goroutine finishes (cleanup done)
-}
-
-var activeCLI = &cliProcess{}
-
 // findCLIBinary locates the aestheticos-installer-cli binary.
-// Checks next to the GUI binary first, then PATH.
 func findCLIBinary() string {
-	// Check next to the GUI binary
-	exe, err := os.Executable()
-	if err == nil {
-		cliPath := filepath.Join(filepath.Dir(exe), "aestheticos-installer-cli")
-		if _, err := os.Stat(cliPath); err == nil {
-			return cliPath
+	if exe, err := os.Executable(); err == nil {
+		if p := filepath.Join(filepath.Dir(exe), "aestheticos-installer-cli"); fileExists(p) {
+			return p
 		}
 	}
-
-	// Check common install locations
 	for _, dir := range []string{"/usr/local/bin", "/usr/bin", "."} {
-		cliPath := filepath.Join(dir, "aestheticos-installer-cli")
-		if _, err := os.Stat(cliPath); err == nil {
-			return cliPath
+		if p := filepath.Join(dir, "aestheticos-installer-cli"); fileExists(p) {
+			return p
 		}
 	}
-
-	return "aestheticos-installer-cli" // fallback — should be in PATH
+	return "aestheticos-installer-cli"
 }
 
-// StartInstallation begins the installation process by spawning the CLI binary via sudo.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// StartInstallation spawns the CLI binary via sudo. Returns an error if one is
+// already running or if the CLI binary cannot be found.
 func (a *App) StartInstallation() error {
-	// Safety check: verify root privileges one more time before starting
-	// Skip in dry-run mode — no real privileged commands are executed.
-	if !a.dryRun {
-		rootCheck := a.CheckRoot()
-		if !rootCheck.Authorized {
-			wailsRuntime.LogError(a.ctx, rootCheck.Message)
-			return fmt.Errorf("%s", rootCheck.Message)
-		}
+	if a.installationRunning.Load() {
+		return fmt.Errorf("an installation is already in progress")
 	}
 
-	// Cancel any previous installation
-	activeCLI.mu.Lock()
-	if activeCLI.cmd != nil {
-		if activeCLI.cmd.Process != nil {
-			_ = activeCLI.cmd.Process.Signal(os.Interrupt)
-		}
-		if activeCLI.cancel != nil {
-			activeCLI.cancel()
-		}
+	if !a.dryRun && !a.CheckRoot().Authorized {
+		wailsRuntime.LogError(a.ctx, "The installer needs sudo access. Please add your user to the sudoers file.")
+		return fmt.Errorf("sudo access required")
 	}
-	activeCLI.mu.Unlock()
 
-	// Find the CLI binary
 	cliBinary := findCLIBinary()
-	if cliBinary == "" {
-		return fmt.Errorf("aestheticos-installer-cli not found. Ensure it is installed next to the GUI binary or in PATH")
-	}
 
-	// Build CLI arguments
 	diskID := a.diskSelection.DiskID
-	// In dry-run mode, use a dummy disk if none was selected (e.g. started directly on install page).
 	if diskID == "" && a.dryRun {
 		diskID = "/dev/loop0"
 	}
-	args := []string{
-		"--install", diskID,
-		"--username", a.userAccount.Username,
-		"--filesystem", a.fileSystem,
-	}
 
+	args := []string{"--install", diskID, "--username", a.userAccount.Username, "--filesystem", a.fileSystem}
 	if a.dryRun {
 		args = append(args, "--dry-run")
 	}
 
-	// Context for the new command
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// In dry-run mode, run the CLI directly without sudo — no real privileged ops.
-	var cmd *exec.Cmd
-	if a.dryRun {
-		cmd = exec.CommandContext(ctx, cliBinary, args...)
-	} else {
-		cmd = exec.CommandContext(ctx, "sudo", append([]string{cliBinary}, args...)...)
+	cmdArgs := append([]string{cliBinary}, args...)
+	if !a.dryRun {
+		cmdArgs = append([]string{"sudo"}, cmdArgs...)
 	}
+	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
 
-	// Set up stdin for password
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		cancel()
 		return fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
-
-	// Set up stdout reader for progress
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		cancel()
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
-
-	// Set up stderr for error logging
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
+		cancel()
 		return fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
-	// Start the command
 	if err := cmd.Start(); err != nil {
+		cancel()
 		return fmt.Errorf("failed to start CLI: %w", err)
 	}
 
-	// Store process reference for cancellation
-	done := make(chan struct{})
-	activeCLI.mu.Lock()
-	activeCLI.cmd = cmd
-	activeCLI.cancel = cancel
-	activeCLI.done = done
-	activeCLI.mu.Unlock()
-
-	// Mark installation as in-progress
+	a.installCmd = cmd
+	a.installCancel = cancel
+	a.installDone = make(chan struct{})
 	a.installationRunning.Store(true)
 
-	// Write password to stdin in a goroutine
+	// Write password to stdin.
 	go func() {
-		defer func() { _ = stdin.Close() }()
+		defer stdin.Close()
 		if len(a.userAccount.Password) > 0 {
-			_, _ = stdin.Write([]byte(a.userAccount.Password + "\n"))
+			stdin.Write([]byte(a.userAccount.Password + "\n"))
 		}
 	}()
 
-	// Use a local WaitGroup for this installation's readers to avoid blocking new installations
-	var readers sync.WaitGroup
-
-	// Read stdout and forward to terminal — clean human-readable output.
-	readers.Add(1)
+	// Forward stdout to terminal.
 	go func() {
-		defer readers.Done()
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			fmt.Fprintf(os.Stderr, "%s\n", scanner.Text())
 		}
 	}()
 
-	// Read stderr for JSON progress events and error logging.
-	readers.Add(1)
+	// Read stderr: emit JSON progress events, forward everything else to terminal.
 	go func() {
-		defer readers.Done()
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
-			var progress InstallationProgress
-			if err := json.Unmarshal([]byte(line), &progress); err == nil {
-				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, progress)
+			var p InstallationProgress
+			if json.Unmarshal([]byte(line), &p) == nil {
+				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, p)
 				continue
 			}
-			// Forward non-JSON lines (errors, password prompt) to terminal.
 			fmt.Fprintf(os.Stderr, "%s\n", line)
 		}
 	}()
 
-	// Wait for completion in a goroutine
+	// Wait for the CLI to finish, then signal completion.
 	go func() {
-		defer func() {
-			// Wait for all readers to finish before signaling cleanup complete
-			readers.Wait()
-			close(done)
-			a.installationRunning.Store(false)
-			activeCLI.mu.Lock()
-			activeCLI.cmd = nil
-			activeCLI.cancel = nil
-			activeCLI.mu.Unlock()
-		}()
-
-		err := cmd.Wait()
-
-		if err != nil {
-			// Check if cancelled
-			if ctx.Err() == context.Canceled {
-				return
-			}
-
-			// Report error
-			progress := InstallationProgress{
-				Label:   "Installation failed",
-				Percent: 0,
-				Phase:   "error",
-			}
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, progress, "Installation failed. For detailed information check installation.log", err.Error())
-
-			cancel()
-
-			return
-		}
-
-		cancel()
-
-		// Report success
-		label := "Installation completed!"
-		if a.dryRun {
-			label = "[DRY RUN] Installation completed!"
-		}
-		wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, InstallationProgress{
-			Label:   label,
-			Percent: 100,
-			Phase:   "done",
-		})
+		cmd.Wait()
+		close(a.installDone)
+		a.installCmd = nil
+		a.installCancel = nil
+		a.installationRunning.Store(false)
 	}()
 
 	return nil
 }
 
 // CancelInstallation sends SIGINT to the running CLI process.
-func (a *App) CancelInstallation() error {
-	CancelActiveCLI()
-	return nil
-}
-
-// CancelActiveCLI sends SIGINT to the currently running CLI process.
-// Exported for use by main.go's signal handler.
-func CancelActiveCLI() {
-	activeCLI.mu.Lock()
-	defer activeCLI.mu.Unlock()
-
-	if activeCLI.cmd != nil && activeCLI.cmd.Process != nil {
-		_ = activeCLI.cmd.Process.Signal(os.Interrupt)
+func (a *App) CancelInstallation() {
+	if a.installCmd != nil && a.installCmd.Process != nil {
+		_ = a.installCmd.Process.Signal(os.Interrupt)
 	}
-	if activeCLI.cancel != nil {
-		activeCLI.cancel()
+	if a.installCancel != nil {
+		a.installCancel()
 	}
 }
 
 // WaitForCleanup blocks until the current installation's cleanup has completed.
-// If no installation is running, returns immediately.
-func WaitForCleanup() {
-	activeCLI.mu.Lock()
-	done := activeCLI.done
-	activeCLI.mu.Unlock()
-	if done != nil {
-		<-done
+func (a *App) WaitForCleanup() {
+	if a.installDone != nil {
+		<-a.installDone
 	}
 }

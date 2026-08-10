@@ -44,8 +44,11 @@ type Installer struct {
 	// decide the exit code (130 for SIGINT vs 1 for other errors).
 	interrupted atomic.Bool
 
-	// cleanupOnce ensures CleanupMounts runs at most once, regardless of which
-	// path triggers it (defer, OnBeforeClose, SIGTERM handler, panic recovery).
+	// cancelOnce ensures Cancel() only closes the cancel channel once.
+	cancelOnce sync.Once
+
+	// cleanupOnce ensures Cleanup runs at most once, regardless of which
+	// path triggers it (defer, OnBeforeClose, a signal handler, or panic recovery).
 	cleanupOnce sync.Once
 
 	// cancel is closed when SIGINT is received during a long-running command
@@ -311,9 +314,11 @@ func (inst *Installer) context() *InstallContext {
 // goroutines (e.g. pacstrap output reader) that are waiting on input.
 // Called by the CLI signal handler on SIGINT.
 func (inst *Installer) Cancel() {
-	if inst.cancel != nil {
-		close(inst.cancel)
-	}
+	inst.cancelOnce.Do(func() {
+		if inst.cancel != nil {
+			close(inst.cancel)
+		}
+	})
 }
 
 // emitProgress reports progress to the UI.

@@ -97,3 +97,7 @@ export function ValidateDiskSelection(arg1) {
 export function ValidateUserAccount(arg1) {
   return window['go']['gui']['App']['ValidateUserAccount'](arg1);
 }
+
+export function WaitForCleanup() {
+  return window['go']['gui']['App']['WaitForCleanup']();
+}

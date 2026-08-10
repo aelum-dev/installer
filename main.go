@@ -50,11 +50,8 @@ func main() {
 	go func() {
 		<-sigChan
 		fmt.Println("\nInterrupted — cancelling installation...")
-		// Send SIGINT to the running CLI process so it can clean up
-		gui.CancelActiveCLI()
-		// Wait for cleanup to complete before exiting
-		gui.WaitForCleanup()
-		// Flush remaining log entries before exiting
+		app.CancelInstallation()
+		app.WaitForCleanup()
 		install.GetLogger().Close()
 		os.Exit(0)
 	}()

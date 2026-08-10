@@ -51,3 +51,5 @@ export function StartInstallation():Promise<void>;
 export function ValidateDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;
 
 export function ValidateUserAccount(arg1:shared.UserAccountData):Promise<void>;
+
+export function WaitForCleanup():Promise<void>;

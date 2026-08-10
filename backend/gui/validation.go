@@ -5,19 +5,15 @@ import (
 	"aestheticos-installer/backend/validation"
 )
 
-// --- GUI methods (validate only, no state mutation) ---
-
-// ValidateUserAccount validates user account data.
+// ValidateUserAccount validates user account data (no state mutation).
 func (a *App) ValidateUserAccount(data shared.UserAccountData) error {
 	return validation.ValidateUserAccount(data)
 }
 
-// ValidateDiskSelection validates disk selection data.
+// ValidateDiskSelection validates disk selection data (no state mutation).
 func (a *App) ValidateDiskSelection(data shared.DiskSelectionData) error {
 	return validation.ValidateDiskSelection(data)
 }
-
-// --- GUI methods (state mutation) ---
 
 // SaveUserAccount saves user account data to app state.
 func (a *App) SaveUserAccount(data shared.UserAccountData) {
