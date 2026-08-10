@@ -14,40 +14,22 @@ import (
 // ============================================================================
 
 // CleanupMounts forcefully unmounts everything under /mnt.
-func CleanupMounts(logger Logger, diskID string) error {
+func CleanupMounts(logger Logger) error {
 	pids, err := findHoldingPIDs(shared.MountRoot)
 	if err != nil {
-		if logger != nil {
-			logger.Error("CleanupMounts: failed to find holding processes: %v", err)
-		}
 		return fmt.Errorf("find holding PIDs: %w", err)
 	}
 
 	if len(pids) > 0 {
-		if logger != nil {
-			logger.Info("CleanupMounts: killing %d process(es) holding %s: %s",
-				len(pids), shared.MountRoot, strings.Join(pids, ", "))
-		}
 		if err := killAndVerifyPIDs(pids); err != nil {
-			if logger != nil {
-				logger.Error("CleanupMounts: failed to kill processes: %v", err)
-			}
 			return fmt.Errorf("kill PIDs %s: %w", strings.Join(pids, ", "), err)
 		}
-	} else if logger != nil {
-		logger.Info("CleanupMounts: no processes holding %s", shared.MountRoot)
 	}
 
 	if err := unmountRecursive(shared.MountRoot); err != nil {
-		if logger != nil {
-			logger.Error("CleanupMounts: umount -R failed: %v", err)
-		}
 		return fmt.Errorf("umount -R %s: %w", shared.MountRoot, err)
 	}
 
-	if logger != nil {
-		logger.Info("CleanupMounts: unmounted %s", shared.MountRoot)
-	}
 	return nil
 }
 
@@ -115,7 +97,7 @@ func Rollback(logger Logger, diskID string) error {
 		logger.Info("Rolling back: cleaning up %s", diskID)
 	}
 
-	if err := CleanupMounts(logger, diskID); err != nil {
+	if err := CleanupMounts(logger); err != nil {
 		if logger != nil {
 			logger.Error("Rollback: cleanup failed: %v", err)
 		}

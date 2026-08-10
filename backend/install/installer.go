@@ -66,7 +66,8 @@ func isInterruptError(err error) bool {
 	}
 	errMsg := err.Error()
 	// exec.Command returns "signal: interrupt" when the child is killed by SIGINT.
-	if strings.Contains(errMsg, "signal: interrupt") {
+	// Also match "interrupted" — returned by installPackages when ctx.Cancel fires.
+	if strings.Contains(errMsg, "signal: interrupt") || strings.Contains(errMsg, "interrupted") {
 		return true
 	}
 	// Also check for exit code 130 (standard POSIX SIGINT exit code).
@@ -384,8 +385,8 @@ func (inst *Installer) Rollback() error {
 // or panic recovery — sync.Once ensures only the first call does work.
 func (inst *Installer) RunCleanup() {
 	inst.cleanupOnce.Do(func() {
-		inst.logInfo("Cleanup: running")
-		if err := CleanupMounts(inst.Logger, inst.diskID); err != nil {
+		inst.logInfo("Cleanup: started")
+		if err := CleanupMounts(inst.Logger); err != nil {
 			inst.logError("Cleanup: %v", err)
 		} else {
 			inst.logInfo("Cleanup: done")

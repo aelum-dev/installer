@@ -25,7 +25,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("FormatDisk failed, cleaning up: %v", retErr)
 			}
-			_ = CleanupMounts(ctx.Logger, diskID) //nolint:errcheck // cleanup best-effort on error path
+			_ = CleanupMounts(ctx.Logger) //nolint:errcheck // cleanup best-effort on error path
 		}
 	}()
 
@@ -49,7 +49,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 
 	// Unmount anything previously mounted (from a failed prior attempt)
 	// CleanupMounts handles: sync, fuser -k, umount -R, partprobe, dmsetup
-	if err := CleanupMounts(ctx.Logger, diskID); err != nil {
+	if err := CleanupMounts(ctx.Logger); err != nil {
 		if ctx.Logger != nil {
 			ctx.Logger.Error("Pre-format cleanup failed: %v", err)
 		}
@@ -143,10 +143,12 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		efi, root = findPartitionsByIndex(diskPartitions)
 	}
 	if efi == nil {
-		return fmt.Errorf("EFI partition not found (got %d partitions)", len(diskPartitions))
+		types := partitionTypes(diskPartitions)
+		return fmt.Errorf("EFI (vfat) partition not found — found partitions: %s", types)
 	}
 	if root == nil {
-		return fmt.Errorf("root partition not found (got %d partitions)", len(diskPartitions))
+		types := partitionTypes(diskPartitions)
+		return fmt.Errorf("root (ext4/btrfs) partition not found — found partitions: %s", types)
 	}
 
 	ctx.Partitions = &shared.PartitionInfo{
@@ -299,4 +301,28 @@ func readPartitionUUID(partition string) (string, error) {
 		return "", fmt.Errorf("blkid %s: %w", partition, err)
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+// partitionTypes returns a human-readable list of partition types found on the disk.
+// Used in error messages to help the user understand why a required partition was not found.
+func partitionTypes(parts []shared.PartitionEntry) string {
+	if len(parts) == 0 {
+		return "none"
+	}
+	seen := map[string]bool{}
+	var types []string
+	for _, p := range parts {
+		t := p.Fstype
+		if t == "" {
+			t = p.Type
+		}
+		if t == "" {
+			t = "unknown"
+		}
+		if !seen[t] {
+			seen[t] = true
+			types = append(types, t)
+		}
+	}
+	return strings.Join(types, ", ")
 }

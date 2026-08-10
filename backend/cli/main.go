@@ -85,7 +85,7 @@ func main() {
 			log.Info("Cleanup complete (dry-run).")
 			return
 		}
-		if err := install.CleanupMounts(log, ""); err != nil {
+		if err := install.CleanupMounts(log); err != nil {
 			log.Error("%v", err)
 			os.Exit(1)
 		}

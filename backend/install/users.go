@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -113,16 +114,11 @@ func SetupUsers(ctx *InstallContext) error {
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
 	}
-	if err := writeFile("/etc/sudoers.d/wheel", "%wheel ALL=(ALL:ALL) ALL\n"); err != nil {
-		return err
-	}
-	cmd = Run("chmod", "0440", shared.MountRoot+"/etc/sudoers.d/wheel")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to chmod sudoers: %w: %s", err, string(output))
-	}
-	if ctx.Logger != nil && len(output) > 0 {
-		ctx.Logger.Command(string(output))
+	// Write with correct permissions directly (0440) to avoid a window where
+	// the file is world-readable if the process crashes between write and chmod.
+	sudoersPath := shared.MountRoot + "/etc/sudoers.d/wheel"
+	if err := os.WriteFile(sudoersPath, []byte("%wheel ALL=(ALL:ALL) ALL\n"), 0o440); err != nil {
+		return fmt.Errorf("failed to write sudoers: %w", err)
 	}
 
 	return nil
