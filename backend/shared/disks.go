@@ -101,9 +101,19 @@ type lsblkEntry struct {
 	Children   []lsblkEntry `json:"children"`
 }
 
+// fakeDisksEnabled can be set to true to force fake disk data (e.g. when
+// running in dry-run mode without sudo access). Also checked: FAKE_DISKS=1
+// env var for manual testing.
+var fakeDisksEnabled bool
+
+// SetFakeDisks enables or disables fake disk data.
+func SetFakeDisks(enabled bool) {
+	fakeDisksEnabled = enabled
+}
+
 // GetDisks returns a list of available block devices (disks) for installation.
 func GetDisks() ([]DiskInfo, error) {
-	if os.Getenv("FAKE_DISKS") == "1" {
+	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
 		return fakeDisks(), nil
 	}
 	cmd := exec.Command("lsblk", "-b", "-d", "-o", "NAME,TYPE,SIZE,MODEL,VENDOR,ROTA,RO,FSTYPE,MOUNTPOINT,SERIAL,TRAN", "-J")
@@ -189,7 +199,7 @@ type PartitionDetail struct {
 
 // GetDiskPartitions returns detailed partition information for a disk using lsblk.
 func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
-	if os.Getenv("FAKE_DISKS") == "1" {
+	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
 		return fakePartitions(diskPath), nil
 	}
 	if !strings.HasPrefix(diskPath, "/dev/") {

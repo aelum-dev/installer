@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Root check moved to app startup** — `CheckRoot()` now runs in `StartUp()` instead of `StartInstallation()`. If sudo is not available, dry-run mode is enabled automatically so the user can still explore the installer. A "DRY RUN" badge appears in the header on all pages.
+- **Fake disks loaded in dry-run mode** — When dry-run is active, `GetDisks()` and `GetDiskPartitions()` return synthetic disk data instead of querying `lsblk`. This lets the UI be explored without reading real block devices.
 
 ### Fixed
 - **Dry-run mode now properly skips all side effects** — `--cleanup` and `--rollback` CLI flags now skip operations in dry-run mode. `OnBeforeClose` in the GUI skips the sudo cleanup call in dry-run mode. Previously these would still execute disk operations even with `--dry-run`.

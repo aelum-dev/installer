@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"aestheticos-installer/backend/install"
+	"aestheticos-installer/backend/shared"
 )
 
 // NewApp creates a new App application struct
@@ -16,7 +17,9 @@ func NewApp(dryRun bool) *App {
 
 // StartUp is called when the app starts. The context is saved and root
 // privileges are checked. If sudo is not available, dry-run mode is enabled
-// automatically so the user can still explore the installer.
+// automatically so the user can still explore the installer. Fake disks are
+// also loaded in dry-run mode since lsblk requires no special privileges but
+// the user might not have permission to read /dev blocks.
 func (a *App) StartUp(ctx context.Context) {
 	a.ctx = ctx
 
@@ -26,6 +29,12 @@ func (a *App) StartUp(ctx context.Context) {
 	if !result.Authorized {
 		install.GetLogger().Info("No sudo access — enabling dry-run mode")
 		a.dryRun = true
+	}
+
+	// Enable fake disks in dry-run mode so the user can explore the UI
+	// without needing to read real block devices.
+	if a.dryRun {
+		shared.SetFakeDisks(true)
 	}
 }
 
