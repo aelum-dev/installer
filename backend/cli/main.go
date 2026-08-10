@@ -38,34 +38,72 @@ var log = install.GetLogger()
 // Version is set at build time via ldflags.
 var Version = "dev"
 
-func main() {
+// exitCode is set by run() to control the exit code. Made variable for testing.
+var exitCode = func(code int) {
+	os.Exit(code)
+}
+
+// readUsernameFunc is a variable for testing — allows mocking username reading.
+var readUsernameFunc = readUsername
+
+// readPasswordFunc is a variable for testing — allows mocking password reading.
+var readPasswordFunc = readPassword
+
+// validateDiskPathFunc is a variable for testing — allows mocking disk validation.
+var validateDiskPathFunc = shared.ValidateDiskPath
+
+// validateDiskSizeFunc is a variable for testing — allows mocking disk size validation.
+var validateDiskSizeFunc = shared.ValidateDiskSize
+
+// cleanupMountsFunc is a variable for testing — allows mocking cleanup.
+var cleanupMountsFunc = install.CleanupMounts
+
+// rollbackFunc is a variable for testing — allows mocking rollback.
+var rollbackFunc = func(logger install.Logger, diskID string) error {
+	return install.Rollback(logger, diskID)
+}
+
+// run performs the CLI installation logic. Returns an exit code (0 for success,
+// 1 for error, 130 for SIGINT). This is separated from main() to enable testing.
+func run(args []string) int {
+	// Save and restore os.Args for proper flag parsing in tests.
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	os.Args = args
+
+	// Create a new flag set for each run to avoid flag redefinition in tests.
+	fs := flag.NewFlagSet("aestheticos-installer-cli", flag.ContinueOnError)
+
 	// Set custom usage function for --help
-	flag.Usage = func() {
+	fs.Usage = func() {
 		printUsage()
 	}
 
 	// Full installation
-	installFlag := flag.String("install", "", "Disk to install to (runs all steps)")
+	installFlag := fs.String("install", "", "Disk to install to (runs all steps)")
 
 	// Individual step flags
-	formatDiskFlag := flag.String("format-disk", "", "Disk to format")
-	mountFsFlag := flag.String("mount-filesystem", "", "Disk whose partitions to mount")
-	installSystemFlag := flag.String("install-system", "", "Disk to install base system to")
-	setupUsersFlag := flag.String("setup-users", "", "Disk to set up users on")
-	configureSysFlag := flag.String("configure-system", "", "Disk to configure system on")
+	formatDiskFlag := fs.String("format-disk", "", "Disk to format")
+	mountFsFlag := fs.String("mount-filesystem", "", "Disk whose partitions to mount")
+	installSystemFlag := fs.String("install-system", "", "Disk to install base system to")
+	setupUsersFlag := fs.String("setup-users", "", "Disk to set up users on")
+	configureSysFlag := fs.String("configure-system", "", "Disk to configure system on")
 
-	dryRun := flag.Bool("dry-run", false, "Simulate installation without making changes")
-	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
-	cleanupFlag := flag.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
-	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
-	languageFlag := flag.String("language", "", "Language code (e.g. en_US, de_DE)")
-	usernameFlag := flag.String("username", "", "Username for the new user account")
-	versionFlag := flag.Bool("version", false, "Print version and exit")
-	flag.Parse()
+	dryRun := fs.Bool("dry-run", false, "Simulate installation without making changes")
+	rollbackFlag := fs.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
+	cleanupFlag := fs.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
+	fileSystemFlag := fs.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
+	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
+	usernameFlag := fs.String("username", "", "Username for the new user account")
+	versionFlag := fs.Bool("version", false, "Print version and exit")
+	if err := fs.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+		return 1
+	}
 
 	if *versionFlag {
 		fmt.Println(Version)
-		os.Exit(0)
+		return 0
 	}
 
 	// Check for root privileges early — all disk operations require it.
@@ -73,7 +111,7 @@ func main() {
 	if !*dryRun && os.Getuid() != 0 {
 		fmt.Fprintf(os.Stderr, "Error: this command requires root privileges.\n")
 		fmt.Fprintf(os.Stderr, "Run with sudo: sudo %s %s\n", os.Args[0], strings.Join(os.Args[1:], " "))
-		os.Exit(1)
+		return 1
 	}
 
 	// Layout is now determined by filesystem type (ext4 or btrfs)
@@ -84,14 +122,14 @@ func main() {
 	if *cleanupFlag {
 		if *dryRun {
 			log.Info("Cleanup complete (dry-run).")
-			return
+			return 0
 		}
-		if err := install.CleanupMounts(log); err != nil {
+		if err := cleanupMountsFunc(log); err != nil {
 			log.Error("%v", err)
-			os.Exit(1)
+			return 1
 		}
 		log.Info("Cleanup complete.")
-		return
+		return 0
 	}
 
 	// Rollback is handled separately — it doesn't use resolveDiskAndStep
@@ -99,24 +137,24 @@ func main() {
 	if *rollbackFlag != "" {
 		if *dryRun {
 			log.Info("Rollback complete (dry-run). %s is ready for a fresh install.", *rollbackFlag)
-			return
+			return 0
 		}
 		log.Info("Rolling back %s...", *rollbackFlag)
-		if err := shared.ValidateDiskPath(*rollbackFlag); err != nil {
+		if err := validateDiskPathFunc(*rollbackFlag); err != nil {
 			log.Error("%v", err)
-			os.Exit(1)
+			return 1
 		}
 		installer := install.NewInstaller(
 			*rollbackFlag, shared.DefaultCLIUsername, "", shared.DefaultHostname,
 			shared.GetRegion(shared.DefaultLanguageCode), *fileSystemFlag, false,
 		)
 		installer.Logger = log
-		if err := installer.Rollback(); err != nil {
+		if err := rollbackFunc(installer.Logger, *rollbackFlag); err != nil {
 			log.Error("%v", err)
-			os.Exit(1)
+			return 1
 		}
 		log.Info("Rollback complete. %s is ready for a fresh install.", *rollbackFlag)
-		return
+		return 0
 	}
 
 	// Determine which flag was provided (first one wins)
@@ -131,7 +169,7 @@ func main() {
 
 	if disk == "" {
 		printUsage()
-		os.Exit(1)
+		return 1
 	}
 
 	// Resolve username: CLI flag takes priority; otherwise read from stdin.
@@ -140,36 +178,36 @@ func main() {
 	var err error
 	if !*dryRun {
 		if *usernameFlag == "" {
-			username, err = readUsername()
+			username, err = readUsernameFunc()
 			if err != nil {
 				log.Error("failed to read username: %v", err)
-				os.Exit(1)
+				return 1
 			}
 		} else {
 			username = *usernameFlag
 		}
 		if username == "" {
 			log.Error("username cannot be empty")
-			os.Exit(1)
+			return 1
 		}
 	} else {
 		username = *usernameFlag
 	}
 
-	if err := shared.ValidateDiskPath(disk); err != nil {
+	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
-		os.Exit(1)
+		return 1
 	}
 
 	// Skip size validation in dry-run mode — no real disk is used.
 	if !*dryRun {
-		if err := shared.ValidateDiskSize(disk); err != nil {
+		if err := validateDiskSizeFunc(disk); err != nil {
 			log.Error("%v", err)
 			// If lsblk failed with a permission/device error, give a more helpful hint.
 			if strings.Contains(err.Error(), "exit status") {
 				fmt.Fprintf(os.Stderr, "Hint: ensure the disk path is correct and you have permission to read it.\n")
 			}
-			os.Exit(1)
+			return 1
 		}
 	}
 
@@ -177,14 +215,14 @@ func main() {
 	// In dry-run mode, skip password — no real accounts are created.
 	var password string
 	if !*dryRun {
-		password, err = readPassword()
+		password, err = readPasswordFunc()
 		if err != nil {
 			log.Error("failed to read password: %v", err)
-			os.Exit(1)
+			return 1
 		}
 		if password == "" {
 			log.Error("password cannot be empty")
-			os.Exit(1)
+			return 1
 		}
 	}
 
@@ -231,8 +269,6 @@ func main() {
 		}
 	}()
 
-	
-
 	// If running in a terminal and not already interrupted, handle SIGINT so
 	// Ctrl+C during a GUI-launched CLI installation also cancels and cleans up.
 	sigChan := make(chan os.Signal, 1)
@@ -259,10 +295,10 @@ func main() {
 		// instead of 1. The signal handler already logged the interruption and
 		// performed cleanup, so don't print a duplicate error.
 		if installer.Interrupted() {
-			os.Exit(130)
+			return 130
 		}
 		log.Error("%v", err)
-		os.Exit(1)
+		return 1
 	}
 
 	if stepName != "" {
@@ -270,6 +306,11 @@ func main() {
 	} else {
 		log.Info("Installation completed successfully!")
 	}
+	return 0
+}
+
+func main() {
+	exitCode(run(os.Args))
 }
 
 // resolveFlags converts flag pointers and their step names into a flat list.
