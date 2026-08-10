@@ -63,7 +63,7 @@
 			}
 		};
 
-		const handleComplete = (data: { label: string; percent: number; phase: string }) => {
+		const handleComplete = (_data: unknown) => {
 			isRunning = false;
 			isComplete = true;
 			progress = 100;
@@ -71,7 +71,7 @@
 			LogInfo('[InstallationPage] Installation complete');
 		};
 
-		const handleError = (data: { label: string; percent: number; phase: string }, message: string) => {
+		const handleError = (_data: unknown, message: string) => {
 			isRunning = false;
 			errorMessage = message;
 			LogInfo(`[InstallationPage] Installation error: ${message}`);

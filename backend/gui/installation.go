@@ -133,9 +133,15 @@ func (a *App) StartInstallation() error {
 		}
 	}()
 
-	// Wait for the CLI to finish, then signal completion.
+	// Wait for the CLI to finish, then emit completion/error events and
+	// signal completion to WaitForCleanup callers.
 	go func() {
-		cmd.Wait()
+		err := cmd.Wait()
+		if err == nil {
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, nil)
+		} else {
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed", err.Error())
+		}
 		close(a.installDone)
 		a.installCmd = nil
 		a.installCancel = nil
