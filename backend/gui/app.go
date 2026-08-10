@@ -8,6 +8,7 @@ import (
 
 	"aestheticos-installer/backend/install"
 	"aestheticos-installer/backend/shared"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // NewApp creates a new App application struct
@@ -106,6 +107,7 @@ func (a *App) GetDiskID() string {
 func (a *App) RebootAndClose() error {
 	if a.dryRun {
 		install.GetLogger().Info("Rebooting...")
+		wailsRuntime.Quit(a.ctx)
 		return nil
 	}
 
