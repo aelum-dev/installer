@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Dry-run mode now properly skips all side effects** — `--cleanup` and `--rollback` CLI flags now skip operations in dry-run mode. `OnBeforeClose` in the GUI skips the sudo cleanup call in dry-run mode. Previously these would still execute disk operations even with `--dry-run`.
 - **GUI transitions to FinishPage after successful installation** — `StartInstallation()` now emits `installation:complete` (success) or `installation:error` (failure) events to the frontend when the CLI exits. Previously the frontend listened for these events but they were never emitted, leaving the UI stuck at the last step.
 - **Ctrl+C during GUI installation now triggers cleanup** — `CancelInstallation()` was sending SIGINT *and* canceling the `exec.CommandContext`, which SIGKILL'd the CLI before its `defer RunCleanup()` could unmount `/mnt`. Now only SIGINT is sent, letting the CLI's own signal handler run the cleanup defer chain. A 10s safety timeout in the GUI signal handler force-unmounts `/mnt` if the CLI ever fails to exit.
 - **Logging system rewritten** — Terminal output is now byte-identical to `installation.log`. A single atomic `writeLine()` path formats each message once with a full timestamp and writes the exact same bytes to both stdout and the log file. The tick goroutine no longer emits standalone progress lines during pacstrap (only updates the context), eliminating duplicate percentage lines.

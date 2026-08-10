@@ -79,7 +79,12 @@ func main() {
 	// No separate layout flag needed
 
 	// Cleanup — unmount /mnt without any other operations.
+	// Skip in dry-run mode — no real mounts exist.
 	if *cleanupFlag {
+		if *dryRun {
+			log.Info("Cleanup complete (dry-run).")
+			return
+		}
 		if err := install.CleanupMounts(log, ""); err != nil {
 			log.Error("%v", err)
 			os.Exit(1)
@@ -89,7 +94,12 @@ func main() {
 	}
 
 	// Rollback is handled separately — it doesn't use resolveDiskAndStep
+	// Skip in dry-run mode — no real disk operations.
 	if *rollbackFlag != "" {
+		if *dryRun {
+			log.Info("Rollback complete (dry-run). %s is ready for a fresh install.", *rollbackFlag)
+			return
+		}
 		log.Info("Rolling back %s...", *rollbackFlag)
 		if err := shared.ValidateDiskPath(*rollbackFlag); err != nil {
 			log.Error("%v", err)
