@@ -30,7 +30,7 @@ func (s *MountFilesystemStep) Run(ctx *InstallContext) error {
 type InstallBaseStep struct{}
 
 func (s *InstallBaseStep) Name() string  { return "install_base" }
-func (s *InstallBaseStep) Label() string { return "Installing base system" }
+func (s *InstallBaseStep) Label() string { return "Installing system" }
 func (s *InstallBaseStep) Run(ctx *InstallContext) error {
 	return Install(ctx)
 }
@@ -38,7 +38,7 @@ func (s *InstallBaseStep) Run(ctx *InstallContext) error {
 type InstallDesktopStep struct{}
 
 func (s *InstallDesktopStep) Name() string  { return "install_desktop" }
-func (s *InstallDesktopStep) Label() string { return "Installing desktop environment" }
+func (s *InstallDesktopStep) Label() string { return "Installing desktop" }
 func (s *InstallDesktopStep) Run(ctx *InstallContext) error {
 	return InstallDesktop(ctx)
 }
