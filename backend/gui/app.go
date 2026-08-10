@@ -3,7 +3,6 @@ package gui
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 
 	"aestheticos-installer/backend/install"
@@ -68,26 +67,13 @@ func (a *App) GetDryRun() bool {
 
 // OnBeforeClose is called by Wails when the user attempts to close the window.
 // If an installation is in progress, sends SIGINT to the CLI and waits for
-// cleanup before allowing the window to close. Then unmounts any leftover
-// mounts under /mnt via sudo (skipped in dry-run mode).
+// cleanup before allowing the window to close. Skipped in dry-run mode.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
 	if a.installationRunning.Load() {
 		a.CancelInstallation()
 		a.WaitForCleanup()
 		install.GetLogger().Close()
 	}
-
-	// In dry-run mode, no real mounts exist — skip cleanup.
-	if a.dryRun {
-		return false
-	}
-
-	// GUI runs as a normal user, so spawn the CLI via sudo for root privileges.
-	cliBinary := findCLIBinary()
-	cmd := exec.Command("sudo", cliBinary, "--cleanup")
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	_ = cmd.Run()
 
 	return false
 }
