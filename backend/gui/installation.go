@@ -59,7 +59,7 @@ func (a *App) StartInstallation() error {
 		diskID = "/dev/loop0"
 	}
 
-	args := []string{"--install", diskID, "--username", a.userAccount.Username, "--filesystem", a.fileSystem}
+	args := []string{"--install", diskID, "--username", a.userAccount.Username, "--filesystem", a.fileSystem, "--language", a.selectedLanguage}
 	if a.dryRun {
 		args = append(args, "--dry-run")
 	}

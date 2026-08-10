@@ -58,6 +58,7 @@ func main() {
 	rollbackFlag := flag.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
 	cleanupFlag := flag.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
 	fileSystemFlag := flag.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
+	languageFlag := flag.String("language", "", "Language code (e.g. en_US, de_DE)")
 	usernameFlag := flag.String("username", "", "Username for the new user account")
 	versionFlag := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
@@ -191,12 +192,16 @@ func main() {
 		log.Info("[DRY RUN MODE] Installation steps will be simulated.")
 	}
 
+	lang := *languageFlag
+	if lang == "" {
+		lang = shared.DefaultLanguageCode
+	}
 	installer := install.NewInstaller(
 		disk,
-		username,                  // username (from flag or stdin)
-		password,                  // password (read from stdin)
-		shared.DefaultHostname,    // hostname
-		shared.GetRegion(shared.DefaultLanguageCode), // region (default)
+		username,           // username (from flag or stdin)
+		password,           // password (read from stdin)
+		shared.DefaultHostname, // hostname
+		shared.GetRegion(lang), // region (from --language or default)
 		*fileSystemFlag,
 		*dryRun,
 	)
@@ -294,7 +299,7 @@ func resolveDiskAndStep(args ...string) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--username <user>] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
@@ -308,7 +313,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "         Pipe a password via stdin for non-interactive use: echo 'pass' | %s --install /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  echo 'mypassword' | %s --install /dev/vda\n", os.Args[0])

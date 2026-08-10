@@ -36,6 +36,7 @@ var basePackages = []string{
 	// System
 	"sudo",
 	"networkmanager",
+	"iwd", // WiFi backend for NetworkManager
 	"bluez",
 	"power-profiles-daemon",
 	"yay-bin",
