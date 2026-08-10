@@ -102,7 +102,9 @@ func (a *App) StartInstallation() error {
 	go func() {
 		defer stdin.Close()
 		if len(a.userAccount.Password) > 0 {
-			stdin.Write([]byte(a.userAccount.Password + "\n"))
+			if _, err := stdin.Write([]byte(a.userAccount.Password + "\n")); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to write password to CLI: %v\n", err)
+			}
 		}
 	}()
 
