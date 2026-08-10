@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"aestheticos-installer/backend/gui"
 	"aestheticos-installer/backend/install"
@@ -51,7 +52,24 @@ func main() {
 		<-sigChan
 		fmt.Println("\nInterrupted — cancelling installation...")
 		app.CancelInstallation()
-		app.WaitForCleanup()
+
+		// Wait for the CLI to exit and run its cleanup defers. If it doesn't
+		// exit within 10s (e.g. stuck in a step that ignores the cancel
+		// channel), force-unmount /mnt ourselves so the user isn't left with
+		// stale mounts.
+		cleanupDone := make(chan struct{})
+		go func() {
+			app.WaitForCleanup()
+			close(cleanupDone)
+		}()
+		select {
+		case <-cleanupDone:
+		case <-time.After(10 * time.Second):
+			fmt.Println("CLI did not exit in time — force cleaning mounts...")
+			if err := install.CleanupMounts(install.GetLogger(), ""); err != nil {
+				fmt.Fprintf(os.Stderr, "Force cleanup error: %v\n", err)
+			}
+		}
 		install.GetLogger().Close()
 		os.Exit(0)
 	}()

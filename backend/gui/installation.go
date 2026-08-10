@@ -145,13 +145,14 @@ func (a *App) StartInstallation() error {
 	return nil
 }
 
-// CancelInstallation sends SIGINT to the running CLI process.
+// CancelInstallation sends SIGINT to the running CLI process and lets it
+// exit gracefully. The CLI's own signal handler closes the cancel channel,
+// steps return, defers run (CleanupMounts), and the CLI exits. We do NOT
+// cancel the exec.CommandContext here — doing so would SIGKILL the process
+// before its defers get a chance to unmount /mnt.
 func (a *App) CancelInstallation() {
 	if a.installCmd != nil && a.installCmd.Process != nil {
 		_ = a.installCmd.Process.Signal(os.Interrupt)
-	}
-	if a.installCancel != nil {
-		a.installCancel()
 	}
 }
 
