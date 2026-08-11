@@ -18,9 +18,6 @@ var basePackages = []string{
 	"linux-lts",
 	"linux-firmware",
 	"mkinitcpio",
-	"arch-install-scripts",
-	"mkinitcpio-archiso",
-	"qemu-guest-agent",
 	"edk2-shell",
 	"memtest86+-efi",
 
@@ -36,7 +33,7 @@ var basePackages = []string{
 	// System
 	"sudo",
 	"networkmanager",
-	"iwd", // WiFi backend for NetworkManager
+	"iwd",
 	"bluez",
 	"power-profiles-daemon",
 	"yay-bin",

@@ -192,7 +192,7 @@ const ProgressTickMaxPercent = 99
 
 // --- Installation step weights ----------------------------------------------
 // Relative weights for progress bar calculation. The two pacstrap steps
-// (base + desktop) together account for ~80% of total installation time.
+// (base + desktop) together account for ~90% of total installation time.
 
 // WeightFormatDisk is the weight for the format disk step.
 const WeightFormatDisk = 3
@@ -212,14 +212,13 @@ const WeightSetupUsers = 2
 // WeightConfigureSystem is the weight for the system configuration step.
 const WeightConfigureSystem = 4
 
-// --- DMS Greeter -------------------------------------------------------------
+// --- Wallpapers -------------------------------------------------------------
 
-// DmsWallpaperSource is the wallpaper file path on the live ISO.
-const DmsWallpaperSource = "/usr/share/DankMaterialShell/wallpaper.png"
+// WallpaperSourceDark is the dark wallpaper file path on the live ISO.
+const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.png"
 
-// DmsWallpaperDest is the destination path for the wallpaper inside the
-// installed system's DMS configuration directory.
-const DmsWallpaperDest = "/mnt/usr/share/DankMaterialShell/wallpaper.png"
+// WallpaperSourceLight is the light wallpaper file path on the live ISO.
+const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.png"
 
 // --- Chroot ------------------------------------------------------------------
 
