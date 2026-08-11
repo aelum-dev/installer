@@ -1,11 +1,8 @@
 package install
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,8 +34,6 @@ type Installer struct {
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
-	// Error callback
-	OnError func(label, message string)
 
 	// interrupted is set to true when SIGINT is received. Used by the CLI to
 	// decide the exit code (130 for SIGINT vs 1 for other errors).
@@ -54,28 +49,6 @@ type Installer struct {
 	// cancel is closed when SIGINT is received during a long-running command
 	// (e.g. pacstrap). This unblocks scanner goroutines so they return promptly.
 	cancel chan struct{}
-}
-
-// isInterruptError reports whether err was caused by SIGINT (Ctrl+C).
-// This is more reliable than checking the interrupted flag because the
-// child process (e.g. pacstrap) may receive SIGINT and return before the
-// Go signal handler goroutine has a chance to set the flag.
-func isInterruptError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errMsg := err.Error()
-	// exec.Command returns "signal: interrupt" when the child is killed by SIGINT.
-	// Also match "interrupted" — returned by installPackages when ctx.Cancel fires.
-	if strings.Contains(errMsg, "signal: interrupt") || strings.Contains(errMsg, "interrupted") {
-		return true
-	}
-	// Also check for exit code 130 (standard POSIX SIGINT exit code).
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() == 130 {
-		return true
-	}
-	return false
 }
 
 // NewInstaller creates a new Installer instance.
@@ -162,10 +135,6 @@ func (inst *Installer) Install() error {
 		close(stopTick) // stop the tick goroutine
 
 		if err != nil {
-			if !isInterruptError(err) {
-				inst.logError("Step failed: %s - %v", step.Label(), err)
-				inst.emitError(step.Label(), err.Error())
-			}
 			return fmt.Errorf("step \"%s\" failed: %w", step.Label(), err)
 		}
 
@@ -273,8 +242,6 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 				stepErr = s.Run(inst.context())
 			}
 			if stepErr != nil {
-				inst.logError("Step failed: %s - %v", s.Label(), stepErr)
-				inst.emitError(s.Label(), stepErr.Error())
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.Label(), stepErr)
 			}
 			inst.emitProgress(label, 100, "done")
@@ -326,13 +293,6 @@ func (inst *Installer) Cancel() {
 func (inst *Installer) emitProgress(label string, percent int, phase string) {
 	if inst.OnProgress != nil {
 		inst.OnProgress(label, percent, phase)
-	}
-}
-
-// emitError reports an error to the UI.
-func (inst *Installer) emitError(label, message string) {
-	if inst.OnError != nil {
-		inst.OnError(label, message)
 	}
 }
 

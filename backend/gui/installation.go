@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"aestheticos-installer/backend/shared"
+
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -139,7 +141,8 @@ func (a *App) StartInstallation() error {
 		if err == nil {
 			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, nil)
 		} else {
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed", err.Error())
+			logPath := shared.GetLogPath()
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed", fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
 		}
 		close(a.installDone)
 		a.installCmd = nil

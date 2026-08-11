@@ -146,13 +146,13 @@ func run(args []string) int {
 
 	// Resolve username: CLI flag takes priority; otherwise read from stdin.
 	// In dry-run mode, skip username — no real accounts are created.
-	_, err := resolveUsername(*usernameFlag, *dryRun)
+	username, err := resolveUsername(*usernameFlag, *dryRun)
 	if err != nil {
 		return 1
 	}
 
 	// Run the installation
-	return runInstallation(disk, stepName, *fileSystemFlag, *languageFlag, *dryRun)
+	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun)
 }
 
 // resolveUsername resolves the username from flag or stdin.
@@ -172,7 +172,7 @@ func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
 }
 
 // runInstallation performs validation and runs the installation.
-func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) int {
+func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool) int {
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
@@ -193,10 +193,11 @@ func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) i
 	// Read password from stdin (never accept via flag — avoids /proc, ps, and shell history exposure).
 	// In dry-run mode, skip password — no real accounts are created.
 	var password string
+	var pwErr error
 	if !dryRun {
-		password, err := readPasswordFunc()
-		if err != nil {
-			log.Error("failed to read password: %v", err)
+		password, pwErr = readPasswordFunc()
+		if pwErr != nil {
+			log.Error("failed to read password: %v", pwErr)
 			return 1
 		}
 		if password == "" {
@@ -215,7 +216,7 @@ func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) i
 	}
 	installer := install.NewInstaller(
 		disk,
-		"",                     // username (not needed for validation)
+		username,               // username (from --username flag or stdin)
 		password,               // password (read from stdin)
 		shared.DefaultHostname, // hostname
 		shared.GetRegion(lang), // region (from --language or default)
@@ -234,9 +235,6 @@ func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) i
 		} else {
 			log.Progress(label, percent)
 		}
-	}
-	installer.OnError = func(label, message string) {
-		log.Error("%s: %s", label, message)
 	}
 
 	// Ensure cleanup runs on panic or error.
@@ -270,7 +268,6 @@ func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) i
 			log.Error("%v", err)
 			return 1
 		}
-		log.Info("Step completed successfully!")
 		return 0
 	}
 
@@ -288,7 +285,6 @@ func runInstallation(disk, stepName, fileSystem, language string, dryRun bool) i
 		return 1
 	}
 
-	log.Info("Installation completed successfully!")
 	return 0
 }
 

@@ -152,6 +152,10 @@
 		<!-- Current step label -->
 		<p class="step-label">{currentLabel}</p>
 
+		{#if errorMessage}
+			<p class="error-hint">Check <code>~/.local/share/aestheticos-installer/installation.log</code> for details.</p>
+		{/if}
+
 	</div>
 </PageLayout>
 
@@ -240,6 +244,22 @@
 	}
 
 	.disk-info strong {
+		color: var(--color-text);
+	}
+
+	/* ── Error hint ── */
+	.error-hint {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		text-align: center;
+	}
+
+	.error-hint code {
+		font-family: var(--font-mono);
+		background: var(--color-surface);
+		padding: 2px 6px;
+		border-radius: 4px;
 		color: var(--color-text);
 	}
 
