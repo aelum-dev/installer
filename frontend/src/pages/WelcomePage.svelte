@@ -131,8 +131,8 @@
 		transition: background-color 0.15s ease;
 	}
 
-	.lang-item:hover {
-		background-color: var(--color-bg-hover);
+	.lang-item:not(.lang-item--selected):hover {
+		background-color: var(--color-primary-light);
 	}
 
 	.lang-item:focus-visible {
@@ -144,9 +144,5 @@
 		background-color: var(--color-primary);
 		color: var(--color-on-primary);
 		font-weight: var(--font-weight-600);
-	}
-
-	.lang-item--selected:hover {
-		background-color: var(--color-primary-hover);
 	}
 </style>
