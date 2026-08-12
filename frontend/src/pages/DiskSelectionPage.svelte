@@ -340,7 +340,7 @@
 	.fs-pill.selected {
 		border-color: var(--color-primary);
 		background: var(--color-primary);
-		color: var(--color-text);
+		color: var(--color-on-primary);
 	}
 
 	/* ── Disk list (scrollable) ── */
@@ -396,7 +396,7 @@
 	}
 
 	.disk-card.selected .disk-icon {
-		color: var(--color-text);
+		color: var(--color-on-primary);
 		background: var(--color-primary);
 	}
 
@@ -545,7 +545,7 @@
 	}
 
 	.part-mount {
-		color: var(--color-danger-text);
+		color: var(--color-progress);
 		font-weight: 500;
 	}
 </style>

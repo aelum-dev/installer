@@ -1,62 +1,73 @@
 :root {
-    /* Soft Warm Latte-inspired Color Palette */
+    /* DMS Colors — Light Scheme */
+    /* Source: /etc/skel/.cache/DankMaterialShell/dms-colors.json */
 
     /* —— Surface & Background —— */
-    --color-bg: #f5f0ef;                    /* Base — warm off-white */
-    --color-bg-white: #ffffff;              /* White overlay */
-    --color-bg-light: #fefafb;              /* Mantle — warm beige-gray */
-    --color-bg-hover: #f3e9ec;              /* Surface0 — hover state */
+    --color-surface: #fff8f7;
+    --color-bg: #fff8f7;
+    --color-bg-white: #ffffff;
+    --color-bg-light: #fff0f1;
+    --color-bg-hover: #fbeaeb;
 
     /* —— Text —— */
-    --color-text: #5c5458;                  /* Text — warm dark plum */
-    --color-text-muted: #7e7478;            /* Text muted */
-    --color-text-light: #a89ea2;            /* Light text */
+    --color-text: #22191b;
+    --color-text-muted: #524345;
+    --color-text-light: #d6c2c4;
 
-    /* —— Primary / Accent —— */
-    --color-primary: #f5d9e0;               /* Soft pink */
-    --color-primary-hover: #eac8d0;         /* Soft pink (hover) */
-    --color-primary-light: rgba(248, 234, 238, 0.08);
-    --color-primary-lighter: rgba(248, 234, 238, 0.02);
-    --color-primary-shadow: rgba(248, 234, 238, 0.35);
-    --color-progress: #b06a6a;              /* Progress bar fill */
+    /* —— Primary —— */
+    --color-primary: #8e4958;
+    --color-primary-hover: #ffb2bf;
+    --color-on-primary: #ffffff;
+    --color-primary-light: rgba(142, 73, 88, 0.08);
+    --color-primary-lighter: rgba(142, 73, 88, 0.02);
+    --color-primary-shadow: rgba(142, 73, 88, 0.35);
+    --color-progress: #8e4958;
+
+    /* —— Secondary —— */
+    --color-secondary: #75565b;
+    --color-secondary-hover: #e4bdc2;
+
+    /* —— Tertiary —— */
+    --color-tertiary: #7a5832;
+    --color-tertiary-hover: #ebbe90;
 
     /* —— Focus —— */
-    --color-focus: rgba(164, 148, 176, 0.2);
-    --color-focus-strong: rgba(164, 148, 176, 0.3);
+    --color-focus: rgba(142, 73, 88, 0.2);
+    --color-focus-strong: rgba(142, 73, 88, 0.3);
 
-    /* —— Danger / Error —— */
-    --color-danger: #8b3a4a;                /* Dark pink */
-    --color-danger-hover: #a85060;          /* Dark pink (hover, lighter) */
-    --color-danger-shadow: rgba(139, 58, 74, 0.3);
-    --color-danger-bg: rgba(139, 58, 74, 0.1);
-    --color-danger-text: #f5d0d5;           /* Light pink for text on danger */
-    --color-danger-focus: rgba(139, 58, 74, 0.35);
-    --color-danger-error-bg: rgba(139, 58, 74, 0.08);
-    --color-danger-error-hover: rgba(139, 58, 74, 0.12);
+    /* —— Error —— */
+    --color-danger: #ba1a1a;
+    --color-danger-hover: #ffdad6;
+    --color-danger-shadow: rgba(186, 26, 26, 0.3);
+    --color-danger-bg: rgba(186, 26, 26, 0.1);
+    --color-danger-text: #ffffff;
+    --color-danger-focus: rgba(186, 26, 26, 0.35);
+    --color-danger-error-bg: rgba(186, 26, 26, 0.08);
+    --color-danger-error-hover: rgba(186, 26, 26, 0.12);
 
-    /* —— Warning / Caution —— */
-    --color-warning: #d4a888;               /* Muted peach */
-    --color-warning-light: rgba(212, 168, 136, 0.12);
-    --color-warning-bg: rgba(212, 168, 136, 0.1);
-    --color-warning-text: #b8730a;          /* Darker peach for text */
+    /* —— Warning —— */
+    --color-warning: #7a5832;
+    --color-warning-light: rgba(235, 187, 144, 0.12);
+    --color-warning-bg: rgba(235, 187, 144, 0.1);
+    --color-warning-text: #7a5832;
 
     /* —— Info —— */
-    --color-info-bg: rgba(154, 168, 192, 0.12);
-    --color-mauve-light: rgba(184, 160, 216, 0.12);
+    --color-info-bg: rgba(235, 187, 144, 0.12);
+    --color-mauve-light: rgba(235, 187, 144, 0.12);
 
-    /* —— Borders & Dividers —— */
-    --color-border: #c8c0be;                /* Soft warm border */
-    --color-border-light: #ddd8d6;          /* Subtle border */
-    --color-border-dark: #a8a0a2;           /* Dark border */
+    /* —— Borders —— */
+    --color-border: #847375;
+    --color-border-light: #d6c2c4;
+    --color-border-dark: #524345;
     --color-border-subtle: rgba(0, 0, 0, 0.04);
 
-    /* —— Overlay & Shadows —— */
+    /* —— Overlay —— */
     --color-overlay: rgba(0, 0, 0, 0.6);
     --color-overlay-shadow: rgba(0, 0, 0, 0.3);
-    --color-white-glow: rgba(255, 255, 255, 0.15);
-    --color-white-glow-strong: rgba(255, 255, 255, 0.25);
+    --color-white-glow: rgba(255, 248, 247, 0.15);
+    --color-white-glow-strong: rgba(255, 248, 247, 0.25);
 
-    /* Typography */
+    /* ═══ Typography ═══ */
     --font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
         "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
         sans-serif;
@@ -68,7 +79,7 @@
     --font-weight-600: 600;
     --font-weight-700: 700;
 
-    /* Spacing */
+    /* ═══ Spacing ═══ */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 12px;
@@ -76,21 +87,21 @@
     --spacing-xl: 24px;
     --spacing-2xl: 32px;
 
-    /* Layout */
+    /* ═══ Layout ═══ */
     --page-heading-top: 24px;
     --header-height: 48px;
     --footer-height: 48px;
 
-    /* Border radius */
+    /* ═══ Border radius ═══ */
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 10px;
     --radius-xl: 30px;
 
-    /* Shadows */
-    --shadow-sm: 0 2px 6px rgba(92, 84, 88, 0.08);
-    --shadow-md: 0 4px 12px rgba(92, 84, 88, 0.12);
-    --shadow-primary: 0 4px 12px rgba(248, 234, 238, 0.5);
+    /* ═══ Shadows ═══ */
+    --shadow-sm: 0 2px 6px rgba(34, 25, 27, 0.08);
+    --shadow-md: 0 4px 12px rgba(34, 25, 27, 0.12);
+    --shadow-primary: 0 4px 12px rgba(142, 73, 88, 0.35);
 
     /* Mono font for code elements */
     --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;

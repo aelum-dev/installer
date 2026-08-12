@@ -31,13 +31,16 @@
 	}
 
 	.dry-run-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
 		padding: 4px 12px;
-		background: var(--color-warning);
+		background: var(--color-primary);
 		color: white;
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-700);
-		border-radius: var(--radius-sm);
-		letter-spacing: 0.05em;
+		border-radius: var(--radius-xl);
+		letter-spacing: 0.04em;
 		margin-right: var(--spacing-lg);
 	}
 </style>

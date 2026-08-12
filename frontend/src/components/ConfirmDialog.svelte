@@ -134,12 +134,15 @@
 	}
 
 	.btn-confirm {
-		background-color: var(--color-danger);
-		color: white;
+		background: transparent;
+		color: var(--color-primary);
+		border: 1.5px solid var(--color-primary);
 	}
 
 	.btn-confirm:hover {
-		background-color: var(--color-danger-hover);
+		background-color: var(--color-primary);
+		color: var(--color-on-primary);
+		border-color: var(--color-primary);
 	}
 
 	@keyframes fadeIn {
