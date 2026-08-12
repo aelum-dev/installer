@@ -266,10 +266,25 @@ func generateRandomSeed(esp string) error {
 }
 
 func setDefaultBootEntry(esp, entryID string) error {
-	cmd := Run("bootctl", "set-default", "--esp-path="+esp, entryID)
-	output, err := cmd.CombinedOutput()
+	// Write the default= line directly to loader.conf instead of using
+	// `bootctl set-default`, which fails when the live ISO was not booted
+	// with systemd-boot (e.g. Ventoy/GRUB). The file write is all that's
+	// needed — systemd-boot reads it at boot time.
+	confPath := esp + "/loader/loader.conf"
+	data, err := os.ReadFile(confPath)
 	if err != nil {
-		return fmt.Errorf("bootctl set-default failed: %w: %s", err, string(output))
+		return fmt.Errorf("failed to read loader.conf: %w", err)
+	}
+	content := string(data)
+	// Replace or append the default line (space-separated, no =).
+	re := regexp.MustCompile(`(?m)^default .*$`)
+	if re.MatchString(content) {
+		content = re.ReplaceAllString(content, "default "+entryID)
+	} else {
+		content += "default " + entryID + "\n"
+	}
+	if err := writeFile(confPath, content); err != nil {
+		return fmt.Errorf("failed to write default entry to loader.conf: %w", err)
 	}
 	return nil
 }
