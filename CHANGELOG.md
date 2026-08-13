@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Cache clearing step** — `pacman -Scc` runs in the chroot after system configuration to clear the package cache and free disk space.
+
 ### Changed
 - **Root check moved to app startup** — `CheckRoot()` now runs in `StartUp()` instead of `StartInstallation()`. If sudo is not available, dry-run mode is enabled automatically so the user can still explore the installer. A "DRY RUN" badge appears in the header on all pages.
 - **Fake disks loaded in dry-run mode** — When dry-run is active, `GetDisks()` and `GetDiskPartitions()` return synthetic disk data instead of querying `lsblk`. This lets the UI be explored without reading real block devices.

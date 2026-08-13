@@ -212,6 +212,9 @@ const WeightSetupUsers = 2
 // WeightConfigureSystem is the weight for the system configuration step.
 const WeightConfigureSystem = 4
 
+// WeightClearCache is the weight for the cache clearing step.
+const WeightClearCache = 1
+
 // --- Wallpapers -------------------------------------------------------------
 
 // WallpaperSourceDark is the dark wallpaper file path on the live ISO.

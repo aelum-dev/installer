@@ -17,6 +17,7 @@ func TestInstaller_StepNames(t *testing.T) {
 		"install_desktop",
 		"setup_users",
 		"configure_system",
+		"clear_cache",
 	}
 
 	if len(steps) != len(expectedSteps) {
@@ -79,6 +80,7 @@ func TestValidStepNames(t *testing.T) {
 		"install_desktop":  false,
 		"setup_users":      false,
 		"configure_system": false,
+		"clear_cache":      false,
 	}
 
 	for _, name := range names {

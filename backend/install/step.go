@@ -68,6 +68,7 @@ func Steps() []Step {
 		&InstallDesktopStep{},
 		&SetupUsersStep{},
 		&ConfigureSystemStep{},
+		&ClearCacheStep{},
 	}
 }
 
@@ -80,5 +81,6 @@ func stepWeights() []int {
 		shared.WeightInstallDesktop,
 		shared.WeightSetupUsers,
 		shared.WeightConfigureSystem,
+		shared.WeightClearCache,
 	}
 }
