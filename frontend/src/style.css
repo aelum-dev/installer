@@ -3,69 +3,69 @@
     /* Source: /etc/skel/.cache/DankMaterialShell/dms-colors.json */
 
     /* —— Surface & Background —— */
-    --color-surface: #fff8f7;
-    --color-bg: #fff8f7;
+    --color-surface: #faf7f6;
+    --color-bg: #faf7f6;
     --color-bg-white: #ffffff;
-    --color-bg-light: #fff0f1;
-    --color-bg-hover: #fbeaeb;
+    --color-bg-light: #fdf2f3;
+    --color-bg-hover: #fceee9;
 
     /* —— Text —— */
-    --color-text: #22191b;
-    --color-text-muted: #524345;
-    --color-text-light: #d6c2c4;
+    --color-text: #3d3234;
+    --color-text-muted: #756567;
+    --color-text-light: #d4c0c2;
 
     /* —— Primary —— */
-    --color-primary: #8e4958;
-    --color-primary-hover: #ffb2bf;
+    --color-primary: #a67480;
+    --color-primary-hover: #f2d5da;
     --color-on-primary: #ffffff;
-    --color-primary-light: rgba(142, 73, 88, 0.08);
-    --color-primary-lighter: rgba(142, 73, 88, 0.02);
-    --color-primary-shadow: rgba(142, 73, 88, 0.35);
-    --color-progress: #8e4958;
+    --color-primary-light: rgba(166, 116, 128, 0.08);
+    --color-primary-lighter: rgba(166, 116, 128, 0.02);
+    --color-primary-shadow: rgba(166, 116, 128, 0.30);
+    --color-progress: #a67480;
 
     /* —— Secondary —— */
-    --color-secondary: #75565b;
-    --color-secondary-hover: #e4bdc2;
+    --color-secondary: #8e7579;
+    --color-secondary-hover: #e8d0d4;
 
     /* —— Tertiary —— */
-    --color-tertiary: #7a5832;
-    --color-tertiary-hover: #ebbe90;
+    --color-tertiary: #a08864;
+    --color-tertiary-hover: #d8e6cc;
 
     /* —— Focus —— */
-    --color-focus: rgba(142, 73, 88, 0.2);
-    --color-focus-strong: rgba(142, 73, 88, 0.3);
+    --color-focus: rgba(166, 116, 128, 0.18);
+    --color-focus-strong: rgba(166, 116, 128, 0.28);
 
     /* —— Error —— */
-    --color-danger: #ba1a1a;
-    --color-danger-hover: #ffdad6;
-    --color-danger-shadow: rgba(186, 26, 26, 0.3);
-    --color-danger-bg: rgba(186, 26, 26, 0.1);
+    --color-danger: #c45858;
+    --color-danger-hover: #f4d2ce;
+    --color-danger-shadow: rgba(196, 88, 88, 0.28);
+    --color-danger-bg: rgba(196, 88, 88, 0.09);
     --color-danger-text: #ffffff;
-    --color-danger-focus: rgba(186, 26, 26, 0.35);
-    --color-danger-error-bg: rgba(186, 26, 26, 0.08);
-    --color-danger-error-hover: rgba(186, 26, 26, 0.12);
+    --color-danger-focus: rgba(196, 88, 88, 0.30);
+    --color-danger-error-bg: rgba(196, 88, 88, 0.07);
+    --color-danger-error-hover: rgba(196, 88, 88, 0.11);
 
     /* —— Warning —— */
-    --color-warning: #7a5832;
-    --color-warning-light: rgba(235, 187, 144, 0.12);
-    --color-warning-bg: rgba(235, 187, 144, 0.1);
-    --color-warning-text: #7a5832;
+    --color-warning: #a08864;
+    --color-warning-light: rgba(220, 195, 160, 0.10);
+    --color-warning-bg: rgba(220, 195, 160, 0.08);
+    --color-warning-text: #a08864;
 
     /* —— Info —— */
-    --color-info-bg: rgba(235, 187, 144, 0.12);
-    --color-mauve-light: rgba(235, 187, 144, 0.12);
+    --color-info-bg: rgba(220, 195, 160, 0.10);
+    --color-mauve-light: rgba(220, 195, 160, 0.10);
 
     /* —— Borders —— */
-    --color-border: #847375;
-    --color-border-light: #d6c2c4;
-    --color-border-dark: #524345;
-    --color-border-subtle: rgba(0, 0, 0, 0.04);
+    --color-border: #9e8e90;
+    --color-border-light: #e6d4d6;
+    --color-border-dark: #756567;
+    --color-border-subtle: rgba(0, 0, 0, 0.03);
 
     /* —— Overlay —— */
-    --color-overlay: rgba(0, 0, 0, 0.6);
-    --color-overlay-shadow: rgba(0, 0, 0, 0.3);
-    --color-white-glow: rgba(255, 248, 247, 0.15);
-    --color-white-glow-strong: rgba(255, 248, 247, 0.25);
+    --color-overlay: rgba(0, 0, 0, 0.55);
+    --color-overlay-shadow: rgba(0, 0, 0, 0.25);
+    --color-white-glow: rgba(255, 247, 246, 0.12);
+    --color-white-glow-strong: rgba(255, 247, 246, 0.20);
 
     /* ═══ Typography ═══ */
     --font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
@@ -99,9 +99,9 @@
     --radius-xl: 30px;
 
     /* ═══ Shadows ═══ */
-    --shadow-sm: 0 2px 6px rgba(34, 25, 27, 0.08);
-    --shadow-md: 0 4px 12px rgba(34, 25, 27, 0.12);
-    --shadow-primary: 0 4px 12px rgba(142, 73, 88, 0.35);
+    --shadow-sm: 0 2px 6px rgba(61, 50, 52, 0.06);
+    --shadow-md: 0 4px 12px rgba(61, 50, 52, 0.10);
+    --shadow-primary: 0 4px 12px rgba(166, 116, 128, 0.28);
 
     /* Mono font for code elements */
     --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;

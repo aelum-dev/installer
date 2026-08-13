@@ -143,6 +143,5 @@
 	.lang-item--selected {
 		background-color: var(--color-primary);
 		color: var(--color-on-primary);
-		font-weight: var(--font-weight-600);
 	}
 </style>
