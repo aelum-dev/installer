@@ -13,7 +13,7 @@ import (
 // TestMain overrides simulateStep to use 100ms per step instead of the real duration.
 // This makes integration tests run in ~6 seconds instead of ~60 seconds.
 func TestMain(m *testing.M) {
-	simulateStep = func(_ time.Duration) error {
+	simulateStep = func(_ chan struct{}, _ time.Duration) error {
 		time.Sleep(100 * time.Millisecond)
 		return nil
 	}
@@ -280,10 +280,27 @@ func TestRunStep_DryRun(t *testing.T) {
 }
 
 // TestCumulativePercentages verifies the percentage calculation
-// across all 12 installation steps.
+// across all 6 installation steps.
 func TestCumulativePercentages(t *testing.T) {
-	steps := DefaultPlan().Steps
-	pcts := DefaultPlan().cumulativePercentages()
+	steps := DefaultSteps()
+	weights := stepWeights()
+
+	// Calculate cumulative percentages
+	totalWeight := 0
+	for _, w := range weights {
+		totalWeight += w
+	}
+	if totalWeight == 0 {
+		t.Fatal("total weight is zero")
+	}
+
+	pcts := make([]int, len(steps)+1)
+	pcts[0] = 0
+	cumulative := 0
+	for i := 0; i < len(steps); i++ {
+		cumulative += weights[i]
+		pcts[i+1] = cumulative * 100 / totalWeight
+	}
 
 	if len(pcts) != len(steps)+1 {
 		t.Fatalf("expected %d percentages for %d steps, got %d", len(steps)+1, len(steps), len(pcts))

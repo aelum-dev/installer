@@ -36,65 +36,109 @@ The installed system ships with:
 
 ```
 AestheticOS-Installer/
-├── main.go                  # Wails app entry point
+├── main.go                  # Wails app entry point (embeds frontend/dist, runs gui.NewApp)
 ├── wails.json               # Wails config
 ├── build.sh / run.sh        # Build & dev scripts
+├── Makefile                 # Build targets
 ├── backend/
-│   ├── cli/main.go          # CLI installer
-│   ├── gui/                 # Wails GUI layer (bindings, navigation, validation)
-│   ├── install/             # Installation steps + orchestrator
-│   │   ├── installer.go     # Installer struct + Install()/RunStep()/Rollback()
-│   │   ├── step.go          # Step interface + step implementations
-│   │   ├── plan.go          # Plan struct for step weights/percentages
-│   │   ├── executor.go      # Executor interface (Run, RunChroot, WriteFile, AppendFile)
-│   │   ├── configuration.go # Merged ConfigureSystem step
+│   ├── cli/main.go          # CLI installer (password from stdin, never flags)
+│   ├── cli/main_test.go
+│   ├── gui/
+│   │   ├── app.go           # Wails app struct, StartUp, OnBeforeClose
+│   │   ├── bindings.go      # Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
+│   │   ├── installation.go  # StartInstallation (spawns CLI via sudo, reads JSON from stderr)
+│   │   ├── navigation.go    # Page IDs, navigation state
+│   │   ├── root_check.go    # Sudo verification
+│   │   ├── validation.go    # Validate + Save methods (validate = no state mutation)
+│   │   ├── root_check_test.go
+│   │   └── validation_test.go
+│   ├── install/
+│   │   ├── installer.go     # Installer orchestrator (shared by CLI + GUI). Install() runs 6 steps.
+│   │   ├── step.go          # Step interface + step implementations + Plan
+│   │   ├── context.go       # InstallContext struct (shared state for all steps)
+│   │   ├── configuration.go # ConfigureSystem (merged: fstab→bootloader→system→greetd→plymouth→zram→services)
+│   │   ├── format.go        # FormatDisk() + setupBtrfsSubvolumes()
+│   │   ├── mount.go         # MountFilesystem() + verifyMount()
+│   │   ├── install_packages.go # installPackages(), Install(), InstallDesktop() (pacstrap with line-count progress)
+│   │   ├── fstab.go         # GenerateFstab() (custom for btrfs, standard for ext4)
+│   │   ├── users.go         # SetupUsers() (useradd, chpasswd, sudoers, ISO file copy)
+│   │   ├── cleanup.go       # CleanupMounts() (lazy recursive unmount)
+│   │   ├── command.go       # Run(), runChroot(), writeFile(), appendFile() helpers
 │   │   ├── errors.go        # ValidationError, InstallError types
-│   │   ├── logger.go        # Logger interface + ConsoleLogger
-│   │   ├── format.go        # Partitioning + formatting
-│   │   ├── mount.go         # Mount filesystem + verification
-│   │   ├── install_base.go  # pacstrap base packages
-│   │   ├── install_desktop.go # pacstrap desktop packages
-│   │   ├── install.go       # Pacstrap progress tracking
-│   │   ├── fstab.go         # fstab generation + verification
-│   │   ├── bootloader.go    # systemd-boot install + boot entries
-│   │   ├── users.go         # User account creation + ISO copy
-│   │   ├── system.go        # Hostname, locale, timezone, mirrors
-│   │   ├── greetd.go        # Login manager config + DMS sync
-│   │   ├── greetd/          # greetd package (config, sync, memory)
-│   │   ├── plymouth.go      # Silent boot (BGRT theme)
-│   │   ├── services.go      # systemd service enabling
-│   │   ├── zram.go          # Compressed swap via zram-generator
-│   │   ├── copy.go          # ISO-to-target file copying
-│   │   ├── cleanup.go       # Mount cleanup
-│   │   ├── command.go       # Run(), runChroot(), writeFile(), appendFile()
-│   │   ├── rollback.go      # Rollback partial installations
-│   │   ├── context.go       # InstallContext
-│   │   ├── checks.go        # Validation helpers
-│   │   └── progress/        # Pacstrap progress tracker
-│   ├── validation/          # Centralized validation (delegates to shared)
-│   └── shared/              # Types, validators, disk detection, regions
-│       ├── types.go         # Data structures (DiskInfo, Region, etc.)
-│       ├── config.go        # Constants + thresholds
-│       ├── disks.go         # lsblk parsing + fake data
-│       ├── regions.go       # 28 locale/region definitions
-│       ├── locales.go
-│       ├── btrfs.go         # Subvolume definitions
-│       ├── mirrorlist.go    # Mirrorlist handling
-│       ├── mirrorlist_gen.go # Mirrorlist refresh script
-│       ├── validators.go    # Input validation
-│       └── logpath.go
-└── frontend/
-    ├── src/
-    │   ├── App.svelte       # Root component
-    │   ├── main.ts          # Entry point
-    │   ├── lib/
-    │   │   ├── state.svelte.ts  # Svelte stores
-    │   │   ├── types.ts         # TS types + constants
-    │   │   ├── navigation.ts    # Nav + validation calls
-    │   │   └── validate.ts      # Client validation
-    │   ├── pages/           # 6 wizard pages
-    │   └── components/      # Reusable UI components
-    └── wailsjs/             # Auto-generated Wails bindings
+│   │   ├── logger.go        # Logger interface + ConsoleLogger (shared by CLI + GUI)
+│   │   ├── greetd/
+│   │   │   ├── greetd.go    # Greetd configuration type
+│   │   │   ├── config.go    # Config struct
+│   │   │   ├── sync.go      # syncDmsGreeter()
+│   │   │   ├── memory.go    # Memory type
+│   │   │   └── data/greetd/
+│   │   │       ├── config.toml   # Embedded greetd config template
+│   │   │       └── memory.json   # Embedded greetd memory template
+│   │   ├── progress/
+│   │   │   ├── pacstrap.go    # PacstrapProgressTracker (line-count-based progress)
+│   │   │   └── pacstrap_test.go
+│   │   └── *_test.go        # Unit + integration tests
+│   ├── validation/
+│   │   └── validation.go    # Centralized validation (delegates to shared package)
+│   ├── shared/
+│   │   ├── types.go         # DiskInfo, PartitionInfo, UserAccountData, DiskSelectionData
+│   │   ├── config.go        # ALL constants: paths, command names, weights, thresholds, etc.
+│   │   ├── disks.go         # GetDisks(), GetPartitions(), DerivePartitionPath()
+│   │   ├── disks_fake.go    # fakeDisks() for frontend dev (FAKE_DISKS=1)
+│   │   ├── regions.go       # 28 locale/region definitions
+│   │   ├── locales.go       # Language list
+│   │   ├── btrfs.go         # BtrfsSubvolume definitions + GetBtrfsSubvolumes()
+│   │   ├── validators.go    # ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection()
+│   │   ├── mirrorlist.go    # Embedded mirrorlists per region
+│   │   ├── mirrorlist_gen.go# Mirrorlist refresh script
+│   │   ├── logpath.go       # GetLogPath()
+│   │   ├── mirrorlist/      # Mirrorlist data files per locale (29 files: en_US, de_DE, etc.)
+│   │   ├── disks_test.go
+│   │   └── validators_test.go
+│   └── scripts/
+│       └── gen-ts-constants.go # Generates frontend wailsjs/go models from Go constants
+├── frontend/
+│   ├── src/
+│   │   ├── App.svelte       # Root component (wizard page router)
+│   │   ├── App.test.ts      # App component tests
+│   │   ├── main.ts          # Vite entry point
+│   │   ├── style.css        # Global styles
+│   │   ├── vite-env.d.ts    # Vite type declarations
+│   │   ├── components/
+│   │   │   ├── AppHeader.svelte  # Top bar with page title
+│   │   │   ├── AppFooter.svelte  # Bottom bar with back/next buttons
+│   │   │   ├── Button.svelte     # Reusable button component
+│   │   │   ├── ConfirmDialog.svelte
+│   │   │   ├── Dropdown.svelte   # Dropdown/select component
+│   │   │   ├── ErrorBanner.svelte
+│   │   │   └── PageLayout.svelte # Page wrapper with header/footer
+│   │   ├── lib/
+│   │   │   ├── constants.ts       # Frontend constants (auto-generated from Go)
+│   │   │   ├── navigation.ts      # Page navigation state
+│   │   │   ├── state.svelte.ts    # Svelte 5 store for installer state
+│   │   │   ├── types.ts           # TypeScript type definitions
+│   │   │   ├── validate.ts        # Frontend validation helpers
+│   │   │   └── validate.test.ts   # Validation tests
+│   │   ├── pages/
+│   │   │   ├── WelcomePage.svelte         # Language/region selection
+│   │   │   ├── UserAccountPage.svelte     # Username + password
+│   │   │   ├── DiskSelectionPage.svelte   # Disk cards + filesystem pills
+│   │   │   ├── ConfirmationPage.svelte    # Summary + root check + confirm dialog
+│   │   │   ├── InstallationPage.svelte    # Progress bar + live events
+│   │   │   └── FinishPage.svelte          # Success screen
+│   │   └── style.css
+│   └── wailsjs/             # Auto-generated Wails bindings
+├── build/
+│   └── bin/               # Built binaries (aestheticos-installer, aestheticos-installer-cli)
+└── docs/
+    ├── AGENTS.md            # Agent context (architecture, conventions, rules)
+    ├── OVERVIEW.md          # Architecture details
+    ├── RULES.md             # Development conventions
+    ├── EXECUTION_FLOW.md    # Execution flow diagrams
+    ├── CONTRIBUTING.md      # Code style, commit conventions, PR template
+    ├── SECURITY.md          # Vulnerability reporting policy
+    ├── TROUBLESHOOTING.md   # Common failures, log inspection, recovery
+    └── CHANGELOG.md         # Version history
 ```
 
 ## Building
@@ -137,6 +181,7 @@ npm install
 npm run dev      # Dev server
 npm run build    # Production build
 npm run test     # Run Vitest tests
+npm run check    # TypeScript type checking
 ```
 
 ## Usage
@@ -251,7 +296,7 @@ Integration tests verify the full install flow in dry-run mode (no real commands
 
 ## Development
 
-See [RULES.md](./RULES.md) for development conventions and [OVERVIEW.md](./OVERVIEW.md) for architecture details.
+See [AGENTS.md](./AGENTS.md) for architecture details and conventions, [RULES.md](./RULES.md) for development conventions, [OVERVIEW.md](./OVERVIEW.md) for architecture deep-dive, and [EXECUTION_FLOW.md](./EXECUTION_FLOW.md) for execution flow diagrams.
 
 ### Key Concepts
 
@@ -259,6 +304,7 @@ See [RULES.md](./RULES.md) for development conventions and [OVERVIEW.md](./OVERV
 - **CLI binary** — All privileged ops run through `aestheticos-installer-cli` (spawned via `sudo` by the GUI). See `backend/cli/main.go`.
 - **InstallContext** — Shared state passed through all installation steps. See `backend/install/context.go`.
 - **Step interface** — Each installation step implements `Step` (Name, Label, Run). See `backend/install/step.go`.
+- **Constants in one place** — All constants live in `backend/shared/config.go`. Frontend constants are auto-generated via `backend/scripts/gen-ts-constants.go` → `frontend/src/lib/constants.ts`.
 
 ## License
 

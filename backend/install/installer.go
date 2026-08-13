@@ -88,18 +88,23 @@ func (inst *Installer) Install() error {
 
 	ctx := inst.context()
 
-	plan := DefaultPlan()
-	stepList := plan.Steps
-	percentages := plan.cumulativePercentages()
+	steps := DefaultSteps()
+	weights := stepWeights()
+	totalWeight := 0
+	for _, w := range weights {
+		totalWeight += w
+	}
+	cumulativePercent := 0
 
-	for idx, step := range stepList {
+	for idx, step := range steps {
 		label := step.Label()
 		if inst.dryRun {
 			label = "[DRY RUN] " + label
 		}
 
-		startPercent := percentages[idx]
-		endPercent := percentages[idx+1]
+		startPercent := cumulativePercent
+		cumulativePercent += weights[idx]
+		endPercent := cumulativePercent * 100 / totalWeight
 
 		// Wire progress callback to update context + emit JSON only.
 		// Command() already writes the percentage to stdout, so we don't call Progress() here.
@@ -120,15 +125,13 @@ func (inst *Installer) Install() error {
 		stopTick := make(chan struct{})
 		var stepDuration time.Duration
 		if inst.dryRun {
-			weight := stepWeights()[idx]
-			stepDuration = time.Duration(weight) * 600 * time.Millisecond
+			stepDuration = time.Duration(weights[idx]) * 600 * time.Millisecond
 		}
 		go inst.tickProgress(label, startPercent, endPercent, stepDuration, stopTick)
 
 		var err error
 		if inst.dryRun {
-			weight := stepWeights()[idx]
-			err = simulateStep(time.Duration(weight) * 600 * time.Millisecond)
+			err = simulateStep(ctx.Cancel, time.Duration(weights[idx])*600*time.Millisecond)
 		} else {
 			err = step.Run(ctx)
 		}
@@ -204,15 +207,16 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 	}
 }
 
-// installationSteps returns the list of installation steps from the default plan.
+// installationSteps returns the list of installation steps.
 func (inst *Installer) installationSteps() []Step {
-	return DefaultPlan().Steps
+	return DefaultSteps()
 }
 
 // validStepNames returns the list of valid step names for error messages.
 func validStepNames() []string {
-	names := make([]string, len(DefaultPlan().Steps))
-	for i, s := range DefaultPlan().Steps {
+	steps := DefaultSteps()
+	names := make([]string, len(steps))
+	for i, s := range steps {
 		names[i] = s.Name()
 	}
 	return names
@@ -234,12 +238,13 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 			}
 			inst.emitProgress(label, 0, "running")
 			inst.logInfo("Starting step: %s", s.Label())
+			ctx := inst.context()
 			var stepErr error
 			if inst.dryRun {
 				weight := stepWeights()[idx]
-				stepErr = simulateStep(time.Duration(weight) * 600 * time.Millisecond)
+				stepErr = simulateStep(ctx.Cancel, time.Duration(weight)*600*time.Millisecond)
 			} else {
-				stepErr = s.Run(inst.context())
+				stepErr = s.Run(ctx)
 			}
 			if stepErr != nil {
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.Label(), stepErr)
@@ -327,11 +332,16 @@ func (inst *Installer) LogError(format string, args ...interface{}) {
 }
 
 // simulateStep simulates a step by sleeping for the given duration.
+// Respects the cancel channel — exits early if SIGINT is received.
 // Used in dry-run mode to give the user a sense of progress.
 // Can be overridden in tests for faster execution.
-var simulateStep = func(duration time.Duration) error {
-	time.Sleep(duration)
-	return nil
+var simulateStep = func(cancel chan struct{}, duration time.Duration) error {
+	select {
+	case <-time.After(duration):
+		return nil
+	case <-cancel:
+		return fmt.Errorf("interrupted")
+	}
 }
 
 // Rollback cleans up a partial or failed installation.

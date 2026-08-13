@@ -71,31 +71,6 @@ func DefaultSteps() []Step {
 	}
 }
 
-// ============================================================================
-// Plan
-// ============================================================================
-
-// Plan defines an ordered list of installation steps with relative weights.
-type Plan struct {
-	Steps   []Step
-	Weights []int
-}
-
-// DefaultPlan returns the canonical installation plan.
-func DefaultPlan() *Plan {
-	return &Plan{
-		Steps: DefaultSteps(),
-		Weights: []int{
-			shared.WeightFormatDisk,
-			shared.WeightMountFilesystem,
-			shared.WeightInstallBase,
-			shared.WeightInstallDesktop,
-			shared.WeightSetupUsers,
-			shared.WeightConfigureSystem,
-		},
-	}
-}
-
 // stepWeights returns the canonical weight constants for installation steps.
 func stepWeights() []int {
 	return []int{
@@ -106,23 +81,4 @@ func stepWeights() []int {
 		shared.WeightSetupUsers,
 		shared.WeightConfigureSystem,
 	}
-}
-
-// cumulativePercentages calculates the cumulative percentage at each step boundary.
-func (p *Plan) cumulativePercentages() []int {
-	total := 0
-	for _, w := range p.Weights {
-		total += w
-	}
-	if total == 0 {
-		return make([]int, len(p.Steps)+1)
-	}
-	percentages := make([]int, len(p.Steps)+1)
-	cumulative := 0
-	for i := 0; i < len(p.Steps); i++ {
-		percentages[i] = cumulative * 100 / total
-		cumulative += p.Weights[i]
-	}
-	percentages[len(p.Steps)] = 100
-	return percentages
 }
