@@ -60,7 +60,7 @@ func (s *ConfigureSystemStep) Run(ctx *InstallContext) error {
 }
 
 // DefaultSteps returns the canonical list of installation steps.
-func DefaultSteps() []Step {
+func Steps() []Step {
 	return []Step{
 		&FormatDiskStep{},
 		&MountFilesystemStep{},

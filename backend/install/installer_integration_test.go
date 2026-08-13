@@ -282,7 +282,7 @@ func TestRunStep_DryRun(t *testing.T) {
 // TestCumulativePercentages verifies the percentage calculation
 // across all 6 installation steps.
 func TestCumulativePercentages(t *testing.T) {
-	steps := DefaultSteps()
+	steps := Steps()
 	weights := stepWeights()
 
 	// Calculate cumulative percentages

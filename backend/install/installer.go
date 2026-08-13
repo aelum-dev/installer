@@ -88,7 +88,7 @@ func (inst *Installer) Install() error {
 
 	ctx := inst.context()
 
-	steps := DefaultSteps()
+	steps := Steps()
 	weights := stepWeights()
 	totalWeight := 0
 	for _, w := range weights {
@@ -209,12 +209,12 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 
 // installationSteps returns the list of installation steps.
 func (inst *Installer) installationSteps() []Step {
-	return DefaultSteps()
+	return Steps()
 }
 
 // validStepNames returns the list of valid step names for error messages.
 func validStepNames() []string {
-	steps := DefaultSteps()
+	steps := Steps()
 	names := make([]string, len(steps))
 	for i, s := range steps {
 		names[i] = s.Name()
