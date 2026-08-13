@@ -163,12 +163,7 @@
 
 	.line-edit:focus {
 		border-color: var(--color-primary);
-		box-shadow: 0 0 0 2px var(--color-focus);
 		outline: none;
-	}
-
-	.line-edit:hover:not(:focus) {
-		background-color: var(--color-bg-hover);
 	}
 
 	.line-edit--error {

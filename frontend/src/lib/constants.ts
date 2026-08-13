@@ -54,6 +54,7 @@ export const WeightInstallBase = 38;
 export const WeightInstallDesktop = 51;
 export const WeightSetupUsers = 2;
 export const WeightConfigureSystem = 4;
+export const WeightClearCache = 1;
 export const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.png";
 export const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.png";
 export const ChrootCommand = "arch-chroot";
