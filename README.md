@@ -148,7 +148,7 @@ AestheticOS-Installer/
 - Go 1.25+
 - Node.js 20+
 - [Wails CLI](https://wails.io/docs/gettingstarted/installation)
-- `webkit2gtk-4.1` (Linux) or `WebView2` (Windows)
+- `webkit2gtk-4.1` (Linux)
 
 ### Build all binaries
 
@@ -313,5 +313,5 @@ GPL-3.0 — see [LICENSE](./LICENSE) for details.
 ## Related Projects
 
 - [AestheticOS](https://github.com/KornienkoDev/AestheticOS) — The live ISO and distro configuration
-- [DankMaterialShell](https://github.com/maxshutyning/dms) — The desktop shell
-- [DMS Greeter](https://github.com/maxshutyning/dms-greeter) — The greetd greeter
+- [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) — The desktop shell
+- [DMS Greeter](https://github.com/AvengeMedia/dank-greeter) — The greetd greeter
