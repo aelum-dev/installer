@@ -79,7 +79,9 @@ export const setLocale = (l: string) => {
   _locale = l;
 };
 
-export const locale = { current: _locale };
+export const locale = {
+  get current() { return _locale; },
+};
 
 export const format = {
   number: (n: number) => n.toString(),
@@ -89,7 +91,7 @@ export const format = {
 
 // RTL detection
 import { RTL_LOCALES } from './locales';
-export const getIsRTL = () => RTL_LOCALES.has(_locale);
+export const getIsRTL = () => RTL_LOCALES.has(locale.current);
 
 export type Locale = keyof typeof LOCALES;
 
