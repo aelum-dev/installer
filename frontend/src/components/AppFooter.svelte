@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Button from '$components/Button.svelte';
 	import { PAGE_IDS } from '$lib/types';
 	import { MinDiskSizeBytes } from '$lib/constants';
 	import { diskSelectionData, pageValid } from '$lib/state.svelte';
@@ -65,7 +64,15 @@
 				</svg>
 			</button>
 		{:else if isLastPage}
-			<Button variant="secondary" onClick={buttonHandler}>{t('page.finish.reboot')}</Button>
+			<button type="button" class="btn-reboot" onclick={buttonHandler}>
+				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 12a9 9 0 00-9-9 9.75 9.75 0 00-6.74 2.74L3 8"/>
+					<path d="M3 3v5h5"/>
+					<path d="M3 12a9 9 0 009 9 9.75 9.75 0 006.74-2.74L21 16"/>
+					<path d="M16 21h5v-5"/>
+				</svg>
+				{t('page.finish.reboot')}
+			</button>
 		{/if}
 	</div>
 </footer>
@@ -75,8 +82,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		min-height: var(--footer-height);
 		background-color: var(--color-bg-light);
+		padding: var(--spacing-xl);
 	}
 
 	.footer-left {
@@ -121,5 +128,27 @@
 	.nav-btn--disabled {
 		opacity: 0.3;
 		cursor: not-allowed;
+	}
+
+	.btn-reboot {
+		font-family: inherit;
+		font-weight: 600;
+		font-size: var(--font-size-md);
+		padding: 10px 24px;
+		border-radius: var(--radius-xl);
+		border: 1.5px solid var(--color-primary);
+		background: transparent;
+		color: var(--color-primary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-reboot:hover {
+		background-color: var(--color-primary);
+		color: var(--color-on-primary);
+		border-color: var(--color-primary);
 	}
 </style>

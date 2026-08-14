@@ -15,6 +15,22 @@
 	let currentStep = $state(0);
 	let currentStepLabel = $state('');
 	let progress = $state(0);
+
+	// Map backend step labels to i18n keys
+	const STEP_LABEL_MAP: Record<string, string> = {
+		'Formatting disk': 'step.formatting',
+		'Mounting filesystem': 'step.mounting',
+		'Installing system': 'step.installingBase',
+		'Installing desktop': 'step.installingDesktop',
+		'Setting up users': 'step.setupUsers',
+		'Configuring system': 'step.configuringSystem',
+		'Clearing package cache': 'step.clearingCache',
+	};
+
+	function translateStepLabel(rawLabel: string): string {
+		const key = STEP_LABEL_MAP[rawLabel];
+		return key ? t(key) : rawLabel;
+	}
 	let isRunning = $state(false);
 	let isComplete = $state(false);
 	let hasTransitioned = $state(false);
@@ -37,8 +53,10 @@
 	// Listen for installation events from the backend
 	$effect(() => {
 		const handleProgress = (data: { label: string; percent: number; phase: string }) => {
-			// Strip any timestamp/percentage prefix — only keep the step name
+			// Strip any prefix — only keep the step name
 			let cleanLabel = data.label;
+			// Remove leading [DRY RUN] if present
+			cleanLabel = cleanLabel.replace(/^\[DRY RUN\]\s*/, '');
 			// Remove leading [HH:MM:SS] if present
 			cleanLabel = cleanLabel.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '');
 			// Remove leading [N%] if present
@@ -48,7 +66,7 @@
 			cleanLabel = cleanLabel.trim();
 
 			if (cleanLabel !== currentStepLabel) {
-				currentStepLabel = cleanLabel;
+				currentStepLabel = translateStepLabel(cleanLabel);
 				progress = 0;
 			}
 			if (data.phase === 'running') {
@@ -118,9 +136,9 @@
 	}
 
 	const currentLabel = $derived(
-		isComplete ? 'Installation completed!' :
+		isComplete ? t('page.installation.completed') :
 		errorMessage ? errorMessage :
-		currentStepLabel || 'Initializing...'
+		currentStepLabel || t('page.installation.initializing')
 	);
 </script>
 

@@ -3,6 +3,7 @@
 	import { quadOut } from 'svelte/easing';
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
+
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import ErrorBanner from '$components/ErrorBanner.svelte'; // kept for now
 
@@ -117,7 +118,6 @@
 
 <div class="app-layout" dir={getIsRTL() ? 'rtl' : 'ltr'}>
 	<AppHeader {currentPage} />
-
 	<main class="content-area">
 		{#key currentPage}
 			<div class="page-content" transition:fly={{ x: direction === 'forward' ? -40 : 40, duration: 250, easing: quadOut }}>
@@ -139,7 +139,6 @@
 	</main>
 
 	<ConfirmDialog />
-
 	{#if !PAGES_NO_NAV.has(currentPage as PageID)}
 		<AppFooter {currentPage} />
 	{/if}
@@ -152,7 +151,6 @@
 		height: 100vh;
 		width: 100vw;
 		overflow: hidden;
-		padding: var(--spacing-lg);
 		box-sizing: border-box;
 		background-color: var(--color-bg-light);
 	}

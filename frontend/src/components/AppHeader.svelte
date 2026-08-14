@@ -18,8 +18,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		min-height: var(--header-height);
 		background-color: var(--color-bg-light);
+		padding: var(--spacing-xl);
 	}
 
 	.brand {
@@ -28,7 +28,6 @@
 		color: var(--color-text);
 		text-transform: uppercase;
 		letter-spacing: 1px;
-		margin-inline-start: var(--spacing-lg);
 	}
 
 	.dry-run-badge {
@@ -42,6 +41,5 @@
 		font-weight: var(--font-weight-700);
 		border-radius: var(--radius-xl);
 		letter-spacing: 0.04em;
-		margin-inline-end: var(--spacing-lg);
 	}
 </style>

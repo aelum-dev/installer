@@ -125,7 +125,7 @@
 	}
 
 	.btn-cancel:hover {
-		background-color: var(--color-bg-light);
+		background-color: var(--color-bg-neutral-hover);
 		border-color: var(--color-border);
 	}
 
