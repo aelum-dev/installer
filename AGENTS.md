@@ -19,6 +19,7 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
   main.go                       — Wails app entry point (embeds frontend/dist, runs gui.NewApp)
   backend/
     cli/main.go                 — CLI installer. Password read from stdin (never flags).
+    cli/main_test.go            — CLI tests
     gui/
       app.go                    — Wails app struct, StartUp, OnBeforeClose
       bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
@@ -26,19 +27,18 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
       navigation.go             — Page IDs, navigation state
       root_check.go             — Sudo verification
       validation.go             — Validate + Save methods (validate = no state mutation)
-      logger.go                 — GUILogger (GUI logs → stderr+log; CLI output → log only)
       root_check_test.go        — Root check tests
       validation_test.go        — Validation tests
     install/
-      installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 6 steps.
-      step.go                   — Step interface + step implementations (FormatDiskStep, etc.) + Plan
-      configuration.go          — ConfigureSystem (merged step: fstab→bootloader→system→greetd→plymouth→zram→services)
+      installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 7 steps.
+      step.go                   — Step interface + step implementations (FormatDiskStep, etc.) + Steps()
+      configuration.go          — ConfigureSystem (merged step: GenerateFstab→bootloader→system→greetd→plymouth→zram→services)
       errors.go                 — ValidationError, InstallError types
       logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
       format.go                 — FormatDisk() + setupBtrfsSubvolumes()
       mount.go                  — MountFilesystem() + verifyMount()
-      install.go                — installPackages(), Install(), InstallDesktop() (pacstrap with line-count progress)
-      fstab.go                  — GenerateFstab() (custom for btrfs, standard for ext4)
+      install_packages.go       — installPackages(), Install(), InstallDesktop() (pacstrap with line-count progress)
+      clearcache.go             — ClearCache() for package manager cache cleanup
       users.go                  — SetupUsers() (useradd, chpasswd, sudoers, ISO file copy)
       cleanup.go                — CleanupMounts() (lazy recursive unmount)
       command.go                — Run(), runChroot(), writeFile(), appendFile() helpers
@@ -56,10 +56,9 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
         pacstrap_test.go        — Progress tracker tests
       installer_test.go         — Installer unit tests
       installer_integration_test.go — Integration tests
-      install_test.go           — Install function tests
+      install_packages_test.go  — Install packages tests
       fstab_test.go             — Fstab tests
       swap_test.go              — Swap/zram tests
-      plan_test.go              — Plan/weight tests
     shared/
       types.go                  — DiskInfo, PartitionInfo, UserAccountData, DiskSelectionData
       config.go                 — ALL constants: paths, command names, weights, thresholds, etc.
@@ -72,7 +71,7 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
       mirrorlist.go             — Embedded mirrorlists per region
       mirrorlist_gen.go         — Mirrorlist refresh script
       logpath.go                — GetLogPath()
-      mirrorlist/               — Mirrorlist data files per locale (en_US.list, de_DE.list, etc.)
+      mirrorlist/               — Mirrorlist data files per locale (28 locale .list files + all_https.txt, default.list)
       disks_test.go             — Disk tests
       validators_test.go        — Validator tests
     validation/
@@ -118,6 +117,7 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
     darwin/                     — macOS build output
     windows/                    — Windows build output
     appicon.png                 — Application icon
+    README.md                   — Build directory documentation
   .agents/                      — Agent skills directory
   .github/                      — GitHub workflows
   wails.json                    — Wails configuration
@@ -128,14 +128,15 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
   run.sh                        — Run script
 ```
 
-## Installation Steps (6 top-level)
-`install/step.go` `DefaultPlan()` controls the step order. Weights control progress bar:
+## Installation Steps (7 top-level)
+`install/step.go` `Steps()` controls the step order. Weights control progress bar:
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot`
-3. **InstallBase** (weight 45) — `pacstrap /mnt base linux-lts linux-firmware ...` (basePackages in `install/install.go`)
-4. **InstallDesktop** (weight 35) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktopPackages in `install/install.go`)
+3. **InstallBase** (weight 38) — `pacstrap /mnt base linux-lts linux-firmware ...` (basePackages in `install/install_packages.go`)
+4. **InstallDesktop** (weight 51) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktopPackages in `install/install_packages.go`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files
-6. **ConfigureSystem** (weight 13) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configuration.go`)
+6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configuration.go`)
+7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`install/clearcache.go`)
 
 ## Build & Test
 ```bash
@@ -151,7 +152,7 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 - **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aestheticos-installer-cli --install <disk>` and reads JSON progress from stderr.
 - **Direct exec for root ops**: Install steps use `Run()` (exec.Command) and `runChroot()` (arch-chroot) directly — no helper binary.
 - **InstallContext**: Shared state passed through all install steps. New fields go here, not in Installer struct.
-- **Progress tracking**: pacstrap uses line-count-based tracker in `install/progress/pacstrap.go`. Step weights in `install/plan.go`.
+- **Progress tracking**: pacstrap uses line-count-based tracker in `install/progress/pacstrap.go`. Step weights in `install/step.go`.
 - **Dry run**: `AESTHETIC_DRY_RUN=1` — steps sleep 200ms instead of executing.
 - **Fake disks**: `FAKE_DISKS=1` — synthetic disk data for frontend dev.
 - **Rollback**: `--rollback /dev/vda` — unmounts + wipes partition signatures.
@@ -200,4 +201,4 @@ Welcome (language select)
 - Default hostname: `shared.DefaultHostname` = "aestheticos"
 - Mount root: `shared.MountRoot` = "/mnt"
 - ESP mount: `shared.BootMountPoint` = "/mnt/boot"
-- Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=45`, `WeightInstallDesktop=35`, `WeightSetupUsers=2`, `WeightConfigureSystem=13`
+- Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=38`, `WeightInstallDesktop=51`, `WeightSetupUsers=2`, `WeightConfigureSystem=4`, `WeightClearCache=1`
