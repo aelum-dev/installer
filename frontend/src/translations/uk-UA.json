@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "РЕЖИМ ПРОГОНУ",
+
+  "page.welcome.title": "Ласкаво просимо до AestheticOS",
+  "page.welcome.subtitle": "Цей встановлювач проведе вас через налаштування системи.",
+  "page.welcome.loading": "Завантаження...",
+
+  "page.userAccount.title": "Створити обліковий запис",
+  "page.userAccount.username": "Ім'я користувача",
+  "page.userAccount.usernamePlaceholder": "Введіть ім'я користувача",
+  "page.userAccount.password": "Пароль",
+  "page.userAccount.passwordPlaceholder": "Введіть пароль",
+  "page.userAccount.confirmPassword": "Підтвердіть пароль",
+  "page.userAccount.confirmPasswordPlaceholder": "Введіть пароль ще раз",
+
+  "page.diskSelection.title": "Виберіть диск для встановлення",
+  "page.diskSelection.hint": "Виберіть диск і файлову систему для встановлення AestheticOS.",
+  "page.diskSelection.loading": "Пошук дисків...",
+  "page.diskSelection.noDevices": "Пристроїв зберігання не знайдено.",
+  "page.diskSelection.scanPartitions": "Сканування розділів...",
+  "page.diskSelection.noPartitions": "На цьому диску немає розділів.",
+  "page.diskSelection.fileSystem": "Файлова система",
+  "page.diskSelection.diskTooSmall": "Диск занадто малий. Потрібно мінімум {minSize}, але вибрано {selectedSize}.",
+
+  "page.confirmation.title": "Зведення встановлення",
+  "page.confirmation.sectionLanguage": "Мова",
+  "page.confirmation.sectionUser": "Обліковий запис",
+  "page.confirmation.sectionDisk": "Цільовий диск",
+  "page.confirmation.username": "Ім'я користувача",
+  "page.confirmation.password": "Пароль",
+  "validation.username": "Ім'я користувача",
+  "page.confirmation.diskTooSmall": "⚠ Диск занадто малий — потрібно мінімум 16 ГБ",
+
+  "page.installation.title": "Встановлення AestheticOS",
+  "page.installation.target": "Ціль",
+  "page.installation.completed": "Встановлення завершено!",
+  "page.installation.initializing": "Ініціалізація...",
+  "page.installation.checkLog": "Перевірте {logPath} для деталей.",
+
+  "page.finish.title": "Встановлення завершено",
+  "page.finish.message": "AestheticOS успішно встановлено.",
+  "page.finish.reboot": "Перезавантаження",
+
+  "dialog.confirm.title": "Підтвердіть встановлення",
+  "dialog.confirm.message": "Ви впевнені, що хочете встановити AestheticOS на <strong>{model}</strong>? Усі дані на цьому диску буде безповоротно видалено.",
+  "dialog.confirm.cancel": "Скасувати",
+  "dialog.confirm.yes": "Так, видалити й встановити",
+
+  "validation.usernameRequired": "Ім'я користувача обов'язкове",
+  "validation.usernameMinLength": "Ім'я користувача має містити щонайменше 3 символи",
+  "validation.passwordRequired": "Пароль обов'язковий",
+  "validation.passwordMinLength": "Пароль має містити щонайменше 6 символів",
+  "validation.passwordsMatch": "Будь ласка, підтвердіть пароль",
+  "validation.passwordsNoMatch": "Паролі не збігаються",
+  "validation.selectLanguage": "Будь ласка, оберіть мову для продовження.",
+  "validation.selectUserAccount": "Будь ласка, заповніть усі обов'язкові поля.",
+  "validation.selectDisk": "Будь ласка, виберіть диск для продовження.",
+  "validation.reviewInstallation": "Будь ласка, перевірте деталі встановлення.",
+  "validation.waitInstallation": "Будь ласка, зачекайте на завершення встановлення.",
+  "validation.installationComplete": "Встановлення завершено.",
+
+  "nav.back": "Назад",
+  "nav.next": "Далі",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Форматування диску...",
+  "step.mounting": "Монтування файлової системи...",
+  "step.installingBase": "Встановлення базової системи...",
+  "step.installingDesktop": "Встановлення робочого середовища...",
+  "step.setupUsers": "Налаштування користувачів...",
+  "step.configuringSystem": "Налаштування системи...",
+  "step.clearingCache": "Очищення кешу пакетів..."
+}

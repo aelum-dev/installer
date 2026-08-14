@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "TRY RUN",
+
+  "page.welcome.title": "Witamy w AestheticOS",
+  "page.welcome.subtitle": "Ten instalator poprowadzi Cię przez konfigurację systemu.",
+  "page.welcome.loading": "Ładowanie...",
+
+  "page.userAccount.title": "Utwórz konto użytkownika",
+  "page.userAccount.username": "Nazwa użytkownika",
+  "page.userAccount.usernamePlaceholder": "Wpisz nazwę użytkownika",
+  "page.userAccount.password": "Hasło",
+  "page.userAccount.passwordPlaceholder": "Wpisz hasło",
+  "page.userAccount.confirmPassword": "Potwierdź hasło",
+  "page.userAccount.confirmPasswordPlaceholder": "Wpisz hasło ponownie",
+
+  "page.diskSelection.title": "Wybierz dysk do instalacji",
+  "page.diskSelection.hint": "Wybierz dysk i system plików do instalacji AestheticOS.",
+  "page.diskSelection.loading": "Wyszukiwanie dysków...",
+  "page.diskSelection.noDevices": "Nie znaleziono urządzeń przechowywania.",
+  "page.diskSelection.scanPartitions": "Skanowanie partycji...",
+  "page.diskSelection.noPartitions": "Brak partycji na tym dysku.",
+  "page.diskSelection.fileSystem": "System plików",
+  "page.diskSelection.diskTooSmall": "Dysk jest za mały. Wymagane minimum {minSize}, ale wybrany dysk to {selectedSize}.",
+
+  "page.confirmation.title": "Podsumowanie instalacji",
+  "page.confirmation.sectionLanguage": "Język",
+  "page.confirmation.sectionUser": "Konto użytkownika",
+  "page.confirmation.sectionDisk": "Dysk docelowy",
+  "page.confirmation.username": "Nazwa użytkownika",
+  "page.confirmation.password": "Hasło",
+  "validation.username": "Nazwa użytkownika",
+  "page.confirmation.diskTooSmall": "⚠ Dysk za mały — wymagane minimum 16 GB",
+
+  "page.installation.title": "Instalowanie AestheticOS",
+  "page.installation.target": "Cel",
+  "page.installation.completed": "Instalacja zakończona!",
+  "page.installation.initializing": "Inicjalizacja...",
+  "page.installation.checkLog": "Sprawdź {logPath} po szczegóły.",
+
+  "page.finish.title": "Instalacja zakończona",
+  "page.finish.message": "AestheticOS została pomyślnie zainstalowana.",
+  "page.finish.reboot": "Uruchom ponownie",
+
+  "dialog.confirm.title": "Potwierdź instalację",
+  "dialog.confirm.message": "Czy na pewno chcesz zainstalować AestheticOS na <strong>{model}</strong>? Wszystkie dane na tym dysku zostaną trwale usunięte.",
+  "dialog.confirm.cancel": "Anuluj",
+  "dialog.confirm.yes": "Tak, usuń i zainstaluj",
+
+  "validation.usernameRequired": "Nazwa użytkownika jest wymagana",
+  "validation.usernameMinLength": "Nazwa użytkownika musi mieć co najmniej 3 znaki",
+  "validation.passwordRequired": "Hasło jest wymagane",
+  "validation.passwordMinLength": "Hasło musi mieć co najmniej 6 znaków",
+  "validation.passwordsMatch": "Proszę potwierdzić hasło",
+  "validation.passwordsNoMatch": "Hasła nie są zgodne",
+  "validation.selectLanguage": "Proszę wybrać język, aby kontynuować.",
+  "validation.selectUserAccount": "Proszę wypełnić wszystkie wymagane pola, aby kontynuować.",
+  "validation.selectDisk": "Proszę wybrać dysk, aby kontynuować.",
+  "validation.reviewInstallation": "Proszę sprawdzić szczegóły instalacji.",
+  "validation.waitInstallation": "Proszę poczekać na zakończenie instalacji.",
+  "validation.installationComplete": "Instalacja jest zakończona.",
+
+  "nav.back": "Wstecz",
+  "nav.next": "Dalej",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Formatowanie dysku...",
+  "step.mounting": "Montowanie systemu plików...",
+  "step.installingBase": "Instalowanie systemu bazowego...",
+  "step.installingDesktop": "Instalowanie środowiska desktopowego...",
+  "step.setupUsers": "Konfigurowanie użytkowników...",
+  "step.configuringSystem": "Konfigurowanie systemu...",
+  "step.clearingCache": "Wyczyść pamięć podręczną pakietów..."
+}

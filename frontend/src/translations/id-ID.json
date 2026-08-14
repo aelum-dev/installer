@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "DRY RUN",
+
+  "page.welcome.title": "Selamat datang di AestheticOS",
+  "page.welcome.subtitle": "Pemasang ini akan memandu Anda melalui pengaturan sistem Anda.",
+  "page.welcome.loading": "Memuat...",
+
+  "page.userAccount.title": "Buat akun pengguna",
+  "page.userAccount.username": "Nama pengguna",
+  "page.userAccount.usernamePlaceholder": "Masukkan nama pengguna",
+  "page.userAccount.password": "Kata sandi",
+  "page.userAccount.passwordPlaceholder": "Masukkan kata sandi",
+  "page.userAccount.confirmPassword": "Konfirmasi kata sandi",
+  "page.userAccount.confirmPasswordPlaceholder": "Masukkan kata sandi lagi",
+
+  "page.diskSelection.title": "Pilih disk instalasi",
+  "page.diskSelection.hint": "Pilih disk dan sistem berkas untuk menginstal AestheticOS.",
+  "page.diskSelection.loading": "Mencari disk...",
+  "page.diskSelection.noDevices": "Tidak ada perangkat penyimpanan yang ditemukan.",
+  "page.diskSelection.scanPartitions": "Memindai partisi...",
+  "page.diskSelection.noPartitions": "Tidak ada partisi di disk ini.",
+  "page.diskSelection.fileSystem": "Sistem berkas",
+  "page.diskSelection.diskTooSmall": "Disk terlalu kecil. Diperlukan minimal {minSize}, tetapi disk yang dipilih adalah {selectedSize}.",
+
+  "page.confirmation.title": "Ringkasan instalasi",
+  "page.confirmation.sectionLanguage": "Bahasa",
+  "page.confirmation.sectionUser": "Akun pengguna",
+  "page.confirmation.sectionDisk": "Disk tujuan",
+  "page.confirmation.username": "Nama pengguna",
+  "page.confirmation.password": "Kata sandi",
+  "validation.username": "Nama pengguna",
+  "page.confirmation.diskTooSmall": "⚠ Disk terlalu kecil — diperlukan minimal 16 GB",
+
+  "page.installation.title": "Menginstal AestheticOS",
+  "page.installation.target": "Tujuan",
+  "page.installation.completed": "Instalasi selesai!",
+  "page.installation.initializing": "Menginisialisasi...",
+  "page.installation.checkLog": "Periksa {logPath} untuk detail.",
+
+  "page.finish.title": "Instalasi selesai",
+  "page.finish.message": "AestheticOS berhasil diinstal.",
+  "page.finish.reboot": "Mulai ulang",
+
+  "dialog.confirm.title": "Konfirmasi instalasi",
+  "dialog.confirm.message": "Apakah Anda yakin ingin menginstal AestheticOS di <strong>{model}</strong>? Semua data di disk ini akan dihapus secara permanen.",
+  "dialog.confirm.cancel": "Batal",
+  "dialog.confirm.yes": "Ya, hapus & instal",
+
+  "validation.usernameRequired": "Nama pengguna wajib diisi",
+  "validation.usernameMinLength": "Nama pengguna harus terdiri dari minimal 3 karakter",
+  "validation.passwordRequired": "Kata sandi wajib diisi",
+  "validation.passwordMinLength": "Kata sandi harus terdiri dari minimal 6 karakter",
+  "validation.passwordsMatch": "Silakan konfirmasi kata sandi Anda",
+  "validation.passwordsNoMatch": "Kata sandi tidak cocok",
+  "validation.selectLanguage": "Silakan pilih bahasa untuk melanjutkan.",
+  "validation.selectUserAccount": "Silakan lengkapi semua bidang yang diperlukan untuk melanjutkan.",
+  "validation.selectDisk": "Silakan pilih disk untuk melanjutkan.",
+  "validation.reviewInstallation": "Silakan periksa detail instalasi Anda.",
+  "validation.waitInstallation": "Silakan tunggu hingga instalasi selesai.",
+  "validation.installationComplete": "Instalasi telah selesai.",
+
+  "nav.back": "Kembali",
+  "nav.next": "Berikutnya",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Memformat disk...",
+  "step.mounting": "Memasang sistem berkas...",
+  "step.installingBase": "Menginstal sistem dasar...",
+  "step.installingDesktop": "Menginstal lingkungan desktop...",
+  "step.setupUsers": "Menyiapkan pengguna...",
+  "step.configuringSystem": "Mengonfigurasi sistem...",
+  "step.clearingCache": "Membersihkan cache paket..."
+}

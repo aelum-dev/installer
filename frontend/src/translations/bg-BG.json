@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "DRY RUN",
+
+  "page.welcome.title": "Добре дошли в AestheticOS",
+  "page.welcome.subtitle": "Този инсталатор ще ви насочи през настройката на системата.",
+  "page.welcome.loading": "Зареждане...",
+
+  "page.userAccount.title": "Създайте потребителски акаунт",
+  "page.userAccount.username": "Потребителско име",
+  "page.userAccount.usernamePlaceholder": "Въведете потребителско име",
+  "page.userAccount.password": "Парола",
+  "page.userAccount.passwordPlaceholder": "Въведете парола",
+  "page.userAccount.confirmPassword": "Потвърдете паролата",
+  "page.userAccount.confirmPasswordPlaceholder": "Въведете паролата отново",
+
+  "page.diskSelection.title": "Изберете диск за инсталация",
+  "page.diskSelection.hint": "Изберете диск и файловата система за инсталация на AestheticOS.",
+  "page.diskSelection.loading": "Търсене на дискове...",
+  "page.diskSelection.noDevices": "Не са намерени устройства за съхранение.",
+  "page.diskSelection.scanPartitions": "Сканиране на дялове...",
+  "page.diskSelection.noPartitions": "Няма дялове на този диск.",
+  "page.diskSelection.fileSystem": "Файлова система",
+  "page.diskSelection.diskTooSmall": "Дискът е твърде малък. Изисква се минимум {minSize}, но избраният диск е {selectedSize}.",
+
+  "page.confirmation.title": "Обобщение на инсталацията",
+  "page.confirmation.sectionLanguage": "Език",
+  "page.confirmation.sectionUser": "Потребителски акаунт",
+  "page.confirmation.sectionDisk": "Целеви диск",
+  "page.confirmation.username": "Потребителско име",
+  "page.confirmation.password": "Парола",
+  "validation.username": "Потребителско име",
+  "page.confirmation.diskTooSmall": "⚠ Дискът е твърде малък — изисква се минимум 16 GB",
+
+  "page.installation.title": "Инсталиране на AestheticOS",
+  "page.installation.target": "Цел",
+  "page.installation.completed": "Инсталацията завърши!",
+  "page.installation.initializing": "Инициализиране...",
+  "page.installation.checkLog": "Проверете {logPath} за подробности.",
+
+  "page.finish.title": "Инсталацията завърши",
+  "page.finish.message": "AestheticOS беше инсталиран успешно.",
+  "page.finish.reboot": "Рестартиране",
+
+  "dialog.confirm.title": "Потвърдете инсталацията",
+  "dialog.confirm.message": "Сигурни ли сте, че искате да инсталирате AestheticOS на <strong>{model}</strong>? Всички данни на този диск ще бъдат изтрити за постоянно.",
+  "dialog.confirm.cancel": "Отказ",
+  "dialog.confirm.yes": "Да, изтрий и инсталирай",
+
+  "validation.usernameRequired": "Потребителското име е задължително",
+  "validation.usernameMinLength": "Потребителското име трябва да съдържа поне 3 знака",
+  "validation.passwordRequired": "Паролата е задължителна",
+  "validation.passwordMinLength": "Паролата трябва да съдържа поне 6 знака",
+  "validation.passwordsMatch": "Моля, потвърдете паролата си",
+  "validation.passwordsNoMatch": "Паролите не съвпадат",
+  "validation.selectLanguage": "Моля, изберете език, за да продължите.",
+  "validation.selectUserAccount": "Моля, попълнете всички задължителни полета, за да продължите.",
+  "validation.selectDisk": "Моля, изберете диск, за да продължите.",
+  "validation.reviewInstallation": "Моля, прегледайте подробностите за инсталацията.",
+  "validation.waitInstallation": "Моля, изчакайте завършването на инсталацията.",
+  "validation.installationComplete": "Инсталацията е завършена.",
+
+  "nav.back": "Назад",
+  "nav.next": "Напред",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Форматиране на диск...",
+  "step.mounting": "Монтиране на файлова система...",
+  "step.installingBase": "Инсталиране на базова система...",
+  "step.installingDesktop": "Инсталиране на работна среда...",
+  "step.setupUsers": "Настройка на потребители...",
+  "step.configuringSystem": "Конфигуриране на система...",
+  "step.clearingCache": "Изчистване на кеша на пакетите..."
+}

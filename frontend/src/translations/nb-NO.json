@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "DRY RUN",
+
+  "page.welcome.title": "Velkommen til AestheticOS",
+  "page.welcome.subtitle": "Denne installasjonsprogrammet vil veilede deg gjennom oppsettet av systemet ditt.",
+  "page.welcome.loading": "Laster...",
+
+  "page.userAccount.title": "Opprett brukerkonto",
+  "page.userAccount.username": "Brukernavn",
+  "page.userAccount.usernamePlaceholder": "Skriv inn brukernavn",
+  "page.userAccount.password": "Passord",
+  "page.userAccount.passwordPlaceholder": "Skriv inn passord",
+  "page.userAccount.confirmPassword": "Bekreft passord",
+  "page.userAccount.confirmPasswordPlaceholder": "Skriv inn passord på nytt",
+
+  "page.diskSelection.title": "Velg installasjonsdisk",
+  "page.diskSelection.hint": "Velg en disk og filsystem for å installere AestheticOS.",
+  "page.diskSelection.loading": "Søker etter disker...",
+  "page.diskSelection.noDevices": "Ingen lagringsenheter funnet.",
+  "page.diskSelection.scanPartitions": "Skanner partisjoner...",
+  "page.diskSelection.noPartitions": "Ingen partisjoner på denne disken.",
+  "page.diskSelection.fileSystem": "Filsystem",
+  "page.diskSelection.diskTooSmall": "Disken er for liten. Minimum {minSize} kreves, men den valgte disken er {selectedSize}.",
+
+  "page.confirmation.title": "Installsammendrag",
+  "page.confirmation.sectionLanguage": "Språk",
+  "page.confirmation.sectionUser": "Brukerkonto",
+  "page.confirmation.sectionDisk": "Måldisk",
+  "page.confirmation.username": "Brukernavn",
+  "page.confirmation.password": "Passord",
+  "validation.username": "Brukernavn",
+  "page.confirmation.diskTooSmall": "⚠ Disk for liten — minimum 16 GB kreves",
+
+  "page.installation.title": "Installerer AestheticOS",
+  "page.installation.target": "Mål",
+  "page.installation.completed": "Installasjon fullført!",
+  "page.installation.initializing": "Initialiserer...",
+  "page.installation.checkLog": "Sjekk {logPath} for detaljer.",
+
+  "page.finish.title": "Installasjon fullført",
+  "page.finish.message": "AestheticOS har blitt installert vellykket.",
+  "page.finish.reboot": "Start på nytt",
+
+  "dialog.confirm.title": "Bekreft installasjon",
+  "dialog.confirm.message": "Er du sikker på at du vil installere AestheticOS på <strong>{model}</strong>? All data på denne disken vil bli slettet permanent.",
+  "dialog.confirm.cancel": "Avbryt",
+  "dialog.confirm.yes": "Ja, slett & installer",
+
+  "validation.usernameRequired": "Brukernavn er påkrevd",
+  "validation.usernameMinLength": "Brukernavnet må være minst 3 tegn",
+  "validation.passwordRequired": "Passord er påkrevd",
+  "validation.passwordMinLength": "Passordet må være minst 6 tegn",
+  "validation.passwordsMatch": "Vennligst bekreft passordet ditt",
+  "validation.passwordsNoMatch": "Passordene stemmer ikke overens",
+  "validation.selectLanguage": "Vennligst velg et språk for å fortsette.",
+  "validation.selectUserAccount": "Vennligst fyll ut alle påkrevde felt for å fortsette.",
+  "validation.selectDisk": "Vennligst velg en disk for å fortsette.",
+  "validation.reviewInstallation": "Vennligst gjennomgang installasjonsdetaljene dine.",
+  "validation.waitInstallation": "Vennligst vent til installasjonen er fullført.",
+  "validation.installationComplete": "Installasjonen er fullført.",
+
+  "nav.back": "Tilbake",
+  "nav.next": "Neste",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Formaterer disk...",
+  "step.mounting": "Monterer filsystem...",
+  "step.installingBase": "Installerer basesystem...",
+  "step.installingDesktop": "Installerer skrivebordsmiljø...",
+  "step.setupUsers": "Setter opp brukere...",
+  "step.configuringSystem": "Konfigurerer system...",
+  "step.clearingCache": "Tømmer pakkebuffer..."
+}

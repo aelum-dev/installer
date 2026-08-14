@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "DRY RUN",
+
+  "page.welcome.title": "Bonvenon al AestheticOS",
+  "page.welcome.subtitle": "Ĉi tiu instalilo gvidos vin tra la agordo de via sistemo.",
+  "page.welcome.loading": "Ŝargado...",
+
+  "page.userAccount.title": "Krei uzantokonton",
+  "page.userAccount.username": "Uzantnomo",
+  "page.userAccount.usernamePlaceholder": "Enigu uzantnomon",
+  "page.userAccount.password": "Pasvorto",
+  "page.userAccount.passwordPlaceholder": "Enigu pasvorton",
+  "page.userAccount.confirmPassword": "Konfirmi pasvorton",
+  "page.userAccount.confirmPasswordPlaceholder": "Enigu pasvorton denove",
+
+  "page.diskSelection.title": "Elektu instalan diskon",
+  "page.diskSelection.hint": "Elektu diskon kaj dosiersistemon por instali AestheticOS.",
+  "page.diskSelection.loading": "Serĉado de diskonoj...",
+  "page.diskSelection.noDevices": "Neniu stokada aparato trovita.",
+  "page.diskSelection.scanPartitions": "Skani partojn...",
+  "page.diskSelection.noPartitions": "Neniu parto sur ĉi tiu disko.",
+  "page.diskSelection.fileSystem": "Dosiersistemo",
+  "page.diskSelection.diskTooSmall": "La disko estas tro malgranda. Minimume {minSize} bezonata, sed la elektita disko estas {selectedSize}.",
+
+  "page.confirmation.title": "Instala resumo",
+  "page.confirmation.sectionLanguage": "Lingvo",
+  "page.confirmation.sectionUser": "Uzantokonto",
+  "page.confirmation.sectionDisk": "Cela disko",
+  "page.confirmation.username": "Uzantnomo",
+  "page.confirmation.password": "Pasvorto",
+  "validation.username": "Uzantnomo",
+  "page.confirmation.diskTooSmall": "⚠ Disko tro malgranda — minimume 16 GB bezonata",
+
+  "page.installation.title": "Instalante AestheticOS",
+  "page.installation.target": "Celo",
+  "page.installation.completed": "Instalado finita!",
+  "page.installation.initializing": "Inicialigante...",
+  "page.installation.checkLog": "Kontrollu {logPath} por detaloj.",
+
+  "page.finish.title": "Instalado finita",
+  "page.finish.message": "AestheticOS estis sukcese instalita.",
+  "page.finish.reboot": "Reŝarĝi",
+
+  "dialog.confirm.title": "Konfirmi instaladon",
+  "dialog.confirm.message": "Ĉu vi certas, ke vi volas instali AestheticOS sur <strong>{model}</strong>? Ĉiuj datumoj sur ĉi tiu disko estos permanente forigitaj.",
+  "dialog.confirm.cancel": "Nuligi",
+  "dialog.confirm.yes": "Jes, forigi & instali",
+
+  "validation.usernameRequired": "Uzantnomo estas deviga",
+  "validation.usernameMinLength": "Uzantnomo devas havi almenaŭ 3 signojn",
+  "validation.passwordRequired": "Pasvorto estas deviga",
+  "validation.passwordMinLength": "Pasvorto devas havi almenaŭ 6 signojn",
+  "validation.passwordsMatch": "Bonvolu konfirmi vian pasvorton",
+  "validation.passwordsNoMatch": "Pasvortoj ne kongruas",
+  "validation.selectLanguage": "Bonvolu elekti lingvon por daŭrigi.",
+  "validation.selectUserAccount": "Bonvolu plenigi ĉiujn devigajn kampojn por daŭrigi.",
+  "validation.selectDisk": "Bonvolu elekti diskon por daŭrigi.",
+  "validation.reviewInstallation": "Bonvolu revizii viajn instalajn detalojn.",
+  "validation.waitInstallation": "Bonvolu atendi la finon de la instalado.",
+  "validation.installationComplete": "La instalado estas finita.",
+
+  "nav.back": "Reen",
+  "nav.next": "Sekva",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Morfante diskon...",
+  "step.mounting": "Alligante dosiersistemon...",
+  "step.installingBase": "Instalante bazan sistemon...",
+  "step.installingDesktop": "Instalante labortablan medio...",
+  "step.setupUsers": "Agordante uzantojn...",
+  "step.configuringSystem": "Agordante sistemon...",
+  "step.clearingCache": "Purigante pakaĵan kaŝmemoron..."
+}

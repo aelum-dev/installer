@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "اجرای آزمایشی",
+
+  "page.welcome.title": "به AestheticOS خوش آمدید",
+  "page.welcome.subtitle": "این نصب‌کننده شما را در تنظیم سیستم راهنمایی می‌کند.",
+  "page.welcome.loading": "...در حال بارگذاری",
+
+  "page.userAccount.title": "ایجاد حساب کاربری",
+  "page.userAccount.username": "نام کاربری",
+  "page.userAccount.usernamePlaceholder": "نام کاربری را وارد کنید",
+  "page.userAccount.password": "رمز عبور",
+  "page.userAccount.passwordPlaceholder": "رمز عبور را وارد کنید",
+  "page.userAccount.confirmPassword": "تایید رمز عبور",
+  "page.userAccount.confirmPasswordPlaceholder": "رمز عبور را دوباره وارد کنید",
+
+  "page.diskSelection.title": "انتخاب دیسک نصب",
+  "page.diskSelection.hint": "یک دیسک و سیستم فایل برای نصب AestheticOS انتخاب کنید.",
+  "page.diskSelection.loading": "...در حال جستجوی دیسک‌ها",
+  "page.diskSelection.noDevices": "هیچ دستگاه ذخیره‌سازی یافت نشد.",
+  "page.diskSelection.scanPartitions": "...در حال اسکن پارتیشن‌ها",
+  "page.diskSelection.noPartitions": "هیچ پارتیشنی در این دیسک وجود ندارد.",
+  "page.diskSelection.fileSystem": "سیستم فایل",
+  "page.diskSelection.diskTooSmall": "دیسک خیلی کوچک است. حداقل {minSize} مورد نیاز است، اما دیسک انتخابی {selectedSize} است.",
+
+  "page.confirmation.title": "خلاصه نصب",
+  "page.confirmation.sectionLanguage": "زبان",
+  "page.confirmation.sectionUser": "حساب کاربری",
+  "page.confirmation.sectionDisk": "دیسک هدف",
+  "page.confirmation.username": "نام کاربری",
+  "page.confirmation.password": "رمز عبور",
+  "validation.username": "نام کاربری",
+  "page.confirmation.diskTooSmall": "⚠ دیسک خیلی کوچک — حداقل 16 گیگابایت مورد نیاز است",
+
+  "page.installation.title": "در حال نصب AestheticOS",
+  "page.installation.target": "هدف",
+  "page.installation.completed": "نصب کامل شد!",
+  "page.installation.initializing": "...در حال راه‌اندازی",
+  "page.installation.checkLog": "برای جزئیات {logPath} را بررسی کنید.",
+
+  "page.finish.title": "نصب کامل شد",
+  "page.finish.message": "AestheticOS با موفقیت نصب شد.",
+  "page.finish.reboot": "راه‌اندازی مجدد",
+
+  "dialog.confirm.title": "تایید نصب",
+  "dialog.confirm.message": "آیا مطمئن هستید که می‌خواهید AestheticOS را روی <strong>{model}</strong> نصب کنید؟ تمام داده‌های این دیسک برای همیشه پاک خواهد شد.",
+  "dialog.confirm.cancel": "لغو",
+  "dialog.confirm.yes": "بله، پاک کن و نصب کن",
+
+  "validation.usernameRequired": "نام کاربری الزامی است",
+  "validation.usernameMinLength": "نام کاربری باید حداقل 3 حرف داشته باشد",
+  "validation.passwordRequired": "رمز عبور الزامی است",
+  "validation.passwordMinLength": "رمز عبور باید حداقل 6 حرف داشته باشد",
+  "validation.passwordsMatch": "لطفاً رمز عبور خود را تایید کنید",
+  "validation.passwordsNoMatch": "رمزهای عبور مطابقت ندارند",
+  "validation.selectLanguage": "لطفاً یک زبان برای ادامه انتخاب کنید.",
+  "validation.selectUserAccount": "لطفاً تمام فیلدهای الزامی را پر کنید تا ادامه دهید.",
+  "validation.selectDisk": "لطفاً یک دیسک برای ادامه انتخاب کنید.",
+  "validation.reviewInstallation": "لطفاً جزئیات نصب خود را بررسی کنید.",
+  "validation.waitInstallation": "لطفاً منتظر تکمیل نصب بمانید.",
+  "validation.installationComplete": "نصب کامل شده است.",
+
+  "nav.back": "بازگشت",
+  "nav.next": "بعدی",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "...در حال فرمت دیسک",
+  "step.mounting": "...در حال نصب سیستم فایل",
+  "step.installingBase": "...در حال نصب سیستم پایه",
+  "step.installingDesktop": "...در حال نصب محیط دسکتاپ",
+  "step.setupUsers": "...در حال تنظیم کاربران",
+  "step.configuringSystem": "...در حال پیکربندی سیستم",
+  "step.clearingCache": "...در حال پاک کردن حافظه پنهان بسته‌ها"
+}

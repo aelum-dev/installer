@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "DRY-RUN",
+
+  "page.welcome.title": "Tervetuloa AestheticOS:iin",
+  "page.welcome.subtitle": "Tämä asennusohjelma opastaa sinua järjestelmän asetuksissa.",
+  "page.welcome.loading": "Ladataan...",
+
+  "page.userAccount.title": "Luo käyttäjätili",
+  "page.userAccount.username": "Käyttäjänimi",
+  "page.userAccount.usernamePlaceholder": "Syötä käyttäjänimi",
+  "page.userAccount.password": "Salasana",
+  "page.userAccount.passwordPlaceholder": "Syötä salasana",
+  "page.userAccount.confirmPassword": "Vahvista salasana",
+  "page.userAccount.confirmPasswordPlaceholder": "Syötä salasana uudelleen",
+
+  "page.diskSelection.title": "Valitse asennuslevy",
+  "page.diskSelection.hint": "Valitse levy ja tiedostojärjestelmä AestheticOS:n asentamiseksi.",
+  "page.diskSelection.loading": "Etsitään levyjä...",
+  "page.diskSelection.noDevices": "Talluslaitteita ei löytynyt.",
+  "page.diskSelection.scanPartitions": "Skannataan osioita...",
+  "page.diskSelection.noPartitions": "Tällä levyllä ei ole osioita.",
+  "page.diskSelection.fileSystem": "Tiedostojärjestelmä",
+  "page.diskSelection.diskTooSmall": "Levy on liian pieni. Vähimmäiskoko {minSize} vaaditaan, mutta valittu levy on {selectedSize}.",
+
+  "page.confirmation.title": "Asennuksen yhteenveto",
+  "page.confirmation.sectionLanguage": "Kieli",
+  "page.confirmation.sectionUser": "Käyttäjätili",
+  "page.confirmation.sectionDisk": "Kohdelevy",
+  "page.confirmation.username": "Käyttäjänimi",
+  "page.confirmation.password": "Salasana",
+  "validation.username": "Käyttäjänimi",
+  "page.confirmation.diskTooSmall": "⚠ Levy liian pieni — vähintään 16 GB vaaditaan",
+
+  "page.installation.title": "Asennetaan AestheticOS",
+  "page.installation.target": "Kohde",
+  "page.installation.completed": "Asennus valmis!",
+  "page.installation.initializing": "Alustetaan...",
+  "page.installation.checkLog": "Tarkista {logPath} lisätietoja varten.",
+
+  "page.finish.title": "Asennus valmis",
+  "page.finish.message": "AestheticOS on asennettu onnistuneesti.",
+  "page.finish.reboot": "Käynnistä uudelleen",
+
+  "dialog.confirm.title": "Vahvista asennus",
+  "dialog.confirm.message": "Haluatko varmasti asentaa AestheticOS:n levyyn <strong>{model}</strong>? Kaikki tiedot tällä levyllä poistetaan pysyvästi.",
+  "dialog.confirm.cancel": "Peruuta",
+  "dialog.confirm.yes": "Kyllä, poista & asenna",
+
+  "validation.usernameRequired": "Käyttäjänimi on pakollinen",
+  "validation.usernameMinLength": "Käyttäjänimen tulee olla vähintään 3 merkkiä",
+  "validation.passwordRequired": "Salasana on pakollinen",
+  "validation.passwordMinLength": "Salasanan tulee olla vähintään 6 merkkiä",
+  "validation.passwordsMatch": "Vahvista salasanasi",
+  "validation.passwordsNoMatch": "Salasanat eivät täsmää",
+  "validation.selectLanguage": "Valitse kieli jatkaaksesi.",
+  "validation.selectUserAccount": "Täytä kaikki pakolliset kentät jatkaaksesi.",
+  "validation.selectDisk": "Valitse levy jatkaaksesi.",
+  "validation.reviewInstallation": "Tarkista asennustiedot.",
+  "validation.waitInstallation": "Odota asennuksen valmistumista.",
+  "validation.installationComplete": "Asennus on valmis.",
+
+  "nav.back": "Takaisin",
+  "nav.next": "Seuraava",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Muotoillaan levyä...",
+  "step.mounting": "Liitetään tiedostojärjestelmää...",
+  "step.installingBase": "Asennetaan perusjärjestelmää...",
+  "step.installingDesktop": "Asennetaan työpöytäympäristöä...",
+  "step.setupUsers": "Määritetään käyttäjiä...",
+  "step.configuringSystem": "Määritetään järjestelmää...",
+  "step.clearingCache": "Tyhjennetään pakettivälimuistia..."
+}

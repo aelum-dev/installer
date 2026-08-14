@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "測試模式",
+
+  "page.welcome.title": "歡迎使用 AestheticOS",
+  "page.welcome.subtitle": "安裝程式將引導您完成系統設定。",
+  "page.welcome.loading": "載入中...",
+
+  "page.userAccount.title": "建立使用者帳戶",
+  "page.userAccount.username": "使用者名稱",
+  "page.userAccount.usernamePlaceholder": "輸入使用者名稱",
+  "page.userAccount.password": "密碼",
+  "page.userAccount.passwordPlaceholder": "輸入密碼",
+  "page.userAccount.confirmPassword": "確認密碼",
+  "page.userAccount.confirmPasswordPlaceholder": "再次輸入密碼",
+
+  "page.diskSelection.title": "選擇安裝磁碟",
+  "page.diskSelection.hint": "選擇要安裝 AestheticOS 的磁碟和檔案系統。",
+  "page.diskSelection.loading": "掃描磁碟中...",
+  "page.diskSelection.noDevices": "找不到儲存裝置。",
+  "page.diskSelection.scanPartitions": "掃描分割區中...",
+  "page.diskSelection.noPartitions": "此磁碟上沒有分割區。",
+  "page.diskSelection.fileSystem": "檔案系統",
+  "page.diskSelection.diskTooSmall": "磁碟太小。至少需要 {minSize}，但所選磁碟為 {selectedSize}。",
+
+  "page.confirmation.title": "安裝摘要",
+  "page.confirmation.sectionLanguage": "語言",
+  "page.confirmation.sectionUser": "使用者帳戶",
+  "page.confirmation.sectionDisk": "目標磁碟",
+  "page.confirmation.username": "使用者名稱",
+  "page.confirmation.password": "密碼",
+  "validation.username": "使用者名稱",
+  "page.confirmation.diskTooSmall": "⚠ 磁碟太小 — 至少需要 16 GB",
+
+  "page.installation.title": "正在安裝 AestheticOS",
+  "page.installation.target": "目標",
+  "page.installation.completed": "安裝完成！",
+  "page.installation.initializing": "初始化中...",
+  "page.installation.checkLog": "查看 {logPath} 取得詳細資訊。",
+
+  "page.finish.title": "安裝完成",
+  "page.finish.message": "AestheticOS 已成功安裝。",
+  "page.finish.reboot": "重新啟動",
+
+  "dialog.confirm.title": "確認安裝",
+  "dialog.confirm.message": "您確定要在 <strong>{model}</strong> 上安裝 AestheticOS 嗎？此磁碟上的所有資料將被永久刪除。",
+  "dialog.confirm.cancel": "取消",
+  "dialog.confirm.yes": "是，刪除並安裝",
+
+  "validation.usernameRequired": "使用者名稱是必填項",
+  "validation.usernameMinLength": "使用者名稱至少需要 3 個字元",
+  "validation.passwordRequired": "密碼是必填項",
+  "validation.passwordMinLength": "密碼至少需要 6 個字元",
+  "validation.passwordsMatch": "請確認您的密碼",
+  "validation.passwordsNoMatch": "密碼不一致",
+  "validation.selectLanguage": "請選擇一種語言以繼續。",
+  "validation.selectUserAccount": "請填寫所有必填欄位以繼續。",
+  "validation.selectDisk": "請選擇一個磁碟以繼續。",
+  "validation.reviewInstallation": "請檢查您的安裝詳細資訊。",
+  "validation.waitInstallation": "請等待安裝完成。",
+  "validation.installationComplete": "安裝已完成。",
+
+  "nav.back": "返回",
+  "nav.next": "下一步",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "正在格式化磁碟...",
+  "step.mounting": "正在掛載檔案系統...",
+  "step.installingBase": "正在安裝基礎系統...",
+  "step.installingDesktop": "正在安裝桌面環境...",
+  "step.setupUsers": "正在設定使用者...",
+  "step.configuringSystem": "正在設定系統...",
+  "step.clearingCache": "正在清除套件快取..."
+}

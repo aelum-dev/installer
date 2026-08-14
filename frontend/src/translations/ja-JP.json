@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "ドライラン",
+
+  "page.welcome.title": "AestheticOS へようこそ",
+  "page.welcome.subtitle": "このインストーラーがシステムのセットアップをガイドします。",
+  "page.welcome.loading": "読み込み中...",
+
+  "page.userAccount.title": "ユーザーアカウントの作成",
+  "page.userAccount.username": "ユーザー名",
+  "page.userAccount.usernamePlaceholder": "ユーザー名を入力",
+  "page.userAccount.password": "パスワード",
+  "page.userAccount.passwordPlaceholder": "パスワードを入力",
+  "page.userAccount.confirmPassword": "パスワードの確認",
+  "page.userAccount.confirmPasswordPlaceholder": "パスワードを再入力",
+
+  "page.diskSelection.title": "インストールディスクの選択",
+  "page.diskSelection.hint": "AestheticOS をインストールするディスクとファイルシステムを選択してください。",
+  "page.diskSelection.loading": "ディスクを検索中...",
+  "page.diskSelection.noDevices": "ストレージデバイスが見つかりません。",
+  "page.diskSelection.scanPartitions": "パーティションをスキャン中...",
+  "page.diskSelection.noPartitions": "このディスクにはパーティションがありません。",
+  "page.diskSelection.fileSystem": "ファイルシステム",
+  "page.diskSelection.diskTooSmall": "ディスクが小さすぎます。最小 {minSize} が必要ですが、選択されたディスクは {selectedSize} です。",
+
+  "page.confirmation.title": "インストールの概要",
+  "page.confirmation.sectionLanguage": "言語",
+  "page.confirmation.sectionUser": "ユーザーアカウント",
+  "page.confirmation.sectionDisk": "ターゲットディスク",
+  "page.confirmation.username": "ユーザー名",
+  "page.confirmation.password": "パスワード",
+  "validation.username": "ユーザー名",
+  "page.confirmation.diskTooSmall": "⚠ ディスクが小さすぎます — 最小 16 GB 必要",
+
+  "page.installation.title": "AestheticOS をインストール中",
+  "page.installation.target": "ターゲット",
+  "page.installation.completed": "インストール完了！",
+  "page.installation.initializing": "初期化中...",
+  "page.installation.checkLog": "詳細は {logPath} を確認してください。",
+
+  "page.finish.title": "インストール完了",
+  "page.finish.message": "AestheticOS が正常にインストールされました。",
+  "page.finish.reboot": "再起動",
+
+  "dialog.confirm.title": "インストールの確認",
+  "dialog.confirm.message": "<strong>{model}</strong> に AestheticOS をインストールしてもよろしいですか？このディスク上のすべてのデータが永久に削除されます。",
+  "dialog.confirm.cancel": "キャンセル",
+  "dialog.confirm.yes": "はい、削除してインストール",
+
+  "validation.usernameRequired": "ユーザー名は必須です",
+  "validation.usernameMinLength": "ユーザー名は少なくとも 3 文字必要です",
+  "validation.passwordRequired": "パスワードは必須です",
+  "validation.passwordMinLength": "パスワードは少なくとも 6 文字必要です",
+  "validation.passwordsMatch": "パスワードを確認してください",
+  "validation.passwordsNoMatch": "パスワードが一致しません",
+  "validation.selectLanguage": "続行するには言語を選択してください。",
+  "validation.selectUserAccount": "続行するには必須フィールドをすべて入力してください。",
+  "validation.selectDisk": "続行するにはディスクを選択してください。",
+  "validation.reviewInstallation": "インストールの詳細を確認してください。",
+  "validation.waitInstallation": "インストールが完了するまでお待ちください。",
+  "validation.installationComplete": "インストールが完了しました。",
+
+  "nav.back": "戻る",
+  "nav.next": "次へ",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "ディスクをフォーマット中...",
+  "step.mounting": "ファイルシステムをマウント中...",
+  "step.installingBase": "ベースシステムをインストール中...",
+  "step.installingDesktop": "デスクトップ環境をインストール中...",
+  "step.setupUsers": "ユーザーを設定中...",
+  "step.configuringSystem": "システムを構成中...",
+  "step.clearingCache": "パッケージキャッシュをクリア中..."
+}

@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "تشغيل تجريبي",
+
+  "page.welcome.title": "مرحبًا بكم في AestheticOS",
+  "page.welcome.subtitle": "سيتيحكم هذا المثبّت عبر إعداد نظامك.",
+  "page.welcome.loading": "...جاري التحميل",
+
+  "page.userAccount.title": "إنشاء حساب مستخدم",
+  "page.userAccount.username": "اسم المستخدم",
+  "page.userAccount.usernamePlaceholder": "أدخل اسم المستخدم",
+  "page.userAccount.password": "كلمة المرور",
+  "page.userAccount.passwordPlaceholder": "أدخل كلمة المرور",
+  "page.userAccount.confirmPassword": "تأكيد كلمة المرور",
+  "page.userAccount.confirmPasswordPlaceholder": "أعد إدخال كلمة المرور",
+
+  "page.diskSelection.title": "اختر قرص التثبيت",
+  "page.diskSelection.hint": "اختر قرصًا ونظام ملفات لتثبيت AestheticOS.",
+  "page.diskSelection.loading": "...جاري البحث عن الأقراص",
+  "page.diskSelection.noDevices": "لم يتم العثور على أجهزة تخزين.",
+  "page.diskSelection.scanPartitions": "...جاري فحص التقسيمات",
+  "page.diskSelection.noPartitions": "لا توجد تقسيمات على هذا القرص.",
+  "page.diskSelection.fileSystem": "نظام الملفات",
+  "page.diskSelection.diskTooSmall": "القرص صغير جدًا. الحد الأدنى المطلوب {minSize}، لكن القرص المحدد هو {selectedSize}.",
+
+  "page.confirmation.title": "ملخص التثبيت",
+  "page.confirmation.sectionLanguage": "اللغة",
+  "page.confirmation.sectionUser": "حساب المستخدم",
+  "page.confirmation.sectionDisk": "القرص المستهدف",
+  "page.confirmation.username": "اسم المستخدم",
+  "page.confirmation.password": "كلمة المرور",
+  "validation.username": "اسم المستخدم",
+  "page.confirmation.diskTooSmall": "⚠ قرص صغير جدًا — الحد الأدنى 16 جيجابايت مطلوب",
+
+  "page.installation.title": "جاري تثبيت AestheticOS",
+  "page.installation.target": "الهدف",
+  "page.installation.completed": "تم التثبيت!",
+  "page.installation.initializing": "...جاري التهيئة",
+  "page.installation.checkLog": "تحقق من {logPath} للحصول على التفاصيل.",
+
+  "page.finish.title": "تم التثبيت",
+  "page.finish.message": "تم تثبيت AestheticOS بنجاح.",
+  "page.finish.reboot": "إعادة تشغيل",
+
+  "dialog.confirm.title": "تأكيد التثبيت",
+  "dialog.confirm.message": "هل أنت متأكد أنك تريد تثبيت AestheticOS على <strong>{model}</strong>؟ سيتم مسح جميع البيانات على هذا القرص نهائيًا.",
+  "dialog.confirm.cancel": "إلغاء",
+  "dialog.confirm.yes": "نعم، امسح وثبت",
+
+  "validation.usernameRequired": "اسم المستخدم مطلوب",
+  "validation.usernameMinLength": "يجب أن يحتوي اسم المستخدم على 3 أحرف على الأقل",
+  "validation.passwordRequired": "كلمة المرور مطلوبة",
+  "validation.passwordMinLength": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
+  "validation.passwordsMatch": "يرجى تأكيد كلمة المرور",
+  "validation.passwordsNoMatch": "كلمتا المرور غير متطابقتين",
+  "validation.selectLanguage": "يرجى اختيار لغة للمتابعة.",
+  "validation.selectUserAccount": "يرجى إكمال جميع الحقول المطلوبة للمتابعة.",
+  "validation.selectDisk": "يرجى اختيار قرص للمتابعة.",
+  "validation.reviewInstallation": "يرجى مراجعة تفاصيل التثبيت الخاصة بك.",
+  "validation.waitInstallation": "يرجى الانتظار حتى يكتمل التثبيت.",
+  "validation.installationComplete": "التثبيت مكتمل.",
+
+  "nav.back": "رجوع",
+  "nav.next": "التالي",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "...جاري تنسيق القرص",
+  "step.mounting": "...جاري تحميل نظام الملفات",
+  "step.installingBase": "...جاري تثبيت النظام الأساسي",
+  "step.installingDesktop": "...جاري تثبيت بيئة سطح المكتب",
+  "step.setupUsers": "...جاري إعداد المستخدمين",
+  "step.configuringSystem": "...جاري تكوين النظام",
+  "step.clearingCache": "...جاري مسح ذاكرة التخزين المؤقت للحزم"
+}

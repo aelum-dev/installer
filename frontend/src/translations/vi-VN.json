@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "CHẠY THỬ",
+
+  "page.welcome.title": "Chào mừng đến với AestheticOS",
+  "page.welcome.subtitle": "Trình cài đặt này sẽ hướng dẫn bạn qua quá trình thiết lập hệ thống.",
+  "page.welcome.loading": "Đang tải...",
+
+  "page.userAccount.title": "Tạo tài khoản người dùng",
+  "page.userAccount.username": "Tên người dùng",
+  "page.userAccount.usernamePlaceholder": "Nhập tên người dùng",
+  "page.userAccount.password": "Mật khẩu",
+  "page.userAccount.passwordPlaceholder": "Nhập mật khẩu",
+  "page.userAccount.confirmPassword": "Xác nhận mật khẩu",
+  "page.userAccount.confirmPasswordPlaceholder": "Nhập lại mật khẩu",
+
+  "page.diskSelection.title": "Chọn đĩa cài đặt",
+  "page.diskSelection.hint": "Chọn một đĩa và hệ thống tệp để cài đặt AestheticOS.",
+  "page.diskSelection.loading": "Đang quét đĩa...",
+  "page.diskSelection.noDevices": "Không tìm thấy thiết bị lưu trữ.",
+  "page.diskSelection.scanPartitions": "Đang quét phân vùng...",
+  "page.diskSelection.noPartitions": "Không có phân vùng trên đĩa này.",
+  "page.diskSelection.fileSystem": "Hệ thống tệp",
+  "page.diskSelection.diskTooSmall": "Đĩa quá nhỏ. Cần tối thiểu {minSize}, nhưng đĩa được chọn là {selectedSize}.",
+
+  "page.confirmation.title": "Tóm tắt cài đặt",
+  "page.confirmation.sectionLanguage": "Ngôn ngữ",
+  "page.confirmation.sectionUser": "Tài khoản người dùng",
+  "page.confirmation.sectionDisk": "Đĩa đích",
+  "page.confirmation.username": "Tên người dùng",
+  "page.confirmation.password": "Mật khẩu",
+  "validation.username": "Tên người dùng",
+  "page.confirmation.diskTooSmall": "⚠ Đĩa quá nhỏ — cần tối thiểu 16 GB",
+
+  "page.installation.title": "Đang cài đặt AestheticOS",
+  "page.installation.target": "Mục tiêu",
+  "page.installation.completed": "Cài đặt hoàn tất!",
+  "page.installation.initializing": "Đang khởi tạo...",
+  "page.installation.checkLog": "Xem {logPath} để biết chi tiết.",
+
+  "page.finish.title": "Cài đặt hoàn tất",
+  "page.finish.message": "AestheticOS đã được cài đặt thành công.",
+  "page.finish.reboot": "Khởi động lại",
+
+  "dialog.confirm.title": "Xác nhận cài đặt",
+  "dialog.confirm.message": "Bạn có chắc chắn muốn cài đặt AestheticOS trên <strong>{model}</strong> không? Tất cả dữ liệu trên đĩa này sẽ bị xóa vĩnh viễn.",
+  "dialog.confirm.cancel": "Hủy",
+  "dialog.confirm.yes": "Có, xóa & cài đặt",
+
+  "validation.usernameRequired": "Tên người dùng là bắt buộc",
+  "validation.usernameMinLength": "Tên người dùng phải có ít nhất 3 ký tự",
+  "validation.passwordRequired": "Mật khẩu là bắt buộc",
+  "validation.passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
+  "validation.passwordsMatch": "Vui lòng xác nhận mật khẩu của bạn",
+  "validation.passwordsNoMatch": "Mật khẩu không khớp",
+  "validation.selectLanguage": "Vui lòng chọn ngôn ngữ để tiếp tục.",
+  "validation.selectUserAccount": "Vui lòng điền đầy đủ các trường bắt buộc để tiếp tục.",
+  "validation.selectDisk": "Vui lòng chọn một đĩa để tiếp tục.",
+  "validation.reviewInstallation": "Vui lòng xem lại chi tiết cài đặt của bạn.",
+  "validation.waitInstallation": "Vui lòng đợi quá trình cài đặt hoàn tất.",
+  "validation.installationComplete": "Cài đặt đã hoàn tất.",
+
+  "nav.back": "Quay lại",
+  "nav.next": "Tiếp theo",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Đang định dạng đĩa...",
+  "step.mounting": "Đang gắn hệ thống tệp...",
+  "step.installingBase": "Đang cài đặt hệ thống cơ bản...",
+  "step.installingDesktop": "Đang cài đặt môi trường desktop...",
+  "step.setupUsers": "Đang thiết lập người dùng...",
+  "step.configuringSystem": "Đang cấu hình hệ thống...",
+  "step.clearingCache": "Đang xóa bộ nhớ đệm gói..."
+}

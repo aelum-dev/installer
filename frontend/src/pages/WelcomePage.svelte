@@ -6,7 +6,7 @@
 	import Button from '$components/Button.svelte';
 	import PageLayout from '$components/PageLayout.svelte';
 	import { pageValid } from '$lib/state.svelte';
-	import { t, setLocale, locale } from '$lib/i18n';
+	import { t, setLocale, locale, backendLocaleToFrontend } from '$lib/i18n';
 	import { LOCALES } from '$lib/i18n/locales';
 
 	// Component-level locale state for guaranteed reactivity
@@ -22,19 +22,7 @@
 	let selectedCode = $state<string>('');
 	let loading = $state(true);
 
-	// Map language codes to i18n locales
-	const LOCALE_MAP: Record<string, string> = {
-		'en': 'en-US', 'de': 'de-DE', 'es': 'es-ES', 'fr': 'fr-FR', 'it': 'it-IT',
-		'pt': 'pt-BR', 'ru': 'ru-RU', 'zh': 'zh-CN', 'ja': 'ja-JP',
-		'ko': 'ko-KR', 'uk': 'uk-UA', 'pl': 'pl-PL', 'tr': 'tr-TR',
-		'ar': 'ar-SA', 'he': 'he-IL', 'el': 'el-GR', 'fi': 'fi-FI',
-		'hu': 'hu-HU', 'nb': 'nb-NO', 'eo': 'eo',
-	};
 
-	function convertLocale(rawLocale: string): string | undefined {
-		const langCode = rawLocale.split('_')[0].toLowerCase();
-		return LOCALE_MAP[langCode];
-	}
 
 	async function loadLanguages(): Promise<void> {
 		if (languages.length > 0) {
@@ -56,7 +44,7 @@
 			}
 			// Set UI locale from saved language
 			const savedLang = languages.find(l => l.code === saved);
-			const uiLocale = savedLang ? convertLocale(savedLang.locale) : undefined;
+			const uiLocale = savedLang ? backendLocaleToFrontend(savedLang.locale) : undefined;
 			if (uiLocale && uiLocale in LOCALES) {
 				setLocale(uiLocale);
 			}
@@ -70,7 +58,7 @@
 	async function selectLanguage(code: string): Promise<void> {
 		selectedCode = code;
 		const lang = languages.find(l => l.code === code);
-		const uiLocale = lang ? convertLocale(lang.locale) : undefined;
+		const uiLocale = lang ? backendLocaleToFrontend(lang.locale) : undefined;
 
 		// Set the installed system locale
 		try {
