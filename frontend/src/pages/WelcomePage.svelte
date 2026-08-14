@@ -129,13 +129,20 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--spacing-xl);
+		width: 100%;
+		min-width: 400px;
+		max-width: 480px;
 	}
 
 	.subtitle {
 		font-size: 1.05rem;
+		line-height: 1.5;
 		color: var(--color-text-muted);
 		margin: 0;
+		min-width: 320px;
 		max-width: 360px;
+		height: 3.2rem;
+		overflow: hidden;
 	}
 
 	.loading-text {

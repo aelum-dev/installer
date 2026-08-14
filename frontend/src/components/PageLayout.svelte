@@ -25,6 +25,8 @@
 		margin: 0;
 		padding: 0;
 		font-size: var(--font-size-lg, 1.5rem);
+		line-height: 1.3;
+		height: 2.5rem;
 		color: var(--color-text, #333);
 		font-weight: var(--font-weight-700, 700);
 		text-align: center;
@@ -34,6 +36,7 @@
 		display: flex;
 		flex: 1;
 		min-height: 0;
+		min-width: 480px;
 		flex-direction: column;
 		align-items: center;
 		gap: var(--spacing-xl, 24px);
