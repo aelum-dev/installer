@@ -1,4 +1,4 @@
-package install
+package configure
 
 import (
 	"testing"

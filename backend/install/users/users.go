@@ -1,4 +1,4 @@
-package install
+package users
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/shared"
 )
 
@@ -38,14 +39,14 @@ func ExecuteCopyJobs() error {
 	var errs []error
 	for _, job := range ISOCopyJobs {
 		parentDir := filepath.Dir(job.Dest)
-		if _, err := Run("mkdir", "-p", parentDir).CombinedOutput(); err != nil {
+		if _, err := primitives.Run("mkdir", "-p", parentDir).CombinedOutput(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to create dir %s: %w", parentDir, err))
 			continue
 		}
 
 		cpArgs := append([]string{"cp"}, job.Flags...)
 		cpArgs = append(cpArgs, job.Source, job.Dest)
-		cmd := Run(cpArgs...)
+		cmd := primitives.Run(cpArgs...)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to copy %s → %s: %w: %s", job.Source, job.Dest, err, strings.TrimSpace(string(output))))
@@ -66,9 +67,9 @@ func copyISOFiles() error {
 // User setup
 // ============================================================================
 
-// SetupUsers creates user accounts using sudo.
-func SetupUsers(ctx *InstallContext) error {
-	if err := validateMountedSystem(); err != nil {
+// Run creates user accounts using sudo.
+func Run(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 
@@ -84,12 +85,12 @@ func SetupUsers(ctx *InstallContext) error {
 		return err
 	}
 
-	output, err = runChroot("dconf", "update")
+	output, err = primitives.RunChroot("dconf", "update")
 	if err != nil {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
 	}
 
-	output, err = runChroot("useradd", "-m", "-G", "wheel", ctx.Username)
+	output, err = primitives.RunChroot("useradd", "-m", "-G", "wheel", ctx.Username)
 	if err != nil {
 		if !strings.Contains(string(output), "already exists") {
 			return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
@@ -100,7 +101,7 @@ func SetupUsers(ctx *InstallContext) error {
 	}
 
 	if len(ctx.Password) > 0 {
-		cmd = Run("arch-chroot", shared.MountRoot, "chpasswd")
+		cmd = primitives.Run("arch-chroot", shared.MountRoot, "chpasswd")
 		cmd.Stdin = strings.NewReader(ctx.Username + ":" + string(ctx.Password) + "\n")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -111,7 +112,7 @@ func SetupUsers(ctx *InstallContext) error {
 		}
 	}
 
-	cmd = Run("mkdir", "-p", shared.MountRoot+"/etc/sudoers.d")
+	cmd = primitives.Run("mkdir", "-p", shared.MountRoot+"/etc/sudoers.d")
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create sudoers.d dir: %w", err)
 	}

@@ -1,74 +1,46 @@
 package install
 
-import "aestheticos-installer/backend/shared"
+import (
+	"aestheticos-installer/backend/install/clearcache"
+	"aestheticos-installer/backend/install/configure"
+	"aestheticos-installer/backend/install/format"
+	"aestheticos-installer/backend/install/installbase"
+	"aestheticos-installer/backend/install/installdesktop"
+	"aestheticos-installer/backend/install/mount"
+	"aestheticos-installer/backend/install/users"
+	"aestheticos-installer/backend/shared"
+)
 
 // Step defines a single installation step.
 type Step interface {
 	Name() string
 	Label() string
-	Run(ctx *InstallContext) error
+	Run(ctx *shared.InstallContext) error
 }
 
-// --- Step implementations ---------------------------------------------------
-
-type FormatDiskStep struct{}
-
-func (s *FormatDiskStep) Name() string  { return "format_disk" }
-func (s *FormatDiskStep) Label() string { return "Formatting disk" }
-func (s *FormatDiskStep) Run(ctx *InstallContext) error {
-	return FormatDisk(ctx)
+// stepFunc is a function that implements the Step interface.
+type stepFunc struct {
+	name  string
+	label string
+	fn    func(*shared.InstallContext) error
 }
 
-type MountFilesystemStep struct{}
-
-func (s *MountFilesystemStep) Name() string  { return "mount_filesystem" }
-func (s *MountFilesystemStep) Label() string { return "Mounting filesystem" }
-func (s *MountFilesystemStep) Run(ctx *InstallContext) error {
-	return MountFilesystem(ctx)
-}
-
-type InstallBaseStep struct{}
-
-func (s *InstallBaseStep) Name() string  { return "install_base" }
-func (s *InstallBaseStep) Label() string { return "Installing system" }
-func (s *InstallBaseStep) Run(ctx *InstallContext) error {
-	return Install(ctx)
-}
-
-type InstallDesktopStep struct{}
-
-func (s *InstallDesktopStep) Name() string  { return "install_desktop" }
-func (s *InstallDesktopStep) Label() string { return "Installing desktop" }
-func (s *InstallDesktopStep) Run(ctx *InstallContext) error {
-	return InstallDesktop(ctx)
-}
-
-type SetupUsersStep struct{}
-
-func (s *SetupUsersStep) Name() string  { return "setup_users" }
-func (s *SetupUsersStep) Label() string { return "Setting up users" }
-func (s *SetupUsersStep) Run(ctx *InstallContext) error {
-	return SetupUsers(ctx)
-}
-
-type ConfigureSystemStep struct{}
-
-func (s *ConfigureSystemStep) Name() string  { return "configure_system" }
-func (s *ConfigureSystemStep) Label() string { return "Configuring system" }
-func (s *ConfigureSystemStep) Run(ctx *InstallContext) error {
-	return ConfigureSystem(ctx)
+func (s *stepFunc) Name() string  { return s.name }
+func (s *stepFunc) Label() string { return s.label }
+func (s *stepFunc) Run(ctx *shared.InstallContext) error {
+	return s.fn(ctx)
 }
 
 // DefaultSteps returns the canonical list of installation steps.
 func Steps() []Step {
 	return []Step{
-		&FormatDiskStep{},
-		&MountFilesystemStep{},
-		&InstallBaseStep{},
-		&InstallDesktopStep{},
-		&SetupUsersStep{},
-		&ConfigureSystemStep{},
-		&ClearCacheStep{},
+		&stepFunc{"format_disk", "Formatting disk", format.Run},
+		&stepFunc{"mount_filesystem", "Mounting filesystem", mount.Run},
+		&stepFunc{"install_base", "Installing system", installbase.Run},
+		&stepFunc{"install_desktop", "Installing desktop", installdesktop.Run},
+		&stepFunc{"setup_users", "Setting up users", users.Run},
+		&stepFunc{"configure_system", "Configuring system", configure.Run},
+		&stepFunc{"clear_cache", "Clearing package cache", clearcache.Run},
 	}
 }
 

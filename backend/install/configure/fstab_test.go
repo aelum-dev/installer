@@ -1,4 +1,4 @@
-package install
+package configure
 
 import (
 	"strings"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestGenerateExt4Fstab_Contents(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
@@ -36,7 +36,7 @@ func TestGenerateExt4Fstab_Contents(t *testing.T) {
 }
 
 func TestGenerateExt4Fstab_NoDuplicateEntries(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
@@ -60,7 +60,7 @@ func TestGenerateExt4Fstab_NoDuplicateEntries(t *testing.T) {
 }
 
 func TestGenerateBtrfsFstab_Contents(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
@@ -90,7 +90,7 @@ func TestGenerateBtrfsFstab_Contents(t *testing.T) {
 }
 
 func TestGenerateBtrfsFstab_NoDuplicateEntries(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
@@ -121,7 +121,7 @@ func TestGenerateBtrfsFstab_NoDuplicateEntries(t *testing.T) {
 }
 
 func TestGenerateBtrfsFstab_AllSubvolumesPresent(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
@@ -152,7 +152,7 @@ func TestGenerateBtrfsFstab_AllSubvolumesPresent(t *testing.T) {
 }
 
 func TestGenerateBtrfsFstab_CompressionOptions(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
@@ -184,7 +184,7 @@ func TestGenerateBtrfsFstab_CompressionOptions(t *testing.T) {
 }
 
 func TestGenerateBtrfsFstab_EFIFirst(t *testing.T) {
-	ctx := &InstallContext{
+	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",

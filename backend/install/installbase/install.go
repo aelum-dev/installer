@@ -1,10 +1,11 @@
-package install
+package installbase
 
 import (
 	"bufio"
 	"fmt"
 	"os/exec"
 
+	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/install/progress"
 	"aestheticos-installer/backend/shared"
 )
@@ -44,71 +45,16 @@ var basePackages = []string{
 	"nano",
 }
 
-// desktopPackages are user-space packages installed during the desktop
-// environment step. Split from basePackages so the install progress bar
-// moves smoothly instead of stalling during the long pacstrap call.
-var desktopPackages = []string{
-	// Boot splash
-	"plymouth",
-
-	// Login manager
-	"greetd",
-	"greetd-agreety",
-	"greetd-dms-greeter-git",
-	"uwsm",
-
-	// Desktop environment
-	"hyprland",
-	"quickshell",
-	"dms-shell-hyprland",
-	"cava",
-	"dgop",
-	"matugen",
-	"qt6ct-kde",
-	"nautilus",
-	"firefox",
-	"mpv",
-	"imv",
-	"gnome-text-editor",
-
-	// Terminal & UI
-	"alacritty",
-	"adwaita-cursors",
-	"webkit2gtk-4.1",
-	"adw-gtk-theme",
-	"fluent-icon-theme-git",
-	"breeze",
-
-	// Utilities
-	"btop",
-	"fastfetch",
-	"brightnessctl",
-	"ddcutil",
-
-	// Fonts
-	"noto-fonts",
-	"noto-fonts-cjk",
-	"noto-fonts-emoji",
-	"terminus-font",
-	"ttf-jetbrains-mono-nerd",
-
-	// GPU drivers
-	"vulkan-radeon",
-	"vulkan-intel",
-	"vulkan-nouveau",
-
-	// Audio
-	"pipewire",
-	"pipewire-pulse",
-	"pipewire-alsa",
-	"pipewire-jack",
-	"wireplumber",
+// Run installs the Arch Linux base system via pacstrap.
+func Run(ctx *shared.InstallContext) error {
+	return InstallPackages(ctx, basePackages, "base system")
 }
 
-// installPackages runs pacstrap with the given package list.
+// InstallPackages runs pacstrap with the given package list.
 // Streams stdout to parse real progress from pacstrap's output lines.
-func installPackages(ctx *InstallContext, packages []string, description string) error {
-	if err := validateMountedSystem(); err != nil {
+// Exported for use by installdesktop package.
+func InstallPackages(ctx *shared.InstallContext, packages []string, description string) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 
@@ -183,14 +129,4 @@ func installPackages(ctx *InstallContext, packages []string, description string)
 		<-scanDone
 		return fmt.Errorf("interrupted")
 	}
-}
-
-// Install installs the Arch Linux base system via pacstrap.
-func Install(ctx *InstallContext) error {
-	return installPackages(ctx, basePackages, "base system")
-}
-
-// InstallDesktop installs desktop environment packages via pacstrap.
-func InstallDesktop(ctx *InstallContext) error {
-	return installPackages(ctx, desktopPackages, "desktop environment")
 }

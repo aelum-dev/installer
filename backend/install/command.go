@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/shared"
 )
 
@@ -17,13 +18,6 @@ import (
 // Run executes a command directly (no helper needed when running as root).
 func Run(args ...string) *exec.Cmd {
 	return exec.Command(args[0], args[1:]...)
-}
-
-// runChroot executes a command inside the installed system via arch-chroot.
-func runChroot(args ...string) ([]byte, error) {
-	cmdArgs := append([]string{shared.MountRoot}, args...)
-	cmd := exec.Command("arch-chroot", cmdArgs...)
-	return cmd.CombinedOutput()
 }
 
 // writeFile writes content to a file inside the installed system.
@@ -94,9 +88,7 @@ func (e *HostExecutor) Run(args ...string) *exec.Cmd {
 }
 
 func (e *HostExecutor) RunChroot(args ...string) ([]byte, error) {
-	cmdArgs := append([]string{shared.MountRoot}, args...)
-	cmd := exec.Command("arch-chroot", cmdArgs...)
-	return cmd.CombinedOutput()
+	return primitives.RunChroot(args...)
 }
 
 func (e *HostExecutor) WriteFile(path, content string) error {
@@ -110,21 +102,4 @@ func (e *HostExecutor) AppendFile(path, content string) error {
 // NewHostExecutor returns the default HostExecutor.
 func NewHostExecutor() *HostExecutor {
 	return &HostExecutor{}
-}
-
-// ============================================================================
-// Validation helpers
-// ============================================================================
-
-// validateMountedSystem checks that /mnt is properly mounted with a root partition.
-// This is a prerequisite for steps that operate on the installed system.
-func validateMountedSystem() error {
-	// Check if /mnt is mounted
-	cmd := Run("findmnt", "-n", "-o", "SOURCE", shared.MountRoot)
-	output, err := cmd.Output()
-	if err != nil || strings.TrimSpace(string(output)) == "" {
-		return fmt.Errorf("/mnt is not mounted. Run --mount-filesystem <disk> first to mount partitions")
-	}
-
-	return nil
 }

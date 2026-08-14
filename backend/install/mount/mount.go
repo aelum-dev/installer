@@ -1,14 +1,15 @@
-package install
+package mount
 
 import (
 	"fmt"
 	"os/exec"
 	"strings"
 
+	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/shared"
 )
 
-// MountFilesystem mounts the root partition, any btrfs subvolumes, and the EFI partition.
+// Run mounts the root partition, any btrfs subvolumes, and the EFI partition.
 //
 // For standard layouts (ext4/default):
 //   - /mnt: root partition
@@ -20,8 +21,8 @@ import (
 //   - /mnt/boot: EFI partition (ESP)
 //
 // If ctx.Partitions is nil (standalone invocation), it derives partition paths
-// from the disk ID. This matches the layout created by FormatDisk.
-func MountFilesystem(ctx *InstallContext) error {
+// from the disk ID. This matches the layout created by format.Run.
+func Run(ctx *shared.InstallContext) error {
 	// Validate preconditions
 	if ctx.DiskID == "" {
 		return fmt.Errorf("disk ID not set. Run --format-disk <disk> first")
@@ -53,15 +54,15 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	if rootSubvol != nil {
 		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd)
-		mountOpts := buildMountOpts(rootSubvol)
-		cmd = Run("mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
+		mountOpts := primitives.BuildMountOpts(rootSubvol)
+		cmd = primitives.Run("mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
 		}
 	} else {
 		// Standard mount for ext4 and other filesystems
-		cmd = Run("mount", p.RootPart, shared.MountRoot)
+		cmd = primitives.Run("mount", p.RootPart, shared.MountRoot)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))
@@ -98,11 +99,11 @@ func MountFilesystem(ctx *InstallContext) error {
 
 			// Create mount point directory
 			fullPath := shared.MountRoot + mountPath
-			_ = Run("mkdir", "-p", fullPath).Run()
+			_ = primitives.Run("mkdir", "-p", fullPath).Run()
 
 			// Mount subvolume with its properties
-			mountOpts := buildMountOpts(sv)
-			cmd = Run("mount", "-o", mountOpts, p.RootPart, fullPath)
+			mountOpts := primitives.BuildMountOpts(sv)
+			cmd = primitives.Run("mount", "-o", mountOpts, p.RootPart, fullPath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(output))
@@ -117,13 +118,13 @@ func MountFilesystem(ctx *InstallContext) error {
 
 	bootMount := shared.BootMountPoint
 
-	cmd = Run("mkdir", "-p", bootMount)
+	cmd = primitives.Run("mkdir", "-p", bootMount)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
 	}
 
-	cmd = Run("mount", p.EFIPart, bootMount)
+	cmd = primitives.Run("mount", p.EFIPart, bootMount)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("mount EFI failed: %w: %s", err, string(output))
@@ -140,18 +141,8 @@ func MountFilesystem(ctx *InstallContext) error {
 	return nil
 }
 
-// buildMountOpts constructs mount options string from a BtrfsSubvolume's properties.
-// Returns "subvol=<name>,compress=<val>,nodatacow" or similar based on properties.
-func buildMountOpts(sv *shared.BtrfsSubvolume) string {
-	opts := shared.BtrfsSubvolumeMountPrefix + sv.Name
-	if sv.Compression != "" {
-		opts += ",compress=" + sv.Compression
-	}
-	if sv.NoDataCow {
-		opts += ",nodatacow"
-	}
-	return opts
-}
+// BuildMountOpts is an alias for primitives.BuildMountOpts.
+var BuildMountOpts = primitives.BuildMountOpts
 
 // verifyMount checks that a mountpoint is actually mounted and references the expected device.
 // Uses findmnt which is more reliable than mountpoint (works even if mountpoint package is absent).
@@ -159,7 +150,7 @@ func buildMountOpts(sv *shared.BtrfsSubvolume) string {
 // so we strip the [/subvol] suffix before comparing.
 func verifyMount(mountpoint, expectedDevice string) error {
 	// Check that the mountpoint is mounted
-	cmd := Run("findmnt", "-n", "-o", "SOURCE", mountpoint)
+	cmd := primitives.Run("findmnt", "-n", "-o", "SOURCE", mountpoint)
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("mount verification failed: %s is not mounted", mountpoint)

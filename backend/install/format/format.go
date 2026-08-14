@@ -1,20 +1,17 @@
-package install
+package format
 
 import (
 	"fmt"
 	"os/exec"
 	"strings"
 
+	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/shared"
 )
 
-// Error wrapping convention: use %w when wrapping an existing error so the
-// caller can inspect it with errors.Is/As. Use plain %s/%d for new errors
-// that do not wrap an underlying error (validation, missing config, etc.).
-
-// FormatDisk partitions and formats the target disk, then stores partition info
+// Run partitions and formats the target disk, then stores partition info
 // in ctx.Partitions. On failure, tears down any mounts left behind.
-func FormatDisk(ctx *InstallContext) (retErr error) {
+func Run(ctx *shared.InstallContext) (retErr error) {
 	diskID := ctx.DiskID
 	if diskID == "" {
 		return fmt.Errorf("disk ID not set. Provide a disk path (e.g., --format-disk /dev/vda)")
@@ -25,7 +22,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("FormatDisk failed, cleaning up: %v", retErr)
 			}
-			_ = CleanupMounts(ctx.Logger) //nolint:errcheck // cleanup best-effort on error path
+			_ = primitives.CleanupMounts(ctx.Logger) //nolint:errcheck // cleanup best-effort on error path
 		}
 	}()
 
@@ -48,8 +45,8 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Unmount anything previously mounted (from a failed prior attempt)
-	// CleanupMounts handles: sync, fuser -k, umount -R, partprobe, dmsetup
-	if err := CleanupMounts(ctx.Logger); err != nil {
+	// primitives.CleanupMounts handles: sync, fuser -k, umount -R, partprobe, dmsetup
+	if err := primitives.CleanupMounts(ctx.Logger); err != nil {
 		if ctx.Logger != nil {
 			ctx.Logger.Error("Pre-format cleanup failed: %v", err)
 		}
@@ -58,7 +55,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Clear partition table (GPT backup, etc.) for a clean slate
-	clearOut, err := Run("sgdisk", "-Z", diskID).CombinedOutput()
+	clearOut, err := primitives.Run("sgdisk", "-Z", diskID).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("sgdisk -Z failed: %w: %s", err, string(clearOut))
 	}
@@ -88,7 +85,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 		}
 		args = append(args, "-c", fmt.Sprintf("%d:%s", num, p.Name))
 
-		cmd = Run("sgdisk")
+		cmd = primitives.Run("sgdisk")
 		cmd.Args = append(cmd.Args, args...)
 		cmd.Args = append(cmd.Args, diskID)
 		out, err = cmd.CombinedOutput()
@@ -108,7 +105,7 @@ func FormatDisk(ctx *InstallContext) (retErr error) {
 	}
 
 	// Refresh kernel partition table
-	cmd = Run("partprobe", diskID)
+	cmd = primitives.Run("partprobe", diskID)
 	probeOut, probeErr := cmd.CombinedOutput()
 	if probeErr != nil {
 		if ctx.Logger != nil {
@@ -179,7 +176,7 @@ func formatPartition(diskID string, num int, p struct {
 	path := shared.DerivePartitionPath(diskID, num)
 
 	// Wipe filesystem signatures before formatting
-	wipeOut, err := Run("wipefs", "--all", "-f", path).CombinedOutput()
+	wipeOut, err := primitives.Run("wipefs", "--all", "-f", path).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("wipefs %s failed: %w: %s", path, err, string(wipeOut))
 	}
@@ -188,11 +185,11 @@ func formatPartition(diskID string, num int, p struct {
 	var cmd *exec.Cmd
 	switch p.Fstype {
 	case shared.FileSystemVfat:
-		cmd = Run("mkfs.fat", "-F", "32", "-n", "EFI", path)
+		cmd = primitives.Run("mkfs.fat", "-F", "32", "-n", "EFI", path)
 	case shared.FileSystemExt4:
-		cmd = Run("mkfs.ext4", "-F", "-E", "lazy_itable_init=0", "-L", "aestheticos", path)
+		cmd = primitives.Run("mkfs.ext4", "-F", "-E", "lazy_itable_init=0", "-L", "aestheticos", path)
 	case shared.FileSystemBtrfs:
-		cmd = Run("mkfs.btrfs", "-f", "-L", "aestheticos", path)
+		cmd = primitives.Run("mkfs.btrfs", "-f", "-L", "aestheticos", path)
 	default:
 		return fmt.Errorf("unsupported filesystem: %s", p.Fstype)
 	}
@@ -203,26 +200,26 @@ func formatPartition(diskID string, num int, p struct {
 	return nil
 }
 
-func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []shared.BtrfsSubvolume) error {
+func setupBtrfsSubvolumes(ctx *shared.InstallContext, diskID string, subvolumes []shared.BtrfsSubvolume) error {
 	rootPath := shared.DerivePartitionPath(diskID, 2)
 	tmp := shared.BtrfsSetupTmpMount
 
-	_ = Run("mkdir", "-p", tmp).Run()
-	cmd := Run("mount", "-o", fmt.Sprintf("subvolid=%d", shared.BtrfsTopLevelSubvolumeID), rootPath, tmp)
+	_ = primitives.Run("mkdir", "-p", tmp).Run()
+	cmd := primitives.Run("mount", "-o", fmt.Sprintf("subvolid=%d", shared.BtrfsTopLevelSubvolumeID), rootPath, tmp)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("mount btrfs top-level: %w", err)
 	}
-	defer func() { _ = Run("umount", tmp).Run() }()
+	defer func() { _ = primitives.Run("umount", tmp).Run() }()
 
 	for _, sv := range subvolumes {
-		cmd = Run("btrfs", "subvolume", "create", "-p", tmp+"/"+sv.Name)
+		cmd = primitives.Run("btrfs", "subvolume", "create", "-p", tmp+"/"+sv.Name)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("create subvolume %s: %w: %s", sv.Name, err, string(out))
 		}
 	}
 
-	cmd = Run("btrfs", "subvolume", "list", tmp)
+	cmd = primitives.Run("btrfs", "subvolume", "list", tmp)
 	listOut, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("list subvolumes: %w", err)
@@ -241,7 +238,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 	if targetID == "" {
 		return fmt.Errorf("subvolume @ not found in %s", tmp)
 	}
-	cmd = Run("btrfs", "subvolume", "set-default", targetID, tmp)
+	cmd = primitives.Run("btrfs", "subvolume", "set-default", targetID, tmp)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("set default subvolume: %w: %s", err, string(out))
@@ -251,7 +248,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		if sv.Compression == "" {
 			continue
 		}
-		cmd = Run("btrfs", "property", "set", tmp+"/"+sv.Name, "compression", sv.Compression)
+		cmd = primitives.Run("btrfs", "property", "set", tmp+"/"+sv.Name, "compression", sv.Compression)
 		if _, err := cmd.CombinedOutput(); err != nil {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("Warning: compression on %s: %v", sv.Name, err)
@@ -259,7 +256,7 @@ func setupBtrfsSubvolumes(ctx *InstallContext, diskID string, subvolumes []share
 		}
 	}
 
-	_ = Run("rmdir", tmp).Run()
+	_ = primitives.Run("rmdir", tmp).Run()
 	return nil
 }
 
@@ -295,7 +292,7 @@ func findPartitionsByIndex(parts []shared.PartitionEntry) (*shared.PartitionEntr
 }
 
 func readPartitionUUID(partition string) (string, error) {
-	cmd := Run("blkid", "-s", "UUID", "-o", "value", partition)
+	cmd := primitives.Run("blkid", "-s", "UUID", "-o", "value", partition)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("blkid %s: %w", partition, err)

@@ -1,4 +1,4 @@
-package install
+package configure
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"aestheticos-installer/backend/install/greetd"
+	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/shared"
 )
 
@@ -16,7 +17,7 @@ import (
 // Configuration orchestrator
 // ============================================================================
 
-// ConfigureSystem merges the former separate configuration steps into a single
+// Run merges the former separate configuration steps into a single
 // "Configuring system" step. It runs in order:
 //
 //  1. Generate fstab
@@ -26,7 +27,7 @@ import (
 //  5. Plymouth BGRT silent boot
 //  6. zram swap configuration
 //  7. Enable systemd services
-func ConfigureSystem(ctx *InstallContext) error {
+func Run(ctx *shared.InstallContext) error {
 	if err := GenerateFstab(ctx); err != nil {
 		return err
 	}
@@ -53,8 +54,8 @@ func ConfigureSystem(ctx *InstallContext) error {
 // ============================================================================
 
 // GenerateFstab generates the fstab file for the installed system.
-func GenerateFstab(ctx *InstallContext) error {
-	if err := validateMountedSystem(); err != nil {
+func GenerateFstab(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 	if ctx.DiskID == "" {
@@ -77,13 +78,13 @@ func GenerateFstab(ctx *InstallContext) error {
 	}
 
 	fstabContent := generateExt4Fstab(ctx)
-	if err := writeFile("/etc/fstab", fstabContent); err != nil {
+	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
 	return verifyFstab(p.RootUUID, p.EFIUUID)
 }
 
-func generateBtrfsFstab(ctx *InstallContext) string {
+func generateBtrfsFstab(ctx *shared.InstallContext) string {
 	p := ctx.Partitions
 	subvolumes := shared.GetBtrfsSubvolumes()
 
@@ -92,14 +93,14 @@ func generateBtrfsFstab(ctx *InstallContext) string {
 	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, shared.EfiPartitionUmask))
 
 	for _, sv := range subvolumes {
-		opts := buildMountOpts(&sv)
+		opts := primitives.BuildMountOpts(&sv)
 		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
 	}
 
 	return strings.Join(lines, "\n") + "\n"
 }
 
-func generateExt4Fstab(ctx *InstallContext) string {
+func generateExt4Fstab(ctx *shared.InstallContext) string {
 	p := ctx.Partitions
 	rootFstype := "ext4"
 	if ctx.FileSystem != "" {
@@ -111,9 +112,9 @@ UUID=%s  /boot          vfat    %s 0 2
 `, p.RootUUID, rootFstype, shared.DefaultMountOptions, p.EFIUUID, shared.EfiPartitionUmask)
 }
 
-func writeBtrfsFstab(ctx *InstallContext) error {
+func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	fstabContent := generateBtrfsFstab(ctx)
-	if err := writeFile("/etc/fstab", fstabContent); err != nil {
+	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
 	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID)
@@ -152,12 +153,12 @@ func verifyFstab(rootUUID, efiUUID string) error {
 // ============================================================================
 
 // ConfigureBootloader installs systemd-boot and writes the boot entry configuration.
-func ConfigureBootloader(ctx *InstallContext) error {
+func ConfigureBootloader(ctx *shared.InstallContext) error {
 	esp := ctx.ESP
 	if esp == "" {
 		esp = shared.BootMountPoint
 	}
-	if err := validateMountedSystem(); err != nil {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 	if ctx.DiskID == "" {
@@ -198,7 +199,7 @@ func ConfigureBootloader(ctx *InstallContext) error {
 }
 
 func installSystemdBoot(esp string) error {
-	cmd := Run("bootctl", "install", "--esp-path="+esp, "--graceful", "--efi-boot-option-description="+shared.BootOptionDescription)
+	cmd := primitives.Run("bootctl", "install", "--esp-path="+esp, "--graceful", "--efi-boot-option-description="+shared.BootOptionDescription)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("bootctl install failed: %w: %s", err, string(output))
@@ -207,7 +208,7 @@ func installSystemdBoot(esp string) error {
 }
 
 func discoverKernelFiles() (kernel, initrd string, err error) {
-	cmd := Run("find", shared.BootMountPoint, "-maxdepth", "1", "-name", shared.KernelFilePrefix+"*")
+	cmd := primitives.Run("find", shared.BootMountPoint, "-maxdepth", "1", "-name", shared.KernelFilePrefix+"*")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to list kernel files in %s: %w", shared.BootMountPoint, err)
@@ -219,10 +220,10 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 	kernel = filepath.Base(strings.Split(files, "\n")[0])
 	base := strings.TrimPrefix(kernel, shared.KernelFilePrefix)
 	initrd = shared.InitrdFilePrefix + base + shared.InitrdFileExtension
-	cmd = Run("test", "-f", shared.BootMountPoint+"/"+initrd)
+	cmd = primitives.Run("test", "-f", shared.BootMountPoint+"/"+initrd)
 	if err := cmd.Run(); err != nil {
 		initrdFallback := shared.InitrdFilePrefix + base + "-fallback" + shared.InitrdFileExtension
-		cmd = Run("test", "-f", shared.BootMountPoint+"/"+initrdFallback)
+		cmd = primitives.Run("test", "-f", shared.BootMountPoint+"/"+initrdFallback)
 		if err := cmd.Run(); err != nil {
 			return "", "", fmt.Errorf("no initrd found in %s for kernel %s (tried %s and %s)", shared.BootMountPoint, kernel, initrd, initrdFallback)
 		}
@@ -238,18 +239,18 @@ func writeBootEntry(esp, rootUUID, kernel, initrd, fsType string) error {
 	}
 	entryContent := fmt.Sprintf("title   %s\nlinux   /%s\ninitrd  /%s\noptions %s\n", shared.BootEntryTitle, kernel, initrd, options)
 	entryPath := esp + "/" + shared.BootLoaderEntriesDir + "/" + shared.BootEntryFileName + ".conf"
-	cmd := Run("mkdir", "-p", esp+"/"+shared.BootLoaderEntriesDir)
+	cmd := primitives.Run("mkdir", "-p", esp+"/"+shared.BootLoaderEntriesDir)
 	if _, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to create boot entry dir: %w", err)
 	}
-	if err := writeFile(esp+"/"+shared.BootLoaderEntriesDir+"/"+shared.BootEntryFileName+".conf", entryContent); err != nil {
+	if err := primitives.WriteFile(esp+"/"+shared.BootLoaderEntriesDir+"/"+shared.BootEntryFileName+".conf", entryContent); err != nil {
 		return fmt.Errorf("failed to write boot entry to %s: %w", entryPath, err)
 	}
 	return nil
 }
 
 func cleanupEsp(esp string) error {
-	cmd := Run("bootctl", "cleanup", "--esp-path="+esp, "--graceful")
+	cmd := primitives.Run("bootctl", "cleanup", "--esp-path="+esp, "--graceful")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("bootctl cleanup failed: %w: %s", err, strings.TrimSpace(string(output)))
@@ -258,7 +259,7 @@ func cleanupEsp(esp string) error {
 }
 
 func generateRandomSeed(esp string) error {
-	cmd := Run("bootctl", "random-seed", "--esp-path="+esp)
+	cmd := primitives.Run("bootctl", "random-seed", "--esp-path="+esp)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to generate random seed (non-fatal): %w", err)
 	}
@@ -283,7 +284,7 @@ func setDefaultBootEntry(esp, entryID string) error {
 	} else {
 		content += "default " + entryID + "\n"
 	}
-	if err := writeFile(confPath, content); err != nil {
+	if err := primitives.WriteFile(confPath, content); err != nil {
 		return fmt.Errorf("failed to write default entry to loader.conf: %w", err)
 	}
 	return nil
@@ -293,19 +294,19 @@ func verifyBootloaderInstallation(esp string) error {
 	var issues []string
 	var info []string
 
-	cmd := Run("bootctl", "is-installed", "--esp-path="+esp)
+	cmd := primitives.Run("bootctl", "is-installed", "--esp-path="+esp)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		issues = append(issues, fmt.Sprintf("bootctl is-installed failed: %s", strings.TrimSpace(string(output))))
 	}
 
-	cmd = Run("test", "-f", esp+"/loader/loader.conf")
+	cmd = primitives.Run("test", "-f", esp+"/loader/loader.conf")
 	if err := cmd.Run(); err != nil {
 		issues = append(issues, "loader.conf is MISSING")
 	}
 
 	entryPath := esp + "/" + shared.BootLoaderEntriesDir + "/" + shared.BootEntryFileName + ".conf"
-	cmd = Run("test", "-f", entryPath)
+	cmd = primitives.Run("test", "-f", entryPath)
 	if err := cmd.Run(); err != nil {
 		issues = append(issues, "boot entry file is MISSING: "+entryPath)
 	} else {
@@ -315,13 +316,13 @@ func verifyBootloaderInstallation(esp string) error {
 		}
 	}
 
-	cmd = Run("find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
+	cmd = primitives.Run("find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
 	output, err = cmd.Output()
 	if err == nil {
 		info = append(info, "ESP files: "+strings.TrimSpace(string(output)))
 	}
 
-	cmd = Run("bootctl", "status", "--esp-path="+esp)
+	cmd = primitives.Run("bootctl", "status", "--esp-path="+esp)
 	output, err = cmd.CombinedOutput()
 	if err == nil {
 		info = append(info, "bootctl status:\n"+strings.TrimSpace(string(output)))
@@ -342,8 +343,8 @@ func verifyBootloaderInstallation(esp string) error {
 // ============================================================================
 
 // ConfigureSystemBase sets up system configuration in the installed system via chroot.
-func ConfigureSystemBase(ctx *InstallContext) error {
-	if err := validateMountedSystem(); err != nil {
+func ConfigureSystemBase(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 	if ctx.Username == "" {
@@ -357,11 +358,11 @@ func ConfigureSystemBase(ctx *InstallContext) error {
 	if ctx.Hostname == "" {
 		return fmt.Errorf("hostname not set")
 	}
-	if err := writeFile("/etc/hostname", ctx.Hostname+"\n"); err != nil {
+	if err := primitives.WriteFile("/etc/hostname", ctx.Hostname+"\n"); err != nil {
 		return err
 	}
 
-	cmd := Run("ln", "-sf", fmt.Sprintf("/usr/share/zoneinfo/%s", region.Timezone), shared.MountRoot+"/etc/localtime")
+	cmd := primitives.Run("ln", "-sf", fmt.Sprintf("/usr/share/zoneinfo/%s", region.Timezone), shared.MountRoot+"/etc/localtime")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %w: %s", err, string(output))
@@ -373,11 +374,11 @@ func ConfigureSystemBase(ctx *InstallContext) error {
 		return fmt.Errorf("failed to read locale.gen: %w", err)
 	}
 	localeGenContent := strings.Replace(string(data), "#"+region.Locale, region.Locale, 1)
-	if err := writeFile("/etc/locale.gen", localeGenContent); err != nil {
+	if err := primitives.WriteFile("/etc/locale.gen", localeGenContent); err != nil {
 		return err
 	}
 
-	output, err = runChroot("locale-gen")
+	output, err = primitives.RunChroot("locale-gen")
 	if err != nil {
 		return fmt.Errorf("failed to generate locale: %w: %s", err, string(output))
 	}
@@ -385,18 +386,18 @@ func ConfigureSystemBase(ctx *InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	if err := writeFile("/etc/locale.conf", "LANG="+region.Locale+"\n"); err != nil {
+	if err := primitives.WriteFile("/etc/locale.conf", "LANG="+region.Locale+"\n"); err != nil {
 		return err
 	}
 
-	if err := writeFile("/etc/vconsole.conf", "KEYMAP="+region.Keymap+"\n"); err != nil {
+	if err := primitives.WriteFile("/etc/vconsole.conf", "KEYMAP="+region.Keymap+"\n"); err != nil {
 		return err
 	}
-	if err := appendFile("/etc/vconsole.conf", "FONT=ter-132n\n"); err != nil {
+	if err := primitives.AppendFile("/etc/vconsole.conf", "FONT=ter-132n\n"); err != nil {
 		return err
 	}
 
-	output, err = runChroot("systemctl", "enable", "systemd-timesyncd")
+	output, err = primitives.RunChroot("systemctl", "enable", "systemd-timesyncd")
 	if err != nil {
 		return fmt.Errorf("failed to enable NTP: %w: %s", err, string(output))
 	}
@@ -410,7 +411,7 @@ func copyMirrorList(regionCode string) error {
 		return fmt.Errorf("no mirror list available for region %q: %w", regionCode, err)
 	}
 	content := uncommentMirrors(string(rawContent))
-	return writeFile("/etc/pacman.d/mirrorlist", content)
+	return primitives.WriteFile("/etc/pacman.d/mirrorlist", content)
 }
 
 func uncommentMirrors(content string) string {
@@ -428,7 +429,7 @@ func uncommentMirrors(content string) string {
 // ============================================================================
 
 // ConfigureGreetd sets up greetd as the login manager with the DMS greeter.
-func ConfigureGreetd(ctx *InstallContext) error {
+func ConfigureGreetd(ctx *shared.InstallContext) error {
 	exec := &greetdExecutor{ctx: ctx}
 	gctx := &greetd.InstallContext{
 		Username: ctx.Username,
@@ -438,15 +439,15 @@ func ConfigureGreetd(ctx *InstallContext) error {
 }
 
 type greetdExecutor struct {
-	ctx *InstallContext
+	ctx *shared.InstallContext
 }
 
 func (e *greetdExecutor) RunChroot(args ...string) ([]byte, error) {
-	return runChroot(args...)
+	return primitives.RunChroot(args...)
 }
 
 func (e *greetdExecutor) WriteFile(path, content string) error {
-	return writeFile(path, content)
+	return primitives.WriteFile(path, content)
 }
 
 func (e *greetdExecutor) Logger() greetd.Logger {
@@ -458,8 +459,8 @@ func (e *greetdExecutor) Logger() greetd.Logger {
 // ============================================================================
 
 // ConfigurePlymouth sets up Plymouth BGRT theme for silent boot.
-func ConfigurePlymouth(ctx *InstallContext) error {
-	if err := validateMountedSystem(); err != nil {
+func ConfigurePlymouth(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 
@@ -468,11 +469,11 @@ Theme=bgrt
 ShowDelay=0
 UseFirmwareBackground=true
 `
-	if err := writeFile("/etc/plymouth/plymouthd.conf", plymouthdConf); err != nil {
+	if err := primitives.WriteFile("/etc/plymouth/plymouthd.conf", plymouthdConf); err != nil {
 		return err
 	}
 
-	output, err := runChroot("plymouth-set-default-theme", "-R", "bgrt")
+	output, err := primitives.RunChroot("plymouth-set-default-theme", "-R", "bgrt")
 	if err != nil {
 		return fmt.Errorf("failed to set Plymouth BGRT theme: %w: %s", err, string(output))
 	}
@@ -489,12 +490,12 @@ UseFirmwareBackground=true
 
 func createHushlogin(username string) error {
 	home := shared.MountRoot + filepath.Join("/home", username)
-	cmd := Run("touch", filepath.Join(home, ".hushlogin"))
+	cmd := primitives.Run("touch", filepath.Join(home, ".hushlogin"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create .hushlogin: %w: %s", err, string(output))
 	}
-	_, err = runChroot("chown", username+":"+username, filepath.Join("/home", username, ".hushlogin"))
+	_, err = primitives.RunChroot("chown", username+":"+username, filepath.Join("/home", username, ".hushlogin"))
 	if err != nil {
 		return fmt.Errorf("failed to set .hushlogin ownership: %w", err)
 	}
@@ -506,8 +507,8 @@ func createHushlogin(username string) error {
 // ============================================================================
 
 // ConfigureZram sets up zram-based compressed swap in the installed system.
-func ConfigureZram(ctx *InstallContext) error {
-	if err := validateMountedSystem(); err != nil {
+func ConfigureZram(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 	swapMiB := calculateZramSizeMiB()
@@ -518,7 +519,7 @@ compression-algorithm = zstd
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Configuring zram swap: %d MiB", swapMiB)
 	}
-	if err := writeFile("/etc/systemd/zram-generator.conf", zramConf); err != nil {
+	if err := primitives.WriteFile("/etc/systemd/zram-generator.conf", zramConf); err != nil {
 		return fmt.Errorf("failed to write zram-generator config: %w", err)
 	}
 	return nil
@@ -561,15 +562,15 @@ func calculateZramSizeMiB() int {
 var servicesToEnable = []string{"NetworkManager", "greetd", "bluetooth"}
 
 // EnableServices enables all essential systemd services in the installed system.
-func EnableServices(ctx *InstallContext) error {
-	if err := validateMountedSystem(); err != nil {
+func EnableServices(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 	for _, svc := range servicesToEnable {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Enabling service: %s", svc)
 		}
-		output, err := runChroot("systemctl", "enable", svc)
+		output, err := primitives.RunChroot("systemctl", "enable", svc)
 		if err != nil {
 			return fmt.Errorf("failed to enable service %q: %w: %s", svc, err, string(output))
 		}
