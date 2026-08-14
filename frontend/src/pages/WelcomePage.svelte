@@ -161,7 +161,7 @@
 		font-size: var(--font-size-base);
 		font-family: inherit;
 		color: var(--color-text);
-		text-align: left;
+		text-align: start;
 		cursor: pointer;
 		transition: background-color 0.15s ease;
 	}

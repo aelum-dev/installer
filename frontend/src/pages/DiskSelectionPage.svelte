@@ -369,7 +369,7 @@
 		padding: 14px 16px;
 		cursor: pointer;
 		transition: all 0.15s ease;
-		text-align: left;
+		text-align: start;
 		font-family: inherit;
 		outline: none;
 	}
@@ -500,7 +500,7 @@
 	}
 
 	.partition-table th {
-		text-align: left;
+		text-align: start;
 		font-size: 0.68rem;
 		font-weight: 600;
 		text-transform: uppercase;
@@ -511,7 +511,7 @@
 	}
 
 	.partition-table th.text-right {
-		text-align: right;
+		text-align: end;
 	}
 
 	.partition-table td {
@@ -526,7 +526,7 @@
 	}
 
 	.partition-table .text-right {
-		text-align: right;
+		text-align: end;
 		color: var(--color-text-muted);
 		font-variant-numeric: tabular-nums;
 	}

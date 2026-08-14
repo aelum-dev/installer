@@ -178,7 +178,7 @@
 		color: var(--color-text);
 		cursor: pointer;
 		min-width: 160px;
-		text-align: left;
+		text-align: start;
 		transition: background-color 0.15s ease, border-color 0.15s ease;
 	}
 
@@ -233,7 +233,7 @@
 		cursor: pointer;
 		white-space: nowrap;
 		transition: background-color 0.1s ease;
-		text-align: left;
+		text-align: start;
 	}
 
 	.dropdown-item:hover,
