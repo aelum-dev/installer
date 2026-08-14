@@ -19,7 +19,9 @@
 		align-items: center;
 		justify-content: space-between;
 		background-color: var(--color-bg-light);
-		padding: var(--spacing-xl);
+		height: 74px;
+		padding-left: var(--spacing-2xl);
+		padding-right: var(--spacing-2xl);
 	}
 
 	.brand {
@@ -28,12 +30,12 @@
 		color: var(--color-text);
 		text-transform: uppercase;
 		letter-spacing: 1px;
+		font-family: "Nunito", var(--font-family);
 	}
 
 	.dry-run-badge {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
 		padding: 4px 12px;
 		background: var(--color-primary);
 		color: white;

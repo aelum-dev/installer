@@ -150,6 +150,7 @@
 		max-width: 400px;
 		max-height: 320px;
 		overflow-y: auto;
+		padding-inline-end: var(--spacing-lg);
 	}
 
 	.lang-item {

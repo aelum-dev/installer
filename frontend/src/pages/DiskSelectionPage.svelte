@@ -358,6 +358,7 @@
 		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
+		padding-inline-end: var(--spacing-lg);
 	}
 
 	/* ── Disk card ── */
