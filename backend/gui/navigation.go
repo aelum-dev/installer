@@ -35,6 +35,7 @@ type App struct {
 	hostname            string
 	selectedLanguage    string
 	region              shared.Region
+	uiLocale            string // UI language (separate from installed system locale)
 	fileSystem          string // root filesystem: "ext4" or "btrfs"
 	installationRunning atomic.Bool
 
@@ -68,4 +69,14 @@ func (a *App) SetHostname(hostname string) {
 // GetHostname returns the system hostname.
 func (a *App) GetHostname() string {
 	return a.hostname
+}
+
+// GetUILocale returns the current UI locale.
+func (a *App) GetUILocale() string {
+	return a.uiLocale
+}
+
+// SetUILocale sets the UI locale.
+func (a *App) SetUILocale(locale string) {
+	a.uiLocale = locale
 }

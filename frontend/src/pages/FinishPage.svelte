@@ -1,11 +1,12 @@
 <script lang="ts">
 	import PageLayout from '$components/PageLayout.svelte';
+	import { t } from '$lib/i18n';
 </script>
 
-<PageLayout title="Installation Complete">
+<PageLayout title={t('page.finish.title')}>
 	<div class="finish">
 		<div class="icon">✓</div>
-		<p class="message">AestheticOS has been installed successfully.</p>
+		<p class="message">{t('page.finish.message')}</p>
 	</div>
 </PageLayout>
 

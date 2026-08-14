@@ -14,31 +14,40 @@ export function validateUserAccount(
 	username: string,
 	password: string,
 	confirmPassword: string,
-	state: ValidationState
+	state: ValidationState,
+	messages?: { usernameRequired: string; usernameMinLength: string; passwordRequired: string; passwordMinLength: string; passwordsMatch: string; passwordsNoMatch: string }
 ): ValidationResult {
+	const msg = messages ?? {
+		usernameRequired: 'Username is required',
+		usernameMinLength: 'Username must be at least 3 characters',
+		passwordRequired: 'Password is required',
+		passwordMinLength: 'Password must be at least 6 characters',
+		passwordsMatch: 'Please confirm your password',
+		passwordsNoMatch: 'Passwords do not match',
+	};
 	return {
 		username:
 			state.usernameTouched
 				? !username.trim()
-					? 'Username is required'
+					? msg.usernameRequired
 					: username.length < 3
-						? 'Username must be at least 3 characters'
+						? msg.usernameMinLength
 						: null
 				: null,
 		password:
 			state.passwordTouched
 				? !password
-					? 'Password is required'
+					? msg.passwordRequired
 					: password.length < 6
-						? 'Password must be at least 6 characters'
+						? msg.passwordMinLength
 						: null
 				: null,
 		confirmPassword:
 			state.confirmPasswordTouched
 				? !confirmPassword
-					? 'Please confirm your password'
+					? msg.passwordsMatch
 					: confirmPassword !== password
-						? 'Passwords do not match'
+						? msg.passwordsNoMatch
 						: null
 				: null,
 	};

@@ -14,6 +14,7 @@
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
 	import { formatSize, FILESYSTEMS } from '$lib/types';
 	import { MinDiskSizeBytes } from '$lib/constants';
+	import { t } from '$lib/i18n';
 
 	let disks = $state<DiskInfo[]>([]);
 	let partitions = $state<PartitionDetail[]>([]);
@@ -21,6 +22,7 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let diskSizeError = $state<string | null>(null);
+	let diskSizeErrorArgs = $state<{ minSize: string; selectedSize: string } | null>(null);
 
 	async function loadDisks(): Promise<void> {
 		try {
@@ -64,26 +66,31 @@
 		if (disk && disk.size) {
 			const sizeBytes = parseInt(disk.size, 10);
 			if (!isNaN(sizeBytes) && sizeBytes < MinDiskSizeBytes) {
-				diskSizeError = `Disk is too small. Minimum ${formatSize(String(MinDiskSizeBytes))} required, but selected disk is ${formatSize(disk.size)}.`;
+				diskSizeErrorArgs = {
+					minSize: formatSize(String(MinDiskSizeBytes)),
+					selectedSize: formatSize(disk.size),
+				};
+				diskSizeError = t('page.diskSelection.diskTooSmall', diskSizeErrorArgs);
 				pageValid.value = false;
 				return;
 			}
 		}
 		
 		diskSizeError = null;
+		diskSizeErrorArgs = null;
 		pageValid.value = hasDisk && hasFileSystem;
 	});
 
 
 </script>
 
-<PageLayout title="Select Installation Disk" stretch={true}>
-	<p class="hint">Choose a disk and filesystem to install AestheticOS.</p>
+<PageLayout title={t('page.diskSelection.title')} stretch={true}>
+	<p class="hint">{t('page.diskSelection.hint')}</p>
 
 	{#if loading}
 		<div class="state-message">
 			<div class="spinner"></div>
-			<p>Scanning for disks...</p>
+			<p>{t('page.diskSelection.loading')}</p>
 		</div>
 	{:else if error}
 		<div class="state-message error">
@@ -92,13 +99,13 @@
 		</div>
 	{:else if disks.length === 0}
 		<div class="state-message">
-			<p>No storage devices found.</p>
+			<p>{t('page.diskSelection.noDevices')}</p>
 		</div>
 	{:else}
 		<div class="disk-page">
 			<!-- Filesystem pills -->
 			<div class="fs-bar">
-				<span class="fs-label">Filesystem</span>
+				<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
 				<div class="fs-pills">
 					{#each FILESYSTEMS as fs (fs)}
 						<button
@@ -106,7 +113,7 @@
 							class={['fs-pill', { selected: diskSelectionData.fileSystem === fs }]}
 							onclick={() => { diskSelectionData.fileSystem = fs; }}
 						>
-							{fs}
+							{t('fs.' + fs)}
 						</button>
 					{/each}
 				</div>
@@ -151,7 +158,7 @@
 								<div class="disk-specs">
 									{formatSize(disk.size)}
 									<span class="specs-sep">·</span>
-									{disk.rotational ? 'HDD' : 'SSD'}
+									{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
 									{#if disk.trans}
 										<span class="specs-sep">·</span>
 										{disk.trans.toUpperCase()}
@@ -179,7 +186,7 @@
 						{#if diskSelectionData.diskId === disk.path}
 							<div class="card-partitions">
 								{#if partitionsLoading}
-									<p class="partition-loading">Scanning partitions...</p>
+									<p class="partition-loading">{t('page.diskSelection.scanPartitions')}</p>
 								{:else if partitions.length > 0}
 									<table class="partition-table">
 										<thead>
@@ -214,7 +221,7 @@
 										</tbody>
 									</table>
 								{:else}
-									<p class="partition-empty">No partitions on this disk.</p>
+									<p class="partition-empty">{t('page.diskSelection.noPartitions')}</p>
 								{/if}
 							</div>
 						{/if}

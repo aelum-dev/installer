@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "EXEMPLE",
+
+  "page.welcome.title": "Bienvenue sur AestheticOS",
+  "page.welcome.subtitle": "Cet instalateur vous guidera à travers la configuration de votre système.",
+  "page.welcome.loading": "Chargement...",
+
+  "page.userAccount.title": "Créer un compte utilisateur",
+  "page.userAccount.username": "Nom d'utilisateur",
+  "page.userAccount.usernamePlaceholder": "Entrez le nom d'utilisateur",
+  "page.userAccount.password": "Mot de passe",
+  "page.userAccount.passwordPlaceholder": "Entrez le mot de passe",
+  "page.userAccount.confirmPassword": "Confirmer le mot de passe",
+  "page.userAccount.confirmPasswordPlaceholder": "Confirmer le mot de passe",
+
+  "page.diskSelection.title": "Sélectionner le disque d'installation",
+  "page.diskSelection.hint": "Choisissez un disque et un système de fichiers pour installer AestheticOS.",
+  "page.diskSelection.loading": "Recherche de disques...",
+  "page.diskSelection.noDevices": "Aucun périphérique de stockage trouvé.",
+  "page.diskSelection.scanPartitions": "Analyse des partitions...",
+  "page.diskSelection.noPartitions": "Aucune partition sur ce disque.",
+  "page.diskSelection.fileSystem": "Système de fichiers",
+  "page.diskSelection.diskTooSmall": "Le disque est trop petit. Minimum {minSize} requis, mais le disque sélectionné est {selectedSize}.",
+
+  "page.confirmation.title": "Résumé de l'installation",
+  "page.confirmation.sectionLanguage": "Langue",
+  "page.confirmation.sectionUser": "Compte utilisateur",
+  "page.confirmation.sectionDisk": "Disque cible",
+  "page.confirmation.username": "Nom d'utilisateur",
+  "page.confirmation.password": "Mot de passe",
+  "validation.username": "Mot de passe",
+  "page.confirmation.diskTooSmall": "⚠ Disque trop petit — minimum 16 Go requis",
+
+  "page.installation.title": "Installation de AestheticOS",
+  "page.installation.target": "Cible",
+  "page.installation.completed": "Installation terminée !",
+  "page.installation.initializing": "Initialisation...",
+  "page.installation.checkLog": "Consultez {logPath} pour plus de détails.",
+
+  "page.finish.title": "Installation terminée",
+  "page.finish.message": "AestheticOS a été installé avec succès.",
+  "page.finish.reboot": "Redémarrer",
+
+  "dialog.confirm.title": "Confirmer l'installation",
+  "dialog.confirm.message": "Êtes-vous sûr de vouloir installer AestheticOS sur <strong>{model}</strong> ? Toutes les données de ce disque seront définitivement effacées.",
+  "dialog.confirm.cancel": "Annuler",
+  "dialog.confirm.yes": "Oui, effacer et installer",
+
+  "validation.usernameRequired": "Le nom d'utilisateur est requis",
+  "validation.usernameMinLength": "Le nom d'utilisateur doit contenir au moins 3 caractères",
+  "validation.passwordRequired": "Le mot de passe est requis",
+  "validation.passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+  "validation.passwordsMatch": "Veuillez confirmer votre mot de passe",
+  "validation.passwordsNoMatch": "Les mots de passe ne correspondent pas",
+  "validation.selectLanguage": "Veuillez sélectionner une langue pour continuer.",
+  "validation.selectUserAccount": "Veuillez remplir tous les champs requis pour continuer.",
+  "validation.selectDisk": "Veuillez sélectionner un disque pour continuer.",
+  "validation.reviewInstallation": "Veuillez vérifier les détails de votre installation.",
+  "validation.waitInstallation": "Veuillez attendre la fin de l'installation.",
+  "validation.installationComplete": "L'installation est terminée.",
+
+  "nav.back": "Retour",
+  "nav.next": "Suivant",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Formatage du disque...",
+  "step.mounting": "Montage du système de fichiers...",
+  "step.installingBase": "Installation du système de base...",
+  "step.installingDesktop": "Installation de l'environnement de bureau...",
+  "step.setupUsers": "Configuration des utilisateurs...",
+  "step.configuringSystem": "Configuration du système...",
+  "step.clearingCache": "Nettoyage du cache des paquets..."
+}

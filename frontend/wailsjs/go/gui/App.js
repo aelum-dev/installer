@@ -58,6 +58,10 @@ export function GetStartPage() {
   return window['go']['gui']['App']['GetStartPage']();
 }
 
+export function GetUILocale() {
+  return window['go']['gui']['App']['GetUILocale']();
+}
+
 export function RebootAndClose() {
   return window['go']['gui']['App']['RebootAndClose']();
 }
@@ -84,6 +88,10 @@ export function SetSelectedLanguage(arg1) {
 
 export function SetStartPage(arg1) {
   return window['go']['gui']['App']['SetStartPage'](arg1);
+}
+
+export function SetUILocale(arg1) {
+  return window['go']['gui']['App']['SetUILocale'](arg1);
 }
 
 export function StartInstallation() {

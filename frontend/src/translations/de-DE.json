@@ -1,0 +1,79 @@
+{
+  "app.brand": "AestheticOS",
+  "app.dryRun": "TROCKENLAUF",
+
+  "page.welcome.title": "Willkommen bei AestheticOS",
+  "page.welcome.subtitle": "Dieser Installer führt Sie durch die Einrichtung Ihres Systems.",
+  "page.welcome.loading": "Wird geladen...",
+
+  "page.userAccount.title": "Benutzerkonto erstellen",
+  "page.userAccount.username": "Benutzername",
+  "page.userAccount.usernamePlaceholder": "Benutzernamen eingeben",
+  "page.userAccount.password": "Passwort",
+  "page.userAccount.passwordPlaceholder": "Passwort eingeben",
+  "page.userAccount.confirmPassword": "Passwort bestätigen",
+  "page.userAccount.confirmPasswordPlaceholder": "Passwort bestätigen",
+
+  "page.diskSelection.title": "Installationsfestplatte auswählen",
+  "page.diskSelection.hint": "Wählen Sie eine Festplatte und ein Dateisystem für die Installation von AestheticOS.",
+  "page.diskSelection.loading": "Festplatten werden durchsucht...",
+  "page.diskSelection.noDevices": "Keine Speichergeräte gefunden.",
+  "page.diskSelection.scanPartitions": "Partitionen werden durchsucht...",
+  "page.diskSelection.noPartitions": "Keine Partitionen auf dieser Festplatte.",
+  "page.diskSelection.fileSystem": "Dateisystem",
+  "page.diskSelection.diskTooSmall": "Festplatte ist zu klein. Mindestens {minSize} erforderlich, aber die ausgewählte Festplatte ist {selectedSize}.",
+
+  "page.confirmation.title": "Installationsübersicht",
+  "page.confirmation.sectionLanguage": "Sprache",
+  "page.confirmation.sectionUser": "Benutzerkonto",
+  "page.confirmation.sectionDisk": "Zielfestplatte",
+  "page.confirmation.username": "Benutzername",
+  "page.confirmation.password": "Passwort",
+  "validation.username": "Passwort",
+  "page.confirmation.diskTooSmall": "⚠ Festplatte zu klein — mindestens 16 GB erforderlich",
+
+  "page.installation.title": "AestheticOS wird installiert",
+  "page.installation.target": "Ziel",
+  "page.installation.completed": "Installation abgeschlossen!",
+  "page.installation.initializing": "Initialisierung...",
+  "page.installation.checkLog": "Überprüfen Sie {logPath} für Details.",
+
+  "page.finish.title": "Installation abgeschlossen",
+  "page.finish.message": "AestheticOS wurde erfolgreich installiert.",
+  "page.finish.reboot": "Neu starten",
+
+  "dialog.confirm.title": "Installation bestätigen",
+  "dialog.confirm.message": "Sind Sie sicher, dass Sie AestheticOS auf <strong>{model}</strong> installieren möchten? Alle Daten auf dieser Festplatte werden unwiderruflich gelöscht.",
+  "dialog.confirm.cancel": "Abbrechen",
+  "dialog.confirm.yes": "Ja, löschen & installieren",
+
+  "validation.usernameRequired": "Benutzername ist erforderlich",
+  "validation.usernameMinLength": "Benutzername muss mindestens 3 Zeichen lang sein",
+  "validation.passwordRequired": "Passwort ist erforderlich",
+  "validation.passwordMinLength": "Passwort muss mindestens 6 Zeichen lang sein",
+  "validation.passwordsMatch": "Bitte bestätigen Sie Ihr Passwort",
+  "validation.passwordsNoMatch": "Passwörter stimmen nicht überein",
+  "validation.selectLanguage": "Bitte wählen Sie eine Sprache, um fortzufahren.",
+  "validation.selectUserAccount": "Bitte füllen Sie alle erforderlichen Felder aus, um fortzufahren.",
+  "validation.selectDisk": "Bitte wählen Sie eine Festplatte aus, um fortzufahren.",
+  "validation.reviewInstallation": "Bitte überprüfen Sie Ihre Installationsdetails.",
+  "validation.waitInstallation": "Bitte warten Sie, bis die Installation abgeschlossen ist.",
+  "validation.installationComplete": "Die Installation ist abgeschlossen.",
+
+  "nav.back": "Zurück",
+  "nav.next": "Weiter",
+
+  "fs.ext4": "ext4",
+  "fs.btrfs": "btrfs",
+
+  "disk.hdd": "HDD",
+  "disk.ssd": "SSD",
+
+  "step.formatting": "Festplatte wird formatiert...",
+  "step.mounting": "Dateisystem wird eingebunden...",
+  "step.installingBase": "Basisystem wird installiert...",
+  "step.installingDesktop": "Desktopumgebung wird installiert...",
+  "step.setupUsers": "Benutzer werden eingerichtet...",
+  "step.configuringSystem": "System wird konfiguriert...",
+  "step.clearingCache": "Paketcache wird bereinigt..."
+}

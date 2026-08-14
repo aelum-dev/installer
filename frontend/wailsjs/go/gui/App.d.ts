@@ -32,6 +32,8 @@ export function GetSelectedLanguage():Promise<string>;
 
 export function GetStartPage():Promise<number>;
 
+export function GetUILocale():Promise<string>;
+
 export function RebootAndClose():Promise<void>;
 
 export function SaveDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;
@@ -45,6 +47,8 @@ export function SetHostname(arg1:string):Promise<void>;
 export function SetSelectedLanguage(arg1:string):Promise<void>;
 
 export function SetStartPage(arg1:gui.PageID):Promise<void>;
+
+export function SetUILocale(arg1:string):Promise<void>;
 
 export function StartInstallation():Promise<void>;
 

@@ -7,6 +7,7 @@
 	import { LogInfo } from '@wails/runtime/runtime';
 	import { formatSize } from '$lib/types';
 	import { MinDiskSizeBytes } from '$lib/constants';
+	import { t } from '$lib/i18n';
 
 	interface Language {
 		code: string;
@@ -58,46 +59,46 @@
 	}
 </script>
 
-<PageLayout title="Installation Summary">
+<PageLayout title={t('page.confirmation.title')}>
 	<div class="confirmation">
 		<!-- Summary -->
 		<div class="summary">
 			<div class="summary-section">
-				<h3 class="section-title">Language</h3>
+				<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
 				<p class="section-value">{selectedLanguageName}</p>
 			</div>
 
 			<div class="summary-section">
-				<h3 class="section-title">User Account</h3>
+				<h3 class="section-title">{t('page.confirmation.sectionUser')}</h3>
 				<p class="section-value">
-					Username: <strong>{userAccountData.username || '—'}</strong>
+					{t('page.confirmation.username')}: <strong>{userAccountData.username || '—'}</strong>
 				</p>
 				{#if userAccountData.password}
 					<p class="section-value">
-						Password: <strong>{'●'.repeat(userAccountData.password.length)}</strong>
+						{t('page.confirmation.password')}: <strong>{'●'.repeat(userAccountData.password.length)}</strong>
 					</p>
 				{/if}
 			</div>
 
 			<div class="summary-section">
-				<h3 class="section-title">Target Disk</h3>
+				<h3 class="section-title">{t('page.confirmation.sectionDisk')}</h3>
 				{#if diskSelectionData.disk}
 					<div class="disk-summary no-gap">
 						<p class="section-value disk-name">
-							{diskSelectionData.disk.model || 'Unknown'} ({formatSize(diskSelectionData.disk.size)} {diskSelectionData.disk.rotational ? 'HDD' : 'SSD'} {diskSelectionData.disk.trans?.toUpperCase() || ''})
+							{diskSelectionData.disk.model || '—'} ({formatSize(diskSelectionData.disk.size)} {t(diskSelectionData.disk.rotational ? 'disk.hdd' : 'disk.ssd')} {diskSelectionData.disk.trans?.toUpperCase() || ''})
 						</p>
-						<p class="disk-path">Device: <code>{diskSelectionData.disk.path}</code></p>
+						<p class="disk-path">{t('page.installation.target')}: <code>{diskSelectionData.disk.path}</code></p>
 						<p class="disk-extra">
-							Filesystem: <span class="tag fs-tag">{diskSelectionData.fileSystem || '—'}</span>
+							{t('page.diskSelection.fileSystem')}: <span class="tag fs-tag">{diskSelectionData.fileSystem || '—'}</span>
 						</p>
 						{#if diskSelectionData.disk.fstype}
-							<p class="disk-extra">Existing filesystem: <span class="tag fstype-tag">{diskSelectionData.disk.fstype}</span></p>
+							<p class="disk-extra">{t('page.diskSelection.fileSystem')}: <span class="tag fstype-tag">{diskSelectionData.disk.fstype}</span></p>
 						{/if}
 						{#if diskSelectionData.disk.serial}
-							<p class="disk-extra">Serial: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
+							<p class="disk-extra">{t('validation.username') || 'Serial'}: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
 						{/if}
 						{#if !isDiskSizeSufficient}
-							<p class="disk-extra disk-size-error">⚠ Disk too small — minimum 16 GB required</p>
+							<p class="disk-extra disk-size-error">{t('page.confirmation.diskTooSmall')}</p>
 						{/if}
 					</div>
 				{:else}
@@ -125,7 +126,7 @@
 	}
 
 	.summary-section {
-		text-align: left;
+		text-align: start;
 	}
 
 	.section-title {
