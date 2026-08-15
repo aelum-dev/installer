@@ -320,11 +320,9 @@
 		flex-direction: column;
 		gap: 16px;
 		width: 100%;
-		max-height: 60vh;
-		min-height: 0;
-		overflow: hidden;
-		margin: auto 0;
 		padding-top: var(--spacing-sm);
+		flex: 1;
+		height: 0;
 	}
 
 	/* ── Filesystem bar ── */
@@ -516,6 +514,8 @@
 		margin-top: 10px;
 		padding-top: 10px;
 		border-top: 1px solid var(--color-border-light);
+		max-height: 220px;
+		overflow-y: auto;
 	}
 
 	.partition-loading,

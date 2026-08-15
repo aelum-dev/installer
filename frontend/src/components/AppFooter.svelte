@@ -82,9 +82,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		height: 86px;
-		padding-left: var(--spacing-lg);
-		padding-right: var(--spacing-lg);
+		padding: var(--spacing-lg);
 	}
 
 	.footer-left {
@@ -107,10 +105,7 @@
 		background: transparent;
 		border: none;
 		border-radius: 50%;
-		width: 48px;
-		height: 48px;
 		display: flex;
-		align-items: center;
 		justify-content: center;
 		color: var(--color-text);
 		cursor: pointer;

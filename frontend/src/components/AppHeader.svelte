@@ -16,12 +16,9 @@
 <style>
 	.header {
 		display: flex;
-		align-items: center;
 		justify-content: space-between;
 		background-color: var(--color-bg-light);
-		height: 74px;
-		padding-left: var(--spacing-2xl);
-		padding-right: var(--spacing-2xl);
+		padding: var(--spacing-lg);
 	}
 
 	.brand {
