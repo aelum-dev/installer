@@ -60,7 +60,7 @@
 	loadLanguages();
 </script>
 
-<PageLayout title={t('page.welcome.title')}>
+<PageLayout title={t('page.welcome.title')} stretch={true}>
 	<div class="welcome-content">
 		<p class="subtitle">{t('page.welcome.subtitle')}</p>
 
@@ -86,13 +86,15 @@
 
 <style>
 	.welcome-content {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-rows: 56px 1fr;
+		justify-items: center;
 		align-items: center;
-		gap: var(--spacing-xl);
 		width: 100%;
 		min-width: 400px;
 		max-width: 480px;
+		flex: 1;
+		height: 0;
 	}
 
 	.subtitle {
@@ -102,7 +104,6 @@
 		margin: 0;
 		min-width: 320px;
 		max-width: 360px;
-		height: 3.2rem;
 		overflow: hidden;
 	}
 
@@ -115,7 +116,6 @@
 	.language-list {
 		list-style: none;
 		margin: 0;
-		padding: 0 var(--spacing-lg) 0 0;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;

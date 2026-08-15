@@ -27,6 +27,7 @@
 		color: var(--color-text, #333);
 		font-weight: var(--font-weight-700, 700);
 		text-align: center;
+		overflow: hidden;
 	}
 
 	.page-content {
