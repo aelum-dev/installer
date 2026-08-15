@@ -213,6 +213,7 @@
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
 		text-align: center;
+		margin-top: 0px;
 	}
 
 	.disk-page {

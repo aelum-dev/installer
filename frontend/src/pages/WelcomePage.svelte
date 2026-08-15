@@ -53,7 +53,9 @@
 <div class="page-content stretch">
 		<h2 class="page-title">{t('page.welcome.title')}</h2>
 		<div class="welcome-content">
-			<p class="subtitle">{t('page.welcome.subtitle')}</p>
+			<div class="subtitle-wrapper">
+				<p class="subtitle">{t('page.welcome.subtitle')}</p>
+			</div>
 			{#if loading}
 				<span class="loading-text">{t('page.welcome.loading')}</span>
 			{:else}
@@ -75,12 +77,20 @@
 	</div>
 
 <style>
+	.subtitle-wrapper {
+		width: 400px;
+		min-height: 3em;
+		display: flex;
+		align-items: flex-start;
+		margin-top: -40px;
+	}
+
 	.subtitle {
 		font-size: var(--font-size-base-lg);
 		line-height: 1.5;
 		color: var(--color-text-muted);
 		margin: 0;
-		max-width: 360px;
+		width: 100%;
 		overflow: hidden;
 	}
 
@@ -95,9 +105,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-xs);
-		width: 100%;
 		max-width: 400px;
-		max-height: 320px;
+		max-height: 360px;
 		overflow-y: auto;
 		padding-inline-end: var(--spacing-lg);
 	}
@@ -111,7 +120,7 @@
 		font-size: var(--font-size-base);
 		font-family: inherit;
 		color: var(--color-text);
-		text-align: start;
+		text-align: left;
 		cursor: pointer;
 		transition: background-color 0.15s ease;
 	}

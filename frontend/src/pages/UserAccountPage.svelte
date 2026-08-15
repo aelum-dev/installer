@@ -26,9 +26,10 @@
 	}
 </script>
 
-<div class="page-content">
+<div class="page-content stretch" style="gap: 0;">
 		<h2 class="page-title">{t('page.userAccount.title')}</h2>
-		<form class="form" onsubmit={(e) => e.preventDefault()}>
+		<div style="flex: 1; display: flex; align-items: center; width: 100%;">
+			<form class="form" style="max-width: 400px; margin: 0 auto;" onsubmit={(e) => e.preventDefault()}>
 			<div class="field">
 				<label for="username">{t('page.userAccount.username')}</label>
 				<input
@@ -68,4 +69,5 @@
 				<span class="error" class:visible={!!errors.confirmPassword}>{errors.confirmPassword}</span>
 			</div>
 		</form>
+		</div>
 	</div>

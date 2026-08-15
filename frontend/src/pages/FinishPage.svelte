@@ -3,7 +3,7 @@
 	import '$lib/layout.css';
 </script>
 
-<div class="page-content">
+<div class="page-content stretch">
 		<h2 class="page-title">{t('page.finish.title')}</h2>
 		<div class="finish">
 			<div class="icon">✓</div>

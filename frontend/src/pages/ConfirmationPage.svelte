@@ -29,7 +29,7 @@
 	loadLanguageInfo();
 </script>
 
-<div class="page-content">
+<div class="page-content stretch">
 		<h2 class="page-title">{t('page.confirmation.title')}</h2>
 		<div class="summary">
 			<div class="summary-section">
