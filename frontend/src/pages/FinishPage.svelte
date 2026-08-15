@@ -1,21 +1,24 @@
 <script lang="ts">
-	import PageLayout from '$components/PageLayout.svelte';
 	import { t } from '$lib/i18n';
+	import '$lib/layout.css';
 </script>
 
-<PageLayout title={t('page.finish.title')}>
-	<div class="finish">
-		<div class="icon">✓</div>
-		<p class="message">{t('page.finish.message')}</p>
+<div class="page-layout">
+	<h2 class="page-title">{t('page.finish.title')}</h2>
+	<div class="page-content">
+		<div class="finish">
+			<div class="icon">✓</div>
+			<p class="message">{t('page.finish.message')}</p>
+		</div>
 	</div>
-</PageLayout>
+</div>
 
 <style>
 	.finish {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 16px;
+		gap: var(--gap-md);
 	}
 
 	.icon {

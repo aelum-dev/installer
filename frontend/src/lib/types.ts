@@ -1,3 +1,4 @@
+// Page IDs for the installer wizard.
 export const PAGE_IDS = {
 	WELCOME: 0,
 	USER_ACCOUNT: 1,
@@ -26,9 +27,9 @@ export const PAGES_NO_NAV = new Set<PageID>();
 // Pages that require validation before advancing
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
 
-// Shared constants are generated from backend/internal/shared/config.go.
-// See frontend/src/lib/constants.ts — do not edit by hand.
-export { MinDiskSizeBytes, MinUsernameLength, MinPasswordLength } from './constants';
+// Filesystem type options for root partition.
+export const FILESYSTEMS = ['ext4', 'btrfs'] as const;
+export type FileSystem = (typeof FILESYSTEMS)[number];
 
 // DiskInfo represents a block device discovered on the system.
 export interface DiskInfo {
@@ -47,16 +48,6 @@ export interface DiskInfo {
 	isRemovable: boolean;
 }
 
-// Filesystem type options for root partition.
-export const FILESYSTEMS = ['ext4', 'btrfs'] as const;
-export type FileSystem = (typeof FILESYSTEMS)[number];
-
-export interface DiskSelectionData {
-	diskId: string;
-	disk: DiskInfo | null;
-	fileSystem: FileSystem | '';
-}
-
 // PartitionDetail represents a partition with full information for display.
 export interface PartitionDetail {
 	path: string;
@@ -70,8 +61,6 @@ export interface PartitionDetail {
 
 // Format bytes to human-readable string.
 // NOTE: A Go equivalent exists in backend/internal/shared/disks.go::FormatSize.
-// Both serve their respective layers (frontend display vs backend struct tags),
-// but the logic is intentionally kept separate to avoid cross-language coupling.
 export function formatSize(bytes: string): string {
 	const n = parseInt(bytes, 10);
 	if (isNaN(n) || n <= 0) return '0 B';

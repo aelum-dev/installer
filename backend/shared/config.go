@@ -53,6 +53,9 @@ const BootMountPoint = "/mnt/boot"
 // LogFileName is the default installation log filename.
 const LogFileName = "installation.log"
 
+// AppDataDir is the XDG data directory for the installer (used for frontend log path).
+const AppDataDir = ".local/share/aestheticos-installer"
+
 // --- Time formats ------------------------------------------------------------
 
 // TimestampFormatFull is the full timestamp format used in log files.

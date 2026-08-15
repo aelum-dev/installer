@@ -14,6 +14,7 @@ export const DefaultBtrfsCompression = "zstd";
 export const MountRoot = "/mnt";
 export const BootMountPoint = "/mnt/boot";
 export const LogFileName = "installation.log";
+export const AppDataDir = ".local/share/aestheticos-installer";
 export const TimestampFormatFull = "2006-01-02 15:04:05";
 export const TimestampFormatShort = "15:04:05";
 export const LogFileMode = 0o644;

@@ -6,14 +6,14 @@
 		size = 'medium',
 		disabled = false,
 		fullWidth = false,
-		onClick,
+		onclick,
 		children
 	}: {
 		variant?: 'primary' | 'secondary' | 'ghost';
 		size?: 'small' | 'medium' | 'large';
 		disabled?: boolean;
 		fullWidth?: boolean;
-		onClick?: (e: MouseEvent) => void;
+		onclick?: (e: MouseEvent) => void;
 		children: Snippet;
 	} = $props();
 
@@ -24,7 +24,7 @@
 	type="button"
 	class={btnClass}
 	disabled={disabled}
-	onclick={(e) => onClick?.(e)}
+	onclick={onclick}
 >
 	{@render children()}
 </button>
@@ -40,7 +40,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 6px;
+		gap: var(--gap-xs);
 		outline: none;
 		letter-spacing: 0.01em;
 	}
@@ -49,33 +49,28 @@
 		box-shadow: 0 0 0 3px var(--color-focus-strong);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-primary {
 		background-color: var(--color-primary);
 		color: var(--color-bg-white);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-primary:hover:not(:disabled) {
 		background-color: var(--color-primary-hover);
 		transform: translateY(-1px);
 		box-shadow: var(--shadow-primary);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-primary:active:not(:disabled) {
 		transform: translateY(0) scale(0.98);
 		box-shadow: var(--shadow-sm);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-secondary {
 		background-color: var(--color-bg-white);
 		color: var(--color-text);
 		border: 1.5px solid var(--color-border-light);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-secondary:hover:not(:disabled) {
 		background-color: var(--color-bg-light);
 		border-color: var(--color-border);
@@ -83,13 +78,11 @@
 		box-shadow: var(--shadow-sm);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-secondary:active:not(:disabled) {
 		transform: translateY(0) scale(0.98);
 		background-color: var(--color-bg-hover);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-ghost {
 		background-color: transparent;
 		color: var(--color-text-muted);
@@ -97,14 +90,12 @@
 		border: 1.5px solid var(--color-border-light);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-ghost:hover:not(:disabled) {
 		color: var(--color-text);
 		border-color: var(--color-border);
 		background-color: var(--color-bg-light);
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-ghost:active:not(:disabled) {
 		color: var(--color-text);
 		border-color: var(--color-border);
@@ -118,25 +109,21 @@
 		box-shadow: none !important;
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-small {
-		font-size: 0.8rem;
+		font-size: var(--font-size-sm);
 		padding: 4px 16px;
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-medium {
-		font-size: 0.9rem;
+		font-size: var(--font-size-md-lg);
 		padding: 7px 20px;
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-large {
-		font-size: 1rem;
+		font-size: var(--font-size-base);
 		padding: 11px 32px;
 	}
 
-	/* svelte-ignore css_unused_selector */
 	.btn-fullWidth {
 		width: 100%;
 	}

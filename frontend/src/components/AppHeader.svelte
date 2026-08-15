@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { PAGE_NAMES } from '$lib/types';
-	import { getIsDryRun } from '$lib/state.svelte';
+	import { getIsDryRun } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 
 	let { currentPage }: { currentPage: number } = $props();
@@ -18,11 +18,10 @@
 		display: flex;
 		justify-content: space-between;
 		background-color: var(--color-bg-light);
-		padding: var(--spacing-lg);
 	}
 
 	.brand {
-		font-size: 0.95rem;
+		font-size: var(--font-size-md-lg);
 		font-weight: var(--font-weight-700);
 		color: var(--color-text);
 		text-transform: uppercase;

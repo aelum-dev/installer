@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Frontend store refactored** — `$state.svelte.ts` renamed to `store.svelte.ts` with Svelte 5 runes. Installation state and navigation state consolidated into `installState` and `navState` objects. `isPageValid()` derived function added for page-level validation.
+- **Layout components removed** — `Dropdown.svelte`, `ErrorBanner.svelte`, and `PageLayout.svelte` deleted. Layout styles moved to `lib/layout.css` for shared use across pages.
+- **Navigation updated** — All navigation functions now reference the new store (`store.svelte.ts`). Confirmation dialog tracking added with `confirmInstallation()`/`cancelInstallation()` helpers.
+
 ### Added
+- **AppDataDir constant** — Backend constant for XDG data directory path (`~/.local/share/aestheticos-installer`).
 - **Full internationalization (i18n)** — All UI strings are now translated via `@svelte-intl/svelte-intl`. Supports 16 locales (en-US, de-DE, es-ES, fr-FR, it-IT, pt-BR, ru-RU, zh-CN, zh-TW, ja-JP, ko-KR, uk-UA, pl-PL, tr-TR, ar-SA, he-IL). German translation shipped. RTL support for Arabic and Hebrew.
 - **Auto locale detection** — Installer auto-detects OS locale on first launch and persists selection via backend `GetUILocale()`/`SetUILocale()`.
 - **Cache clearing step** — `pacman -Scc` runs in the chroot after system configuration to clear the package cache and free disk space.
