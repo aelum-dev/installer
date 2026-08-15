@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "试运行",
-
   "page.welcome.title": "欢迎使用 AestheticOS",
   "page.welcome.subtitle": "安装程序将引导您完成系统设置。",
   "page.welcome.loading": "加载中...",
-
   "page.userAccount.title": "创建用户账户",
   "page.userAccount.username": "用户名",
   "page.userAccount.usernamePlaceholder": "输入用户名",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "输入密码",
   "page.userAccount.confirmPassword": "确认密码",
   "page.userAccount.confirmPasswordPlaceholder": "确认密码",
-
   "page.diskSelection.title": "选择安装磁盘",
   "page.diskSelection.hint": "选择要安装 AestheticOS 的磁盘和文件系统。",
   "page.diskSelection.loading": "正在扫描磁盘...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "正在扫描分区...",
   "page.diskSelection.noPartitions": "此磁盘上没有分区。",
   "page.diskSelection.fileSystem": "文件系统",
+  "page.diskSelection.currentFileSystem": "当前文件系统",
+  "page.diskSelection.selectedFileSystem": "已选文件系统",
   "page.diskSelection.diskTooSmall": "磁盘太小。至少需要 {minSize}，但所选磁盘为 {selectedSize}。",
-
   "page.confirmation.title": "安装摘要",
   "page.confirmation.sectionLanguage": "语言",
   "page.confirmation.sectionUser": "用户账户",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "密码",
   "validation.username": "密码",
   "page.confirmation.diskTooSmall": "⚠ 磁盘太小 — 至少需要 16 GB",
-
   "page.installation.title": "正在安装 AestheticOS",
   "page.installation.target": "目标",
   "page.installation.completed": "安装完成！",
   "page.installation.initializing": "初始化中...",
   "page.installation.checkLog": "查看 {logPath} 获取详细信息。",
-
   "page.finish.title": "安装完成",
   "page.finish.message": "AestheticOS 已成功安装。",
   "page.finish.reboot": "重启",
-
   "dialog.confirm.title": "确认安装",
   "dialog.confirm.message": "确定要在 <strong>{model}</strong> 上安装 AestheticOS 吗？此磁盘上的所有数据将被永久删除。",
   "dialog.confirm.cancel": "取消",
   "dialog.confirm.yes": "是，删除并安装",
-
   "validation.usernameRequired": "用户名是必填项",
   "validation.usernameMinLength": "用户名至少需要 3 个字符",
   "validation.passwordRequired": "密码是必填项",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "请检查您的安装详情。",
   "validation.waitInstallation": "请等待安装完成。",
   "validation.installationComplete": "安装已完成。",
-
   "nav.back": "返回",
   "nav.next": "下一步",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "正在格式化磁盘...",
   "step.mounting": "正在挂载文件系统...",
   "step.installingBase": "正在安装基础系统...",
   "step.installingDesktop": "正在安装桌面环境...",
   "step.setupUsers": "正在设置用户...",
   "step.configuringSystem": "正在配置系统...",
-  "step.clearingCache": "正在清除包缓存..."
+  "step.clearingCache": "正在清除包缓存...",
+  "validation.serial": "序列号",
+  "disk.name": "名称",
+  "disk.type": "类型",
+  "disk.size": "大小",
+  "disk.mount": "挂载点",
+  "disk.existing": "现有",
+  "disk.mounted": "已挂载"
 }

@@ -88,14 +88,14 @@
 							{diskSelectionData.disk.model || '—'} ({formatSize(diskSelectionData.disk.size)} {t(diskSelectionData.disk.rotational ? 'disk.hdd' : 'disk.ssd')} {diskSelectionData.disk.trans?.toUpperCase() || ''})
 						</p>
 						<p class="disk-path">{t('page.installation.target')}: <code>{diskSelectionData.disk.path}</code></p>
-						<p class="disk-extra">
-							{t('page.diskSelection.fileSystem')}: <span class="tag fs-tag">{diskSelectionData.fileSystem || '—'}</span>
-						</p>
 						{#if diskSelectionData.disk.fstype}
-							<p class="disk-extra">{t('page.diskSelection.fileSystem')}: <span class="tag fstype-tag">{diskSelectionData.disk.fstype}</span></p>
+							<p class="disk-extra">{t('page.diskSelection.currentFileSystem')}: <span class="tag fstype-tag">{diskSelectionData.disk.fstype}</span></p>
 						{/if}
+						<p class="disk-extra">
+							{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{diskSelectionData.fileSystem || '—'}</span>
+						</p>
 						{#if diskSelectionData.disk.serial}
-							<p class="disk-extra">{t('validation.username') || 'Serial'}: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
+							<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
 						{/if}
 						{#if !isDiskSizeSufficient}
 							<p class="disk-extra disk-size-error">{t('page.confirmation.diskTooSmall')}</p>

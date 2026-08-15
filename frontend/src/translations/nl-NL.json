@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "DRY RUN",
-
   "page.welcome.title": "Welkom bij AestheticOS",
   "page.welcome.subtitle": "Deze installatiewizard leidt je door het instellen van je systeem.",
   "page.welcome.loading": "Laden...",
-
   "page.userAccount.title": "Gebruikersaccount aanmaken",
   "page.userAccount.username": "Gebruikersnaam",
   "page.userAccount.usernamePlaceholder": "Voer gebruikersnaam in",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "Voer wachtwoord in",
   "page.userAccount.confirmPassword": "Wachtwoord bevestigen",
   "page.userAccount.confirmPasswordPlaceholder": "Voer wachtwoord opnieuw in",
-
   "page.diskSelection.title": "InstallatieSchijf selecteren",
   "page.diskSelection.hint": "Kies een schijf en bestandssysteem om AestheticOS te installeren.",
   "page.diskSelection.loading": "Schijven scannen...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "Partities scannen...",
   "page.diskSelection.noPartitions": "Geen partities op deze schijf.",
   "page.diskSelection.fileSystem": "Bestandssysteem",
+  "page.diskSelection.currentFileSystem": "Huidig bestandssysteem",
+  "page.diskSelection.selectedFileSystem": "Geselecteerd bestandssysteem",
   "page.diskSelection.diskTooSmall": "De schijf is te klein. Minimaal {minSize} vereist, maar de geselecteerde schijf is {selectedSize}.",
-
   "page.confirmation.title": "Installatieoverzicht",
   "page.confirmation.sectionLanguage": "Taal",
   "page.confirmation.sectionUser": "Gebruikersaccount",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "Wachtwoord",
   "validation.username": "Gebruikersnaam",
   "page.confirmation.diskTooSmall": "⚠ Schijf te klein — minimaal 16 GB vereist",
-
   "page.installation.title": "AestheticOS installeren",
   "page.installation.target": "Doel",
   "page.installation.completed": "Installatie voltooid!",
   "page.installation.initializing": "Initialiseren...",
   "page.installation.checkLog": "Controleer {logPath} voor details.",
-
   "page.finish.title": "Installatie voltooid",
   "page.finish.message": "AestheticOS is succesvol geïnstalleerd.",
   "page.finish.reboot": "Opnieuw opstarten",
-
   "dialog.confirm.title": "Installatie bevestigen",
   "dialog.confirm.message": "Weet je zeker dat je AestheticOS wilt installeren op <strong>{model}</strong>? Alle gegevens op deze schijf worden permanent gewist.",
   "dialog.confirm.cancel": "Annuleren",
   "dialog.confirm.yes": "Ja, wissen & installeren",
-
   "validation.usernameRequired": "Gebruikersnaam is verplicht",
   "validation.usernameMinLength": "Gebruikersnaam moet minimaal 3 tekens bevatten",
   "validation.passwordRequired": "Wachtwoord is verplicht",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "Controleer je installatiedetails.",
   "validation.waitInstallation": "Wacht tot de installatie voltooid is.",
   "validation.installationComplete": "De installatie is voltooid.",
-
   "nav.back": "Terug",
   "nav.next": "Volgende",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "Schijf formatteren...",
   "step.mounting": "Bestandssysteem koppelen...",
   "step.installingBase": "Basisysteem installeren...",
   "step.installingDesktop": "Bureaubladomgeving installeren...",
   "step.setupUsers": "Gebruikers instellen...",
   "step.configuringSystem": "Systeem configureren...",
-  "step.clearingCache": "Pakketcache wissen..."
+  "step.clearingCache": "Pakketcache wissen...",
+  "validation.serial": "Serienummer",
+  "disk.name": "Naam",
+  "disk.type": "Type",
+  "disk.size": "Grootte",
+  "disk.mount": "Aanhechtingspunt",
+  "disk.existing": "Bestaand",
+  "disk.mounted": "Gemonteerd"
 }

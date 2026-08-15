@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "DRY RUN",
-
   "page.welcome.title": "Καλώς ήρθατε στο AestheticOS",
   "page.welcome.subtitle": "Αυτός ο εγκαταστάτης θα σας καθοδηγήσει μέσω της ρύθμισης του συστήματός σας.",
   "page.welcome.loading": "Φόρτωση...",
-
   "page.userAccount.title": "Δημιουργία λογαριασμού χρήστη",
   "page.userAccount.username": "Όνομα χρήστη",
   "page.userAccount.usernamePlaceholder": "Εισάγετε όνομα χρήστη",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "Εισάγετε κωδικό πρόσβασης",
   "page.userAccount.confirmPassword": "Επιβεβαίωση κωδικού",
   "page.userAccount.confirmPasswordPlaceholder": "Επαναλάβετε τον κωδικό πρόσβασης",
-
   "page.diskSelection.title": "Επιλέξτε δίσκο εγκατάστασης",
   "page.diskSelection.hint": "Επιλέξτε δίσκο και σύστημα αρχείων για εγκατάσταση του AestheticOS.",
   "page.diskSelection.loading": "Αναζήτηση δίσκων...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "Σάρωση διαμερισμάτων...",
   "page.diskSelection.noPartitions": "Δεν υπάρχουν διαμερίσματα σε αυτόν τον δίσκο.",
   "page.diskSelection.fileSystem": "Σύστημα αρχείων",
+  "page.diskSelection.currentFileSystem": "Τρέχον σύστημα αρχείων",
+  "page.diskSelection.selectedFileSystem": "Επιλεγμένο σύστημα αρχείων",
   "page.diskSelection.diskTooSmall": "Ο δίσκος είναι πολύ μικρός. Απαιτείται ελάχιστο {minSize}, αλλά ο επιλεγμένος δίσκος είναι {selectedSize}.",
-
   "page.confirmation.title": "Σύνοψη εγκατάστασης",
   "page.confirmation.sectionLanguage": "Γλώσσα",
   "page.confirmation.sectionUser": "Λογαριασμός χρήστη",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "Κωδικός πρόσβασης",
   "validation.username": "Όνομα χρήστη",
   "page.confirmation.diskTooSmall": "⚠ Δίσκος πολύ μικρός — απαιτείται ελάχιστο 16 GB",
-
   "page.installation.title": "Εγκατάσταση AestheticOS",
   "page.installation.target": "Στόχος",
   "page.installation.completed": "Η εγκατάσταση ολοκληρώθηκε!",
   "page.installation.initializing": "Εκκίνηση...",
   "page.installation.checkLog": "Ελέγξτε το {logPath} για λεπτομέρειες.",
-
   "page.finish.title": "Η εγκατάσταση ολοκληρώθηκε",
   "page.finish.message": "Το AestheticOS εγκαταστάθηκε με επιτυχία.",
   "page.finish.reboot": "Επανεκκίνηση",
-
   "dialog.confirm.title": "Επιβεβαίωση εγκατάστασης",
   "dialog.confirm.message": "Είστε σίγουροι ότι θέλετε να εγκαταστήσετε το AestheticOS στο <strong>{model}</strong>; Όλα τα δεδομένα σε αυτόν τον δίσκο θα διαγραφούν οριστικά.",
   "dialog.confirm.cancel": "Ακύρωση",
   "dialog.confirm.yes": "Ναι, διαγραφή & εγκατάσταση",
-
   "validation.usernameRequired": "Το όνομα χρήστη είναι υποχρεωτικό",
   "validation.usernameMinLength": "Το όνομα χρήστη πρέπει να έχει τουλάχιστον 3 χαρακτήρες",
   "validation.passwordRequired": "Ο κωδικός πρόσβασης είναι υποχρεωτικός",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "Παρακαλώ ελέγξτε τις λεπτομέρειες της εγκατάστασής σας.",
   "validation.waitInstallation": "Παρακαλώ περιμένετε την ολοκλήρωση της εγκατάστασης.",
   "validation.installationComplete": "Η εγκατάσταση ολοκληρώθηκε.",
-
   "nav.back": "Πίσω",
   "nav.next": "Επόμενο",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "Μορφοποίηση δίσκου...",
   "step.mounting": "Επισύναψη συστήματος αρχείων...",
   "step.installingBase": "Εγκατάσταση βασικού συστήματος...",
   "step.installingDesktop": "Εγκατάσταση περιβάλλοντος γραφείου...",
   "step.setupUsers": "Ρύθμιση χρηστών...",
   "step.configuringSystem": "Ρύθμιση συστήματος...",
-  "step.clearingCache": "Καθαρισμός προσωρινής μνήμας πακέτων..."
+  "step.clearingCache": "Καθαρισμός προσωρινής μνήμας πακέτων...",
+  "validation.serial": "Σειριακός αριθμός",
+  "disk.name": "Όνομα",
+  "disk.type": "Τύπος",
+  "disk.size": "Μέγεθος",
+  "disk.mount": "Σημείο",
+  "disk.existing": "Υπάρχον",
+  "disk.mounted": "Εγγραμμένο"
 }

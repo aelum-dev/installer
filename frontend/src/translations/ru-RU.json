@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "РЕЖИМ ПРОБЕГА",
-
   "page.welcome.title": "Добро пожаловать в AestheticOS",
   "page.welcome.subtitle": "Этот установщик проведёт вас через настройку системы.",
   "page.welcome.loading": "Загрузка...",
-
   "page.userAccount.title": "Создать учётную запись",
   "page.userAccount.username": "Имя пользователя",
   "page.userAccount.usernamePlaceholder": "Введите имя пользователя",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "Введите пароль",
   "page.userAccount.confirmPassword": "Подтвердите пароль",
   "page.userAccount.confirmPasswordPlaceholder": "Введите пароль ещё раз",
-
   "page.diskSelection.title": "Выберите диск для установки",
   "page.diskSelection.hint": "Выберите диск и файловую систему для установки AestheticOS.",
   "page.diskSelection.loading": "Поиск дисков...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "Сканирование разделов...",
   "page.diskSelection.noPartitions": "На этом диске нет разделов.",
   "page.diskSelection.fileSystem": "Файловая система",
+  "page.diskSelection.currentFileSystem": "Текущая файловая система",
+  "page.diskSelection.selectedFileSystem": "Выбранная файловая система",
   "page.diskSelection.diskTooSmall": "Диск слишком маленький. Требуется минимум {minSize}, но выбранный диск — {selectedSize}.",
-
   "page.confirmation.title": "Сводка установки",
   "page.confirmation.sectionLanguage": "Язык",
   "page.confirmation.sectionUser": "Учётная запись",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "Пароль",
   "validation.username": "Имя пользователя",
   "page.confirmation.diskTooSmall": "⚠ Диск слишком маленький — требуется минимум 16 ГБ",
-
   "page.installation.title": "Установка AestheticOS",
   "page.installation.target": "Цель",
   "page.installation.completed": "Установка завершена!",
   "page.installation.initializing": "Инициализация...",
   "page.installation.checkLog": "Проверьте {logPath} для подробностей.",
-
   "page.finish.title": "Установка завершена",
   "page.finish.message": "AestheticOS успешно установлена.",
   "page.finish.reboot": "Перезагрузка",
-
   "dialog.confirm.title": "Подтвердите установку",
   "dialog.confirm.message": "Вы уверены, что хотите установить AestheticOS на <strong>{model}</strong>? Все данные на этом диске будут безвозвратно удалены.",
   "dialog.confirm.cancel": "Отмена",
   "dialog.confirm.yes": "Да, удалить и установить",
-
   "validation.usernameRequired": "Имя пользователя обязательно",
   "validation.usernameMinLength": "Имя пользователя должно содержать минимум 3 символа",
   "validation.passwordRequired": "Пароль обязателен",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "Пожалуйста, проверьте детали установки.",
   "validation.waitInstallation": "Пожалуйста, дождитесь завершения установки.",
   "validation.installationComplete": "Установка завершена.",
-
   "nav.back": "Назад",
   "nav.next": "Далее",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "Форматирование диска...",
   "step.mounting": "Монтирование файловой системы...",
   "step.installingBase": "Установка базовой системы...",
   "step.installingDesktop": "Установка рабочего стола...",
   "step.setupUsers": "Настройка пользователей...",
   "step.configuringSystem": "Настройка системы...",
-  "step.clearingCache": "Очистка кеша пакетов..."
+  "step.clearingCache": "Очистка кеша пакетов...",
+  "validation.serial": "Серийный номер",
+  "disk.name": "Имя",
+  "disk.type": "Тип",
+  "disk.size": "Размер",
+  "disk.mount": "Точка",
+  "disk.existing": "Существующая",
+  "disk.mounted": "Подключена"
 }

@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "DRY RUN",
-
   "page.welcome.title": "Benvinguts a AestheticOS",
   "page.welcome.subtitle": "Aquest instal·lador us guiarà per configurar el vostre sistema.",
   "page.welcome.loading": "S'està carregant...",
-
   "page.userAccount.title": "Crea un compte d'usuari",
   "page.userAccount.username": "Nom d'usuari",
   "page.userAccount.usernamePlaceholder": "Introdueix el nom d'usuari",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "Introdueix la contrasenya",
   "page.userAccount.confirmPassword": "Confirma la contrasenya",
   "page.userAccount.confirmPasswordPlaceholder": "Torna a introduir la contrasenya",
-
   "page.diskSelection.title": "Selecciona el disc d'instal·lació",
   "page.diskSelection.hint": "Tria un disc i un sistema de fitxers per instal·lar AestheticOS.",
   "page.diskSelection.loading": "S'estan cercant discs...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "S'estan escanejant particions...",
   "page.diskSelection.noPartitions": "No hi ha particions en aquest disc.",
   "page.diskSelection.fileSystem": "Sistema de fitxers",
+  "page.diskSelection.currentFileSystem": "Sistema de fitxers actual",
+  "page.diskSelection.selectedFileSystem": "Sistema de fitxers seleccionat",
   "page.diskSelection.diskTooSmall": "El disc és massa petit. Cal un mínim de {minSize}, però el disc seleccionat és {selectedSize}.",
-
   "page.confirmation.title": "Resum de la instal·lació",
   "page.confirmation.sectionLanguage": "Idioma",
   "page.confirmation.sectionUser": "Compte d'usuari",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "Contrasenya",
   "validation.username": "Nom d'usuari",
   "page.confirmation.diskTooSmall": "⚠ Disc massa petit — cal un mínim de 16 GB",
-
   "page.installation.title": "S'està instal·lant AestheticOS",
   "page.installation.target": "Destí",
   "page.installation.completed": "Instal·lació completada!",
   "page.installation.initializing": "S'està inicialitzant...",
   "page.installation.checkLog": "Consulta {logPath} per obtenir més detalls.",
-
   "page.finish.title": "Instal·lació completada",
   "page.finish.message": "AestheticOS s'ha instal·lat correctament.",
   "page.finish.reboot": "Reinicia",
-
   "dialog.confirm.title": "Confirma la instal·lació",
   "dialog.confirm.message": "Esteu segur que voleu instal·lar AestheticOS a <strong>{model}</strong>? Totes les dades d'aquest disc s'esborraran permanentment.",
   "dialog.confirm.cancel": "Cancel·la",
   "dialog.confirm.yes": "Sí, esborra i instal·la",
-
   "validation.usernameRequired": "El nom d'usuari és obligatori",
   "validation.usernameMinLength": "El nom d'usuari ha de tenir almenys 3 caràcters",
   "validation.passwordRequired": "La contrasenya és obligatòria",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "Si us plau, reviseu els detalls de la vostra instal·lació.",
   "validation.waitInstallation": "Si us plau, espereu que es completi la instal·lació.",
   "validation.installationComplete": "La instal·lació està completa.",
-
   "nav.back": "Enrere",
   "nav.next": "Següent",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "S'està formatejant el disc...",
   "step.mounting": "S'està muntant el sistema de fitxers...",
   "step.installingBase": "S'està instal·lant el sistema base...",
   "step.installingDesktop": "S'està instal·lant l'entorn d'escriptori...",
   "step.setupUsers": "S'estan configurant els usuaris...",
   "step.configuringSystem": "S'està configurant el sistema...",
-  "step.clearingCache": "S'està netejant la memòria cau dels paquets..."
+  "step.clearingCache": "S'està netejant la memòria cau dels paquets...",
+  "validation.serial": "Número de sèrie",
+  "disk.name": "Nom",
+  "disk.type": "Tipus",
+  "disk.size": "Mida",
+  "disk.mount": "Muntatge",
+  "disk.existing": "Existent",
+  "disk.mounted": "Montat"
 }

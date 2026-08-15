@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "DRY RUN",
-
   "page.welcome.title": "Välkommen till AestheticOS",
   "page.welcome.subtitle": "Den här installationsguiden guide dig genom att ställa in ditt system.",
   "page.welcome.loading": "Laddar...",
-
   "page.userAccount.title": "Skapa användarkonto",
   "page.userAccount.username": "Användarnamn",
   "page.userAccount.usernamePlaceholder": "Ange användarnamn",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "Ange lösenord",
   "page.userAccount.confirmPassword": "Bekräfta lösenord",
   "page.userAccount.confirmPasswordPlaceholder": "Ange lösenord igen",
-
   "page.diskSelection.title": "Välj installationsdisk",
   "page.diskSelection.hint": "Välj en disk och filsystem för att installera AestheticOS.",
   "page.diskSelection.loading": "Söker efter diskar...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "Skannar partitioner...",
   "page.diskSelection.noPartitions": "Inga partitioner på denna disk.",
   "page.diskSelection.fileSystem": "Filsystem",
+  "page.diskSelection.currentFileSystem": "Nuvarande filsystem",
+  "page.diskSelection.selectedFileSystem": "Valt filsystem",
   "page.diskSelection.diskTooSmall": "Disken är för liten. Minst {minSize} krävs, men den valda disken är {selectedSize}.",
-
   "page.confirmation.title": "Installationsöversikt",
   "page.confirmation.sectionLanguage": "Språk",
   "page.confirmation.sectionUser": "Användarkonto",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "Lösenord",
   "validation.username": "Användarnamn",
   "page.confirmation.diskTooSmall": "⚠ Disk för liten — minst 16 GB krävs",
-
   "page.installation.title": "Installerar AestheticOS",
   "page.installation.target": "Mål",
   "page.installation.completed": "Installation slutförd!",
   "page.installation.initializing": "Initialiserar...",
   "page.installation.checkLog": "Kontrollera {logPath} för detaljer.",
-
   "page.finish.title": "Installation slutförd",
   "page.finish.message": "AestheticOS har installerats lyckat.",
   "page.finish.reboot": "Starta om",
-
   "dialog.confirm.title": "Bekräfta installation",
   "dialog.confirm.message": "Är du säker på att du vill installera AestheticOS på <strong>{model}</strong>? All data på denna disk kommer att raderas permanent.",
   "dialog.confirm.cancel": "Avbryt",
   "dialog.confirm.yes": "Ja, radera & installera",
-
   "validation.usernameRequired": "Användarnamn krävs",
   "validation.usernameMinLength": "Användarnamnet måste vara minst 3 tecken",
   "validation.passwordRequired": "Lösenord krävs",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "Vänligen granska dina installationsdetaljer.",
   "validation.waitInstallation": "Vänligen vänta tills installationen är klar.",
   "validation.installationComplete": "Installationen är slutförd.",
-
   "nav.back": "Tillbaka",
   "nav.next": "Nästa",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "Formaterar disk...",
   "step.mounting": "Monterar filsystem...",
   "step.installingBase": "Installerar basystem...",
   "step.installingDesktop": "Installerar skrivbordsmiljö...",
   "step.setupUsers": "Ställer in användare...",
   "step.configuringSystem": "Konfigurerar system...",
-  "step.clearingCache": "Rensar paketcache..."
+  "step.clearingCache": "Rensar paketcache...",
+  "validation.serial": "Serienummer",
+  "disk.name": "Namn",
+  "disk.type": "Typ",
+  "disk.size": "Storlek",
+  "disk.mount": "Fästpunkt",
+  "disk.existing": "Existerande",
+  "disk.mounted": "Monterad"
 }

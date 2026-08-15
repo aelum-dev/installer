@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "הפעלת יב",
-
   "page.welcome.title": "ברוכים הבאים ל-AestheticOS",
   "page.welcome.subtitle": "מתקין זה ינחה אותך דרך הגדרת המערכת שלך.",
   "page.welcome.loading": "...טוען",
-
   "page.userAccount.title": "צור חשבון משתמש",
   "page.userAccount.username": "שם משתמש",
   "page.userAccount.usernamePlaceholder": "הזן שם משתמש",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "הזן סיסמה",
   "page.userAccount.confirmPassword": "אשר סיסמה",
   "page.userAccount.confirmPasswordPlaceholder": "הזן סיסמה שוב",
-
   "page.diskSelection.title": "בחר דיסק להתקנה",
   "page.diskSelection.hint": "בחר דיסק ומערכת קבצים להתקנת AestheticOS.",
   "page.diskSelection.loading": "...סורק דיסקים",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "...סורק מחיצות",
   "page.diskSelection.noPartitions": "אין מחיצות בדיסק זה.",
   "page.diskSelection.fileSystem": "מערכת קבצים",
+  "page.diskSelection.currentFileSystem": "מערכת הקבצים הנוכחית",
+  "page.diskSelection.selectedFileSystem": "מערכת הקבצים הנבחרת",
   "page.diskSelection.diskTooSmall": "הדיסק קטן מדי. נדרש מינימום {minSize}, אך הדיסק הנבחר הוא {selectedSize}.",
-
   "page.confirmation.title": "סיכום התקנה",
   "page.confirmation.sectionLanguage": "שפה",
   "page.confirmation.sectionUser": "חשבון משתמש",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "סיסמה",
   "validation.username": "שם משתמש",
   "page.confirmation.diskTooSmall": "⚠ דיסק קטן מדי — נדרש מינימום 16 GB",
-
   "page.installation.title": "מתקין AestheticOS",
   "page.installation.target": "יעד",
   "page.installation.completed": "ההתקנה הושלמה!",
   "page.installation.initializing": "...מאתחל",
   "page.installation.checkLog": "בדוק את {logPath} לפרטים.",
-
   "page.finish.title": "ההתקנה הושלמה",
   "page.finish.message": "AestheticOS הותקנה בהצלחה.",
   "page.finish.reboot": "הפעל מחדש",
-
   "dialog.confirm.title": "אשר התקנה",
   "dialog.confirm.message": "האם אתה בטוח שברצונך להתקין את AestheticOS על <strong>{model}</strong>? כל הנתונים בדיסק זה יימחקו לצמיתות.",
   "dialog.confirm.cancel": "ביטול",
   "dialog.confirm.yes": "כן, מחק והתקן",
-
   "validation.usernameRequired": "שם משתמש הוא שדה חובה",
   "validation.usernameMinLength": "שם המשתמש חייב להכיל לפחות 3 תווים",
   "validation.passwordRequired": "סיסמה היא שדה חובה",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "אנא סקור את פרטי ההתקנה שלך.",
   "validation.waitInstallation": "אנא המתן לסיום ההתקנה.",
   "validation.installationComplete": "ההתקנה הושלמה.",
-
   "nav.back": "חזרה",
   "nav.next": "הבא",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "...מבצע פורמט לדיסק",
   "step.mounting": "...טוען מערכת קבצים",
   "step.installingBase": "...מתקין מערכת בסיסית",
   "step.installingDesktop": "...מתקין סביבת שולחן עבודה",
   "step.setupUsers": "...מגדיר משתמשים",
   "step.configuringSystem": "...מגדיר מערכת",
-  "step.clearingCache": "...מנקה מטמון חבילות"
+  "step.clearingCache": "...מנקה מטמון חבילות",
+  "validation.serial": "מספר סידורי",
+  "disk.name": "שם",
+  "disk.type": "סוג",
+  "disk.size": "גודל",
+  "disk.mount": "נקודת",
+  "disk.existing": "קיים",
+  "disk.mounted": "מחובר"
 }

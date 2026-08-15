@@ -5,17 +5,17 @@ package shared
 
 func fakeDisks() []DiskInfo {
 	return []DiskInfo{
-		{Name: "nvme0n1", Path: "/dev/nvme0n1", Size: "512110984960", Type: "disk", Model: "Samsung SSD 980 PRO 500GB", Vendor: "Samsung", Rotational: false, Readonly: false, Trans: "nvme", IsRemovable: false},
-		{Name: "vda", Path: "/dev/vda", Size: "42949672960", Type: "disk", Model: "QEMU HARDDISK 40GB", Vendor: "QEMU", Rotational: false, Readonly: false, Trans: "virtio", IsRemovable: false},
+		{Name: "nvme0n1", Path: "/dev/nvme0n1", Size: "512110984960", Type: "disk", Model: "Samsung SSD 980 PRO 500GB", Vendor: "Samsung", Rotational: false, Readonly: false, Trans: "nvme", IsRemovable: false, Serial: "S6YANF0R123456"},
+		{Name: "vda", Path: "/dev/vda", Size: "42949672960", Type: "disk", Model: "QEMU HARDDISK 40GB", Vendor: "QEMU", Rotational: false, Readonly: false, Trans: "virtio", IsRemovable: false, Serial: "QEMU_QM00001"},
 		{Name: "sda", Path: "/dev/sda", Size: "1000204886016", Type: "disk", Model: "WD Blue SA516 1TB", Vendor: "Western Digital", Rotational: true, Readonly: false, Trans: "sata", Fstype: "ext4", Mountpoint: "/", Serial: "WDBJBK001001"},
 		{Name: "sdb", Path: "/dev/sdb", Size: "2000398934016", Type: "disk", Model: "Seagate Barracuda 2TB", Vendor: "Seagate", Rotational: true, Readonly: false, Trans: "sata", Fstype: "ntfs", Mountpoint: "", Serial: "ZTK8F9A1"},
-		{Name: "nvme1n1", Path: "/dev/nvme1n1", Size: "2000398934016", Type: "disk", Model: "Samsung SSD 870 EVO 2TB", Vendor: "Samsung", Rotational: false, Readonly: false, Trans: "nvme", IsRemovable: false},
-		{Name: "sdc", Path: "/dev/sdc", Size: "12803567616", Type: "disk", Model: "Verbatim STORE N GO", Vendor: "Verbatim", Rotational: true, Readonly: false, Trans: "usb", IsRemovable: true},
-		{Name: "sdd", Path: "/dev/sdd", Size: "500107862016", Type: "disk", Model: "Crucial MX500 500GB", Vendor: "Crucial", Rotational: false, Readonly: false, Trans: "sata", Fstype: "btrfs", Mountpoint: "/home"},
-		{Name: "sde", Path: "/dev/sde", Size: "4000787031616", Type: "disk", Model: "WD Red Plus 4TB", Vendor: "Western Digital", Rotational: true, Readonly: false, Trans: "sata", IsRemovable: false},
-		{Name: "nvme2n1", Path: "/dev/nvme2n1", Size: "1000215250688", Type: "disk", Model: "SK hynix Platinum P41 1TB", Vendor: "SK hynix", Rotational: false, Readonly: false, Trans: "nvme", IsRemovable: false},
-		{Name: "sdg", Path: "/dev/sdg", Size: "32000000000", Type: "disk", Model: "SanDisk Ultra Fit", Vendor: "SanDisk", Rotational: true, Readonly: false, Trans: "usb", IsRemovable: true},
-		{Name: "sdh", Path: "/dev/sdh", Size: "8001567940096", Type: "disk", Model: "Toshiba X300 8TB", Vendor: "Toshiba", Rotational: true, Readonly: false, Trans: "sata", Fstype: "ext4", Mountpoint: "/mnt/data"},
+		{Name: "nvme1n1", Path: "/dev/nvme1n1", Size: "2000398934016", Type: "disk", Model: "Samsung SSD 870 EVO 2TB", Vendor: "Samsung", Rotational: false, Readonly: false, Trans: "nvme", IsRemovable: false, Serial: "S5RBNX0H987654"},
+		{Name: "sdc", Path: "/dev/sdc", Size: "12803567616", Type: "disk", Model: "Verbatim STORE N GO", Vendor: "Verbatim", Rotational: true, Readonly: false, Trans: "usb", IsRemovable: true, Serial: "VB12061605000123"},
+		{Name: "sdd", Path: "/dev/sdd", Size: "500107862016", Type: "disk", Model: "Crucial MX500 500GB", Vendor: "Crucial", Rotational: false, Readonly: false, Trans: "sata", Fstype: "btrfs", Mountpoint: "/home", Serial: "2112E9234567"},
+		{Name: "sde", Path: "/dev/sde", Size: "4000787031616", Type: "disk", Model: "WD Red Plus 4TB", Vendor: "Western Digital", Rotational: true, Readonly: false, Trans: "sata", IsRemovable: false, Serial: "WD-WMC3T0123456"},
+		{Name: "nvme2n1", Path: "/dev/nvme2n1", Size: "1000215250688", Type: "disk", Model: "SK hynix Platinum P41 1TB", Vendor: "SK hynix", Rotational: false, Readonly: false, Trans: "nvme", IsRemovable: false, Serial: "HEPQGH812345"},
+		{Name: "sdg", Path: "/dev/sdg", Size: "32000000000", Type: "disk", Model: "SanDisk Ultra Fit", Vendor: "SanDisk", Rotational: true, Readonly: false, Trans: "usb", IsRemovable: true, Serial: "43431202345678901234"},
+		{Name: "sdh", Path: "/dev/sdh", Size: "8001567940096", Type: "disk", Model: "Toshiba X300 8TB", Vendor: "Toshiba", Rotational: true, Readonly: false, Trans: "sata", Fstype: "ext4", Mountpoint: "/mnt/data", Serial: "81VY2A123"},
 	}
 }
 

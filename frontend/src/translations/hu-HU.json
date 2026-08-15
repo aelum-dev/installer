@@ -1,11 +1,9 @@
 {
   "app.brand": "AestheticOS",
   "app.dryRun": "SZIMULÁCIÓS FUTTATÁS",
-
   "page.welcome.title": "Üdvözöljük az AestheticOS-ban",
   "page.welcome.subtitle": "Ez a telepítő végigvezeti a rendszer beállításán.",
   "page.welcome.loading": "Betöltés...",
-
   "page.userAccount.title": "Felhasználófiók létrehozása",
   "page.userAccount.username": "Felhasználónév",
   "page.userAccount.usernamePlaceholder": "Adja meg a felhasználónevet",
@@ -13,7 +11,6 @@
   "page.userAccount.passwordPlaceholder": "Adja meg a jelszót",
   "page.userAccount.confirmPassword": "Jelszó megerősítése",
   "page.userAccount.confirmPasswordPlaceholder": "Adja meg újra a jelszót",
-
   "page.diskSelection.title": "Telepítőlemez kiválasztása",
   "page.diskSelection.hint": "Válasszon lemezt és fájlrendszert az AestheticOS telepítéséhez.",
   "page.diskSelection.loading": "Lemezek keresése...",
@@ -21,8 +18,9 @@
   "page.diskSelection.scanPartitions": "Partíciók szkennelése...",
   "page.diskSelection.noPartitions": "Ezen a lemezen nincsenek partíciók.",
   "page.diskSelection.fileSystem": "Fájlrendszer",
+  "page.diskSelection.currentFileSystem": "Jelenlegi fájlrendszer",
+  "page.diskSelection.selectedFileSystem": "Kiválasztott fájlrendszer",
   "page.diskSelection.diskTooSmall": "A lemez túl kicsi. Minimálisan {minSize} szükséges, de a kiválasztott lemez {selectedSize}.",
-
   "page.confirmation.title": "Telepítés összefoglalója",
   "page.confirmation.sectionLanguage": "Nyelv",
   "page.confirmation.sectionUser": "Felhasználófiók",
@@ -31,22 +29,18 @@
   "page.confirmation.password": "Jelszó",
   "validation.username": "Felhasználónév",
   "page.confirmation.diskTooSmall": "⚠ Lemez túl kicsi — minimálisan 16 GB szükséges",
-
   "page.installation.title": "AestheticOS telepítése",
   "page.installation.target": "Cél",
   "page.installation.completed": "Telepítés befejezve!",
   "page.installation.initializing": "Indítás...",
   "page.installation.checkLog": "A részletekért tekintse meg a {logPath} fájlt.",
-
   "page.finish.title": "Telepítés befejezve",
   "page.finish.message": "Az AestheticOS sikeresen telepítve.",
   "page.finish.reboot": "Újraindítás",
-
   "dialog.confirm.title": "Telepítés megerősítése",
   "dialog.confirm.message": "Biztosan telepíteni szeretné az AestheticOS-t a(z) <strong>{model}</strong> lemezre? Az összes adat a lemezen véglegesen törlődik.",
   "dialog.confirm.cancel": "Mégse",
   "dialog.confirm.yes": "Igen, törlés és telepítés",
-
   "validation.usernameRequired": "A felhasználónév megadása kötelező",
   "validation.usernameMinLength": "A felhasználónévnek legalább 3 karakterből kell állnia",
   "validation.passwordRequired": "A jelszó megadása kötelező",
@@ -59,21 +53,24 @@
   "validation.reviewInstallation": "Kérjük, tekintse át a telepítési adatokat.",
   "validation.waitInstallation": "Kérjük, várja meg a telepítés befejezését.",
   "validation.installationComplete": "A telepítés befejeződött.",
-
   "nav.back": "Vissza",
   "nav.next": "Tovább",
-
   "fs.ext4": "ext4",
   "fs.btrfs": "btrfs",
-
   "disk.hdd": "HDD",
   "disk.ssd": "SSD",
-
   "step.formatting": "Lemez formázása...",
   "step.mounting": "Fájlrendszer csatolása...",
   "step.installingBase": "Alaprendszer telepítése...",
   "step.installingDesktop": "Asztali környezet telepítése...",
   "step.setupUsers": "Felhasználók beállítása...",
   "step.configuringSystem": "Rendszer konfigurálása...",
-  "step.clearingCache": "Csomag gyorsítótár törlése..."
+  "step.clearingCache": "Csomag gyorsítótár törlése...",
+  "validation.serial": "Sorozatszám",
+  "disk.name": "Név",
+  "disk.type": "Típus",
+  "disk.size": "Méret",
+  "disk.mount": "Csatolási",
+  "disk.existing": "Meglévő",
+  "disk.mounted": "Csatolva"
 }

@@ -84,9 +84,9 @@ export const locale = {
 };
 
 export const format = {
-  number: (n: number) => n.toString(),
-  dateTime: (d: Date) => d.toString(),
-  relativeDateTime: (v: number, u: string) => `${v} ${u}`,
+  number: (n: number, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat(locale.current, opts).format(n),
+  dateTime: (d: Date, opts?: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale.current, opts).format(d),
+  relativeDateTime: (v: number, unit: Intl.RelativeTimeFormatUnit) => new Intl.RelativeTimeFormat(locale.current).format(v, unit),
 };
 
 // RTL detection

@@ -25,7 +25,5 @@
     "vite": "^6.3.0",
     "vitest": "^4.1.10"
   },
-  "dependencies": {
-    "@svelte-intl/svelte-intl": "^0.5.2"
-  }
+  "dependencies": {}
 }

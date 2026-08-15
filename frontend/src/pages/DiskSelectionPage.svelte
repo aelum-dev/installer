@@ -47,6 +47,30 @@
 			const parts = await GetDiskPartitions(disk.path);
 			logInfo(`[DiskSelectionPage] Got ${parts?.length ?? 0} partitions: ${JSON.stringify(parts)}`);
 			partitions = parts ?? [];
+
+			// Derive existing filesystem from partitions (root > largest ext4/btrfs > first with fstype)
+			let existingFstype = disk.fstype;
+			if (!existingFstype) {
+				const rootPart = partitions.find((p) => p.mountpoints?.includes("/"));
+				if (rootPart?.fstype) {
+					existingFstype = rootPart.fstype;
+				} else {
+					const btrfsOrExt = partitions.find((p) => p.fstype === "btrfs" || p.fstype === "ext4");
+					if (btrfsOrExt?.fstype) {
+						existingFstype = btrfsOrExt.fstype;
+					} else {
+						const firstWithFs = partitions.find((p) => p.fstype);
+						if (firstWithFs?.fstype) {
+							existingFstype = firstWithFs.fstype;
+						}
+					}
+				}
+			}
+			if (existingFstype && existingFstype !== disk.fstype) {
+				disk.fstype = existingFstype;
+				diskSelectionData.disk = { ...disk };
+				logInfo(`[DiskSelectionPage] Derived existing fstype: ${existingFstype}`);
+			}
 		} catch (err) {
 			logInfo(`[DiskSelectionPage] Failed to load partitions: ${err}`);
 		} finally {
@@ -174,10 +198,10 @@
 						{#if disk.fstype || disk.mountpoint}
 							<div class="card-tags">
 								{#if disk.fstype}
-									<span class="tag fstype">Existing {disk.fstype}</span>
+									<span class="tag fstype">{t('disk.existing')} {disk.fstype}</span>
 								{/if}
 								{#if disk.mountpoint}
-									<span class="tag mounted">Mounted {disk.mountpoint}</span>
+									<span class="tag mounted">{t('disk.mounted')} {disk.mountpoint}</span>
 								{/if}
 							</div>
 						{/if}
@@ -191,10 +215,10 @@
 									<table class="partition-table">
 										<thead>
 											<tr>
-												<th>Name</th>
-												<th>Type</th>
-												<th class="text-right">Size</th>
-												<th class="text-right">Mount</th>
+												<th>{t('disk.name')}</th>
+												<th>{t('disk.type')}</th>
+												<th class="text-right">{t('disk.size')}</th>
+												<th class="text-right">{t('disk.mount')}</th>
 											</tr>
 										</thead>
 										<tbody>

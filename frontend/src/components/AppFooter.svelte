@@ -82,9 +82,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		height: 74px;
-		padding-left: var(--spacing-md);
-		padding-right: var(--spacing-md);
+		height: 86px;
+		padding-left: var(--spacing-lg);
+		padding-right: var(--spacing-lg);
 	}
 
 	.footer-left {
