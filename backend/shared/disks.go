@@ -114,7 +114,14 @@ func SetFakeDisks(enabled bool) {
 // GetDisks returns a list of available block devices (disks) for installation.
 func GetDisks() ([]DiskInfo, error) {
 	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
-		return fakeDisks(), nil
+		disks := fakeDisks()
+		// Derive fstype from fake partitions for disks that don't have it set.
+		for i := range disks {
+			if disks[i].Fstype == "" {
+				disks[i].Fstype = deriveFstypeFromFakePartitions(disks[i].Path)
+			}
+		}
+		return disks, nil
 	}
 	cmd := exec.Command("lsblk", "-b", "-d", "-o", "NAME,TYPE,SIZE,MODEL,VENDOR,ROTA,RO,FSTYPE,MOUNTPOINT,SERIAL,TRAN", "-J")
 	output, err := cmd.Output()
@@ -161,6 +168,13 @@ func GetDisks() ([]DiskInfo, error) {
 			disk.Model = "Unknown"
 		}
 
+		// Inherit fstype from child partitions if not set at disk level.
+		// This ensures the "Existing ext4/btrfs" tag appears on page load
+		// without requiring the user to click the disk card first.
+		if disk.Fstype == "" {
+			disk.Fstype = deriveFstypeFromChildren(bd.Children)
+		}
+
 		disks = append(disks, disk)
 	}
 
@@ -184,6 +198,65 @@ func isRemovable(trans string) bool {
 		}
 	}
 	return false
+}
+
+// deriveFstypeFromFakePartitions derives fstype from fake partition data.
+// Uses the same priority: root mount > btrfs/ext4 > first with fstype.
+func deriveFstypeFromFakePartitions(diskPath string) string {
+	parts := fakePartitions(diskPath)
+	// 1. Partition mounted at /
+	for _, p := range parts {
+		if p.Mountpoints != nil && contains(p.Mountpoints, "/") && p.Fstype != "" {
+			return p.Fstype
+		}
+	}
+	// 2. First btrfs or ext4 partition
+	for _, p := range parts {
+		if p.Fstype == "btrfs" || p.Fstype == "ext4" {
+			return p.Fstype
+		}
+	}
+	// 3. First partition with any fstype
+	for _, p := range parts {
+		if p.Fstype != "" {
+			return p.Fstype
+		}
+	}
+	return ""
+}
+
+// contains checks if a string slice contains a value.
+func contains(slice []string, val string) bool {
+	for _, s := range slice {
+		if s == val {
+			return true
+		}
+	}
+	return false
+}
+
+// deriveFstypeFromChildren inherits fstype from a disk's child partitions
+// using the same priority as the frontend: root mount > btrfs/ext4 > first with fstype.
+func deriveFstypeFromChildren(children []lsblkEntry) string {
+	// 1. Partition mounted at /
+	for _, c := range children {
+		if c.Type == "part" && c.Mountpoint == "/" && c.Fstype != "" {
+			return c.Fstype
+		}
+	}
+	// 2. First btrfs or ext4 partition
+	for _, c := range children {
+		if c.Type == "part" && (c.Fstype == "btrfs" || c.Fstype == "ext4") {
+			return c.Fstype
+		}
+	}
+	// 3. First partition with any fstype
+	for _, c := range children {
+		if c.Type == "part" && c.Fstype != "" {
+			return c.Fstype
+		}
+	}
+	return ""
 }
 
 // PartitionDetail represents a partition with full information for display.
