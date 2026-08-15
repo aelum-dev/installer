@@ -68,10 +68,10 @@ let _locale = $state('en-US');
 export const t = (key: string, args?: Record<string, unknown>): string => {
   // Get the message using current locale
   const msg = translations[_locale]?.[key] ?? translations['en-US']?.[key] ?? key;
-  
+
   // Simple interpolation for ICU-style messages
   if (!args) return msg;
-  
+
   return msg.replace(/\{(\w+)\}/g, (_, k) => String(args[k] ?? ''));
 };
 
@@ -83,53 +83,12 @@ export const locale = {
   get current() { return _locale; },
 };
 
-export const format = {
-  number: (n: number, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat(locale.current, opts).format(n),
-  dateTime: (d: Date, opts?: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale.current, opts).format(d),
-  relativeDateTime: (v: number, unit: Intl.RelativeTimeFormatUnit) => new Intl.RelativeTimeFormat(locale.current).format(v, unit),
-};
-
 // RTL detection
 import { RTL_LOCALES } from './locales';
 export const getIsRTL = () => RTL_LOCALES.has(locale.current);
 
-export type Locale = keyof typeof LOCALES;
-
-// Map browser/locale codes to our supported locales
-const LOCALE_MAP: Record<string, string> = {
-  'de': 'de-DE',
-  'el': 'el-GR',
-  'es': 'es-ES',
-  'fr': 'fr-FR',
-  'it': 'it-IT',
-  'pt-BR': 'pt-BR',
-  'pt': 'pt-BR',
-  'ru': 'ru-RU',
-  'zh-CN': 'zh-CN',
-  'zh-TW': 'zh-TW',
-  'zh': 'zh-CN',
-  'ja': 'ja-JP',
-  'ko': 'ko-KR',
-  'uk': 'uk-UA',
-  'pl': 'pl-PL',
-  'tr': 'tr-TR',
-  'ar': 'ar-SA',
-  'he': 'he-IL',
-  'fa': 'fa-IR',
-  'fi': 'fi-FI',
-  'hu': 'hu-HU',
-  'nb': 'nb-NO',
-  'nl': 'nl-NL',
-  'sv': 'sv-SE',
-  'bg': 'bg-BG',
-  'ca': 'ca-ES',
-  'id': 'id-ID',
-  'vi': 'vi-VN',
-  'eo': 'eo',
-};
-
-// Direct mapping from backend locale strings to frontend locale codes
-const BACKEND_TO_FRONTEND: Record<string, string> = {
+// Backend locale codes (e.g. "de_DE.UTF-8") → frontend locale codes (e.g. "de-DE")
+export const BACKEND_TO_FRONTEND: Record<string, string> = {
   'en_US.UTF-8': 'en-US',
   'de_DE.UTF-8': 'de-DE',
   'el_GR.UTF-8': 'el-GR',
@@ -160,12 +119,9 @@ const BACKEND_TO_FRONTEND: Record<string, string> = {
   'eo.UTF-8': 'eo',
 };
 
-/** Map backend locale string (e.g. "ru_RU.UTF-8") to frontend locale (e.g. "ru-RU") */
+/** Map backend locale string to frontend locale code */
 export function backendLocaleToFrontend(rawLocale: string): string | undefined {
   return BACKEND_TO_FRONTEND[rawLocale];
 }
 
-export async function detectLocale(): Promise<string> {
-  const osLocale = navigator.language;
-  return LOCALE_MAP[osLocale] ?? LOCALE_MAP[osLocale.split('-')[0]] ?? 'en-US';
-}
+export type Locale = keyof typeof LOCALES;
