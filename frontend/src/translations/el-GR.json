@@ -1,6 +1,6 @@
 {
   "app.brand": "AestheticOS",
-  "app.dryRun": "DRY RUN",
+  "app.dryRun": "ΔΟΚΙΜΑΣΤΙΚΗ ΕΚΤΕΛΕΣΗ",
   "page.welcome.title": "Καλώς ήρθατε στο AestheticOS",
   "page.welcome.subtitle": "Αυτός ο εγκαταστάτης θα σας καθοδηγήσει μέσω της ρύθμισης του συστήματός σας.",
   "page.welcome.loading": "Φόρτωση...",

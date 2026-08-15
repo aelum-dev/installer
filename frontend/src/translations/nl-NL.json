@@ -1,6 +1,6 @@
 {
   "app.brand": "AestheticOS",
-  "app.dryRun": "DRY RUN",
+  "app.dryRun": "PROEFDRUK",
   "page.welcome.title": "Welkom bij AestheticOS",
   "page.welcome.subtitle": "Deze installatiewizard leidt je door het instellen van je systeem.",
   "page.welcome.loading": "Laden...",

@@ -1,6 +1,6 @@
 {
   "app.brand": "AestheticOS",
-  "app.dryRun": "DRY RUN",
+  "app.dryRun": "FÖRSÖKSKÖRNING",
   "page.welcome.title": "Välkommen till AestheticOS",
   "page.welcome.subtitle": "Den här installationsguiden guide dig genom att ställa in ditt system.",
   "page.welcome.loading": "Laddar...",

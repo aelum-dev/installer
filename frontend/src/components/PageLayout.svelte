@@ -27,7 +27,6 @@
 		color: var(--color-text, #333);
 		font-weight: var(--font-weight-700, 700);
 		text-align: center;
-		overflow: hidden;
 	}
 
 	.page-content {
@@ -37,7 +36,7 @@
 		min-width: 480px;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--page-gap, 24px);
+		gap: var(--page-gap, 32px);
 		width: 100%;
 		max-width: 520px;
 		margin: 0 auto;

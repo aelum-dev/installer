@@ -1,6 +1,6 @@
 {
   "app.brand": "AestheticOS",
-  "app.dryRun": "DRY RUN",
+  "app.dryRun": "PREVIURE",
   "page.welcome.title": "Benvinguts a AestheticOS",
   "page.welcome.subtitle": "Aquest instal·lador us guiarà per configurar el vostre sistema.",
   "page.welcome.loading": "S'està carregant...",

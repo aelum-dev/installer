@@ -89,7 +89,7 @@
 		display: grid;
 		grid-template-rows: 56px 1fr;
 		justify-items: center;
-		align-items: center;
+		align-items: start;
 		width: 100%;
 		min-width: 400px;
 		max-width: 480px;
@@ -115,7 +115,6 @@
 
 	.language-list {
 		list-style: none;
-		margin: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;

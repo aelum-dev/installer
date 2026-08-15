@@ -1,6 +1,6 @@
 {
   "app.brand": "AestheticOS",
-  "app.dryRun": "DRY RUN",
+  "app.dryRun": "РЕЖИМ НА ПРОБЕН ПРЕБЕГ",
   "page.welcome.title": "Добре дошли в AestheticOS",
   "page.welcome.subtitle": "Този инсталатор ще ви насочи през настройката на системата.",
   "page.welcome.loading": "Зареждане...",
