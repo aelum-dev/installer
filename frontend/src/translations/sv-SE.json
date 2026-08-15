@@ -28,7 +28,6 @@
   "page.confirmation.username": "Användarnamn",
   "page.confirmation.password": "Lösenord",
   "validation.username": "Användarnamn",
-  "page.confirmation.diskTooSmall": "⚠ Disk för liten — minst 16 GB krävs",
   "page.installation.title": "Installerar AestheticOS",
   "page.installation.target": "Mål",
   "page.installation.completed": "Installation slutförd!",

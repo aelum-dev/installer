@@ -28,7 +28,6 @@
   "page.confirmation.username": "Nazwa użytkownika",
   "page.confirmation.password": "Hasło",
   "validation.username": "Nazwa użytkownika",
-  "page.confirmation.diskTooSmall": "⚠ Dysk za mały — wymagane minimum 16 GB",
   "page.installation.title": "Instalowanie AestheticOS",
   "page.installation.target": "Cel",
   "page.installation.completed": "Instalacja zakończona!",

@@ -28,7 +28,6 @@
   "page.confirmation.username": "Käyttäjänimi",
   "page.confirmation.password": "Salasana",
   "validation.username": "Käyttäjänimi",
-  "page.confirmation.diskTooSmall": "⚠ Levy liian pieni — vähintään 16 GB vaaditaan",
   "page.installation.title": "Asennetaan AestheticOS",
   "page.installation.target": "Kohde",
   "page.installation.completed": "Asennus valmis!",

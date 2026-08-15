@@ -28,7 +28,6 @@
   "page.confirmation.username": "Brukernavn",
   "page.confirmation.password": "Passord",
   "validation.username": "Brukernavn",
-  "page.confirmation.diskTooSmall": "⚠ Disk for liten — minimum 16 GB kreves",
   "page.installation.title": "Installerer AestheticOS",
   "page.installation.target": "Mål",
   "page.installation.completed": "Installasjon fullført!",

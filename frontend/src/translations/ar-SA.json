@@ -28,7 +28,6 @@
   "page.confirmation.username": "اسم المستخدم",
   "page.confirmation.password": "كلمة المرور",
   "validation.username": "اسم المستخدم",
-  "page.confirmation.diskTooSmall": "⚠ قرص صغير جدًا — الحد الأدنى 16 جيجابايت مطلوب",
   "page.installation.title": "جاري تثبيت AestheticOS",
   "page.installation.target": "الهدف",
   "page.installation.completed": "تم التثبيت!",

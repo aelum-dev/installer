@@ -28,7 +28,6 @@
   "page.confirmation.username": "사용자 이름",
   "page.confirmation.password": "비밀번호",
   "validation.username": "사용자 이름",
-  "page.confirmation.diskTooSmall": "⚠ 디스크가 너무 작음 — 최소 16GB 필요",
   "page.installation.title": "AestheticOS 설치 중",
   "page.installation.target": "대상",
   "page.installation.completed": "설치 완료!",

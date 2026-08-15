@@ -18,12 +18,6 @@
 	let languages = $state<Language[]>([]);
 	let selectedLanguageName = $state<string>('—');
 
-	const isDiskSizeSufficient = $derived.by(() => {
-		if (!diskSelectionData.disk) return false;
-		const size = parseInt(diskSelectionData.disk.size, 10);
-		return !isNaN(size) && size >= MinDiskSizeBytes;
-	});
-
 	async function loadLanguageInfo(): Promise<void> {
 		try {
 			languages = await GetLanguages();
@@ -96,9 +90,6 @@
 						</p>
 						{#if diskSelectionData.disk.serial}
 							<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{diskSelectionData.disk.serial}</span></p>
-						{/if}
-						{#if !isDiskSizeSufficient}
-							<p class="disk-extra disk-size-error">{t('page.confirmation.diskTooSmall')}</p>
 						{/if}
 					</div>
 				{:else}
@@ -193,13 +184,15 @@
 	}
 
 	.fstype-tag {
-		background-color: var(--color-warning-light);
-		color: var(--color-warning);
+		background-color: var(--color-info-bg);
+		color: var(--color-text);
+		font-family: var(--font-mono);
 	}
 
 	.serial-tag {
 		background-color: var(--color-mauve-light);
 		color: var(--color-text);
+		font-family: var(--font-mono);
 	}
 
 	.fs-tag {
@@ -210,10 +203,5 @@
 
 	.error {
 		color: var(--color-danger);
-	}
-
-	.disk-size-error {
-		color: var(--color-danger);
-		font-weight: 600;
 	}
 </style>

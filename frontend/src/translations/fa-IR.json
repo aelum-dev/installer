@@ -28,7 +28,6 @@
   "page.confirmation.username": "نام کاربری",
   "page.confirmation.password": "رمز عبور",
   "validation.username": "نام کاربری",
-  "page.confirmation.diskTooSmall": "⚠ دیسک خیلی کوچک — حداقل 16 گیگابایت مورد نیاز است",
   "page.installation.title": "در حال نصب AestheticOS",
   "page.installation.target": "هدف",
   "page.installation.completed": "نصب کامل شد!",

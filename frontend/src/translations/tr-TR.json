@@ -28,7 +28,6 @@
   "page.confirmation.username": "Kullanıcı adı",
   "page.confirmation.password": "Şifre",
   "validation.username": "Kullanıcı adı",
-  "page.confirmation.diskTooSmall": "⚠ Disk çok küçük — minimum 16 GB gerekli",
   "page.installation.title": "AestheticOS Yükleniyor",
   "page.installation.target": "Hedef",
   "page.installation.completed": "Yükleme tamamlandı!",

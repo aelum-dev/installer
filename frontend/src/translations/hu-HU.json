@@ -28,7 +28,6 @@
   "page.confirmation.username": "Felhasználónév",
   "page.confirmation.password": "Jelszó",
   "validation.username": "Felhasználónév",
-  "page.confirmation.diskTooSmall": "⚠ Lemez túl kicsi — minimálisan 16 GB szükséges",
   "page.installation.title": "AestheticOS telepítése",
   "page.installation.target": "Cél",
   "page.installation.completed": "Telepítés befejezve!",

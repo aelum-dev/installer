@@ -28,7 +28,6 @@
   "page.confirmation.username": "ユーザー名",
   "page.confirmation.password": "パスワード",
   "validation.username": "ユーザー名",
-  "page.confirmation.diskTooSmall": "⚠ ディスクが小さすぎます — 最小 16 GB 必要",
   "page.installation.title": "AestheticOS をインストール中",
   "page.installation.target": "ターゲット",
   "page.installation.completed": "インストール完了！",

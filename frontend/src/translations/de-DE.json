@@ -28,7 +28,6 @@
   "page.confirmation.username": "Benutzername",
   "page.confirmation.password": "Passwort",
   "validation.username": "Passwort",
-  "page.confirmation.diskTooSmall": "⚠ Festplatte zu klein — mindestens 16 GB erforderlich",
   "page.installation.title": "AestheticOS wird installiert",
   "page.installation.target": "Ziel",
   "page.installation.completed": "Installation abgeschlossen!",

@@ -28,7 +28,6 @@
   "page.confirmation.username": "Потребителско име",
   "page.confirmation.password": "Парола",
   "validation.username": "Потребителско име",
-  "page.confirmation.diskTooSmall": "⚠ Дискът е твърде малък — изисква се минимум 16 GB",
   "page.installation.title": "Инсталиране на AestheticOS",
   "page.installation.target": "Цел",
   "page.installation.completed": "Инсталацията завърши!",

@@ -3,7 +3,8 @@
 
 export const MinUsernameLength = 3;
 export const MinPasswordLength = 6;
-export const MinDiskSizeBytes = (((16 * 1024) * 1024) * 1024);
+export const MinDiskSizeGB = 8;
+export const MinDiskSizeBytes = (((MinDiskSizeGB * 1024) * 1024) * 1024);
 export const DefaultFileSystem = "ext4";
 export const FileSystemExt4 = "ext4";
 export const FileSystemBtrfs = "btrfs";

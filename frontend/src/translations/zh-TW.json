@@ -28,7 +28,6 @@
   "page.confirmation.username": "使用者名稱",
   "page.confirmation.password": "密碼",
   "validation.username": "使用者名稱",
-  "page.confirmation.diskTooSmall": "⚠ 磁碟太小 — 至少需要 16 GB",
   "page.installation.title": "正在安裝 AestheticOS",
   "page.installation.target": "目標",
   "page.installation.completed": "安裝完成！",

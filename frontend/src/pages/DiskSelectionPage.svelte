@@ -107,7 +107,7 @@
 		</div>
 	{:else}
 		<div class="disk-page">
-			<!-- Filesystem pills -->
+			<!-- Filesystem pills + min disk size -->
 			<div class="fs-bar">
 				<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
 				<div class="fs-pills">
@@ -121,10 +121,8 @@
 						</button>
 					{/each}
 				</div>
+				<span class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</span>
 			</div>
-
-			<!-- Minimum disk size hint -->
-			<p class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
 
 			<!-- Disk cards -->
 			<div class="disk-list">
@@ -329,8 +327,9 @@
 	.min-disk-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-muted);
-		padding: 0 2px;
-		margin: 0;
+		white-space: nowrap;
+		margin-left: auto;
+		margin-right: var(--spacing-lg);
 	}
 
 	/* ── Disk list (scrollable) ── */

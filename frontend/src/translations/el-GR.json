@@ -28,7 +28,6 @@
   "page.confirmation.username": "Όνομα χρήστη",
   "page.confirmation.password": "Κωδικός πρόσβασης",
   "validation.username": "Όνομα χρήστη",
-  "page.confirmation.diskTooSmall": "⚠ Δίσκος πολύ μικρός — απαιτείται ελάχιστο 16 GB",
   "page.installation.title": "Εγκατάσταση AestheticOS",
   "page.installation.target": "Στόχος",
   "page.installation.completed": "Η εγκατάσταση ολοκληρώθηκε!",
