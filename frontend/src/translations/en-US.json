@@ -20,7 +20,7 @@
   "page.diskSelection.fileSystem": "Filesystem",
   "page.diskSelection.currentFileSystem": "Current filesystem",
   "page.diskSelection.selectedFileSystem": "Selected filesystem",
-  "page.diskSelection.diskTooSmall": "Disk is too small. Minimum {minSize} required, but selected disk is {selectedSize}.",
+  "page.diskSelection.minDiskSize": "Minimum disk size: {minSize}",
   "page.confirmation.title": "Installation Summary",
   "page.confirmation.sectionLanguage": "Language",
   "page.confirmation.sectionUser": "User Account",

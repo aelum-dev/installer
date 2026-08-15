@@ -21,8 +21,6 @@
 	let partitionsLoading = $state(false);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let diskSizeError = $state<string | null>(null);
-	let diskSizeErrorArgs = $state<{ minSize: string; selectedSize: string } | null>(null);
 
 	async function loadDisks(): Promise<void> {
 		try {
@@ -82,26 +80,8 @@
 	loadDisks();
 
 	$effect(() => {
-		const disk = diskSelectionData.disk;
 		const hasDisk = !!diskSelectionData.diskId;
 		const hasFileSystem = !!diskSelectionData.fileSystem;
-		
-		// Check disk size
-		if (disk && disk.size) {
-			const sizeBytes = parseInt(disk.size, 10);
-			if (!isNaN(sizeBytes) && sizeBytes < MinDiskSizeBytes) {
-				diskSizeErrorArgs = {
-					minSize: formatSize(String(MinDiskSizeBytes)),
-					selectedSize: formatSize(disk.size),
-				};
-				diskSizeError = t('page.diskSelection.diskTooSmall', diskSizeErrorArgs);
-				pageValid.value = false;
-				return;
-			}
-		}
-		
-		diskSizeError = null;
-		diskSizeErrorArgs = null;
 		pageValid.value = hasDisk && hasFileSystem;
 	});
 
@@ -143,17 +123,8 @@
 				</div>
 			</div>
 
-			<!-- Disk size warning -->
-				{#if diskSizeError}
-					<div class="size-warning">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-							<line x1="12" y1="9" x2="12" y2="13"/>
-							<line x1="12" y1="17" x2="12.01" y2="17"/>
-						</svg>
-						<span>{diskSizeError}</span>
-					</div>
-				{/if}
+			<!-- Minimum disk size hint -->
+			<p class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
 
 			<!-- Disk cards -->
 			<div class="disk-list">
@@ -266,25 +237,6 @@
 		text-align: center;
 	}
 
-	/* ── Size warning ── */
-	.size-warning {
-		display: flex;
-		align-items: flex-start;
-		gap: 8px;
-		padding: 10px 12px;
-		background: var(--color-warning-light);
-		color: var(--color-warning);
-		border-radius: var(--radius-md);
-		font-size: 0.82rem;
-		font-weight: 500;
-		margin-bottom: var(--spacing-sm);
-	}
-
-	.size-warning svg {
-		flex-shrink: 0;
-		margin-top: 2px;
-	}
-
 	/* ── State messages ── */
 	.state-message {
 		display: flex;
@@ -371,6 +323,14 @@
 		border-color: var(--color-primary);
 		background: var(--color-primary);
 		color: var(--color-on-primary);
+	}
+
+	/* ── Min disk hint ── */
+	.min-disk-hint {
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+		padding: 0 2px;
+		margin: 0;
 	}
 
 	/* ── Disk list (scrollable) ── */
