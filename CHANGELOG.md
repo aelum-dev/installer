@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fake disks loaded in dry-run mode** — When dry-run is active, `GetDisks()` and `GetDiskPartitions()` return synthetic disk data instead of querying `lsblk`. This lets the UI be explored without reading real block devices.
 
 ### Fixed
+- **WelcomePage layout no longer shifts when switching languages** — Uses CSS Grid with fixed 56px subtitle row and integer pixel heights (48px title, 56px subtitle) to prevent font metric differences from causing layout shifts. Language list scrolls independently within its max-height.
 - **Bootloader config works when booted via GRUB/Ventoy** — Replaced `bootctl set-default` with direct `loader.conf` file write. `bootctl set-default` fails when the live ISO is booted through GRUB (e.g. Ventoy) because it checks current firmware EFI variables. The file write achieves the same result regardless of boot method.
 - **Dry-run mode now properly skips all side effects** — `--cleanup` and `--rollback` CLI flags now skip operations in dry-run mode. `OnBeforeClose` in the GUI skips the sudo cleanup call in dry-run mode. Previously these would still execute disk operations even with `--dry-run`.
 - **GUI transitions to FinishPage after successful installation** — `StartInstallation()` now emits `installation:complete` (success) or `installation:error` (failure) events to the frontend when the CLI exits. Previously the frontend listened for these events but they were never emitted, leaving the UI stuck at the last step.
