@@ -195,8 +195,8 @@
 							</div>
 						</div>
 
-						<!-- Inline tags -->
-						{#if disk.fstype || disk.mountpoint}
+						<!-- Inline tags (only shown when card is selected) -->
+						{#if diskSelectionData.diskId === disk.path && (disk.fstype || disk.mountpoint)}
 							<div class="card-tags">
 								{#if disk.fstype}
 									<span class="tag fstype">{t('disk.existing')} {disk.fstype}</span>
