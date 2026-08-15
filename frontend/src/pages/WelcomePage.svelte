@@ -50,9 +50,8 @@
 	loadLanguages();
 </script>
 
-<div class="page-layout">
-	<h2 class="page-title">{t('page.welcome.title')}</h2>
-	<div class="page-content stretch">
+<div class="page-content stretch">
+		<h2 class="page-title">{t('page.welcome.title')}</h2>
 		<div class="welcome-content">
 			<p class="subtitle">{t('page.welcome.subtitle')}</p>
 			{#if loading}
@@ -74,7 +73,6 @@
 			{/if}
 		</div>
 	</div>
-</div>
 
 <style>
 	.subtitle {

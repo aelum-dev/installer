@@ -122,9 +122,8 @@
 	);
 </script>
 
-<div class="page-layout">
-	<h2 class="page-title">{t('page.installation.title')}</h2>
-	<div class="page-content">
+<div class="page-content">
+		<h2 class="page-title">{t('page.installation.title')}</h2>
 		<div class="installation">
 			{#if installState.diskId}
 				<p class="hint">
@@ -153,7 +152,6 @@
 			{/if}
 		</div>
 	</div>
-</div>
 
 <style>
 	.installation {

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { fly, slide } from 'svelte/transition';
-	import { quadOut } from 'svelte/easing';
+	import { fly } from 'svelte/transition';
+	import { backOut } from 'svelte/easing';
 
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
@@ -83,7 +83,10 @@
 	<AppHeader currentPage={navState.currentPage} />
 	<main class="content-area">
 		{#key navState.currentPage}
-			<div class="page-content" transition:fly={{ x: navState.direction === 'forward' ? -40 : 40, duration: 250, easing: quadOut }}>
+			<div
+				class="page-content"
+				transition:fly={{ x: navState.direction === 'forward' ? -80 : 80, duration: 350, easing: backOut }}
+			>
 				{#if navState.currentPage === PAGE_IDS.WELCOME}
 					<WelcomePage />
 				{:else if navState.currentPage === PAGE_IDS.USER_ACCOUNT}
@@ -133,5 +136,8 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		will-change: transform, opacity;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
 	}
 </style>

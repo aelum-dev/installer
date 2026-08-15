@@ -3,15 +3,13 @@
 	import '$lib/layout.css';
 </script>
 
-<div class="page-layout">
-	<h2 class="page-title">{t('page.finish.title')}</h2>
-	<div class="page-content">
+<div class="page-content">
+		<h2 class="page-title">{t('page.finish.title')}</h2>
 		<div class="finish">
 			<div class="icon">✓</div>
 			<p class="message">{t('page.finish.message')}</p>
 		</div>
 	</div>
-</div>
 
 <style>
 	.finish {

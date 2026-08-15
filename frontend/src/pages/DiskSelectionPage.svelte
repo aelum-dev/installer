@@ -66,9 +66,8 @@
 	loadDisks();
 </script>
 
-<div class="page-layout">
-	<h2 class="page-title">{t('page.diskSelection.title')}</h2>
-	<div class="page-content stretch" style="--page-gap: 8px">
+<div class="page-content stretch" style="--page-gap: 8px">
+		<h2 class="page-title">{t('page.diskSelection.title')}</h2>
 		<div class="top-section">
 			<p class="hint">{t('page.diskSelection.hint')}</p>
 			<p class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
@@ -201,7 +200,6 @@
 			</div>
 		{/if}
 	</div>
-</div>
 
 <style>
 	.top-section {

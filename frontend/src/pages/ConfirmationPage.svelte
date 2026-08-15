@@ -29,9 +29,8 @@
 	loadLanguageInfo();
 </script>
 
-<div class="page-layout">
-	<h2 class="page-title">{t('page.confirmation.title')}</h2>
-	<div class="page-content">
+<div class="page-content">
+		<h2 class="page-title">{t('page.confirmation.title')}</h2>
 		<div class="summary">
 			<div class="summary-section">
 				<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
@@ -74,7 +73,6 @@
 			</div>
 		</div>
 	</div>
-</div>
 
 <style>
 	.summary {

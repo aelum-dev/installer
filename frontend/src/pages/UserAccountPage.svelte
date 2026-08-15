@@ -26,9 +26,8 @@
 	}
 </script>
 
-<div class="page-layout">
-	<h2 class="page-title">{t('page.userAccount.title')}</h2>
-	<div class="page-content">
+<div class="page-content">
+		<h2 class="page-title">{t('page.userAccount.title')}</h2>
 		<form class="form" onsubmit={(e) => e.preventDefault()}>
 			<div class="field">
 				<label for="username">{t('page.userAccount.username')}</label>
@@ -70,4 +69,3 @@
 			</div>
 		</form>
 	</div>
-</div>
