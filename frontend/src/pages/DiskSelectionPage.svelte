@@ -90,6 +90,7 @@
 
 <PageLayout title={t('page.diskSelection.title')} stretch={true}>
 	<p class="hint">{t('page.diskSelection.hint')}</p>
+	<p class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
 
 	{#if loading}
 		<div class="state-message">
@@ -107,7 +108,7 @@
 		</div>
 	{:else}
 		<div class="disk-page">
-			<!-- Filesystem pills + min disk size -->
+			<!-- Filesystem pills -->
 			<div class="fs-bar">
 				<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
 				<div class="fs-pills">
@@ -121,7 +122,6 @@
 						</button>
 					{/each}
 				</div>
-				<span class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</span>
 			</div>
 
 			<!-- Disk cards -->
@@ -327,9 +327,9 @@
 	.min-disk-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-muted);
-		white-space: nowrap;
-		margin-left: auto;
-		margin-right: var(--spacing-lg);
+		margin: 0;
+		text-align: center;
+		margin-bottom: var(--spacing-sm);
 	}
 
 	/* ── Disk list (scrollable) ── */

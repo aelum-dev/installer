@@ -181,22 +181,7 @@
 		padding: 2px 8px;
 		border-radius: 4px;
 		font-weight: 500;
-	}
-
-	.fstype-tag {
-		background-color: var(--color-info-bg);
-		color: var(--color-text);
-		font-family: var(--font-mono);
-	}
-
-	.serial-tag {
-		background-color: var(--color-mauve-light);
-		color: var(--color-text);
-		font-family: var(--font-mono);
-	}
-
-	.fs-tag {
-		background-color: var(--color-info-bg);
+		background-color: var(--color-primary-light);
 		color: var(--color-text);
 		font-family: var(--font-mono);
 	}
