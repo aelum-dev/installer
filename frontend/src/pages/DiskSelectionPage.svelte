@@ -162,6 +162,7 @@
 						type="button"
 						class={['disk-card', { selected: diskSelectionData.diskId === disk.path }]}
 						onclick={() => selectDisk(disk)}
+						disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
 					>
 						<!-- Header: icon + name + radio -->
 						<div class="card-header">
@@ -407,6 +408,12 @@
 	.disk-card.selected {
 		border-color: var(--color-primary);
 		background: var(--color-primary-lighter);
+	}
+
+	.disk-card:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+		pointer-events: none;
 	}
 
 	.card-header {
