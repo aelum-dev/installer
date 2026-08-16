@@ -83,6 +83,7 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		align-items: center;
+		gap: var(--gap-md);
 		flex: 1;
 		width: 100%;
 		box-sizing: border-box;

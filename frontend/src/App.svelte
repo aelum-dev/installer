@@ -135,5 +135,6 @@
 		flex-direction: column;
 		overflow: hidden;
 		padding-right: var(--spacing-lg);
+		gap: var(--gap-lg);
 	}
 </style>

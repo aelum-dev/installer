@@ -1,6 +1,9 @@
 package shared
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestValidateUserAccount_UsernameOnly(t *testing.T) {
 	// Console installer validates username before password is entered.
@@ -24,6 +27,31 @@ func TestValidateUserAccount_UsernameOnly(t *testing.T) {
 			name:      "short username with no password",
 			data:      UserAccountData{Username: "ab"},
 			expectErr: true,
+		},
+		{
+			name:      "valid 3-char username with no password",
+			data:      UserAccountData{Username: "abc"},
+			expectErr: false,
+		},
+		{
+			name:      "username starting with underscore",
+			data:      UserAccountData{Username: "_user"},
+			expectErr: false,
+		},
+		{
+			name:      "username with hyphen",
+			data:      UserAccountData{Username: "user-name"},
+			expectErr: false,
+		},
+		{
+			name:      "username with numbers",
+			data:      UserAccountData{Username: "user123"},
+			expectErr: false,
+		},
+		{
+			name:      "username at max length",
+			data:      UserAccountData{Username: "abcdefghijklmnopqrstuvwxyz123456"},
+			expectErr: false,
 		},
 	}
 
@@ -77,6 +105,82 @@ func TestValidateUserAccount_FullData(t *testing.T) {
 			}
 			if tt.expectErr && err != nil && err.Error() != tt.errorMsg {
 				t.Errorf("expected error message %q, got %q", tt.errorMsg, err.Error())
+			}
+		})
+	}
+}
+
+func TestValidateUserAccount_UsernameFormat(t *testing.T) {
+	tests := []struct {
+		name      string
+		username  string
+		expectErr bool
+		errorMsg  string
+	}{
+		// Valid usernames
+		{name: "lowercase letters only", username: "john", expectErr: false},
+		{name: "lowercase with underscore", username: "john_doe", expectErr: false},
+		{name: "lowercase with hyphen", username: "john-doe", expectErr: false},
+		{name: "lowercase with numbers", username: "user123", expectErr: false},
+		{name: "starts with underscore", username: "_user", expectErr: false},
+		{name: "minimum length (3 chars)", username: "abc", expectErr: false},
+		{name: "maximum length (32 chars)", username: "abcdefghijklmnopqrstuvwxyz123456", expectErr: false},
+
+		// Invalid: uppercase
+		{name: "uppercase first letter", username: "John", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
+		{name: "all uppercase", username: "JOHN", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
+		{name: "mixed case (lower first, upper later)", username: "jOhnDoe", expectErr: true, errorMsg: "must contain only lowercase letters"},
+
+		// Invalid: special characters (pass first char check, fail allowed chars)
+		{name: "contains dot", username: "user.name", expectErr: true, errorMsg: "must contain only lowercase letters"},
+		{name: "contains at sign", username: "user@home", expectErr: true, errorMsg: "must contain only lowercase letters"},
+		{name: "contains hash", username: "user#name", expectErr: true, errorMsg: "must contain only lowercase letters"},
+		{name: "contains space", username: "user name", expectErr: true, errorMsg: "must contain only lowercase letters"},
+
+		// Invalid: starts with wrong character
+		{name: "starts with hyphen", username: "-user", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
+		{name: "starts with number", username: "1user", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
+		{name: "starts with dot", username: ".user", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
+
+		// Invalid: length
+		{name: "too short (2 chars)", username: "ab", expectErr: true, errorMsg: "at least 3"},
+		{name: "too short (1 char)", username: "a", expectErr: true, errorMsg: "at least 3"},
+		{name: "too long (33 chars)", username: "abcdefghijklmnopqrstuvwxyz1234567", expectErr: true, errorMsg: "at most 32"},
+		{name: "too long (50 chars)", username: "a", expectErr: true}, // Will be set dynamically
+	}
+
+	// Set dynamic test case
+	tests[17].errorMsg = "at most 32"
+	tests[17].username = "a" + strings.Repeat("a", 49)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateUserAccount(UserAccountData{Username: tt.username, Password: "test123", ConfirmPassword: "test123"})
+			if (err != nil) != tt.expectErr {
+				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
+			}
+			if tt.expectErr && err != nil {
+				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("expected error to contain %q, got %q", tt.errorMsg, err.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestValidateUserAccount_ReservedNames(t *testing.T) {
+	// Test a sample of reserved usernames to ensure they're all blocked
+	reservedNames := []string{"root", "bin", "daemon", "nobody", "sshd", "gdm", "pulse"}
+
+	for _, name := range reservedNames {
+		t.Run(name, func(t *testing.T) {
+			err := ValidateUserAccount(UserAccountData{Username: name, Password: "test123", ConfirmPassword: "test123"})
+			if err == nil {
+				t.Errorf("expected error for reserved username %q, got nil", name)
+				return
+			}
+			if !strings.Contains(err.Error(), "reserved") {
+				t.Errorf("expected error to contain 'reserved', got %q", err.Error())
 			}
 		})
 	}

@@ -8,6 +8,14 @@ import (
 	"strings"
 )
 
+// UsernameFirstCharRegex validates the first character of a Linux login name.
+// Must be a lowercase letter or underscore.
+var UsernameFirstCharRegex = regexp.MustCompile(`^[a-z_]`)
+
+// UsernameAllowedCharsRegex validates all allowed characters in a Linux login name.
+// Lowercase letters, digits, underscores, and hyphens only.
+var UsernameAllowedCharsRegex = regexp.MustCompile(`^[a-z0-9_-]+$`)
+
 // ValidateUserAccount checks user account fields.
 // Password/confirm checks are skipped when password is empty,
 // allowing callers to validate username before password is entered.
@@ -18,6 +26,18 @@ func ValidateUserAccount(data UserAccountData) error {
 	}
 	if len(data.Username) < MinUsernameLength {
 		return fmt.Errorf("username must be at least %d characters", MinUsernameLength)
+	}
+	if len(data.Username) > MaxUsernameLength {
+		return fmt.Errorf("username must be at most %d characters", MaxUsernameLength)
+	}
+	if !UsernameFirstCharRegex.MatchString(data.Username) {
+		return fmt.Errorf("username must start with a lowercase letter or underscore")
+	}
+	if !UsernameAllowedCharsRegex.MatchString(data.Username) {
+		return fmt.Errorf("username must contain only lowercase letters, numbers, hyphens, and underscores")
+	}
+	if ReservedUsernames[data.Username] {
+		return fmt.Errorf("username %q is reserved", data.Username)
 	}
 	if data.Password == "" {
 		return nil

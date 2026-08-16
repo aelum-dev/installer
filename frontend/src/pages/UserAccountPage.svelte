@@ -85,6 +85,7 @@
 	.page-content {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
+		gap: var(--gap-md);
 		align-items: center;
 		flex: 1;
 		width: 100%;

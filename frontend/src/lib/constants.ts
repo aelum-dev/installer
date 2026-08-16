@@ -2,6 +2,7 @@
 // Source: backend/shared/config.go
 
 export const MinUsernameLength = 3;
+export const MaxUsernameLength = 32;
 export const MinPasswordLength = 6;
 export const MinDiskSizeGB = 8;
 export const MinDiskSizeBytes = (((MinDiskSizeGB * 1024) * 1024) * 1024);

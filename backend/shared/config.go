@@ -10,8 +10,88 @@ package shared
 // MinUsernameLength is the minimum allowed username length.
 const MinUsernameLength = 3
 
+// MaxUsernameLength is the maximum allowed username length (POSIX LOGIN_NAME_MAX).
+// Linux limits usernames to 32 characters; useradd will reject longer names.
+const MaxUsernameLength = 32
+
 // MinPasswordLength is the minimum allowed password length.
 const MinPasswordLength = 6
+
+// ReservedUsernames contains system usernames that cannot be used by users.
+// This includes POSIX reserved names, systemd service accounts, and common
+// daemon accounts found on Arch Linux systems.
+var ReservedUsernames = map[string]bool{
+	"root": true, // superuser
+
+	// POSIX reserved names
+	"bin":      true,
+	"daemon":   true,
+	"adm":      true,
+	"lp":       true,
+	"sync":     true,
+	"shutdown": true,
+	"halt":     true,
+	"mail":     true,
+	"news":     true,
+	"uucp":     true,
+	"operator": true,
+	"games":    true,
+	"gopher":   true,
+	"ftp":      true,
+	"nobody":   true,
+
+	// systemd service accounts
+	"systemd":           true,
+	"systemd-journal":   true,
+	"systemd-network":   true,
+	"systemd-resolve":   true,
+	"systemd-timesync":  true,
+	"systemd-bus-proxy": true,
+	"systemd-coredump":  true,
+
+	// Common daemon accounts (Arch Linux)
+	"dbus":       true,
+	"tss":        true,
+	"ntp":        true,
+	"sshd":       true,
+	"polkitd":    true,
+	"colord":     true,
+	"pulse":      true,
+	"rtkit":      true,
+	"avahi":      true,
+	"cups":       true,
+	"usbmux":     true,
+	"kernoops":   true,
+	"messagebus": true,
+	"statd":      true,
+	"rpcuser":    true,
+	"rpc":        true,
+	"nfsnobody":  true,
+	"radvd":      true,
+	"chrony":     true,
+	"qemu":       true,
+	"libvirt":    true,
+	"smmsp":      true,
+	"postfix":    true,
+	"www-data":   true,
+	"proxy":      true,
+	"bind":       true,
+	"staff":      true,
+	"man":        true,
+	"printcap":   true,
+	"input":      true,
+	"mailnull":   true,
+	"list":       true,
+	"irc":        true,
+	"gnats":      true,
+	"backup":     true,
+
+	// Display manager accounts
+	"gdm":                 true,
+	"gnome-initial-setup": true,
+	"gdm3":                true,
+	"lightdm":             true,
+}
 
 // MinDiskSizeGB is the minimum disk size in gigabytes.
 const MinDiskSizeGB = 8
