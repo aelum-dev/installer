@@ -71,5 +71,8 @@
   "disk.size": "Ukuran",
   "disk.mount": "Titik",
   "disk.existing": "Ada",
-  "disk.mounted": "Dipasang"
+  "disk.mounted": "Dipasang",
+  "page.userAccount.subtitle": "Pilih nama pengguna dan kata sandi yang aman untuk sistem Anda.",
+  "page.userAccount.usernameHint": "Nama pengguna: 3+ karakter, hanya huruf dan angka",
+  "page.userAccount.passwordHint": "Kata sandi: minimal 6 karakter"
 }

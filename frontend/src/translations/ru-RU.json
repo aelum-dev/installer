@@ -71,5 +71,8 @@
   "disk.size": "Размер",
   "disk.mount": "Точка",
   "disk.existing": "Существующая",
-  "disk.mounted": "Подключена"
+  "disk.mounted": "Подключена",
+  "page.userAccount.subtitle": "Выберите имя пользователя и надёжный пароль для вашей системы.",
+  "page.userAccount.usernameHint": "Имя пользователя: 3+ символа, только буквы и цифры",
+  "page.userAccount.passwordHint": "Пароль: минимум 6 символов"
 }

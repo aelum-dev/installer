@@ -71,5 +71,8 @@
   "disk.size": "Grando",
   "disk.mount": "Alĝustejo",
   "disk.existing": "Ekzistanta",
-  "disk.mounted": "Muntita"
+  "disk.mounted": "Muntita",
+  "page.userAccount.subtitle": "Elektu uzantnomon kaj sekretvorton por via sistemo.",
+  "page.userAccount.usernameHint": "Uzantnomo: 3+ signoj, nur literoj kaj nombroj",
+  "page.userAccount.passwordHint": "Pasvorto: almenaŭ 6 signoj"
 }

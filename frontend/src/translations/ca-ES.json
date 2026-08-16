@@ -71,5 +71,8 @@
   "disk.size": "Mida",
   "disk.mount": "Muntatge",
   "disk.existing": "Existent",
-  "disk.mounted": "Montat"
+  "disk.mounted": "Montat",
+  "page.userAccount.subtitle": "Trieu un nom d'usuari i una contrasenya segura per al vostre sistema.",
+  "page.userAccount.usernameHint": "Nom d'usuari: 3+ caràcters, només lletres i números",
+  "page.userAccount.passwordHint": "Contrasenya: mínim 6 caràcters"
 }

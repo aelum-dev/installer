@@ -71,5 +71,8 @@
   "disk.size": "גודל",
   "disk.mount": "נקודת",
   "disk.existing": "קיים",
-  "disk.mounted": "מחובר"
+  "disk.mounted": "מחובר",
+  "page.userAccount.subtitle": "בחר שם משתמש וסיסמה מאובטחת למערכת שלך.",
+  "page.userAccount.usernameHint": "שם משתמש: 3+ תווים, אותיות ומספרים בלבד",
+  "page.userAccount.passwordHint": "סיסמה: מינימום 6 תווים"
 }

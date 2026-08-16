@@ -71,5 +71,8 @@
   "disk.size": "Boyut",
   "disk.mount": "Bağlama",
   "disk.existing": "Mevcut",
-  "disk.mounted": "Takılı"
+  "disk.mounted": "Takılı",
+  "page.userAccount.subtitle": "Sisteminiz için bir kullanıcı adı ve güvenli bir şifre seçin.",
+  "page.userAccount.usernameHint": "Kullanıcı adı: 3+ karakter, sadece harf ve rakam",
+  "page.userAccount.passwordHint": "Şifre: en az 6 karakter"
 }

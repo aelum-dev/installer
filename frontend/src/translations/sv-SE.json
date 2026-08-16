@@ -71,5 +71,8 @@
   "disk.size": "Storlek",
   "disk.mount": "Fästpunkt",
   "disk.existing": "Existerande",
-  "disk.mounted": "Monterad"
+  "disk.mounted": "Monterad",
+  "page.userAccount.subtitle": "Välj ett användarnamn och ett säkert lösenord för ditt system.",
+  "page.userAccount.usernameHint": "Användarnamn: 3+ tecken, endast bokstäver och siffror",
+  "page.userAccount.passwordHint": "Lösenord: minst 6 tecken"
 }

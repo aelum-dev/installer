@@ -71,5 +71,8 @@
   "disk.size": "Koko",
   "disk.mount": "Asennuskohta",
   "disk.existing": "Olemassa",
-  "disk.mounted": "Asennettu"
+  "disk.mounted": "Asennettu",
+  "page.userAccount.subtitle": "Valitse käyttäjätunnus ja turvallinen salasana järjestelmällesi.",
+  "page.userAccount.usernameHint": "Käyttäjänimi: 3+ merkkiä, vain kirjaimet ja numerot",
+  "page.userAccount.passwordHint": "Salasana: vähintään 6 merkkiä"
 }

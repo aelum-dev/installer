@@ -71,5 +71,8 @@
   "disk.size": "サイズ",
   "disk.mount": "マウントポイント",
   "disk.existing": "既存",
-  "disk.mounted": "マウント済み"
+  "disk.mounted": "マウント済み",
+  "page.userAccount.subtitle": "システムのユーザー名と安全なパスワードを選択してください。",
+  "page.userAccount.usernameHint": "ユーザー名：3文字以上、英数字のみ",
+  "page.userAccount.passwordHint": "パスワード：最低6文字"
 }

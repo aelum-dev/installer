@@ -71,5 +71,8 @@
   "disk.size": "Méret",
   "disk.mount": "Csatolási",
   "disk.existing": "Meglévő",
-  "disk.mounted": "Csatolva"
+  "disk.mounted": "Csatolva",
+  "page.userAccount.subtitle": "Válasszon felhasználónevet és biztonságos jelszót a rendszeréhez.",
+  "page.userAccount.usernameHint": "Felhasználónév: 3+ karakter, csak betűk és számok",
+  "page.userAccount.passwordHint": "Jelszó: minimum 6 karakter"
 }

@@ -71,5 +71,8 @@
   "disk.size": "大小",
   "disk.mount": "挂载点",
   "disk.existing": "现有",
-  "disk.mounted": "已挂载"
+  "disk.mounted": "已挂载",
+  "page.userAccount.subtitle": "为您的系统选择用户名和安全密码。",
+  "page.userAccount.usernameHint": "用户名：3+ 个字符，仅限字母和数字",
+  "page.userAccount.passwordHint": "密码：至少 6 个字符"
 }

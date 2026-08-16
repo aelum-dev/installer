@@ -71,5 +71,8 @@
   "disk.size": "Kích thước",
   "disk.mount": "Điểm",
   "disk.existing": "Đang tồn tại",
-  "disk.mounted": "Đã gắn"
+  "disk.mounted": "Đã gắn",
+  "page.userAccount.subtitle": "Chọn tên người dùng và mật khẩu an toàn cho hệ thống của bạn.",
+  "page.userAccount.usernameHint": "Tên người dùng: 3+ ký tự, chỉ chữ cái và số",
+  "page.userAccount.passwordHint": "Mật khẩu: tối thiểu 6 ký tự"
 }

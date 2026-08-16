@@ -71,5 +71,8 @@
   "disk.size": "الحجم",
   "disk.mount": "التوصيل",
   "disk.existing": "موجود",
-  "disk.mounted": "متصل"
+  "disk.mounted": "متصل",
+  "page.userAccount.subtitle": "اختر اسم مستخدم وكلمة مرور آمنة لنظامك.",
+  "page.userAccount.usernameHint": "اسم المستخدم: 3+ أحرف، حروف وأرقام فقط",
+  "page.userAccount.passwordHint": "كلمة المرور: 6 أحرف على الأقل"
 }

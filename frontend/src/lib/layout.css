@@ -20,6 +20,22 @@
 	padding: var(--page-title-padding, var(--spacing-lg));
 }
 
+/* ── Subtitle ── */
+.subtitle-wrapper {
+	min-height: 3em;
+	display: flex;
+	align-items: flex-start;
+}
+
+.subtitle {
+	font-size: var(--font-size-base-lg);
+	line-height: 1.5;
+	color: var(--color-text-muted);
+	margin: 0;
+	width: 100%;
+	overflow: hidden;
+}
+
 /* ── Page content area ── */
 .page-content {
 	display: flex;

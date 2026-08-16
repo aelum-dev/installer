@@ -71,5 +71,8 @@
   "disk.size": "Größe",
   "disk.mount": "Einhängpunkt",
   "disk.existing": "Vorhanden",
-  "disk.mounted": "Eingehängt"
+  "disk.mounted": "Eingehängt",
+  "page.userAccount.subtitle": "Wähle einen Benutzernamen und ein sicheres Passwort für dein System.",
+  "page.userAccount.usernameHint": "Benutzername: 3+ Zeichen, nur Buchstaben und Zahlen",
+  "page.userAccount.passwordHint": "Passwort: mindestens 6 Zeichen"
 }

@@ -71,5 +71,8 @@
   "disk.size": "Grootte",
   "disk.mount": "Aanhechtingspunt",
   "disk.existing": "Bestaand",
-  "disk.mounted": "Gemonteerd"
+  "disk.mounted": "Gemonteerd",
+  "page.userAccount.subtitle": "Kies een gebruikersnaam en een wachtwoord voor je systeem.",
+  "page.userAccount.usernameHint": "Gebruikersnaam: 3+ tekens, alleen letters en cijfers",
+  "page.userAccount.passwordHint": "Wachtwoord: minimaal 6 tekens"
 }

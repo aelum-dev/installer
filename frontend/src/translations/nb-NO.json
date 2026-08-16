@@ -71,5 +71,8 @@
   "disk.size": "Størrelse",
   "disk.mount": "Festepunkt",
   "disk.existing": "Eksisterende",
-  "disk.mounted": "Montert"
+  "disk.mounted": "Montert",
+  "page.userAccount.subtitle": "Velg et brukernavn og et sikkert passord for systemet ditt.",
+  "page.userAccount.usernameHint": "Brukernavn: 3+ tegn, bare bokstaver og tall",
+  "page.userAccount.passwordHint": "Passord: minst 6 tegn"
 }

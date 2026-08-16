@@ -71,5 +71,8 @@
   "disk.size": "Tamaño",
   "disk.mount": "Punto",
   "disk.existing": "Existente",
-  "disk.mounted": "Montado"
+  "disk.mounted": "Montado",
+  "page.userAccount.subtitle": "Elige un nombre de usuario y una contraseña segura para tu sistema.",
+  "page.userAccount.usernameHint": "Nombre de usuario: 3+ caracteres, solo letras y números",
+  "page.userAccount.passwordHint": "Contraseña: mínimo 6 caracteres"
 }

@@ -28,7 +28,14 @@
 
 <div class="page-content stretch">
 		<div class="col col-left">
-			<h2 class="page-title">{t('page.userAccount.title')}</h2>
+			<div class="info-block">
+				<h2 class="page-title">{t('page.userAccount.title')}</h2>
+				<p class="subtitle">{t('page.userAccount.subtitle')}</p>
+				<div class="requirements">
+					<p class="requirement-item">{t('page.userAccount.usernameHint')}</p>
+					<p class="requirement-item">{t('page.userAccount.passwordHint')}</p>
+				</div>
+			</div>
 		</div>
 		<div class="col col-right">
 			<form class="form" onsubmit={(e) => e.preventDefault()}>
@@ -83,7 +90,6 @@
 		width: 100%;
 		box-sizing: border-box;
 		min-width: 0;
-		margin: 0;
 	}
 
 	.col-left {
@@ -110,5 +116,39 @@
 
 	.form {
 		width: 100%;
+	}
+
+	.info-block {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-sm);
+		align-items: center;
+		width: 100%;
+	}
+
+	.info-block .page-title {
+		text-align: center;
+		padding: 0;
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.info-block .subtitle {
+		text-align: center;
+		margin: 0;
+	}
+
+	.requirements {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		align-items: flex-start;
+	}
+
+	.requirement-item {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		line-height: 1.4;
+		margin: 0;
+		text-align: left;
 	}
 </style>

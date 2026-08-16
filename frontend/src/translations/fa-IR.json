@@ -71,5 +71,8 @@
   "disk.size": "حجم",
   "disk.mount": "نقطه",
   "disk.existing": "موجود",
-  "disk.mounted": "نصب شده"
+  "disk.mounted": "نصب شده",
+  "page.userAccount.subtitle": "یک نام کاربری و رمز عبور امن برای سیستم خود انتخاب کنید.",
+  "page.userAccount.usernameHint": "نام کاربری: 3+ کاراکتر، فقط حروف و اعداد",
+  "page.userAccount.passwordHint": "رمز عبور: حداقل 6 کاراکتر"
 }

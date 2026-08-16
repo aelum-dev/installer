@@ -71,5 +71,8 @@
   "disk.size": "Μέγεθος",
   "disk.mount": "Σημείο",
   "disk.existing": "Υπάρχον",
-  "disk.mounted": "Εγγραμμένο"
+  "disk.mounted": "Εγγραμμένο",
+  "page.userAccount.subtitle": "Επιλέξτε ένα όνομα χρήστη και έναν ασφαλή κωδικό για το σύστημά σας.",
+  "page.userAccount.usernameHint": "Όνομα χρήστη: 3+ χαρακτήρες, μόνο γράμματα και αριθμοί",
+  "page.userAccount.passwordHint": "Κωδικός: τουλάχιστον 6 χαρακτήρες"
 }
