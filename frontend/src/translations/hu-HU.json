@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Jelenlegi fájlrendszer",
   "page.diskSelection.selectedFileSystem": "Kiválasztott fájlrendszer",
   "page.confirmation.title": "Telepítés összefoglalója",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Tekintse át a telepítési beállításokat a folytatás előtt.",
   "page.confirmation.sectionLanguage": "Nyelv",
   "page.confirmation.sectionUser": "Felhasználófiók",
   "page.confirmation.sectionDisk": "Céllemez",

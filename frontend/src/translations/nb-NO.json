@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Gjeldende filsystem",
   "page.diskSelection.selectedFileSystem": "Valgt filsystem",
   "page.confirmation.title": "Installsammendrag",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Gjennomgå installasjonsinnstillingene før du fortsetter.",
   "page.confirmation.sectionLanguage": "Språk",
   "page.confirmation.sectionUser": "Brukerkonto",
   "page.confirmation.sectionDisk": "Måldisk",

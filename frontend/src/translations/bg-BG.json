@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Текуща файлова система",
   "page.diskSelection.selectedFileSystem": "Избрана файлова система",
   "page.confirmation.title": "Обобщение на инсталацията",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Прегледайте настройките за инсталация преди да продължите.",
   "page.confirmation.sectionLanguage": "Език",
   "page.confirmation.sectionUser": "Потребителски акаунт",
   "page.confirmation.sectionDisk": "Целеви диск",

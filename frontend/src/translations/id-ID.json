@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Sistem berkas saat ini",
   "page.diskSelection.selectedFileSystem": "Sistem berkas yang dipilih",
   "page.confirmation.title": "Ringkasan instalasi",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Tinjau pengaturan instalasi Anda sebelum melanjutkan.",
   "page.confirmation.sectionLanguage": "Bahasa",
   "page.confirmation.sectionUser": "Akun pengguna",
   "page.confirmation.sectionDisk": "Disk tujuan",

@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "سیستم فایل فعلی",
   "page.diskSelection.selectedFileSystem": "سیستم فایل انتخاب شده",
   "page.confirmation.title": "خلاصه نصب",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "تنظیمات نصب را قبل از ادامه بررسی کنید.",
   "page.confirmation.sectionLanguage": "زبان",
   "page.confirmation.sectionUser": "حساب کاربری",
   "page.confirmation.sectionDisk": "دیسک هدف",

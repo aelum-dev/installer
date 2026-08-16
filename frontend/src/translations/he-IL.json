@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "מערכת הקבצים הנוכחית",
   "page.diskSelection.selectedFileSystem": "מערכת הקבצים הנבחרת",
   "page.confirmation.title": "סיכום התקנה",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "סקור את הגדרות ההתקנה לפני ההמשך.",
   "page.confirmation.sectionLanguage": "שפה",
   "page.confirmation.sectionUser": "חשבון משתמש",
   "page.confirmation.sectionDisk": "דיסק יעד",

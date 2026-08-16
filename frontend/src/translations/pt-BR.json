@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Sistema de arquivos atual",
   "page.diskSelection.selectedFileSystem": "Sistema de arquivos selecionado",
   "page.confirmation.title": "Resumo da instalação",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Revise suas configurações de instalação antes de continuar.",
   "page.confirmation.sectionLanguage": "Idioma",
   "page.confirmation.sectionUser": "Conta de usuário",
   "page.confirmation.sectionDisk": "Disco de destino",

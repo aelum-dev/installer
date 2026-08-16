@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Поточна файлова система",
   "page.diskSelection.selectedFileSystem": "Обрана файлова система",
   "page.confirmation.title": "Зведення встановлення",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Перевірте налаштування встановлення перед продовженням.",
   "page.confirmation.sectionLanguage": "Мова",
   "page.confirmation.sectionUser": "Обліковий запис",
   "page.confirmation.sectionDisk": "Цільовий диск",

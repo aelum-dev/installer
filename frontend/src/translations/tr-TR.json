@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Geçerli dosya sistemi",
   "page.diskSelection.selectedFileSystem": "Seçili dosya sistemi",
   "page.confirmation.title": "Yükleme Özeti",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Devam etmeden önce kurulum ayarlarınızı gözden geçirin.",
   "page.confirmation.sectionLanguage": "Dil",
   "page.confirmation.sectionUser": "Kullanıcı hesabı",
   "page.confirmation.sectionDisk": "Hedef disk",

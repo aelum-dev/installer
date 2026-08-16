@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "現在のファイルシステム",
   "page.diskSelection.selectedFileSystem": "選択されたファイルシステム",
   "page.confirmation.title": "インストールの概要",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "続行する前にインストール設定を確認してください。",
   "page.confirmation.sectionLanguage": "言語",
   "page.confirmation.sectionUser": "ユーザーアカウント",
   "page.confirmation.sectionDisk": "ターゲットディスク",

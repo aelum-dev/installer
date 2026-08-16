@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "Τρέχον σύστημα αρχείων",
   "page.diskSelection.selectedFileSystem": "Επιλεγμένο σύστημα αρχείων",
   "page.confirmation.title": "Σύνοψη εγκατάστασης",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "Ελέγξτε τις ρυθμίσεις εγκατάστασης πριν προχωρήσετε.",
   "page.confirmation.sectionLanguage": "Γλώσσα",
   "page.confirmation.sectionUser": "Λογαριασμός χρήστη",
   "page.confirmation.sectionDisk": "Στόχος δίσκου",

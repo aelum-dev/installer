@@ -22,7 +22,7 @@
   "page.diskSelection.currentFileSystem": "현재 파일 시스템",
   "page.diskSelection.selectedFileSystem": "선택된 파일 시스템",
   "page.confirmation.title": "설치 요약",
-  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
+  "page.confirmation.subtitle": "계속하기 전에 설치 설정을 확인하십시오.",
   "page.confirmation.sectionLanguage": "언어",
   "page.confirmation.sectionUser": "사용자 계정",
   "page.confirmation.sectionDisk": "대상 디스크",
