@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "Nykyinen tiedostojärjestelmä",
   "page.diskSelection.selectedFileSystem": "Valittu tiedostojärjestelmä",
   "page.confirmation.title": "Asennuksen yhteenveto",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Kieli",
   "page.confirmation.sectionUser": "Käyttäjätili",
   "page.confirmation.sectionDisk": "Kohdelevy",

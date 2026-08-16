@@ -4,7 +4,7 @@
 	import { installState } from '$lib/store.svelte';
 	import { formatSize } from '$lib/types';
 	import { t } from '$lib/i18n';
-	import '$lib/layout.css';
+	import PageLayout from '$components/PageLayout.svelte';
 
 	interface Language {
 		code: string;
@@ -29,7 +29,15 @@
 	loadLanguageInfo();
 </script>
 
-<div class="page-content">
+<PageLayout>
+	<div slot="left">
+		<h2 class="page-title">{t('page.confirmation.title')}</h2>
+		<div class="subtitle-wrapper">
+			<p class="subtitle">{t('page.confirmation.subtitle')}</p>
+		</div>
+	</div>
+
+	<div slot="right">
 		<div class="summary">
 			<div class="summary-section">
 				<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
@@ -72,13 +80,54 @@
 			</div>
 		</div>
 	</div>
+</PageLayout>
 
 <style>
+	.page-title {
+		padding: 0;
+		margin: 0;
+	}
+
+	.subtitle-wrapper {
+		min-height: 3em;
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.subtitle {
+		font-size: var(--font-size-base-lg);
+		line-height: 1.5;
+		color: var(--color-text-muted);
+		margin: 0;
+		width: 100%;
+		overflow: hidden;
+	}
+
 	.summary {
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-md);
 		width: 100%;
+	}
+
+	.summary-section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-xs);
+	}
+
+	.section-title {
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
+	.section-value {
+		margin: 0;
+		font-size: var(--font-size-md);
 	}
 
 	.disk-summary {

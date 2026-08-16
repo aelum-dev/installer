@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "Huidig bestandssysteem",
   "page.diskSelection.selectedFileSystem": "Geselecteerd bestandssysteem",
   "page.confirmation.title": "Installatieoverzicht",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Taal",
   "page.confirmation.sectionUser": "Gebruikersaccount",
   "page.confirmation.sectionDisk": "Doelschijf",

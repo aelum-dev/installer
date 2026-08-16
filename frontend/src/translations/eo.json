@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "Nuna dosiersistemo",
   "page.diskSelection.selectedFileSystem": "Elektita dosiersistemo",
   "page.confirmation.title": "Instala resumo",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Lingvo",
   "page.confirmation.sectionUser": "Uzantokonto",
   "page.confirmation.sectionDisk": "Cela disko",

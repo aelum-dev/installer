@@ -3,7 +3,7 @@
 	import { validateUserAccount } from '$lib/validate';
 	import { getValidationMessages } from '$lib/validate-messages';
 	import { t } from '$lib/i18n';
-	import '$lib/layout.css';
+	import PageLayout from '$components/PageLayout.svelte';
 
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
@@ -32,49 +32,50 @@
 	}
 </script>
 
-<div class="page-content stretch">
-		<div class="col col-left">
-			<div class="info-block">
-				<h2 class="page-title">{t('page.userAccount.title')}</h2>
-				<p class="subtitle">{t('page.userAccount.subtitle')}</p>
-				<div class="requirements">
-					<div class="requirement-item">
-						<span class="check-icon" class:visible={usernameMinLength}>
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-						</span>
-						<span>{t('validation.usernameMinLength')}</span>
-					</div>
-					<div class="requirement-item">
-						<span class="check-icon" class:visible={usernameFirstChar}>
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-						</span>
-						<span>{t('validation.usernameInvalidFirstChar')}</span>
-					</div>
-					<div class="requirement-item">
-						<span class="check-icon" class:visible={usernameValidChars}>
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-						</span>
-						<span>{t('validation.usernameInvalidChars')}</span>
-					</div>
-					<div class="requirement-item">
-						<span class="check-icon" class:visible={passwordMinLength}>
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="20 6 9 17 4 12" />
-							</svg>
-						</span>
-						<span>{t('validation.passwordMinLength')}</span>
-					</div>
-				</div>
+<PageLayout>
+	<div slot="left">
+		<h2 class="page-title">{t('page.userAccount.title')}</h2>
+		<div class="subtitle-wrapper">
+			<p class="subtitle">{t('page.userAccount.subtitle')}</p>
+		</div>
+		<div class="requirements">
+			<div class="requirement-item">
+				<span class="check-icon" class:visible={usernameMinLength}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12" />
+					</svg>
+				</span>
+				<span>{t('validation.usernameMinLength')}</span>
+			</div>
+			<div class="requirement-item">
+				<span class="check-icon" class:visible={usernameFirstChar}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12" />
+					</svg>
+				</span>
+				<span>{t('validation.usernameInvalidFirstChar')}</span>
+			</div>
+			<div class="requirement-item">
+				<span class="check-icon" class:visible={usernameValidChars}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12" />
+					</svg>
+				</span>
+				<span>{t('validation.usernameInvalidChars')}</span>
+			</div>
+			<div class="requirement-item">
+				<span class="check-icon" class:visible={passwordMinLength}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12" />
+					</svg>
+				</span>
+				<span>{t('validation.passwordMinLength')}</span>
 			</div>
 		</div>
-		<div class="col col-right">
-			<form class="form" onsubmit={(e) => e.preventDefault()}>
+	</div>
+
+	<div slot="right">
+		<form class="form" onsubmit={(e) => e.preventDefault()}>
 			<div class="field">
 				<label for="username">{t('page.userAccount.username')}</label>
 				<input
@@ -114,64 +115,32 @@
 				<span class="error" class:visible={!!errors.confirmPassword}>{errors.confirmPassword}</span>
 			</div>
 		</form>
-		</div>
 	</div>
+</PageLayout>
 
 <style>
-	.page-content {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--gap-lg);
-		align-items: center;
-		flex: 1;
-		width: 100%;
-		box-sizing: border-box;
-		min-width: 0;
-	}
-
-	.col-left {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: var(--spacing-lg);
-	}
-
-	.col-right {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		justify-content: center;
-		overflow-y: auto;
-		overflow-x: hidden;
-	}
-
-	.col-left,
-	.col-right {
-		min-width: 0;
-	}
-
-	.form {
-		width: 100%;
-	}
-
-	.info-block {
-		display: flex;
-		flex-direction: column;
-		gap: var(--spacing-xl);
-		align-items: center;
-		width: 100%;
-	}
-
-	.info-block .page-title {
-		text-align: center;
+	.page-title {
 		padding: 0;
 		margin: 0;
 	}
 
-	.info-block .subtitle {
-		text-align: center;
+	.subtitle-wrapper {
+		min-height: 3em;
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.subtitle {
+		font-size: var(--font-size-base-lg);
+		line-height: 1.5;
+		color: var(--color-text-muted);
 		margin: 0;
+		width: 100%;
+		overflow: hidden;
+	}
+
+	.form {
+		width: 100%;
 	}
 
 	.requirements {

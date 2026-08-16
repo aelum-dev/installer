@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "نظام الملفات الحالي",
   "page.diskSelection.selectedFileSystem": "نظام الملفات المحدد",
   "page.confirmation.title": "ملخص التثبيت",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "اللغة",
   "page.confirmation.sectionUser": "حساب المستخدم",
   "page.confirmation.sectionDisk": "القرص المستهدف",

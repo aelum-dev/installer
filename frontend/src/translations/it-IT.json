@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "Filesystem attuale",
   "page.diskSelection.selectedFileSystem": "Filesystem selezionato",
   "page.confirmation.title": "Riepilogo installazione",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Lingua",
   "page.confirmation.sectionUser": "Account utente",
   "page.confirmation.sectionDisk": "Disco di destinazione",

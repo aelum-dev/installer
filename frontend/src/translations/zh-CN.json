@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "当前文件系统",
   "page.diskSelection.selectedFileSystem": "已选文件系统",
   "page.confirmation.title": "安装摘要",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "语言",
   "page.confirmation.sectionUser": "用户账户",
   "page.confirmation.sectionDisk": "目标磁盘",

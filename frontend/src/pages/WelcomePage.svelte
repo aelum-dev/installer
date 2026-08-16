@@ -3,7 +3,7 @@
 	import { GetLanguages, GetSelectedLanguage, SetSelectedLanguage } from '@wails/go/gui/App.js';
 	import { installState } from '$lib/store.svelte';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
-	import '$lib/layout.css';
+	import PageLayout from '$components/PageLayout.svelte';
 
 	interface Language {
 		code: string;
@@ -50,69 +50,36 @@
 	loadLanguages();
 </script>
 
-<div class="page-content stretch">
-		<div class="col col-left">
-			<h2 class="page-title">{t('page.welcome.title')}</h2>
-			<div class="subtitle-wrapper">
-				<p class="subtitle">{t('page.welcome.subtitle')}</p>
-			</div>
-		</div>
-		<div class="col col-right">
-			{#if loading}
-				<span class="loading-text">{t('page.welcome.loading')}</span>
-			{:else}
-				<ul class="language-list">
-					{#each languages as lang (lang.code)}
-						<li>
-							<button
-								type="button"
-								class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
-								onclick={() => selectLanguage(lang.code)}
-							>
-								{lang.name}
-							</button>
-						</li>
-					{/each}
-				</ul>
-			{/if}
+<PageLayout>
+	<div slot="left">
+		<h2 class="page-title">{t('page.welcome.title')}</h2>
+		<div class="subtitle-wrapper">
+			<p class="subtitle">{t('page.welcome.subtitle')}</p>
 		</div>
 	</div>
 
+	<div slot="right">
+		{#if loading}
+			<span class="loading-text">{t('page.welcome.loading')}</span>
+		{:else}
+			<ul class="language-list">
+				{#each languages as lang (lang.code)}
+					<li>
+						<button
+							type="button"
+							class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
+							onclick={() => selectLanguage(lang.code)}
+						>
+							{lang.name}
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</div>
+</PageLayout>
+
 <style>
-	.page-content {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		align-items: center;
-		gap: var(--gap-lg);
-		flex: 1;
-		width: 100%;
-		box-sizing: border-box;
-		min-width: 0;
-		margin: 0;
-	}
-
-	.col-left,
-	.col-right {
-		min-width: 0;
-	}
-
-	.col-left {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: var(--spacing-lg);
-	}
-
-	.col-right {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		justify-content: center;
-		overflow-y: auto;
-		overflow-x: hidden;
-	}
-
 	.subtitle-wrapper {
 		min-height: 3em;
 		display: flex;
@@ -178,27 +145,5 @@
 	.lang-item--selected {
 		background-color: var(--color-primary);
 		color: var(--color-on-primary);
-	}
-
-	.language-list::-webkit-scrollbar,
-	.col-right::-webkit-scrollbar {
-		width: 8px;
-	}
-
-	.language-list::-webkit-scrollbar-track,
-	.col-right::-webkit-scrollbar-track {
-		background: var(--color-border-light);
-		border-radius: 4px;
-	}
-
-	.language-list::-webkit-scrollbar-thumb,
-	.col-right::-webkit-scrollbar-thumb {
-		background: var(--color-border);
-		border-radius: 4px;
-	}
-
-	.language-list::-webkit-scrollbar-thumb:hover,
-	.col-right::-webkit-scrollbar-thumb:hover {
-		background: var(--color-border-dark);
 	}
 </style>

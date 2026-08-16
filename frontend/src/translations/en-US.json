@@ -26,6 +26,7 @@
   "page.diskSelection.selectedFileSystem": "Selected filesystem",
   "page.diskSelection.minDiskSize": "Minimum disk size: {minSize}",
   "page.confirmation.title": "Installation Summary",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Language",
   "page.confirmation.sectionUser": "User Account",
   "page.confirmation.sectionDisk": "Target Disk",

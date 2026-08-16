@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "Sistema de fitxers actual",
   "page.diskSelection.selectedFileSystem": "Sistema de fitxers seleccionat",
   "page.confirmation.title": "Resum de la instal·lació",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Idioma",
   "page.confirmation.sectionUser": "Compte d'usuari",
   "page.confirmation.sectionDisk": "Disc de destí",

@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "目前檔案系統",
   "page.diskSelection.selectedFileSystem": "已選檔案系統",
   "page.confirmation.title": "安裝摘要",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "語言",
   "page.confirmation.sectionUser": "使用者帳戶",
   "page.confirmation.sectionDisk": "目標磁碟",

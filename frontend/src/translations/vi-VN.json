@@ -22,6 +22,7 @@
   "page.diskSelection.currentFileSystem": "Hệ thống tệp hiện tại",
   "page.diskSelection.selectedFileSystem": "Hệ thống tệp đã chọn",
   "page.confirmation.title": "Tóm tắt cài đặt",
+  "page.confirmation.subtitle": "Review your installation settings before proceeding.",
   "page.confirmation.sectionLanguage": "Ngôn ngữ",
   "page.confirmation.sectionUser": "Tài khoản người dùng",
   "page.confirmation.sectionDisk": "Đĩa đích",
