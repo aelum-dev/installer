@@ -22,6 +22,12 @@
 			error = `Failed to load disks: ${err instanceof Error ? err.message : String(err)}`;
 		} finally {
 			loading = false;
+			
+			// If a disk was already selected (navigated back), expand it
+			if (installState.diskId && disks.length > 0) {
+				const selected = disks.find((d) => d.path === installState.diskId);
+				if (selected) selectDisk(selected);
+			}
 		}
 	}
 
