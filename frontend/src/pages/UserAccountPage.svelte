@@ -17,6 +17,12 @@
 		}, getValidationMessages())
 	);
 
+	// Username validation rules
+	const usernameMinLength = $derived(installState.username.length >= 3);
+	const usernameFirstChar = $derived(/^[a-z_]/.test(installState.username));
+	const usernameValidChars = $derived(/^[a-z0-9_-]+$/.test(installState.username));
+	const passwordMinLength = $derived(installState.password.length >= 6);
+
 	function handleBlur(field: 'username' | 'password' | 'confirmPassword'): void {
 		switch (field) {
 			case 'username': usernameTouched = true; break;
@@ -32,8 +38,38 @@
 				<h2 class="page-title">{t('page.userAccount.title')}</h2>
 				<p class="subtitle">{t('page.userAccount.subtitle')}</p>
 				<div class="requirements">
-					<p class="requirement-item">{t('page.userAccount.usernameHint')}</p>
-					<p class="requirement-item">{t('page.userAccount.passwordHint')}</p>
+					<div class="requirement-item">
+						<span class="check-icon" class:visible={usernameMinLength}>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						</span>
+						<span>{t('validation.usernameMinLength')}</span>
+					</div>
+					<div class="requirement-item">
+						<span class="check-icon" class:visible={usernameFirstChar}>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						</span>
+						<span>{t('validation.usernameInvalidFirstChar')}</span>
+					</div>
+					<div class="requirement-item">
+						<span class="check-icon" class:visible={usernameValidChars}>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						</span>
+						<span>{t('validation.usernameInvalidChars')}</span>
+					</div>
+					<div class="requirement-item">
+						<span class="check-icon" class:visible={passwordMinLength}>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						</span>
+						<span>{t('validation.passwordMinLength')}</span>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -85,7 +121,7 @@
 	.page-content {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: var(--gap-md);
+		gap: var(--gap-lg);
 		align-items: center;
 		flex: 1;
 		width: 100%;
@@ -122,7 +158,7 @@
 	.info-block {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-sm);
+		gap: var(--spacing-xl);
 		align-items: center;
 		width: 100%;
 	}
@@ -130,7 +166,7 @@
 	.info-block .page-title {
 		text-align: center;
 		padding: 0;
-		margin-bottom: var(--spacing-xs);
+		margin: 0;
 	}
 
 	.info-block .subtitle {
@@ -141,15 +177,39 @@
 	.requirements {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: var(--spacing-sm);
 		align-items: flex-start;
 	}
 
 	.requirement-item {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-sm);
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
 		line-height: 1.4;
 		margin: 0;
 		text-align: left;
+	}
+
+	.check-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+
+	.check-icon.visible {
+		opacity: 1;
+		color: var(--color-primary);
+	}
+
+	.check-icon svg {
+		width: 100%;
+		height: 100%;
 	}
 </style>
