@@ -16,7 +16,7 @@
   "page.userAccount.passwordHint": "Password: minimum 6 characters",
 
   "page.diskSelection.title": "Select Installation Disk",
-  "page.diskSelection.hint": "Choose a disk and filesystem to install AestheticOS.",
+  "page.diskSelection.subtitle": "Choose a disk and filesystem to install AestheticOS.",
   "page.diskSelection.loading": "Scanning for disks...",
   "page.diskSelection.noDevices": "No storage devices found.",
   "page.diskSelection.scanPartitions": "Scanning partitions...",

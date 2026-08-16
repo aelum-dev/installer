@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Wachtwoord bevestigen",
   "page.userAccount.confirmPasswordPlaceholder": "Voer wachtwoord opnieuw in",
   "page.diskSelection.title": "InstallatieSchijf selecteren",
-  "page.diskSelection.hint": "Kies een schijf en bestandssysteem om AestheticOS te installeren.",
+  "page.diskSelection.subtitle": "Kies een schijf en bestandssysteem om AestheticOS te installeren.",
   "page.diskSelection.minDiskSize": "Minimale schijfgrootte: {minSize}",
   "page.diskSelection.loading": "Schijven scannen...",
   "page.diskSelection.noDevices": "Geen opslagapparaten gevonden.",

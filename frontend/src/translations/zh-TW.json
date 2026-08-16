@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "確認密碼",
   "page.userAccount.confirmPasswordPlaceholder": "再次輸入密碼",
   "page.diskSelection.title": "選擇安裝磁碟",
-  "page.diskSelection.hint": "選擇要安裝 AestheticOS 的磁碟和檔案系統。",
+  "page.diskSelection.subtitle": "選擇要安裝 AestheticOS 的磁碟和檔案系統。",
   "page.diskSelection.minDiskSize": "最小磁碟容量：{minSize}",
   "page.diskSelection.loading": "掃描磁碟中...",
   "page.diskSelection.noDevices": "找不到儲存裝置。",

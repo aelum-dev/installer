@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Επιβεβαίωση κωδικού",
   "page.userAccount.confirmPasswordPlaceholder": "Επαναλάβετε τον κωδικό πρόσβασης",
   "page.diskSelection.title": "Επιλέξτε δίσκο εγκατάστασης",
-  "page.diskSelection.hint": "Επιλέξτε δίσκο και σύστημα αρχείων για εγκατάσταση του AestheticOS.",
+  "page.diskSelection.subtitle": "Επιλέξτε δίσκο και σύστημα αρχείων για εγκατάσταση του AestheticOS.",
   "page.diskSelection.minDiskSize": "Ελάχιστο μέγεθος δίσκου: {minSize}",
   "page.diskSelection.loading": "Αναζήτηση δίσκων...",
   "page.diskSelection.noDevices": "Δεν βρέθηκαν συσκευές αποθήκευσης.",

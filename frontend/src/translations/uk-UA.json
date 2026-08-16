@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Підтвердіть пароль",
   "page.userAccount.confirmPasswordPlaceholder": "Введіть пароль ще раз",
   "page.diskSelection.title": "Виберіть диск для встановлення",
-  "page.diskSelection.hint": "Виберіть диск і файлову систему для встановлення AestheticOS.",
+  "page.diskSelection.subtitle": "Виберіть диск і файлову систему для встановлення AestheticOS.",
   "page.diskSelection.minDiskSize": "Мінімальний розмір диска: {minSize}",
   "page.diskSelection.loading": "Пошук дисків...",
   "page.diskSelection.noDevices": "Пристроїв зберігання не знайдено.",

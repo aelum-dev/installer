@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Passwort bestätigen",
   "page.userAccount.confirmPasswordPlaceholder": "Passwort bestätigen",
   "page.diskSelection.title": "Installationsfestplatte auswählen",
-  "page.diskSelection.hint": "Wählen Sie eine Festplatte und ein Dateisystem für die Installation von AestheticOS.",
+  "page.diskSelection.subtitle": "Wählen Sie eine Festplatte und ein Dateisystem für die Installation von AestheticOS.",
   "page.diskSelection.minDiskSize": "Mindestfestplattengröße: {minSize}",
   "page.diskSelection.loading": "Festplatten werden durchsucht...",
   "page.diskSelection.noDevices": "Keine Speichergeräte gefunden.",

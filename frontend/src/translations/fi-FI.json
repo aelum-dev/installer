@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Vahvista salasana",
   "page.userAccount.confirmPasswordPlaceholder": "Syötä salasana uudelleen",
   "page.diskSelection.title": "Valitse asennuslevy",
-  "page.diskSelection.hint": "Valitse levy ja tiedostojärjestelmä AestheticOS:n asentamiseksi.",
+  "page.diskSelection.subtitle": "Valitse levy ja tiedostojärjestelmä AestheticOS:n asentamiseksi.",
   "page.diskSelection.minDiskSize": "Vähimmäislevyn koko: {minSize}",
   "page.diskSelection.loading": "Etsitään levyjä...",
   "page.diskSelection.noDevices": "Talluslaitteita ei löytynyt.",

@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Konfirmi pasvorton",
   "page.userAccount.confirmPasswordPlaceholder": "Enigu pasvorton denove",
   "page.diskSelection.title": "Elektu instalan diskon",
-  "page.diskSelection.hint": "Elektu diskon kaj dosiersistemon por instali AestheticOS.",
+  "page.diskSelection.subtitle": "Elektu diskon kaj dosiersistemon por instali AestheticOS.",
   "page.diskSelection.minDiskSize": "Minimuma disko-grando: {minSize}",
   "page.diskSelection.loading": "Serĉado de diskonoj...",
   "page.diskSelection.noDevices": "Neniu stokada aparato trovita.",

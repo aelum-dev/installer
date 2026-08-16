@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Konfirmasi kata sandi",
   "page.userAccount.confirmPasswordPlaceholder": "Masukkan kata sandi lagi",
   "page.diskSelection.title": "Pilih disk instalasi",
-  "page.diskSelection.hint": "Pilih disk dan sistem berkas untuk menginstal AestheticOS.",
+  "page.diskSelection.subtitle": "Pilih disk dan sistem berkas untuk menginstal AestheticOS.",
   "page.diskSelection.minDiskSize": "Ukuran disk minimal: {minSize}",
   "page.diskSelection.loading": "Mencari disk...",
   "page.diskSelection.noDevices": "Tidak ada perangkat penyimpanan yang ditemukan.",

@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Bekreft passord",
   "page.userAccount.confirmPasswordPlaceholder": "Skriv inn passord på nytt",
   "page.diskSelection.title": "Velg installasjonsdisk",
-  "page.diskSelection.hint": "Velg en disk og filsystem for å installere AestheticOS.",
+  "page.diskSelection.subtitle": "Velg en disk og filsystem for å installere AestheticOS.",
   "page.diskSelection.minDiskSize": "Minste diskstørrelse: {minSize}",
   "page.diskSelection.loading": "Søker etter disker...",
   "page.diskSelection.noDevices": "Ingen lagringsenheter funnet.",

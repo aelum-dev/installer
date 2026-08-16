@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "تایید رمز عبور",
   "page.userAccount.confirmPasswordPlaceholder": "رمز عبور را دوباره وارد کنید",
   "page.diskSelection.title": "انتخاب دیسک نصب",
-  "page.diskSelection.hint": "یک دیسک و سیستم فایل برای نصب AestheticOS انتخاب کنید.",
+  "page.diskSelection.subtitle": "یک دیسک و سیستم فایل برای نصب AestheticOS انتخاب کنید.",
   "page.diskSelection.minDiskSize": "حداقل حجم دیسک: {minSize}",
   "page.diskSelection.loading": "...در حال جستجوی دیسک‌ها",
   "page.diskSelection.noDevices": "هیچ دستگاه ذخیره‌سازی یافت نشد.",

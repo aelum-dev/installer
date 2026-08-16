@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Xác nhận mật khẩu",
   "page.userAccount.confirmPasswordPlaceholder": "Nhập lại mật khẩu",
   "page.diskSelection.title": "Chọn đĩa cài đặt",
-  "page.diskSelection.hint": "Chọn một đĩa và hệ thống tệp để cài đặt AestheticOS.",
+  "page.diskSelection.subtitle": "Chọn một đĩa và hệ thống tệp để cài đặt AestheticOS.",
   "page.diskSelection.minDiskSize": "Kích thước đĩa tối thiểu: {minSize}",
   "page.diskSelection.loading": "Đang quét đĩa...",
   "page.diskSelection.noDevices": "Không tìm thấy thiết bị lưu trữ.",

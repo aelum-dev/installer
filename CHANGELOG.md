@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Navigation updated** — All navigation functions now reference the new store (`store.svelte.ts`). Confirmation dialog tracking added with `confirmInstallation()`/`cancelInstallation()` helpers.
 
 ### Added
+- **Interactive validation hints** — UserAccountPage shows real-time checkmark icons (dark rose primary color) for each password/username requirement with smooth fade-in transitions.
 - **AppDataDir constant** — Backend constant for XDG data directory path (`~/.local/share/aestheticos-installer`).
 - **Full internationalization (i18n)** — All UI strings are now translated via `@svelte-intl/svelte-intl`. Supports 16 locales (en-US, de-DE, es-ES, fr-FR, it-IT, pt-BR, ru-RU, zh-CN, zh-TW, ja-JP, ko-KR, uk-UA, pl-PL, tr-TR, ar-SA, he-IL). German translation shipped. RTL support for Arabic and Hebrew.
 - **Auto locale detection** — Installer auto-detects OS locale on first launch and persists selection via backend `GetUILocale()`/`SetUILocale()`.

@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Şifreyi onayla",
   "page.userAccount.confirmPasswordPlaceholder": "Şifreyi tekrar girin",
   "page.diskSelection.title": "Yükleme diski seçin",
-  "page.diskSelection.hint": "AestheticOS'yü yüklemek için bir disk ve dosya sistemi seçin.",
+  "page.diskSelection.subtitle": "AestheticOS'yü yüklemek için bir disk ve dosya sistemi seçin.",
   "page.diskSelection.minDiskSize": "Minimum disk boyutu: {minSize}",
   "page.diskSelection.loading": "Diskler taranıyor...",
   "page.diskSelection.noDevices": "Depolama cihazı bulunamadı.",

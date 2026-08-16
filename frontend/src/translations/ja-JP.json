@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "パスワードの確認",
   "page.userAccount.confirmPasswordPlaceholder": "パスワードを再入力",
   "page.diskSelection.title": "インストールディスクの選択",
-  "page.diskSelection.hint": "AestheticOS をインストールするディスクとファイルシステムを選択してください。",
+  "page.diskSelection.subtitle": "AestheticOS をインストールするディスクとファイルシステムを選択してください。",
   "page.diskSelection.minDiskSize": "最小ディスクサイズ：{minSize}",
   "page.diskSelection.loading": "ディスクを検索中...",
   "page.diskSelection.noDevices": "ストレージデバイスが見つかりません。",

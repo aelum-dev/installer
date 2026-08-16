@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "비밀번호 확인",
   "page.userAccount.confirmPasswordPlaceholder": "비밀번호 재입력",
   "page.diskSelection.title": "설치 디스크 선택",
-  "page.diskSelection.hint": "AestheticOS를 설치할 디스크와 파일 시스템을 선택하세요.",
+  "page.diskSelection.subtitle": "AestheticOS를 설치할 디스크와 파일 시스템을 선택하세요.",
   "page.diskSelection.minDiskSize": "최소 디스크 크기: {minSize}",
   "page.diskSelection.loading": "디스크 검색 중...",
   "page.diskSelection.noDevices": "저장 장치를 찾을 수 없습니다.",

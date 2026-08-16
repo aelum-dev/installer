@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "אשר סיסמה",
   "page.userAccount.confirmPasswordPlaceholder": "הזן סיסמה שוב",
   "page.diskSelection.title": "בחר דיסק להתקנה",
-  "page.diskSelection.hint": "בחר דיסק ומערכת קבצים להתקנת AestheticOS.",
+  "page.diskSelection.subtitle": "בחר דיסק ומערכת קבצים להתקנת AestheticOS.",
   "page.diskSelection.minDiskSize": "גודל דיסק מינימלי: {minSize}",
   "page.diskSelection.loading": "...סורק דיסקים",
   "page.diskSelection.noDevices": "לא נמצאו התקני אחסון.",

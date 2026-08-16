@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "تأكيد كلمة المرور",
   "page.userAccount.confirmPasswordPlaceholder": "أعد إدخال كلمة المرور",
   "page.diskSelection.title": "اختر قرص التثبيت",
-  "page.diskSelection.hint": "اختر قرصًا ونظام ملفات لتثبيت AestheticOS.",
+  "page.diskSelection.subtitle": "اختر قرصًا ونظام ملفات لتثبيت AestheticOS.",
   "page.diskSelection.minDiskSize": "الحد الأدنى لحجم القرص: {minSize}",
   "page.diskSelection.loading": "...جاري البحث عن الأقراص",
   "page.diskSelection.noDevices": "لم يتم العثور على أجهزة تخزين.",

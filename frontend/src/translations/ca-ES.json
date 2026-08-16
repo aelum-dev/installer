@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Confirma la contrasenya",
   "page.userAccount.confirmPasswordPlaceholder": "Torna a introduir la contrasenya",
   "page.diskSelection.title": "Selecciona el disc d'instal·lació",
-  "page.diskSelection.hint": "Tria un disc i un sistema de fitxers per instal·lar AestheticOS.",
+  "page.diskSelection.subtitle": "Tria un disc i un sistema de fitxers per instal·lar AestheticOS.",
   "page.diskSelection.minDiskSize": "Mida mínima del disc: {minSize}",
   "page.diskSelection.loading": "S'estan cercant discs...",
   "page.diskSelection.noDevices": "No s'han trobat dispositius d'emmagatzematge.",

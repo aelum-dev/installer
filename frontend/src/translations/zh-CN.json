@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "确认密码",
   "page.userAccount.confirmPasswordPlaceholder": "确认密码",
   "page.diskSelection.title": "选择安装磁盘",
-  "page.diskSelection.hint": "选择要安装 AestheticOS 的磁盘和文件系统。",
+  "page.diskSelection.subtitle": "选择要安装 AestheticOS 的磁盘和文件系统。",
   "page.diskSelection.minDiskSize": "最小磁盘大小：{minSize}",
   "page.diskSelection.loading": "正在扫描磁盘...",
   "page.diskSelection.noDevices": "未找到存储设备。",

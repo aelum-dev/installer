@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Jelszó megerősítése",
   "page.userAccount.confirmPasswordPlaceholder": "Adja meg újra a jelszót",
   "page.diskSelection.title": "Telepítőlemez kiválasztása",
-  "page.diskSelection.hint": "Válasszon lemezt és fájlrendszert az AestheticOS telepítéséhez.",
+  "page.diskSelection.subtitle": "Válasszon lemezt és fájlrendszert az AestheticOS telepítéséhez.",
   "page.diskSelection.minDiskSize": "Minimális lemez méret: {minSize}",
   "page.diskSelection.loading": "Lemezek keresése...",
   "page.diskSelection.noDevices": "Nincs találat tárolóeszközökön.",

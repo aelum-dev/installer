@@ -12,7 +12,7 @@
   "page.userAccount.confirmPassword": "Conferma password",
   "page.userAccount.confirmPasswordPlaceholder": "Conferma la password",
   "page.diskSelection.title": "Seleziona disco di installazione",
-  "page.diskSelection.hint": "Scegli un disco e un filesystem per installare AestheticOS.",
+  "page.diskSelection.subtitle": "Scegli un disco e un filesystem per installare AestheticOS.",
   "page.diskSelection.minDiskSize": "Dimensione minima del disco: {minSize}",
   "page.diskSelection.loading": "Ricerca dischi...",
   "page.diskSelection.noDevices": "Nessun dispositivo di archiviazione trovato.",

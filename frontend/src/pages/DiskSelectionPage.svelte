@@ -66,162 +66,182 @@
 	loadDisks();
 </script>
 
-<div class="page-content" style="--page-gap: 8px">
-		<div class="top-section">
-			<p class="hint">{t('page.diskSelection.hint')}</p>
+<div class="page-content stretch">
+		<div class="col col-left">
+			<h2 class="page-title">{t('page.diskSelection.title')}</h2>
+			<p class="subtitle">{t('page.diskSelection.subtitle')}</p>
 			<p class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
 		</div>
+		<div class="col col-right">
+			{#if loading}
+				<div class="state-message">
+					<div class="spinner"></div>
+					<p>{t('page.diskSelection.loading')}</p>
+				</div>
+			{:else if error}
+				<div class="state-message error">
+					<p>{error}</p>
+					<Button variant="secondary" onclick={loadDisks}>Retry</Button>
+				</div>
+			{:else if disks.length === 0}
+				<div class="state-message">
+					<p>{t('page.diskSelection.noDevices')}</p>
+				</div>
+			{:else}
+				<div class="right-content">
+					<div class="fs-bar">
+						<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
+						<div class="fs-pills">
+							{#each FILESYSTEMS as fs (fs)}
+								<button
+									type="button"
+									class={['fs-pill', { selected: installState.fileSystem === fs }]}
+									onclick={() => { installState.fileSystem = fs; }}
+								>
+									{t('fs.' + fs)}
+								</button>
+							{/each}
+						</div>
+					</div>
 
-		{#if loading}
-			<div class="state-message">
-				<div class="spinner"></div>
-				<p>{t('page.diskSelection.loading')}</p>
-			</div>
-		{:else if error}
-			<div class="state-message error">
-				<p>{error}</p>
-				<Button variant="secondary" onclick={loadDisks}>Retry</Button>
-			</div>
-		{:else if disks.length === 0}
-			<div class="state-message">
-				<p>{t('page.diskSelection.noDevices')}</p>
-			</div>
-		{:else}
-			<div class="disk-page">
-				<div class="fs-bar">
-					<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
-					<div class="fs-pills">
-						{#each FILESYSTEMS as fs (fs)}
+					<div class="disk-list">
+						{#each disks as disk (disk.path)}
 							<button
 								type="button"
-								class={['fs-pill', { selected: installState.fileSystem === fs }]}
-								onclick={() => { installState.fileSystem = fs; }}
+								class={['disk-card', { selected: installState.diskId === disk.path }]}
+								onclick={() => selectDisk(disk)}
+								disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
 							>
-								{t('fs.' + fs)}
+								<div class="card-header">
+									<div class="disk-icon">
+										{#if disk.rotational}
+											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+												<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+											</svg>
+										{:else}
+											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+											</svg>
+										{/if}
+									</div>
+									<div class="card-title">
+										<div class="disk-name">{disk.model || disk.name}</div>
+										<div class="disk-specs">
+											{formatSize(disk.size)}
+											<span class="specs-sep">·</span>
+											{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
+											{#if disk.trans}
+												<span class="specs-sep">·</span>
+												{disk.trans.toUpperCase()}
+											{/if}
+										</div>
+									</div>
+									<div class="card-radio">
+										<div class={['radio', { checked: installState.diskId === disk.path }]}></div>
+									</div>
+								</div>
+
+								{#if installState.diskId === disk.path && (disk.fstype || disk.mountpoint)}
+									<div class="card-tags">
+										{#if disk.fstype}
+											<span class="tag fstype-tag">{t('disk.existing')} {disk.fstype}</span>
+										{/if}
+										{#if disk.mountpoint}
+											<span class="tag mounted-tag">{t('disk.mounted')} {disk.mountpoint}</span>
+										{/if}
+									</div>
+								{/if}
+
+								{#if installState.diskId === disk.path}
+									<div class="card-partitions">
+										{#if partitionsLoading}
+											<p class="partition-loading">{t('page.diskSelection.scanPartitions')}</p>
+										{:else if partitions.length > 0}
+											<table class="partition-table">
+												<thead>
+													<tr>
+														<th>{t('disk.name')}</th>
+														<th>{t('disk.type')}</th>
+														<th class="text-right">{t('disk.size')}</th>
+														<th class="text-right">{t('disk.mount')}</th>
+													</tr>
+												</thead>
+												<tbody>
+													{#each partitions as part (part.path)}
+														<tr>
+															<td class="part-name">{part.name}</td>
+															<td>
+																{#if part.fstype}
+																	<span class="part-fstype">{part.fstype}</span>
+																{:else}
+																	<span class="part-unknown">—</span>
+																{/if}
+															</td>
+															<td class="text-right">{formatSize(part.size)}</td>
+															<td class="text-right">
+																{#if part.mountpoints && part.mountpoints.length > 0}
+																	<span class="part-mount">{part.mountpoints.join(', ')}</span>
+																{:else}
+																	<span class="part-empty">—</span>
+																{/if}
+															</td>
+														</tr>
+													{/each}
+												</tbody>
+											</table>
+										{:else}
+											<p class="partition-empty">{t('page.diskSelection.noPartitions')}</p>
+										{/if}
+									</div>
+								{/if}
 							</button>
 						{/each}
 					</div>
 				</div>
-
-				<div class="disk-list">
-					{#each disks as disk (disk.path)}
-						<button
-							type="button"
-							class={['disk-card', { selected: installState.diskId === disk.path }]}
-							onclick={() => selectDisk(disk)}
-							disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
-						>
-							<div class="card-header">
-								<div class="disk-icon">
-									{#if disk.rotational}
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-											<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-										</svg>
-									{:else}
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-										</svg>
-									{/if}
-								</div>
-								<div class="card-title">
-									<div class="disk-name">{disk.model || disk.name}</div>
-									<div class="disk-specs">
-										{formatSize(disk.size)}
-										<span class="specs-sep">·</span>
-										{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
-										{#if disk.trans}
-											<span class="specs-sep">·</span>
-											{disk.trans.toUpperCase()}
-										{/if}
-									</div>
-								</div>
-								<div class="card-radio">
-									<div class={['radio', { checked: installState.diskId === disk.path }]}></div>
-								</div>
-							</div>
-
-							{#if installState.diskId === disk.path && (disk.fstype || disk.mountpoint)}
-								<div class="card-tags">
-									{#if disk.fstype}
-										<span class="tag fstype-tag">{t('disk.existing')} {disk.fstype}</span>
-									{/if}
-									{#if disk.mountpoint}
-										<span class="tag mounted-tag">{t('disk.mounted')} {disk.mountpoint}</span>
-									{/if}
-								</div>
-							{/if}
-
-							{#if installState.diskId === disk.path}
-								<div class="card-partitions">
-									{#if partitionsLoading}
-										<p class="partition-loading">{t('page.diskSelection.scanPartitions')}</p>
-									{:else if partitions.length > 0}
-										<table class="partition-table">
-											<thead>
-												<tr>
-													<th>{t('disk.name')}</th>
-													<th>{t('disk.type')}</th>
-													<th class="text-right">{t('disk.size')}</th>
-													<th class="text-right">{t('disk.mount')}</th>
-												</tr>
-											</thead>
-											<tbody>
-												{#each partitions as part (part.path)}
-													<tr>
-														<td class="part-name">{part.name}</td>
-														<td>
-															{#if part.fstype}
-																<span class="part-fstype">{part.fstype}</span>
-															{:else}
-																<span class="part-unknown">—</span>
-															{/if}
-														</td>
-														<td class="text-right">{formatSize(part.size)}</td>
-														<td class="text-right">
-															{#if part.mountpoints && part.mountpoints.length > 0}
-																<span class="part-mount">{part.mountpoints.join(', ')}</span>
-															{:else}
-																<span class="part-empty">—</span>
-															{/if}
-														</td>
-													</tr>
-												{/each}
-											</tbody>
-										</table>
-									{:else}
-										<p class="partition-empty">{t('page.diskSelection.noPartitions')}</p>
-									{/if}
-								</div>
-							{/if}
-						</button>
-					{/each}
-				</div>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 
 <style>
-	.top-section {
+	.page-content {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		align-items: center;
+		gap: var(--gap-lg);
+		flex: 1;
+		width: 100%;
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	.col-left,
+	.col-right {
+		min-width: 0;
+	}
+
+	.col-left {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		gap: var(--spacing-xs);
+		gap: var(--spacing-lg);
 	}
 
-	.min-disk-hint {
-		font-size: var(--font-size-xs);
-		color: var(--color-text-muted);
-		text-align: center;
-		margin-top: 0px;
+	.col-right {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		overflow-y: auto;
+		overflow-x: hidden;
 	}
 
-	.disk-page {
+	.right-content {
 		display: flex;
 		flex-direction: column;
 		gap: var(--gap-md);
 		width: 100%;
-		flex: 1;
-		height: 0;
+		max-height: 480px;
 	}
 
 	.fs-bar {
@@ -229,6 +249,7 @@
 		align-items: center;
 		gap: var(--gap-sm);
 		padding: 0 2px;
+		flex-shrink: 0;
 	}
 
 	.fs-label {
@@ -461,5 +482,31 @@
 	.part-mount {
 		color: var(--color-progress);
 		font-weight: 500;
+	}
+
+	.min-disk-hint {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		text-align: center;
+		margin-top: 0px;
+		flex-shrink: 0;
+	}
+
+	.col-right::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	.col-right::-webkit-scrollbar-track {
+		background: var(--color-border-light);
+		border-radius: 4px;
+	}
+
+	.col-right::-webkit-scrollbar-thumb {
+		background: var(--color-border);
+		border-radius: 4px;
+	}
+
+	.col-right::-webkit-scrollbar-thumb:hover {
+		background: var(--color-border-dark);
 	}
 </style>
