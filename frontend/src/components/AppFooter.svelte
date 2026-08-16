@@ -85,7 +85,6 @@
 	.footer-left {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm);
 		flex: 1;
 		justify-content: flex-start;
 	}

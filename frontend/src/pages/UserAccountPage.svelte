@@ -26,10 +26,12 @@
 	}
 </script>
 
-<div class="page-content stretch" style="gap: 0;">
-		<h2 class="page-title">{t('page.userAccount.title')}</h2>
-		<div style="flex: 1; display: flex; align-items: center; width: 100%;">
-			<form class="form" style="max-width: 400px; margin: 0 auto;" onsubmit={(e) => e.preventDefault()}>
+<div class="page-content stretch">
+		<div class="col col-left">
+			<h2 class="page-title">{t('page.userAccount.title')}</h2>
+		</div>
+		<div class="col col-right">
+			<form class="form" onsubmit={(e) => e.preventDefault()}>
 			<div class="field">
 				<label for="username">{t('page.userAccount.username')}</label>
 				<input
@@ -71,3 +73,42 @@
 		</form>
 		</div>
 	</div>
+
+<style>
+	.page-content {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		align-items: center;
+		flex: 1;
+		width: 100%;
+		box-sizing: border-box;
+		min-width: 0;
+		margin: 0;
+	}
+
+	.col-left {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-lg);
+	}
+
+	.col-right {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.col-left,
+	.col-right {
+		min-width: 0;
+	}
+
+	.form {
+		width: 100%;
+	}
+</style>

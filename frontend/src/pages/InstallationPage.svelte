@@ -122,8 +122,7 @@
 	);
 </script>
 
-<div class="page-content stretch">
-		<h2 class="page-title">{t('page.installation.title')}</h2>
+<div class="page-content">
 		<div class="installation">
 			{#if installState.diskId}
 				<p class="hint">

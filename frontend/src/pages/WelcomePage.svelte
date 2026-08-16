@@ -82,9 +82,10 @@
 	.page-content {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: var(--spacing-2xl);
 		align-items: center;
 		flex: 1;
+		width: 100%;
+		box-sizing: border-box;
 		min-width: 0;
 		margin: 0;
 	}
