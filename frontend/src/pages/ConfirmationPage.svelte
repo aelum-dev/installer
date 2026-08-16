@@ -29,14 +29,10 @@
 	loadLanguageInfo();
 </script>
 
-<PageLayout>
-	<div slot="left">
-		<h2 class="page-title">{t('page.confirmation.title')}</h2>
-		<div class="subtitle-wrapper">
-			<p class="subtitle">{t('page.confirmation.subtitle')}</p>
-		</div>
-	</div>
-
+<PageLayout
+	title={t('page.confirmation.title')}
+	subtitle={t('page.confirmation.subtitle')}
+>
 	<div slot="right">
 		<div class="summary">
 			<div class="summary-section">
@@ -83,26 +79,6 @@
 </PageLayout>
 
 <style>
-	.page-title {
-		padding: 0;
-		margin: 0;
-	}
-
-	.subtitle-wrapper {
-		min-height: 3em;
-		display: flex;
-		align-items: flex-start;
-	}
-
-	.subtitle {
-		font-size: var(--font-size-base-lg);
-		line-height: 1.5;
-		color: var(--color-text-muted);
-		margin: 0;
-		width: 100%;
-		overflow: hidden;
-	}
-
 	.summary {
 		display: flex;
 		flex-direction: column;

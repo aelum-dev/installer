@@ -50,14 +50,10 @@
 	loadLanguages();
 </script>
 
-<PageLayout>
-	<div slot="left">
-		<h2 class="page-title">{t('page.welcome.title')}</h2>
-		<div class="subtitle-wrapper">
-			<p class="subtitle">{t('page.welcome.subtitle')}</p>
-		</div>
-	</div>
-
+<PageLayout
+	title={t('page.welcome.title')}
+	subtitle={t('page.welcome.subtitle')}
+>
 	<div slot="right">
 		{#if loading}
 			<span class="loading-text">{t('page.welcome.loading')}</span>
@@ -80,21 +76,6 @@
 </PageLayout>
 
 <style>
-	.subtitle-wrapper {
-		min-height: 3em;
-		display: flex;
-		align-items: flex-start;
-	}
-
-	.subtitle {
-		font-size: var(--font-size-base-lg);
-		line-height: 1.5;
-		color: var(--color-text-muted);
-		margin: 0;
-		width: 100%;
-		overflow: hidden;
-	}
-
 	.loading-text {
 		font-size: var(--font-size-md-lg);
 		color: var(--color-text-light);

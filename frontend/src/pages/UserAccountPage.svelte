@@ -4,6 +4,7 @@
 	import { getValidationMessages } from '$lib/validate-messages';
 	import { t } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
+	import '$lib/layout.css';
 
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
@@ -32,12 +33,11 @@
 	}
 </script>
 
-<PageLayout>
+<PageLayout
+	title={t('page.userAccount.title')}
+	subtitle={t('page.userAccount.subtitle')}
+>
 	<div slot="left">
-		<h2 class="page-title">{t('page.userAccount.title')}</h2>
-		<div class="subtitle-wrapper">
-			<p class="subtitle">{t('page.userAccount.subtitle')}</p>
-		</div>
 		<div class="requirements">
 			<div class="requirement-item">
 				<span class="check-icon" class:visible={usernameMinLength}>
@@ -119,26 +119,6 @@
 </PageLayout>
 
 <style>
-	.page-title {
-		padding: 0;
-		margin: 0;
-	}
-
-	.subtitle-wrapper {
-		min-height: 3em;
-		display: flex;
-		align-items: flex-start;
-	}
-
-	.subtitle {
-		font-size: var(--font-size-base-lg);
-		line-height: 1.5;
-		color: var(--color-text-muted);
-		margin: 0;
-		width: 100%;
-		overflow: hidden;
-	}
-
 	.form {
 		width: 100%;
 	}

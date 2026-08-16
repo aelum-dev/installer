@@ -1,14 +1,14 @@
 <script lang="ts">
+	import CenteredPage from '$components/CenteredPage.svelte';
 	import { t } from '$lib/i18n';
-	import '$lib/layout.css';
 </script>
 
-<div class="page-content">
-		<div class="finish">
-			<div class="icon">✓</div>
-			<p class="message">{t('page.finish.message')}</p>
-		</div>
+<CenteredPage>
+	<div class="finish">
+		<div class="icon">✓</div>
+		<p class="message">{t('page.finish.message')}</p>
 	</div>
+</CenteredPage>
 
 <style>
 	.finish {

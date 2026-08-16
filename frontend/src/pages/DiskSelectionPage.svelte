@@ -72,15 +72,11 @@
 	loadDisks();
 </script>
 
-<PageLayout>
-	<div slot="left">
-		<h2 class="page-title">{t('page.diskSelection.title')}</h2>
-		<div class="subtitle-wrapper">
-			<p class="subtitle">{t('page.diskSelection.subtitle')}</p>
-		</div>
-		<p class="min-disk-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
-	</div>
-
+<PageLayout
+	title={t('page.diskSelection.title')}
+	subtitle={t('page.diskSelection.subtitle')}
+	hint={t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}
+>
 	<div slot="right">
 		{#if loading}
 			<div class="state-message">
@@ -450,29 +446,6 @@
 	.part-mount {
 		color: var(--color-progress);
 		font-weight: 500;
-	}
-
-	.min-disk-hint {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-		text-align: center;
-		margin-top: 0px;
-		flex-shrink: 0;
-	}
-
-	.subtitle-wrapper {
-		min-height: 3em;
-		display: flex;
-		align-items: flex-start;
-	}
-
-	.subtitle {
-		font-size: var(--font-size-base-lg);
-		line-height: 1.5;
-		color: var(--color-text-muted);
-		margin: 0;
-		width: 100%;
-		overflow: hidden;
 	}
 
 	.right-content {
