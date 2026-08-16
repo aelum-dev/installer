@@ -51,11 +51,13 @@
 </script>
 
 <div class="page-content stretch">
-		<h2 class="page-title">{t('page.welcome.title')}</h2>
-		<div class="welcome-content">
+		<div class="col col-left">
+			<h2 class="page-title">{t('page.welcome.title')}</h2>
 			<div class="subtitle-wrapper">
 				<p class="subtitle">{t('page.welcome.subtitle')}</p>
 			</div>
+		</div>
+		<div class="col col-right">
 			{#if loading}
 				<span class="loading-text">{t('page.welcome.loading')}</span>
 			{:else}
@@ -77,12 +79,42 @@
 	</div>
 
 <style>
+	.page-content {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--spacing-2xl);
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+		margin: 0;
+	}
+
+	.col-left,
+	.col-right {
+		min-width: 0;
+	}
+
+	.col-left {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-lg);
+	}
+
+	.col-right {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
 	.subtitle-wrapper {
-		width: 400px;
 		min-height: 3em;
 		display: flex;
 		align-items: flex-start;
-		margin-top: -40px;
 	}
 
 	.subtitle {
@@ -105,10 +137,17 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-xs);
-		max-width: 400px;
-		max-height: 360px;
+		width: 100%;
+		max-height: 480px;
 		overflow-y: auto;
-		padding-inline-end: var(--spacing-lg);
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.language-list::-webkit-scrollbar {
+		display: none;
 	}
 
 	.lang-item {
@@ -137,5 +176,27 @@
 	.lang-item--selected {
 		background-color: var(--color-primary);
 		color: var(--color-on-primary);
+	}
+
+	.language-list::-webkit-scrollbar,
+	.col-right::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	.language-list::-webkit-scrollbar-track,
+	.col-right::-webkit-scrollbar-track {
+		background: var(--color-border-light);
+		border-radius: 4px;
+	}
+
+	.language-list::-webkit-scrollbar-thumb,
+	.col-right::-webkit-scrollbar-thumb {
+		background: var(--color-border);
+		border-radius: 4px;
+	}
+
+	.language-list::-webkit-scrollbar-thumb:hover,
+	.col-right::-webkit-scrollbar-thumb:hover {
+		background: var(--color-border-dark);
 	}
 </style>
