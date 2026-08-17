@@ -211,7 +211,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-sm);
-		align-items: center;
+		width: fit-content;
+		margin-inline: auto;
 	}
 
 	.requirement-item {
@@ -223,6 +224,7 @@
 		line-height: 1.4;
 		margin: 0;
 		text-align: left;
+		white-space: nowrap;
 	}
 
 	.check-icon {
