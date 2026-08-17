@@ -124,7 +124,6 @@
 		justify-content: center;
 		gap: var(--spacing-lg);
 		flex: 1;
-		margin-top: -var(--spacing-md);
 	}
 
 	.page-content {
@@ -143,6 +142,7 @@
 		flex-direction: column;
 		gap: var(--spacing-xs);
 		width: 100%;
+		padding-top: var(--spacing-lg);
 	}
 
 	.field {
