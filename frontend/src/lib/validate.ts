@@ -69,9 +69,7 @@ export function validateUserAccount(
 	let usernameError: string | null = null;
 
 	if (state.usernameTouched && username.trim()) {
-		if (username.length < MinUsernameLength) {
-			usernameError = msg.usernameMinLength;
-		} else if (username.length > MaxUsernameLength) {
+		if (username.length > MaxUsernameLength) {
 			usernameError = msg.usernameMaxLength;
 		} else if (!UsernameFirstCharRegex.test(username)) {
 			usernameError = msg.usernameInvalidFirstChar;
@@ -86,9 +84,7 @@ export function validateUserAccount(
 		username: usernameError,
 		password:
 			state.passwordTouched && password
-				? password.length < MinPasswordLength
-					? msg.passwordMinLength
-					: null
+				? null
 				: null,
 		confirmPassword:
 			state.confirmPasswordTouched && confirmPassword !== ''
