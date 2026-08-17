@@ -234,8 +234,9 @@
 		width: 18px;
 		height: 18px;
 		flex-shrink: 0;
-		opacity: 0;
-		transition: opacity 0.2s ease;
+		opacity: 0.3;
+		color: var(--color-text-muted);
+		transition: opacity 0.2s ease, color 0.2s ease;
 	}
 
 	.check-icon.visible {
