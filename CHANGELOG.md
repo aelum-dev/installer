@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Root check moved to app startup** — `CheckRoot()` now runs in `StartUp()` instead of `StartInstallation()`. If sudo is not available, dry-run mode is enabled automatically so the user can still explore the installer. A "DRY RUN" badge appears in the header on all pages.
 - **Fake disks loaded in dry-run mode** — When dry-run is active, `GetDisks()` and `GetDiskPartitions()` return synthetic disk data instead of querying `lsblk`. This lets the UI be explored without reading real block devices.
 
+### Added
+- **Password match validation indicator** — UserAccountPage shows a third checkmark icon for password confirmation match, providing positive visual feedback when passwords match.
+
+### Fixed
+- **Two-column layout now 50/50 on all pages** — Removed fixed 300px width from `.page-info` on WelcomePage, UserAccountPage, DiskSelectionPage, and ConfirmationPage. Both columns now use `flex: 1` for equal spacing.
+- **Right column content vertically centered and left-aligned** — Added `justify-content: center` and `align-items: flex-start` to `.page-content` on UserAccountPage and ConfirmationPage. Summary cards and form fields are now vertically centered while remaining left-aligned within the right column.
+- **Text alignment override for right column** — Added `text-align: left` to `.page-content` to override global `text-align: center` from `style.css`, ensuring form fields and summary content are left-aligned.
+
 ### Fixed
 - **ScrollBox scrolling now works correctly** — Added `:global()` CSS selector in `PageLayout.svelte` to ensure slot content wrappers fill the parent container. Fixed missing `scroll-inner` class on `ScrollBox.svelte` div so custom scrollbar styling applies. Removed conflicting `overflow-y: auto` from `DiskSelectionPage.svelte` disk list. Added `grid-template-rows: 1fr` to page content grid for proper height calculation.
 - **WelcomePage layout no longer shifts when switching languages** — Uses CSS Grid with fixed 56px subtitle row and integer pixel heights (48px title, 56px subtitle) to prevent font metric differences from causing layout shifts. Language list scrolls independently within its max-height.

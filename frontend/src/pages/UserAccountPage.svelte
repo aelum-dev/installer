@@ -19,6 +19,9 @@
 	// Validation requirements
 	const usernameMinLength = $derived(installState.username.length >= 3);
 	const passwordMinLength = $derived(installState.password.length >= 6);
+	const passwordsMatch = $derived(
+		installState.confirmPassword.length > 0 && installState.confirmPassword === installState.password
+	);
 
 	function handleBlur(field: 'username' | 'password' | 'confirmPassword'): void {
 		switch (field) {
@@ -49,6 +52,14 @@
 					</svg>
 				</span>
 				<span>{t('validation.passwordMinLength')}</span>
+			</div>
+			<div class="requirement-item">
+				<span class="check-icon" class:visible={passwordsMatch}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12" />
+					</svg>
+				</span>
+				<span>{t('validation.passwordsMatch')}</span>
 			</div>
 		</div>
 	</div>
@@ -112,14 +123,16 @@
 		flex-direction: column;
 		justify-content: center;
 		gap: var(--spacing-lg);
-		flex-shrink: 0;
-		width: 300px;
+		flex: 1;
 	}
 
 	.page-content {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		justify-content: center;
+		align-items: flex-start;
+		text-align: left;
 		overflow: hidden;
 		min-height: 0;
 	}

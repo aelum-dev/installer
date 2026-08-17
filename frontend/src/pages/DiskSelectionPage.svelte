@@ -254,8 +254,7 @@
 		flex-direction: column;
 		justify-content: center;
 		gap: var(--spacing-lg);
-		flex-shrink: 0;
-		width: 300px;
+		flex: 1;
 	}
 
 	.page-hint {

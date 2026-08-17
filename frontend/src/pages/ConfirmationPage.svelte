@@ -94,14 +94,16 @@
 		flex-direction: column;
 		justify-content: center;
 		gap: var(--spacing-lg);
-		flex-shrink: 0;
-		width: 300px;
+		flex: 1;
 	}
 
 	.page-content {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		justify-content: center;
+		align-items: flex-start;
+		text-align: left;
 		overflow: hidden;
 		min-height: 0;
 	}
