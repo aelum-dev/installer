@@ -2,6 +2,7 @@
 	/**
 	 * Full-width centered layout for pages that don't need the 2-column structure.
 	 * Used for Installation and Finish pages.
+	 * Constrained between header and footer.
 	 *
 	 * Props:
 	 *   title   - Page heading (rendered as h2 at top)
@@ -15,25 +16,36 @@
 </script>
 
 <div class="centered-page">
-	{#if title}
-		<h2 class="page-title">{title}</h2>
-	{/if}
-	{#if subtitle}
-		<p class="page-subtitle">{subtitle}</p>
-	{/if}
-	<slot />
+	<div class="centered-inner">
+		{#if title}
+			<h2 class="page-title">{title}</h2>
+		{/if}
+		{#if subtitle}
+			<p class="page-subtitle">{subtitle}</p>
+		{/if}
+		<slot />
+	</div>
 </div>
 
 <style>
 	.centered-page {
+		height: 100%;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.centered-inner {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: var(--spacing-lg);
-		flex: 1;
 		width: 100%;
-		padding: var(--spacing-xl);
+		padding-inline: var(--spacing-xl);
 		box-sizing: border-box;
 	}
 

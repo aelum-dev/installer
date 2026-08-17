@@ -453,6 +453,5 @@
 		flex-direction: column;
 		gap: var(--gap-md);
 		width: 100%;
-		max-height: 480px;
 	}
 </style>

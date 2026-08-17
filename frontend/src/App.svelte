@@ -84,7 +84,7 @@
 	<main class="content-area">
 		{#key navState.currentPage}
 			<div
-				class="page-content"
+				class="page-wrapper"
 				transition:fly={{ x: navState.direction === 'forward' ? -80 : 80, duration: 350, easing: backOut }}
 			>
 				{#if navState.currentPage === PAGE_IDS.WELCOME}
@@ -119,22 +119,22 @@
 		overflow: hidden;
 		box-sizing: border-box;
 		background-color: var(--color-bg-light);
-		padding: var(--spacing-xl);
+		padding: var(--spacing-lg);
+		gap: var(--spacing-lg);
 	}
 
 	.content-area {
 		flex: 1;
 		position: relative;
 		overflow: hidden;
-		background-color: var(--color-bg-light);
+		min-height: 0;
 	}
 
-	.page-content {
+	.page-wrapper {
 		width: 100%;
 		height: 100%;
+		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		padding-right: var(--spacing-lg);
-		gap: var(--gap-lg);
 	}
 </style>

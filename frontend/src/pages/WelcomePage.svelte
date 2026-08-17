@@ -88,16 +88,8 @@
 		flex-direction: column;
 		gap: var(--spacing-xs);
 		width: 100%;
-		max-height: 480px;
-		overflow-y: auto;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
 		padding: 0;
 		margin: 0;
-	}
-
-	.language-list::-webkit-scrollbar {
-		display: none;
 	}
 
 	.lang-item {
