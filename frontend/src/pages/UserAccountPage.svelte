@@ -18,10 +18,8 @@
 		}, getValidationMessages())
 	);
 
-	// Username validation rules
+	// Validation requirements
 	const usernameMinLength = $derived(installState.username.length >= 3);
-	const usernameFirstChar = $derived(/^[a-z_]/.test(installState.username));
-	const usernameValidChars = $derived(/^[a-z0-9_-]+$/.test(installState.username));
 	const passwordMinLength = $derived(installState.password.length >= 6);
 
 	function handleBlur(field: 'username' | 'password' | 'confirmPassword'): void {
@@ -46,22 +44,6 @@
 					</svg>
 				</span>
 				<span>{t('validation.usernameMinLength')}</span>
-			</div>
-			<div class="requirement-item">
-				<span class="check-icon" class:visible={usernameFirstChar}>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</span>
-				<span>{t('validation.usernameInvalidFirstChar')}</span>
-			</div>
-			<div class="requirement-item">
-				<span class="check-icon" class:visible={usernameValidChars}>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</span>
-				<span>{t('validation.usernameInvalidChars')}</span>
 			</div>
 			<div class="requirement-item">
 				<span class="check-icon" class:visible={passwordMinLength}>
@@ -127,7 +109,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-sm);
-		align-items: flex-start;
+		align-items: center;
 	}
 
 	.requirement-item {
