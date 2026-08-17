@@ -53,7 +53,7 @@
   "validation.usernameReserved": "Username '{name}' is reserved",
   "validation.passwordRequired": "Password is required",
   "validation.passwordMinLength": "Password must be at least 6 characters",
-  "validation.passwordsMatch": "Re-enter your password",
+  "validation.passwordsMatch": "Passwords must match",
   "validation.passwordsNoMatch": "Passwords do not match",
   "validation.selectLanguage": "Please select a language to continue.",
   "validation.selectUserAccount": "Please complete all required fields to continue.",

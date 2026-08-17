@@ -49,7 +49,7 @@
   "validation.usernameReserved": "用户名 '{name}' 已被保留",
   "validation.passwordRequired": "密码是必填项",
   "validation.passwordMinLength": "密码至少需要 6 个字符",
-  "validation.passwordsMatch": "请再次输入密码",
+  "validation.passwordsMatch": "密码必须相符",
   "validation.passwordsNoMatch": "密码不匹配",
   "validation.selectLanguage": "请选择一种语言以继续。",
   "validation.selectUserAccount": "请填写所有必填字段以继续。",
