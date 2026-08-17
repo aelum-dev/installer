@@ -3,8 +3,6 @@
 	import { validateUserAccount } from '$lib/validate';
 	import { getValidationMessages } from '$lib/validate-messages';
 	import { t } from '$lib/i18n';
-	import PageLayout from '$components/PageLayout.svelte';
-	import '$lib/layout.css';
 
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
@@ -31,11 +29,10 @@
 	}
 </script>
 
-<PageLayout
-	title={t('page.userAccount.title')}
-	subtitle={t('page.userAccount.subtitle')}
->
-	<div slot="left">
+<div class="page-layout">
+	<div class="page-info">
+		<h2>{t('page.userAccount.title')}</h2>
+		<p>{t('page.userAccount.subtitle')}</p>
 		<div class="requirements">
 			<div class="requirement-item">
 				<span class="check-icon" class:visible={usernameMinLength}>
@@ -55,8 +52,7 @@
 			</div>
 		</div>
 	</div>
-
-	<div slot="right">
+	<div class="page-content">
 		<form class="form" onsubmit={(e) => e.preventDefault()}>
 			<div class="field">
 				<label for="username">{t('page.userAccount.username')}</label>
@@ -98,11 +94,104 @@
 			</div>
 		</form>
 	</div>
-</PageLayout>
+</div>
 
 <style>
-	.form {
+	.page-layout {
+		display: flex;
+		flex-direction: row;
+		height: 100%;
 		width: 100%;
+		padding-inline: var(--spacing-xl);
+		box-sizing: border-box;
+		gap: var(--gap-lg);
+	}
+
+	.page-info {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: var(--spacing-lg);
+		flex-shrink: 0;
+		width: 300px;
+	}
+
+	.page-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		min-height: 0;
+	}
+
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-xs);
+		width: 100%;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		text-align: start;
+	}
+
+	.field > :first-child {
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.field > :nth-child(2) {
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.field label {
+		font-size: var(--font-size-md);
+		font-weight: var(--font-weight-600);
+		color: var(--color-text-muted);
+		letter-spacing: 0.02em;
+	}
+
+	.line-edit {
+		background-color: var(--color-bg-white);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		padding: 11px 20px;
+		font-family: inherit;
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		outline: none;
+		transition: background-color 0.15s ease, border-color 0.15s ease;
+	}
+
+	.line-edit::placeholder {
+		color: var(--color-text-light);
+	}
+
+	.line-edit:focus {
+		border-color: var(--color-primary);
+		outline: none;
+	}
+
+	.line-edit--error {
+		border-color: var(--color-danger);
+	}
+
+	.line-edit--error:focus {
+		border-color: var(--color-danger);
+		box-shadow: 0 0 0 2px var(--color-danger-focus);
+	}
+
+	.error {
+		font-size: var(--font-size-sm);
+		color: var(--color-danger);
+		margin: 0;
+		min-height: 1.4em;
+		overflow: hidden;
+	}
+
+	.error.visible {
+		overflow: visible;
 	}
 
 	.requirements {

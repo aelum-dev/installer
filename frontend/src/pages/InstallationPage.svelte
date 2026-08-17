@@ -153,6 +153,13 @@
 </CenteredPage>
 
 <style>
+	.hint {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		text-align: center;
+	}
+
 	.installation {
 		display: flex;
 		flex-direction: column;

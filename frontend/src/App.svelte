@@ -130,7 +130,7 @@
 	<main class="content-area">
 		{#key navState.currentPage}
 			<div
-				class="page-wrapper"
+				class="page"
 				transition:fly={{ x: navState.direction === 'forward' ? -80 : 80, duration: 350, easing: backOut }}
 			>
 				{#if navState.currentPage === PAGE_IDS.WELCOME}
@@ -176,7 +176,7 @@
 		min-height: 0;
 	}
 
-	.page-wrapper {
+	.page {
 		width: 100%;
 		height: 100%;
 		display: flex;

@@ -3,7 +3,6 @@
 	import { GetLanguages, GetSelectedLanguage, SetSelectedLanguage } from '@wails/go/gui/App.js';
 	import { installState } from '$lib/store.svelte';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
-	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 
 	interface Language {
@@ -51,11 +50,12 @@
 	loadLanguages();
 </script>
 
-<PageLayout
-	title={t('page.welcome.title')}
-	subtitle={t('page.welcome.subtitle')}
->
-	<div slot="right">
+<div class="page-layout">
+	<div class="page-info">
+		<h2>{t('page.welcome.title')}</h2>
+		<p>{t('page.welcome.subtitle')}</p>
+	</div>
+	<div class="page-content">
 		{#if loading}
 			<span class="loading-text">{t('page.welcome.loading')}</span>
 		{:else}
@@ -76,9 +76,36 @@
 			</ScrollBox>
 		{/if}
 	</div>
-</PageLayout>
+</div>
 
 <style>
+	.page-layout {
+		display: flex;
+		flex-direction: row;
+		height: 100%;
+		width: 100%;
+		padding-inline: var(--spacing-xl);
+		box-sizing: border-box;
+		gap: var(--gap-lg);
+	}
+
+	.page-info {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: var(--spacing-lg);
+		flex-shrink: 0;
+		width: 300px;
+	}
+
+	.page-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		min-height: 0;
+	}
+
 	.loading-text {
 		font-size: var(--font-size-md-lg);
 		color: var(--color-text-light);

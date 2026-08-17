@@ -4,7 +4,6 @@
 	import { installState } from '$lib/store.svelte';
 	import { formatSize } from '$lib/types';
 	import { t } from '$lib/i18n';
-	import PageLayout from '$components/PageLayout.svelte';
 
 	interface Language {
 		code: string;
@@ -29,11 +28,12 @@
 	loadLanguageInfo();
 </script>
 
-<PageLayout
-	title={t('page.confirmation.title')}
-	subtitle={t('page.confirmation.subtitle')}
->
-	<div slot="right">
+<div class="page-layout">
+	<div class="page-info">
+		<h2>{t('page.confirmation.title')}</h2>
+		<p>{t('page.confirmation.subtitle')}</p>
+	</div>
+	<div class="page-content">
 		<div class="summary">
 			<div class="summary-section">
 				<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
@@ -76,9 +76,36 @@
 			</div>
 		</div>
 	</div>
-</PageLayout>
+</div>
 
 <style>
+	.page-layout {
+		display: flex;
+		flex-direction: row;
+		height: 100%;
+		width: 100%;
+		padding-inline: var(--spacing-xl);
+		box-sizing: border-box;
+		gap: var(--gap-lg);
+	}
+
+	.page-info {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: var(--spacing-lg);
+		flex-shrink: 0;
+		width: 300px;
+	}
+
+	.page-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		min-height: 0;
+	}
+
 	.summary {
 		display: flex;
 		flex-direction: column;
