@@ -35,9 +35,7 @@
 			</div>
 		</div>
 		<div class="col col-right">
-			<div class="right-slot">
-				<slot name="right" />
-			</div>
+			<slot name="right" />
 		</div>
 	</div>
 </div>
@@ -94,16 +92,7 @@
 		overflow: hidden;
 	}
 
-	.right-slot {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
-		height: 100%;
-		overflow: hidden;
-	}
-
-	:global(.right-slot > *) {
+	:global(.col-right > *) {
 		flex: 1;
 		min-height: 0;
 		height: 100%;
