@@ -82,15 +82,7 @@ export function validateUserAccount(
 
 	return {
 		username: usernameError,
-		password:
-			state.passwordTouched && password
-				? null
-				: null,
-		confirmPassword:
-			state.confirmPasswordTouched && confirmPassword !== ''
-				? confirmPassword !== password
-					? msg.passwordsNoMatch
-					: null
-				: null,
+		password: null,
+		confirmPassword: null,
 	};
 }
