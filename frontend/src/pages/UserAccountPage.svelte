@@ -124,6 +124,7 @@
 		justify-content: center;
 		gap: var(--spacing-lg);
 		flex: 1;
+		margin-top: -var(--spacing-md);
 	}
 
 	.page-content {
