@@ -95,12 +95,10 @@ export function validateUserAccount(
 						: null
 				: null,
 		confirmPassword:
-			state.confirmPasswordTouched
-				? !confirmPassword
-					? msg.passwordsMatch
-					: confirmPassword !== password
-						? msg.passwordsNoMatch
-						: null
+			state.confirmPasswordTouched && confirmPassword !== ''
+				? confirmPassword !== password
+					? msg.passwordsNoMatch
+					: null
 				: null,
 	};
 }
