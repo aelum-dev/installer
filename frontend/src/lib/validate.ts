@@ -68,8 +68,15 @@ export function validateUserAccount(
 
 	let usernameError: string | null = null;
 
-	if (state.usernameTouched && username.trim()) {
-		if (username.length > MaxUsernameLength) {
+	let passwordError: string | null = null;
+	let confirmPasswordError: string | null = null;
+
+	if (state.usernameTouched) {
+		if (!username.trim()) {
+			usernameError = msg.usernameRequired;
+		} else if (username.length < MinUsernameLength) {
+			usernameError = msg.usernameMinLength;
+		} else if (username.length > MaxUsernameLength) {
 			usernameError = msg.usernameMaxLength;
 		} else if (!UsernameFirstCharRegex.test(username)) {
 			usernameError = msg.usernameInvalidFirstChar;
@@ -80,9 +87,25 @@ export function validateUserAccount(
 		}
 	}
 
+	if (state.passwordTouched) {
+		if (!password) {
+			passwordError = msg.passwordRequired;
+		} else if (password.length < MinPasswordLength) {
+			passwordError = msg.passwordMinLength;
+		}
+	}
+
+	if (state.confirmPasswordTouched) {
+		if (!confirmPassword) {
+			confirmPasswordError = msg.passwordsMatch;
+		} else if (confirmPassword !== password) {
+			confirmPasswordError = msg.passwordsNoMatch;
+		}
+	}
+
 	return {
 		username: usernameError,
-		password: null,
-		confirmPassword: null,
+		password: passwordError,
+		confirmPassword: confirmPasswordError,
 	};
 }

@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Brukernavn '{name}' er reservert",
   "validation.passwordRequired": "Passord er påkrevd",
   "validation.passwordMinLength": "Passordet må være minst 6 tegn",
-  "validation.passwordsMatch": "Vennligst bekreft passordet ditt",
+  "validation.passwordsMatch": "Passordene må være like",
   "validation.passwordsNoMatch": "Passordene stemmer ikke overens",
   "validation.selectLanguage": "Vennligst velg et språk for å fortsette.",
   "validation.selectUserAccount": "Vennligst fyll ut alle påkrevde felt for å fortsette.",

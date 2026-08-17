@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Потребителското име '{name}' е резервирано",
   "validation.passwordRequired": "Паролата е задължителна",
   "validation.passwordMinLength": "Паролата трябва да съдържа поне 6 знака",
-  "validation.passwordsMatch": "Моля, потвърдете паролата си",
+  "validation.passwordsMatch": "Паролите трябва да съвпадат",
   "validation.passwordsNoMatch": "Паролите не съвпадат",
   "validation.selectLanguage": "Моля, изберете език, за да продължите.",
   "validation.selectUserAccount": "Моля, попълнете всички задължителни полета, за да продължите.",

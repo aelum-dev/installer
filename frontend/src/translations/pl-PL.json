@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Nazwa użytkownika '{name}' jest zarezerwowana",
   "validation.passwordRequired": "Hasło jest wymagane",
   "validation.passwordMinLength": "Hasło musi mieć co najmniej 6 znaków",
-  "validation.passwordsMatch": "Proszę potwierdzić hasło",
+  "validation.passwordsMatch": "Hasła muszą być zgodne",
   "validation.passwordsNoMatch": "Hasła nie są zgodne",
   "validation.selectLanguage": "Proszę wybrać język, aby kontynuować.",
   "validation.selectUserAccount": "Proszę wypełnić wszystkie wymagane pola, aby kontynuować.",

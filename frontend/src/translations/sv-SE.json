@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Användarnamnet '{name}' är reserverat",
   "validation.passwordRequired": "Lösenord krävs",
   "validation.passwordMinLength": "Lösenordet måste vara minst 6 tecken",
-  "validation.passwordsMatch": "Vänligen bekräfta ditt lösenord",
+  "validation.passwordsMatch": "Lösenorden måste stämma överens",
   "validation.passwordsNoMatch": "Lösenorden stämmer inte överens",
   "validation.selectLanguage": "Välj ett språk för att fortsätta.",
   "validation.selectUserAccount": "Vänligen fyll i alla obligatoriska fält för att fortsätta.",

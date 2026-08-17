@@ -49,7 +49,7 @@
   "validation.usernameReserved": "שם המשתמש '{name}' שמור",
   "validation.passwordRequired": "סיסמה היא שדה חובה",
   "validation.passwordMinLength": "הסיסמה חייבת להכיל לפחות 6 תווים",
-  "validation.passwordsMatch": "אנא אשר את הסיסמה שלך",
+  "validation.passwordsMatch": "הסיסמאות חייבות להתאים",
   "validation.passwordsNoMatch": "הסיסמאות אינן תואמות",
   "validation.selectLanguage": "אנא בחר שפה כדי להמשיך.",
   "validation.selectUserAccount": "אנא מלא את כל השדות הנדרשים כדי להמשיך.",

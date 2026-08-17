@@ -49,7 +49,7 @@
   "validation.usernameReserved": "'{name}' kullanıcı adı ayrılmıştır",
   "validation.passwordRequired": "Şifre gereklidir",
   "validation.passwordMinLength": "Şifre en az 6 karakter olmalıdır",
-  "validation.passwordsMatch": "Lütfen şifrenizi onaylayın",
+  "validation.passwordsMatch": "Şifreler eşleşmelidir",
   "validation.passwordsNoMatch": "Şifreler eşleşmiyor",
   "validation.selectLanguage": "Devam etmek için bir dil seçin.",
   "validation.selectUserAccount": "Devam etmek için tüm gerekli alanları doldurun.",

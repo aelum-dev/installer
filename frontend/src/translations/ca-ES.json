@@ -49,7 +49,7 @@
   "validation.usernameReserved": "El nom d'usuari '{name}' està reservat",
   "validation.passwordRequired": "La contrasenya és obligatòria",
   "validation.passwordMinLength": "La contrasenya ha de tenir almenys 6 caràcters",
-  "validation.passwordsMatch": "Si us plau, confirmeu la vostra contrasenya",
+  "validation.passwordsMatch": "Les contrasenyes han de coincidir",
   "validation.passwordsNoMatch": "Les contrasenyes no coincideixen",
   "validation.selectLanguage": "Si us plau, seleccioneu un idioma per continuar.",
   "validation.selectUserAccount": "Si us plau, completeu tots els camps obligatoris per continuar.",

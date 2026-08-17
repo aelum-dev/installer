@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Ім'я користувача '{name}' зарезервовано",
   "validation.passwordRequired": "Пароль обов'язковий",
   "validation.passwordMinLength": "Пароль має містити щонайменше 6 символів",
-  "validation.passwordsMatch": "Будь ласка, підтвердіть пароль",
+  "validation.passwordsMatch": "Паролі повинні збігатися",
   "validation.passwordsNoMatch": "Паролі не збігаються",
   "validation.selectLanguage": "Будь ласка, оберіть мову для продовження.",
   "validation.selectUserAccount": "Будь ласка, заповніть усі обов'язкові поля.",

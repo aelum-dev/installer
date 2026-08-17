@@ -49,7 +49,7 @@
   "validation.usernameReserved": "O nome de usuário '{name}' está reservado",
   "validation.passwordRequired": "A senha é obrigatória",
   "validation.passwordMinLength": "A senha deve ter pelo menos 6 caracteres",
-  "validation.passwordsMatch": "Por favor, confirme sua senha",
+  "validation.passwordsMatch": "As senhas devem coincidir",
   "validation.passwordsNoMatch": "As senhas não coincidem",
   "validation.selectLanguage": "Por favor, selecione um idioma para continuar.",
   "validation.selectUserAccount": "Por favor, preencha todos os campos obrigatórios para continuar.",

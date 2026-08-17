@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Nama pengguna '{name}' telah dicadangkan",
   "validation.passwordRequired": "Kata sandi wajib diisi",
   "validation.passwordMinLength": "Kata sandi harus terdiri dari minimal 6 karakter",
-  "validation.passwordsMatch": "Silakan konfirmasi kata sandi Anda",
+  "validation.passwordsMatch": "Kata sandi harus cocok",
   "validation.passwordsNoMatch": "Kata sandi tidak cocok",
   "validation.selectLanguage": "Silakan pilih bahasa untuk melanjutkan.",
   "validation.selectUserAccount": "Silakan lengkapi semua bidang yang diperlukan untuk melanjutkan.",

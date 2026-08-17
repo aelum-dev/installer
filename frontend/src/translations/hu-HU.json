@@ -49,7 +49,7 @@
   "validation.usernameReserved": "A '{name}' felhasználónév foglalt",
   "validation.passwordRequired": "A jelszó megadása kötelező",
   "validation.passwordMinLength": "A jelszónak legalább 6 karakterből kell állnia",
-  "validation.passwordsMatch": "Kérjük, erősítse meg a jelszavát",
+  "validation.passwordsMatch": "A jelszavaknak meg kell egyezniük",
   "validation.passwordsNoMatch": "A jelszavak nem egyeznek",
   "validation.selectLanguage": "Kérjük, válasszon nyelvet a folytatáshoz.",
   "validation.selectUserAccount": "Kérjük, töltse ki az összes kötelező mezőt a folytatáshoz.",

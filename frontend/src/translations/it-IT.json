@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Il nome utente '{name}' è riservato",
   "validation.passwordRequired": "La password è obbligatoria",
   "validation.passwordMinLength": "La password deve avere almeno 6 caratteri",
-  "validation.passwordsMatch": "Conferma la tua password",
+  "validation.passwordsMatch": "Le password devono corrispondere",
   "validation.passwordsNoMatch": "Le password non corrispondono",
   "validation.selectLanguage": "Seleziona una lingua per continuare.",
   "validation.selectUserAccount": "Compila tutti i campi obbligatori per continuare.",

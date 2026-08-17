@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Uzantnomo '{name}' estas rezervita",
   "validation.passwordRequired": "Pasvorto estas deviga",
   "validation.passwordMinLength": "Pasvorto devas havi almenaŭ 6 signojn",
-  "validation.passwordsMatch": "Bonvolu konfirmi vian pasvorton",
+  "validation.passwordsMatch": "Pasvortoj devas kongrui",
   "validation.passwordsNoMatch": "Pasvortoj ne kongruas",
   "validation.selectLanguage": "Bonvolu elekti lingvon por daŭrigi.",
   "validation.selectUserAccount": "Bonvolu plenigi ĉiujn devigajn kampojn por daŭrigi.",

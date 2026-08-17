@@ -49,7 +49,7 @@
   "validation.usernameReserved": "نام کاربری '{name}' رزرو شده است",
   "validation.passwordRequired": "رمز عبور الزامی است",
   "validation.passwordMinLength": "رمز عبور باید حداقل 6 حرف داشته باشد",
-  "validation.passwordsMatch": "لطفاً رمز عبور خود را تایید کنید",
+  "validation.passwordsMatch": "رمزهای عبور باید یکسان باشند",
   "validation.passwordsNoMatch": "رمزهای عبور مطابقت ندارند",
   "validation.selectLanguage": "لطفاً یک زبان برای ادامه انتخاب کنید.",
   "validation.selectUserAccount": "لطفاً تمام فیلدهای الزامی را پر کنید تا ادامه دهید.",

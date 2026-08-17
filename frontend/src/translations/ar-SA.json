@@ -49,7 +49,7 @@
   "validation.usernameReserved": "اسم المستخدم '{name}' محجوز",
   "validation.passwordRequired": "كلمة المرور مطلوبة",
   "validation.passwordMinLength": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
-  "validation.passwordsMatch": "يرجى تأكيد كلمة المرور",
+  "validation.passwordsMatch": "يجب أن تتطابق كلمتا المرور",
   "validation.passwordsNoMatch": "كلمتا المرور غير متطابقتين",
   "validation.selectLanguage": "يرجى اختيار لغة للمتابعة.",
   "validation.selectUserAccount": "يرجى إكمال جميع الحقول المطلوبة للمتابعة.",

@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Имя пользователя '{name}' зарезервировано",
   "validation.passwordRequired": "Пароль обязателен",
   "validation.passwordMinLength": "Пароль должен содержать минимум 6 символов",
-  "validation.passwordsMatch": "Пожалуйста, подтвердите пароль",
+  "validation.passwordsMatch": "Пароли должны совпадать",
   "validation.passwordsNoMatch": "Пароли не совпадают",
   "validation.selectLanguage": "Пожалуйста, выберите язык для продолжения.",
   "validation.selectUserAccount": "Пожалуйста, заполните все обязательные поля.",

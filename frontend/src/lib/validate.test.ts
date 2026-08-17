@@ -21,6 +21,7 @@ describe('validateUserAccount', () => {
 			expect(result.username).toBeNull();
 		});
 
+		// Username errors shown inline under line edit (not in left-panel checkmarks)
 		it('returns error when username is empty and touched', () => {
 			const result = validateUserAccount('', 'password123', 'password123', touchedState);
 			expect(result.username).toBe('Username is required');
@@ -172,14 +173,14 @@ describe('validateUserAccount', () => {
 		it('returns all errors when all fields are invalid', () => {
 			const result = validateUserAccount('', 'ab', 'nomatch', touchedState);
 			expect(result.username).toBe('Username is required');
-			expect(result.password).toBe('Password must be at least 6 characters');
+			expect(result.password).toBe(`Password must be at least ${MinPasswordLength} characters`);
 			expect(result.confirmPassword).toBe('Passwords do not match');
 		});
 
 		it('returns all errors when confirm is empty and password is too short', () => {
 			const result = validateUserAccount('john', 'ab', '', touchedState);
 			expect(result.username).toBeNull();
-			expect(result.password).toBe('Password must be at least 6 characters');
+			expect(result.password).toBe(`Password must be at least ${MinPasswordLength} characters`);
 			expect(result.confirmPassword).toBe('Please confirm your password');
 		});
 	});

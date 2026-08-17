@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Το όνομα χρήστη '{name}' είναι κατοχυρωμένο",
   "validation.passwordRequired": "Ο κωδικός πρόσβασης είναι υποχρεωτικός",
   "validation.passwordMinLength": "Ο κωδικός πρόσβασης πρέπει να έχει τουλάχιστον 6 χαρακτήρες",
-  "validation.passwordsMatch": "Παρακαλώ επιβεβαιώστε τον κωδικό πρόσβασής σας",
+  "validation.passwordsMatch": "Οι κωδικοί πρόσβασης πρέπει να ταιριάζουν",
   "validation.passwordsNoMatch": "Οι κωδικοί πρόσβασης δεν ταιριάζουν",
   "validation.selectLanguage": "Παρακαλώ επιλέξτε μια γλώσσα για να συνεχίσετε.",
   "validation.selectUserAccount": "Παρακαλώ συμπληρώστε όλα τα απαιτούμενα πεδία για να συνεχίσετε.",

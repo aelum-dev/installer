@@ -49,7 +49,7 @@
   "validation.usernameReserved": "Käyttäjänimi '{name}' on varattu",
   "validation.passwordRequired": "Salasana on pakollinen",
   "validation.passwordMinLength": "Salasanan tulee olla vähintään 6 merkkiä",
-  "validation.passwordsMatch": "Vahvista salasanasi",
+  "validation.passwordsMatch": "Salasanojen täytyy täsmätä",
   "validation.passwordsNoMatch": "Salasanat eivät täsmää",
   "validation.selectLanguage": "Valitse kieli jatkaaksesi.",
   "validation.selectUserAccount": "Täytä kaikki pakolliset kentät jatkaaksesi.",

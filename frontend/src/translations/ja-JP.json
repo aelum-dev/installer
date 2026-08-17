@@ -49,7 +49,7 @@
   "validation.usernameReserved": "ユーザー名 '{name}' は予約されています",
   "validation.passwordRequired": "パスワードは必須です",
   "validation.passwordMinLength": "パスワードは少なくとも 6 文字必要です",
-  "validation.passwordsMatch": "パスワードを確認してください",
+  "validation.passwordsMatch": "パスワードは一致している必要があります",
   "validation.passwordsNoMatch": "パスワードが一致しません",
   "validation.selectLanguage": "続行するには言語を選択してください。",
   "validation.selectUserAccount": "続行するには必須フィールドをすべて入力してください。",
