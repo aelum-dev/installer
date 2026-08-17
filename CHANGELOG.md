@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Interactive validation hints** — UserAccountPage shows real-time checkmark icons (dark rose primary color) for each password/username requirement with smooth fade-in transitions.
 - **AppDataDir constant** — Backend constant for XDG data directory path (`~/.local/share/aestheticos-installer`).
 - **Full internationalization (i18n)** — All UI strings are now translated via `@svelte-intl/svelte-intl`. Supports 16 locales (en-US, de-DE, es-ES, fr-FR, it-IT, pt-BR, ru-RU, zh-CN, zh-TW, ja-JP, ko-KR, uk-UA, pl-PL, tr-TR, ar-SA, he-IL). German translation shipped. RTL support for Arabic and Hebrew.
+- **Fixed validation** — Restore inline error messages for username (including min-length), password, and confirmPassword fields. Added missing `< MinUsernameLength` check. All 38 frontend tests passing.
+- **Fixed i18n** — Translate `validation.passwordsMatch` key in all 26 non-EN/CN locales (was English-only).
 - **Auto locale detection** — Installer auto-detects OS locale on first launch and persists selection via backend `GetUILocale()`/`SetUILocale()`.
 - **Cache clearing step** — `pacman -Scc` runs in the chroot after system configuration to clear the package cache and free disk space.
 

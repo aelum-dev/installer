@@ -44,11 +44,12 @@ export namespace shared {
 	    name: string;
 	    path: string;
 	    size: string;
+	    sizeFormatted: string;
 	    type: string;
 	    model: string;
 	    vendor: string;
 	    rotational: boolean;
-	    ro: boolean;
+	    readonly: boolean;
 	    fstype: string;
 	    mountpoint: string;
 	    serial: string;
@@ -64,11 +65,12 @@ export namespace shared {
 	        this.name = source["name"];
 	        this.path = source["path"];
 	        this.size = source["size"];
+	        this.sizeFormatted = source["sizeFormatted"];
 	        this.type = source["type"];
 	        this.model = source["model"];
 	        this.vendor = source["vendor"];
 	        this.rotational = source["rotational"];
-	        this.ro = source["ro"];
+	        this.readonly = source["readonly"];
 	        this.fstype = source["fstype"];
 	        this.mountpoint = source["mountpoint"];
 	        this.serial = source["serial"];
@@ -113,6 +115,7 @@ export namespace shared {
 	    name: string;
 	    type: string;
 	    size: string;
+	    sizeFormatted: string;
 	    fstype: string;
 	    uuid: string;
 	    mountpoints: string[];
@@ -127,6 +130,7 @@ export namespace shared {
 	        this.name = source["name"];
 	        this.type = source["type"];
 	        this.size = source["size"];
+	        this.sizeFormatted = source["sizeFormatted"];
 	        this.fstype = source["fstype"];
 	        this.uuid = source["uuid"];
 	        this.mountpoints = source["mountpoints"];

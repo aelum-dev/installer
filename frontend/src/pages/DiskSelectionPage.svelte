@@ -5,9 +5,18 @@
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import { installState } from '$lib/store.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
-	import { formatSize, FILESYSTEMS } from '$lib/types';
+	import { FILESYSTEMS } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
+
+	const minDiskSizeFormatted = $derived.by(() => {
+		const n = MinDiskSizeBytes;
+		const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+		const k = 1024;
+		const i = Math.floor(Math.log(n) / Math.log(k));
+		const size = n / Math.pow(k, i);
+		return i === 0 ? `${Math.round(size)} ${units[0]}` : `${size.toFixed(1)} ${units[i]}`;
+	});
 
 	let disks = $state<DiskInfo[]>([]);
 	let partitions = $state<PartitionDetail[]>([]);
@@ -76,7 +85,7 @@
 	<div class="page-info">
 		<h2>{t('page.diskSelection.title')}</h2>
 		<p>{t('page.diskSelection.subtitle')}</p>
-		<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: formatSize(String(MinDiskSizeBytes)) })}</p>
+		<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
 	</div>
 	<div class="page-content">
 		{#if loading}
@@ -134,7 +143,7 @@
 								<div class="card-title">
 									<div class="disk-name">{disk.model || disk.name}</div>
 									<div class="disk-specs">
-										{formatSize(disk.size)}
+										{disk.sizeFormatted}
 										<span class="specs-sep">·</span>
 										{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
 										{#if disk.trans}
@@ -184,7 +193,7 @@
 																<span class="part-unknown">—</span>
 															{/if}
 														</td>
-														<td class="text-right">{formatSize(part.size)}</td>
+														<td class="text-right">{part.sizeFormatted}</td>
 														<td class="text-right">
 															{#if part.mountpoints && part.mountpoints.length > 0}
 																<span class="part-mount">{part.mountpoints.join(', ')}</span>
@@ -323,7 +332,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-sm);
-		padding-inline-end: var(--spacing-lg);
 	}
 
 	.disk-card {

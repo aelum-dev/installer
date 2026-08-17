@@ -3,9 +3,11 @@
 	 * Scrollable content container with consistent styling.
 	 * Used for language lists, disk lists, and other scrollable content.
 	 *
-	 * Slots:
-	 *   default - Content to scroll
+	 * Props:
+	 *   default - Snippet for scrollable content
 	 */
+
+	let { children }: { children: import('svelte').Snippet } = $props();
 
 	let scrollContainer: HTMLDivElement | null = null;
 	let thumbHeight = $state(0);
@@ -16,8 +18,8 @@
 	let dragStartScroll = $state(0);
 	let dragStartThumbTop = $state(0);
 	let fadeTimer: ReturnType<typeof setTimeout> | null = null;
-	const FADE_DELAY = 2000;
-	const HOVER_THRESHOLD = 20; // pixels from right edge to trigger scrollbar
+	const FADE_DELAY = 1000;
+	const HOVER_THRESHOLD = 40; // pixels from right edge to trigger scrollbar
 
 	function calculateScrollbar(): void {
 		if (!scrollContainer) return;
@@ -80,7 +82,7 @@
 	function handleMouseMove(e: MouseEvent): void {
 		// Show scrollbar when mouse is near the right edge
 		const { clientWidth } = scrollContainer!.parentElement!;
-		const distanceFromRight = clientWidth - e.clientX;
+		const distanceFromRight = clientWidth - e.offsetX;
 		
 		if (distanceFromRight <= HOVER_THRESHOLD) {
 			showScrollbar = true;
@@ -131,21 +133,23 @@
 	}
 </script>
 
-<div class="scroll-outer" onmousemove={handleMouseMove}>
+<div class="scroll-outer" onmousemove={handleMouseMove} role="none">
 	<div
 		class="scroll-inner scroll-box"
 		bind:this={scrollContainer}
 		onscroll={handleScroll}
 	>
-		<slot />
+		{@render children()}
 	</div>
-	<div class="scrollbar-track" class:visible={showScrollbar} onmouseenter={handleMouseEnter} onmouseleave={handleMouseLeave}>
-			<div 
+	<div class="scrollbar-track" class:visible={showScrollbar} onmouseenter={handleMouseEnter} onmouseleave={handleMouseLeave} role="none">
+			<button
+				type="button"
 				class="scrollbar-thumb"
 				class:dragging={isDragging}
 				style="height: {thumbHeight}px; top: {thumbTop}px;"
 				onmousedown={handleThumbMouseDown}
-			></div>
+				aria-label="Scroll"
+			></button>
 		</div>
 </div>
 
@@ -196,19 +200,27 @@
 
 	.scrollbar-thumb {
 		width: 8px;
-		background: #a67480;
+		background: #d9c0c5;
+		border: none;
 		border-radius: 4px;
 		position: absolute;
 		top: 0;
 		right: 0;
-		cursor: pointer;
+		cursor: grab;
 		transition: width 0.2s ease, background-color 0.2s ease;
+		padding: 0;
+		margin: 0;
 	}
 
 	.scrollbar-thumb:hover,
 	.scrollbar-thumb.dragging {
 		width: 12px;
 		right: 0;
-		background: #8e5a64;
+		background: #a67480;
+		border-radius: 8px;
+	}
+
+	.scrollbar-thumb:active {
+		cursor: grabbing;
 	}
 </style>

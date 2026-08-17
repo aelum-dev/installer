@@ -1,5 +1,4 @@
 <script lang="ts">
-	import CenteredPage from '$components/CenteredPage.svelte';
 	import { installState } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import { AppDataDir, LogFileName } from '$lib/constants';
@@ -122,35 +121,38 @@
 	);
 </script>
 
-<CenteredPage title={t('page.installation.title')}>
-	<div class="installation">
-		{#if installState.diskId}
-			<p class="hint">
-				{t('page.installation.target')}: <strong>{installState.diskId}</strong>
-			</p>
-		{/if}
-
-			<div class="progress-container">
-				<div class="progress-bar-bg">
-					<div
-						class:running={isRunning}
-						class="progress-bar-fill"
-						style="--progress: {progress}%"
-					></div>
-				</div>
-				<div class="progress-info">
-					<span class="progress-percent">{progress}%</span>
-					<span class="progress-time">{formatTime(elapsedSeconds)}</span>
-				</div>
-			</div>
-
-			<p class="step-label">{currentLabel}</p>
-
-			{#if errorMessage}
-				<p class="error-hint">{t('page.installation.checkLog', { logPath: `~/${AppDataDir}/${LogFileName}` })}</p>
+<div class="centered-page">
+	<div class="centered-inner">
+		<h2 class="page-title">{t('page.installation.title')}</h2>
+		<div class="installation">
+			{#if installState.diskId}
+				<p class="hint">
+					{t('page.installation.target')}: <strong>{installState.diskId}</strong>
+				</p>
 			{/if}
+
+				<div class="progress-container">
+					<div class="progress-bar-bg">
+						<div
+							class:running={isRunning}
+							class="progress-bar-fill"
+							style="--progress: {progress}%"
+						></div>
+					</div>
+					<div class="progress-info">
+						<span class="progress-percent">{progress}%</span>
+						<span class="progress-time">{formatTime(elapsedSeconds)}</span>
+					</div>
+				</div>
+
+				<p class="step-label">{currentLabel}</p>
+
+				{#if errorMessage}
+					<p class="error-hint">{t('page.installation.checkLog', { logPath: `~/${AppDataDir}/${LogFileName}` })}</p>
+				{/if}
 		</div>
-</CenteredPage>
+	</div>
+</div>
 
 <style>
 	.hint {
@@ -234,6 +236,36 @@
 		margin: 0;
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
+		text-align: center;
+	}
+
+	.centered-page {
+		height: 100%;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.centered-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-lg);
+		width: 100%;
+		padding-inline: var(--spacing-xl);
+		box-sizing: border-box;
+	}
+
+	.page-title {
+		margin: 0;
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-700);
+		line-height: 1.2;
+		color: var(--color-text);
 		text-align: center;
 	}
 </style>

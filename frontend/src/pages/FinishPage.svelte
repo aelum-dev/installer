@@ -1,16 +1,38 @@
 <script lang="ts">
-	import CenteredPage from '$components/CenteredPage.svelte';
 	import { t } from '$lib/i18n';
 </script>
 
-<CenteredPage>
-	<div class="finish">
-		<div class="icon">✓</div>
-		<p class="message">{t('page.finish.message')}</p>
+<div class="centered-page">
+	<div class="centered-inner">
+		<div class="finish">
+			<div class="icon">✓</div>
+			<p class="message">{t('page.finish.message')}</p>
+		</div>
 	</div>
-</CenteredPage>
+</div>
 
 <style>
+	.centered-page {
+		height: 100%;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.centered-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-lg);
+		width: 100%;
+		padding-inline: var(--spacing-xl);
+		box-sizing: border-box;
+	}
+
 	.finish {
 		display: flex;
 		flex-direction: column;

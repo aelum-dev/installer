@@ -146,9 +146,10 @@ func GetDisks() ([]DiskInfo, error) {
 		}
 
 		disk := DiskInfo{
-			Name:        bd.Name,
-			Path:        "/dev/" + bd.Name,
-			Size:        bd.Size.Value,
+			Name:          bd.Name,
+			Path:          "/dev/" + bd.Name,
+			Size:          bd.Size.Value,
+			SizeFormatted: FormatSize(bd.Size.Value),
 			Type:        bd.Type,
 			Model:       strings.TrimSpace(bd.Model),
 			Vendor:      strings.TrimSpace(bd.Vendor),
@@ -261,13 +262,14 @@ func deriveFstypeFromChildren(children []lsblkEntry) string {
 
 // PartitionDetail represents a partition with full information for display.
 type PartitionDetail struct {
-	Path        string   `json:"path"`
-	Name        string   `json:"name"`
-	Type        string   `json:"type"`
-	Size        string   `json:"size"`
-	Fstype      string   `json:"fstype"`
-	UUID        string   `json:"uuid"`
-	Mountpoints []string `json:"mountpoints"`
+	Path          string   `json:"path"`
+	Name          string   `json:"name"`
+	Type          string   `json:"type"`
+	Size          string   `json:"size"`           // raw byte count as string
+	SizeFormatted string   `json:"sizeFormatted"`        // human-readable
+	Fstype        string   `json:"fstype"`
+	UUID          string   `json:"uuid"`
+	Mountpoints   []string `json:"mountpoints"`
 }
 
 // GetDiskPartitions returns detailed partition information for a disk using lsblk.
@@ -318,10 +320,11 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 		}
 
 		partitions = append(partitions, PartitionDetail{
-			Path:        partPath,
-			Name:        child.Name,
-			Type:        child.Type,
-			Size:        child.Size.String(),
+			Path:          partPath,
+			Name:          child.Name,
+			Type:          child.Type,
+			Size:          child.Size.String(),
+			SizeFormatted: FormatSize(child.Size.String()),
 			Fstype:      child.Fstype,
 			UUID:        child.UUID,
 			Mountpoints: mountpoints,

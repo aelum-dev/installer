@@ -35,7 +35,8 @@ export type FileSystem = (typeof FILESYSTEMS)[number];
 export interface DiskInfo {
 	name: string;
 	path: string;
-	size: string;
+	size: string;            // raw byte count as string
+	sizeFormatted: string;   // human-readable (e.g. "476.9 GiB")
 	type: string;
 	model: string;
 	vendor: string;
@@ -53,23 +54,9 @@ export interface PartitionDetail {
 	path: string;
 	name: string;
 	type: string;
-	size: string;
+	size: string;            // raw byte count as string
+	sizeFormatted: string;   // human-readable (e.g. "476.9 GiB")
 	fstype: string | null;
 	uuid: string;
 	mountpoints: string[];
-}
-
-// Format bytes to human-readable string.
-// NOTE: A Go equivalent exists in backend/internal/shared/disks.go::FormatSize.
-export function formatSize(bytes: string): string {
-	const n = parseInt(bytes, 10);
-	if (isNaN(n) || n <= 0) return '0 B';
-
-	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-	const k = 1024;
-	const i = Math.floor(Math.log(n) / Math.log(k));
-	const size = n / Math.pow(k, i);
-
-	if (i === 0) return `${Math.round(size)} ${units[0]}`;
-	return `${size.toFixed(1)} ${units[i]}`;
 }
