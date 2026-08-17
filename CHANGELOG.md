@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Password match validation indicator** — UserAccountPage shows a third checkmark icon for password confirmation match, providing positive visual feedback when passwords match.
 
+### Added
+- **Custom scrollbar component** — ScrollBox.svelte with hover expansion (right-anchored, grows left), drag with constraints, auto-hide with 2s delay + 0.6s fade transition, and proximity trigger (20px from right edge). Replaces native GTK scrollbar for consistent cross-platform styling.
+
 ### Fixed
 - **Two-column layout now 50/50 on all pages** — Removed fixed 300px width from `.page-info` on WelcomePage, UserAccountPage, DiskSelectionPage, and ConfirmationPage. Both columns now use `flex: 1` for equal spacing.
 - **Right column content vertically centered and left-aligned** — Added `justify-content: center` and `align-items: flex-start` to `.page-content` on UserAccountPage and ConfirmationPage. Summary cards and form fields are now vertically centered while remaining left-aligned within the right column.
