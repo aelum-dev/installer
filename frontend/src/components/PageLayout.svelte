@@ -1,10 +1,8 @@
 <script lang="ts">
-	import ScrollBox from '$components/ScrollBox.svelte';
-
 	/**
 	 * Two-column page layout constrained between header and footer.
 	 * Left column: title, subtitle, hints (static).
-	 * Right column: scrollable content (language list, disk list, etc.).
+	 * Right column: content area (pages manage their own scrolling).
 	 *
 	 * Props:
 	 *   title   - Page heading (rendered as h2 in left column)
@@ -13,7 +11,7 @@
 	 *
 	 * Slots:
 	 *   left   - Additional content for left column (after title/subtitle/hint)
-	 *   right  - Main content for right column (wrapped in ScrollBox)
+	 *   right  - Main content for right column
 	 */
 	export let title = '';
 	export let subtitle = '';
@@ -37,9 +35,9 @@
 			</div>
 		</div>
 		<div class="col col-right">
-			<ScrollBox>
+			<div class="right-slot">
 				<slot name="right" />
-			</ScrollBox>
+			</div>
 		</div>
 	</div>
 </div>
@@ -56,6 +54,7 @@
 	.page-content {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr;
 		gap: var(--gap-lg);
 		flex: 1;
 		width: 100%;
@@ -66,6 +65,8 @@
 
 	.col {
 		min-width: 0;
+		min-height: 0;
+		align-self: stretch;
 	}
 
 	.col-left {
@@ -87,8 +88,27 @@
 	.col-right {
 		display: flex;
 		flex-direction: column;
+		flex: 1;
+		height: 100%;
 		min-height: 0;
 		overflow: hidden;
+	}
+
+	.right-slot {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	:global(.right-slot > *) {
+		flex: 1;
+		min-height: 0;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
 	}
 
 	/* Consistent title/subtitle/hint styling */

@@ -77,6 +77,52 @@
 			console.error(`[App] Finish failed: ${error}`);
 		}
 	}
+
+	// Track scroll position and restore on page change
+	// $effect(() => {
+	// 	// Restore scroll position after a short delay to ensure DOM is ready
+	// 	const timeoutId = setTimeout(() => {
+	// 		const container = document.querySelector('.scroll-inner');
+	// 		if (!container) return;
+
+	// 		// Only restore if we have a saved position (>= 0)
+	// 		let savedPosition = -1;
+	// 		switch (navState.currentPage) {
+	// 			case PAGE_IDS.WELCOME:
+	// 				savedPosition = installState.welcomeScrollY;
+	// 				break;
+	// 			case PAGE_IDS.DISK_SELECTION:
+	// 				savedPosition = installState.diskScrollY;
+	// 				break;
+	// 		}
+
+	// 		if (savedPosition >= 0) {
+	// 			container.scrollTop = savedPosition;
+	// 		}
+	// 	}, 50);
+
+	// 	// Save scroll position on scroll events
+	// 	const onSaveScroll = (e: Event) => {
+	// 		const target = e.target as HTMLElement;
+	// 		if (!target?.classList.contains('scroll-inner')) return;
+
+	// 		switch (navState.currentPage) {
+	// 			case PAGE_IDS.WELCOME:
+	// 				installState.welcomeScrollY = target.scrollTop;
+	// 				break;
+	// 			case PAGE_IDS.DISK_SELECTION:
+	// 				installState.diskScrollY = target.scrollTop;
+	// 				break;
+	// 		}
+	// 	};
+
+	// 	document.addEventListener('scroll', onSaveScroll, true);
+
+	// 	return () => {
+	// 		clearTimeout(timeoutId);
+	// 		document.removeEventListener('scroll', onSaveScroll, true);
+	// 	};
+	// });
 </script>
 
 <div class="app-layout" dir={getIsRTL() ? 'rtl' : 'ltr'}>

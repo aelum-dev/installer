@@ -4,6 +4,7 @@
 	import { installState } from '$lib/store.svelte';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
+	import ScrollBox from '$components/ScrollBox.svelte';
 
 	interface Language {
 		code: string;
@@ -58,19 +59,21 @@
 		{#if loading}
 			<span class="loading-text">{t('page.welcome.loading')}</span>
 		{:else}
-			<ul class="language-list">
-				{#each languages as lang (lang.code)}
-					<li>
-						<button
-							type="button"
-							class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
-							onclick={() => selectLanguage(lang.code)}
-						>
-							{lang.name}
-						</button>
-					</li>
-				{/each}
-			</ul>
+			<ScrollBox>
+				<ul class="language-list">
+					{#each languages as lang (lang.code)}
+						<li>
+							<button
+								type="button"
+								class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
+								onclick={() => selectLanguage(lang.code)}
+							>
+								{lang.name}
+							</button>
+						</li>
+					{/each}
+				</ul>
+			</ScrollBox>
 		{/if}
 	</div>
 </PageLayout>

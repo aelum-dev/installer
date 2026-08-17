@@ -8,30 +8,21 @@
 	 */
 </script>
 
-<div class="scroll-box">
-	<div class="scroll-inner">
-		<slot />
-	</div>
+<div class="scroll-inner scroll-box">
+	<slot />
 </div>
 
 <style>
 	.scroll-box {
-		display: flex;
-		flex-direction: column;
+		flex: 1;
 		min-height: 0;
-		overflow: hidden;
-		flex: 1;
-	}
-
-	.scroll-inner {
-		flex: 1;
+		height: 100%;
 		overflow-y: auto;
 		overflow-x: hidden;
 		scrollbar-width: thin;
 		scrollbar-color: var(--color-border) transparent;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
 		gap: var(--spacing-md);
 	}
 

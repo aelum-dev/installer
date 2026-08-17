@@ -3,6 +3,7 @@
 	import { GetDisks, GetDiskPartitions } from '@wails/go/gui/App.js';
 	import Button from '$components/Button.svelte';
 	import PageLayout from '$components/PageLayout.svelte';
+	import ScrollBox from '$components/ScrollBox.svelte';
 	import { installState } from '$lib/store.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
 	import { formatSize, FILESYSTEMS } from '$lib/types';
@@ -109,8 +110,9 @@
 					</div>
 				</div>
 
-				<div class="disk-list">
-					{#each disks as disk (disk.path)}
+				<ScrollBox>
+					<div class="disk-list">
+						{#each disks as disk (disk.path)}
 						<button
 							type="button"
 							class={['disk-card', { selected: installState.diskId === disk.path }]}
@@ -202,6 +204,7 @@
 						</button>
 					{/each}
 				</div>
+			</ScrollBox>
 			</div>
 		{/if}
 	</div>
@@ -260,9 +263,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-sm);
-		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
 		padding-inline-end: var(--spacing-lg);
 	}
 
@@ -453,5 +453,7 @@
 		flex-direction: column;
 		gap: var(--gap-md);
 		width: 100%;
+		height: 100%;
+		min-height: 0;
 	}
 </style>

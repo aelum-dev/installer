@@ -21,6 +21,10 @@ export const installState = $state({
 
 	// Dry-run mode (set by backend on startup)
 	isDryRun: false,
+
+	// Scroll positions (persisted across page navigation, -1 = not saved yet)
+	welcomeScrollY: -1,
+	diskScrollY: -1,
 });
 
 // ── Navigation State ──
