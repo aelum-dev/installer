@@ -37,7 +37,6 @@ var basePackages = []string{
 	"iwd",
 	"bluez",
 	"power-profiles-daemon",
-	"yay-bin",
 	"zram-generator",
 
 	// Editor

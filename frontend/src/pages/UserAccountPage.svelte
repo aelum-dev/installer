@@ -148,7 +148,6 @@
 		flex-direction: column;
 		gap: var(--spacing-xs);
 		width: 100%;
-		padding-top: var(--spacing-2xl);
 	}
 
 	.field {

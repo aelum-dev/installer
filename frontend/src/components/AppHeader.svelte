@@ -20,7 +20,9 @@
 		background-color: var(--color-bg-light);
 		min-height: 40px;
 		align-items: center;
-		padding: 0 var(--spacing-md);
+		padding-bottom: var(--spacing-lg);
+		padding-left: var(--spacing-lg);
+		padding-right: var(--spacing-lg);
 	}
 
 	.brand {

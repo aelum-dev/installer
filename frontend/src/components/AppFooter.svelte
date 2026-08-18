@@ -94,6 +94,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		padding-top: var(--spacing-lg);
 	}
 
 	.footer-left {

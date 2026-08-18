@@ -91,6 +91,8 @@ var ReservedUsernames = map[string]bool{
 	"gnome-initial-setup": true,
 	"gdm3":                true,
 	"lightdm":             true,
+	"greetd":              true,
+	"greeter":             true,
 }
 
 // MinDiskSizeGB is the minimum disk size in gigabytes.
