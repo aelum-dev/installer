@@ -255,7 +255,7 @@
 		width: 100%;
 		padding-inline: var(--spacing-xl);
 		box-sizing: border-box;
-		gap: var(--gap-lg);
+		gap: var(--gap-xl);
 	}
 
 	.page-info {

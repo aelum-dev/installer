@@ -115,7 +115,7 @@
 		width: 100%;
 		padding-inline: var(--spacing-xl);
 		box-sizing: border-box;
-		gap: var(--gap-lg);
+		gap: var(--gap-xl);
 	}
 
 	.page-info {
@@ -142,7 +142,7 @@
 		flex-direction: column;
 		gap: var(--spacing-xs);
 		width: 100%;
-		padding-top: var(--spacing-lg);
+		padding-top: var(--spacing-2xl);
 	}
 
 	.field {
