@@ -121,7 +121,6 @@
 		box-sizing: border-box;
 		background-color: var(--color-bg-light);
 		padding: var(--spacing-lg);
-		gap: var(--spacing-lg);
 	}
 
 	.content-area {
