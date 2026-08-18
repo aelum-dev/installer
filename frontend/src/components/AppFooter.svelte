@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PAGE_IDS } from '$lib/types';
+	import { PAGE_IDS, TOTAL_PAGES } from '$lib/types';
 	import { MinDiskSizeBytes } from '$lib/constants';
 	import { installState, navState, isPageValid } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
@@ -13,6 +13,15 @@
 	const isInstallationPage = $derived(currentPage === PAGE_IDS.INSTALLATION);
 	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage && !isInstallationPage);
 	const showNext = $derived(!isLastPage && !isInstallationPage);
+	const showSteps = $derived(!isInstallationPage && !isLastPage);
+
+	const steps = $derived(Array.from({ length: TOTAL_PAGES }, (_, i) => i));
+
+	function getStepState(index: number): 'completed' | 'active' | 'pending' {
+		if (index < currentPage) return 'completed';
+		if (index === currentPage) return 'active';
+		return 'pending';
+	}
 
 	const diskSizeOk = $derived.by(() => {
 		if (!installState.disk) return false;
@@ -48,6 +57,17 @@
 			</button>
 		{/if}
 	</div>
+	{#if showSteps}
+		<div class="footer-center">
+			{#each steps as step, index}
+				<div
+					class={['step-dot', `step-dot--${getStepState(index)}`]}
+					aria-label={`Step ${index + 1}`}
+					aria-current={index === currentPage ? 'step' : undefined}
+				></div>
+			{/each}
+		</div>
+	{/if}
 	<div class="footer-right">
 		{#if showNext}
 			<button
@@ -89,12 +109,39 @@
 		justify-content: flex-start;
 	}
 
+	.footer-center {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-sm);
+		flex: 1;
+	}
+
 	.footer-right {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm);
 		flex: 1;
 		justify-content: flex-end;
+	}
+
+	.step-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		transition: all 0.2s ease;
+	}
+
+	.step-dot--pending {
+		background-color: var(--color-border-light);
+	}
+
+	.step-dot--active {
+		background-color: var(--color-primary);
+		transform: scale(1.2);
+	}
+
+	.step-dot--completed {
+		background-color: var(--color-primary);
 	}
 
 	.nav-btn {
