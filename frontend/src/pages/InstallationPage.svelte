@@ -249,7 +249,7 @@
 	}
 
 	.page-title {
-		margin: 0;
+		margin: 0 0 var(--spacing-lg) 0;
 		font-size: var(--font-size-xl);
 		font-weight: var(--font-weight-700);
 		line-height: 1.2;
