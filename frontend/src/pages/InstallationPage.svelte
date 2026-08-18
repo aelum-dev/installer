@@ -166,7 +166,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--gap-md);
+		gap: var(--spacing-lg);
 		width: 100%;
 	}
 
@@ -264,6 +264,7 @@
 
 	.page-title {
 		margin: 0;
+		margin-bottom: var(--spacing-lg);
 		font-size: var(--font-size-xl);
 		font-weight: var(--font-weight-700);
 		line-height: 1.2;
