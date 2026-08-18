@@ -150,16 +150,16 @@ func GetDisks() ([]DiskInfo, error) {
 			Path:          "/dev/" + bd.Name,
 			Size:          bd.Size.Value,
 			SizeFormatted: FormatSize(bd.Size.Value),
-			Type:        bd.Type,
-			Model:       strings.TrimSpace(bd.Model),
-			Vendor:      strings.TrimSpace(bd.Vendor),
-			Rotational:  bool(bd.Rota),
-			Readonly:    bool(bd.Ro),
-			Fstype:      bd.Fstype,
-			Mountpoint:  bd.Mountpoint,
-			Serial:      strings.TrimSpace(bd.Serial),
-			Trans:       bd.Trans,
-			IsRemovable: isRemovable(bd.Trans),
+			Type:          bd.Type,
+			Model:         strings.TrimSpace(bd.Model),
+			Vendor:        strings.TrimSpace(bd.Vendor),
+			Rotational:    bool(bd.Rota),
+			Readonly:      bool(bd.Ro),
+			Fstype:        bd.Fstype,
+			Mountpoint:    bd.Mountpoint,
+			Serial:        strings.TrimSpace(bd.Serial),
+			Trans:         bd.Trans,
+			IsRemovable:   isRemovable(bd.Trans),
 		}
 
 		if disk.Model == "" && disk.Vendor != "" {
@@ -265,8 +265,8 @@ type PartitionDetail struct {
 	Path          string   `json:"path"`
 	Name          string   `json:"name"`
 	Type          string   `json:"type"`
-	Size          string   `json:"size"`           // raw byte count as string
-	SizeFormatted string   `json:"sizeFormatted"`        // human-readable
+	Size          string   `json:"size"`          // raw byte count as string
+	SizeFormatted string   `json:"sizeFormatted"` // human-readable
 	Fstype        string   `json:"fstype"`
 	UUID          string   `json:"uuid"`
 	Mountpoints   []string `json:"mountpoints"`
@@ -325,9 +325,9 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 			Type:          child.Type,
 			Size:          child.Size.String(),
 			SizeFormatted: FormatSize(child.Size.String()),
-			Fstype:      child.Fstype,
-			UUID:        child.UUID,
-			Mountpoints: mountpoints,
+			Fstype:        child.Fstype,
+			UUID:          child.UUID,
+			Mountpoints:   mountpoints,
 		})
 	}
 
