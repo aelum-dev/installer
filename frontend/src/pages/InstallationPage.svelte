@@ -172,9 +172,11 @@
 
 	.progress-container {
 		width: 100%;
+		max-width: 600px;
 		display: flex;
 		flex-direction: column;
 		gap: var(--gap-xs);
+		margin: 0 auto;
 	}
 
 	.progress-bar-bg {
