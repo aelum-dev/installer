@@ -101,11 +101,19 @@
 		background: transparent;
 		border: none;
 		border-radius: 50%;
+		aspect-ratio: 1;
+		padding: 8px;
 		display: flex;
 		justify-content: center;
+		align-items: center;
 		color: var(--color-text);
 		cursor: pointer;
 		transition: background-color 0.15s ease, color 0.15s ease;
+	}
+
+	.nav-btn:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
 	}
 
 	.nav-btn:hover:not(:disabled) {

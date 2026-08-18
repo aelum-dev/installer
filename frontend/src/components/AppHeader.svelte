@@ -18,6 +18,9 @@
 		display: flex;
 		justify-content: space-between;
 		background-color: var(--color-bg-light);
+		min-height: 40px;
+		align-items: center;
+		padding: 0 var(--spacing-lg);
 	}
 
 	.brand {
