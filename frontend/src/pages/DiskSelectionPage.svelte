@@ -327,11 +327,6 @@
 		color: var(--color-on-primary);
 	}
 
-	.fs-pill:focus-visible,
-	.disk-card:focus-visible {
-		outline: 3px solid var(--color-focus);
-		outline-offset: 2px;
-	}
 
 	.disk-list {
 		display: flex;

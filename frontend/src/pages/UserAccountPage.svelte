@@ -174,7 +174,6 @@
 		font-family: inherit;
 		font-size: var(--font-size-base);
 		color: var(--color-text);
-		outline: none;
 		transition: background-color 0.15s ease, border-color 0.15s ease;
 	}
 
@@ -182,11 +181,6 @@
 		color: var(--color-text-light);
 	}
 
-	.line-edit:focus {
-		border-color: var(--color-primary);
-		outline: 2px solid var(--color-focus);
-		outline-offset: 2px;
-	}
 
 	.line-edit--error {
 		border-color: var(--color-danger);

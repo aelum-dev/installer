@@ -41,15 +41,9 @@
 		align-items: center;
 		justify-content: center;
 		gap: var(--gap-xs);
-		outline: none;
 		letter-spacing: 0.01em;
 	}
 
-	.btn:focus-visible {
-		outline: 3px solid var(--color-focus-strong);
-		outline-offset: 2px;
-		border-radius: var(--radius-xl);
-	}
 
 	.btn-primary {
 		background-color: var(--color-primary);

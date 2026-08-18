@@ -106,18 +106,12 @@
 		color: var(--color-text);
 		cursor: pointer;
 		transition: background-color 0.15s ease, color 0.15s ease;
-		outline: none;
 	}
 
 	.nav-btn:hover:not(:disabled) {
 		background-color: var(--color-bg-hover);
 	}
 
-	.nav-btn:focus-visible {
-		outline: 3px solid var(--color-focus);
-		outline-offset: 2px;
-		border-radius: 50%;
-	}
 
 	.nav-btn--disabled {
 		opacity: 0.3;

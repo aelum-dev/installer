@@ -139,10 +139,6 @@
 		background-color: var(--color-primary-light);
 	}
 
-	.lang-item:focus-visible {
-		outline: 2px solid var(--color-focus);
-		outline-offset: -2px;
-	}
 
 	.lang-item--selected {
 		background-color: var(--color-primary);
