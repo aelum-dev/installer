@@ -7,6 +7,11 @@
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
 	let confirmPasswordTouched = $state(false);
+	let usernameInput: HTMLInputElement;
+
+	$effect(() => {
+		usernameInput?.select();
+	});
 
 	const errors = $derived(
 		validateUserAccount(installState.username, installState.password, installState.confirmPassword, {
@@ -72,6 +77,7 @@
 					type="text"
 					class={['line-edit', { 'line-edit--error': !!errors.username }]}
 					placeholder={t('page.userAccount.usernamePlaceholder')}
+					bind:this={usernameInput}
 					bind:value={installState.username}
 					onblur={() => handleBlur('username')}
 				/>
