@@ -184,7 +184,8 @@
 
 	.line-edit:focus {
 		border-color: var(--color-primary);
-		outline: none;
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
 	}
 
 	.line-edit--error {

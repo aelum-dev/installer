@@ -84,7 +84,7 @@
 		flex-direction: row;
 		height: 100%;
 		width: 100%;
-		padding-inline: var(--spacing-xl);
+		padding-inline: calc(var(--spacing-xl) + 8px);
 		box-sizing: border-box;
 		gap: var(--gap-xl);
 	}
@@ -101,7 +101,7 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
+		overflow: visible;
 		min-height: 0;
 	}
 
@@ -123,7 +123,7 @@
 
 	.lang-item {
 		width: 100%;
-		padding: 10px 20px;
+		padding: 10px 20px 10px 24px;
 		border: none;
 		border-radius: var(--radius-xl);
 		background: transparent;
@@ -140,8 +140,8 @@
 	}
 
 	.lang-item:focus-visible {
-		box-shadow: 0 0 0 2px var(--color-focus);
-		outline: none;
+		outline: 2px solid var(--color-focus);
+		outline-offset: -2px;
 	}
 
 	.lang-item--selected {

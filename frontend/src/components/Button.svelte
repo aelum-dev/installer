@@ -46,7 +46,9 @@
 	}
 
 	.btn:focus-visible {
-		box-shadow: 0 0 0 3px var(--color-focus-strong);
+		outline: 3px solid var(--color-focus-strong);
+		outline-offset: 2px;
+		border-radius: var(--radius-xl);
 	}
 
 	.btn-primary {

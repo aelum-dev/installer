@@ -33,8 +33,8 @@
     --color-tertiary-hover: #d8e6cc;
 
     /* —— Focus —— */
-    --color-focus: rgba(166, 116, 128, 0.18);
-    --color-focus-strong: rgba(166, 116, 128, 0.28);
+    --color-focus: #a67480;
+    --color-focus-strong: #8e5a66;
 
     /* —— Error —— */
     --color-danger: #c45858;

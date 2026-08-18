@@ -313,7 +313,6 @@
 		color: var(--color-text);
 		cursor: pointer;
 		transition: all 0.15s ease;
-		outline: none;
 	}
 
 	.fs-pill:hover {
@@ -326,6 +325,12 @@
 		border-color: var(--color-primary);
 		background: var(--color-primary);
 		color: var(--color-on-primary);
+	}
+
+	.fs-pill:focus-visible,
+	.disk-card:focus-visible {
+		outline: 3px solid var(--color-focus);
+		outline-offset: 2px;
 	}
 
 	.disk-list {
@@ -344,7 +349,6 @@
 		transition: all 0.15s ease;
 		text-align: start;
 		font-family: inherit;
-		outline: none;
 	}
 
 	.disk-card:hover {

@@ -20,7 +20,7 @@
 		min-height: 0;
 		height: 100%;
 		overflow-y: auto;
-		overflow-x: hidden;
+		overflow-x: visible;
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-md);

@@ -114,7 +114,9 @@
 	}
 
 	.nav-btn:focus-visible {
-		box-shadow: 0 0 0 2px var(--color-focus);
+		outline: 3px solid var(--color-focus);
+		outline-offset: 2px;
+		border-radius: 50%;
 	}
 
 	.nav-btn--disabled {
