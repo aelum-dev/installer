@@ -124,33 +124,28 @@
 <div class="centered-page">
 	<div class="centered-inner">
 		<h2 class="page-title">{t('page.installation.title')}</h2>
-		<div class="installation">
-			{#if installState.diskId}
-				<p class="hint">
-					{t('page.installation.target')}: <strong>{installState.diskId}</strong>
-				</p>
-			{/if}
-
-				<div class="progress-container">
-					<div class="progress-bar-bg">
-						<div
-							class:running={isRunning}
-							class="progress-bar-fill"
-							style="--progress: {progress}%"
-						></div>
-					</div>
-					<div class="progress-info">
-						<span class="progress-percent">{progress}%</span>
-						<span class="progress-time">{formatTime(elapsedSeconds)}</span>
-					</div>
-				</div>
-
-				<p class="step-label">{currentLabel}</p>
-
-				{#if errorMessage}
-					<p class="error-hint">{t('page.installation.checkLog', { logPath: `~/${AppDataDir}/${LogFileName}` })}</p>
-				{/if}
+		{#if installState.diskId}
+			<p class="hint">
+				{t('page.installation.target')}: <strong>{installState.diskId}</strong>
+			</p>
+		{/if}
+		<div class="progress-container">
+			<div class="progress-bar-bg">
+				<div
+					class:running={isRunning}
+					class="progress-bar-fill"
+					style="--progress: {progress}%"
+				></div>
+			</div>
+			<div class="progress-info">
+				<span class="progress-percent">{progress}%</span>
+				<span class="progress-time">{formatTime(elapsedSeconds)}</span>
+			</div>
 		</div>
+		<p class="step-label">{currentLabel}</p>
+		{#if errorMessage}
+			<p class="error-hint">{t('page.installation.checkLog', { logPath: `~/${AppDataDir}/${LogFileName}` })}</p>
+		{/if}
 	</div>
 </div>
 
@@ -160,14 +155,6 @@
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
 		text-align: center;
-	}
-
-	.installation {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--spacing-lg);
-		width: 100%;
 	}
 
 	.progress-container {
@@ -255,7 +242,6 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
 		gap: var(--spacing-lg);
 		width: 100%;
 		padding-inline: var(--spacing-xl);
@@ -264,7 +250,6 @@
 
 	.page-title {
 		margin: 0;
-		margin-bottom: var(--spacing-lg);
 		font-size: var(--font-size-xl);
 		font-weight: var(--font-weight-700);
 		line-height: 1.2;
