@@ -117,32 +117,5 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		return fmt.Errorf("failed to create legacy memory symlink: %w: %s", err, string(output))
 	}
 
-	// 7. Copy per-user slot
-	userSlot := filepath.Join(cacheDir, "users", username)
-	output, err = exec.RunChroot("mkdir", "-p", userSlot)
-	if err != nil {
-		return fmt.Errorf("failed to create user slot dir: %w: %s", err, string(output))
-	}
-
-	userSlotFiles := []string{
-		filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
-		filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json"),
-		filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"),
-	}
-	for _, source := range userSlotFiles {
-		filename := filepath.Base(source)
-		_, err = exec.RunChroot("cp", "-f", source, filepath.Join(userSlot, filename))
-		if err != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Failed to copy %s to user slot: %v", filename, err)
-			}
-		}
-	}
-
-	output, err = exec.RunChroot("chown", "-R", "greeter:greeter", userSlot)
-	if err != nil {
-		return fmt.Errorf("failed to set user slot ownership: %w: %s", err, string(output))
-	}
-
 	return nil
 }

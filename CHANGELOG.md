@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **DMS greeter wallpaper not syncing** — The installer's `SyncDmsGreeter` was copying static snapshots of `settings.json`, `session.json`, and `colors.json` into the per-user cache slot (`/var/cache/dms-greeter/users/<username>/`). At install time the user hasn't set a wallpaper yet, so `session.json` contained default paths (`/usr/share/DankMaterialShell/wallpaper-*.png`). The greeter's `GreeterUsersService.hasSyncedTheme()` returns `true` when the per-user slot exists, causing it to read stale config from that slot instead of the live symlinks at `/var/cache/dms-greeter/{settings,session,colors}.json`. Fixed by removing the per-user slot entirely — config files are now read via symlinks that stay in sync with the user's home directory.
+
 ### Changed
 - **Frontend store refactored** — `$state.svelte.ts` renamed to `store.svelte.ts` with Svelte 5 runes. Installation state and navigation state consolidated into `installState` and `navState` objects. `isPageValid()` derived function added for page-level validation.
 - **Layout components removed** — `Dropdown.svelte`, `ErrorBanner.svelte`, and `PageLayout.svelte` deleted. Layout styles moved to `lib/layout.css` for shared use across pages.
