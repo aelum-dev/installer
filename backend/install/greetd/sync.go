@@ -81,13 +81,21 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 5. Create symlinks
-	symlinks := map[string]string{
-		filepath.Join(cacheDir, "settings.json"): filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
-		filepath.Join(cacheDir, "session.json"):  filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json"),
-		filepath.Join(cacheDir, "colors.json"):   filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"),
+	// 5. Create per-user slot with symlinks to the user's live config files.
+	// Using symlinks (not static copies) ensures the greeter always reads
+	// up-to-date settings — including wallpaper changes made after install.
+	// Each user gets their own slot so multi-user systems work correctly.
+	userSlot := filepath.Join(cacheDir, "users", username)
+	if _, err := exec.RunChroot("mkdir", "-p", userSlot); err != nil {
+		return fmt.Errorf("failed to create user slot dir: %w", err)
 	}
-	for link, target := range symlinks {
+
+	userSlotSymlinks := map[string]string{
+		filepath.Join(userSlot, "settings.json"): filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
+		filepath.Join(userSlot, "session.json"):  filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json"),
+		filepath.Join(userSlot, "colors.json"):   filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"),
+	}
+	for link, target := range userSlotSymlinks {
 		if _, err := exec.RunChroot("rm", "-f", link); err != nil {
 			return fmt.Errorf("failed to remove existing file %s: %w", link, err)
 		}
@@ -97,7 +105,11 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 6. Write memory.json
+	if _, err := exec.RunChroot("chown", "-h", "greeter:greeter", userSlot); err != nil {
+		return fmt.Errorf("failed to set user slot ownership: %w", err)
+	}
+
+	// 6. Write memory.json to the root cache dir (shared across users).
 	stateMemoryPath := filepath.Join(cacheDir, ".local", "state", "memory.json")
 	memoryContent := strings.ReplaceAll(MemoryJSON(), "{{USERNAME}}", username)
 	if err := exec.WriteFile(stateMemoryPath, memoryContent); err != nil {
