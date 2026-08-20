@@ -117,9 +117,9 @@ lsblk -d -o NAME,TYPE,SIZE /dev/nvme*
 
 The installer does not configure Secure Boot. If Secure Boot is enabled, the kernel modules and bootloader may need to be signed. This is not handled by the installer.
 
-### Small Disks (< 16 GB)
+### Small Disks (< 8 GB)
 
-The installer rejects disks smaller than 16 GB. This is a hard limit because the base system + desktop + swap require approximately 10–12 GB.
+The installer rejects disks smaller than 8 GB. This is a hard limit because the base system + desktop require approximately 6–7 GB. Swap is provided by zram (compressed RAM) rather than an on-disk swap file, so no disk space is reserved for swap.
 
 ## Recovery: Starting Over
 

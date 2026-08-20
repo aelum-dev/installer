@@ -37,9 +37,19 @@ The installed system ships with:
 ```
 AestheticOS-Installer/
 ├── main.go                  # Wails app entry point (embeds frontend/dist, runs gui.NewApp)
-├── wails.json               # Wails config
-├── build.sh / run.sh        # Build & dev scripts
-├── Makefile                 # Build targets
+├── README.md                # This file
+├── AGENTS.md                # Agent context (architecture, conventions, rules)
+├── OVERVIEW.md              # Architecture details
+├── RULES.md                 # Development conventions
+├── EXECUTION_FLOW.md        # Execution flow diagrams
+├── CONTRIBUTING.md          # Code style, commit conventions, PR template
+├── CODE_OF_CONDUCT.md       # Contributor code of conduct
+├── SECURITY.md              # Vulnerability reporting policy
+├── TROUBLESHOOTING.md       # Common failures, log inspection, recovery
+├── CHANGELOG.md             # Version history
+├── LICENSE                  # GPL-3.0
+├── docs/
+│   └── i18n-plan.md         # i18n migration/implementation plan
 ├── backend/
 │   ├── cli/main.go          # CLI installer (password from stdin, never flags)
 │   ├── cli/main_test.go
@@ -53,26 +63,28 @@ AestheticOS-Installer/
 │   │   ├── root_check_test.go
 │   │   └── validation_test.go
 │   ├── install/
-│   │   ├── installer.go     # Installer orchestrator (shared by CLI + GUI). Install() runs 6 steps.
-│   │   ├── step.go          # Step interface + step implementations + Plan
-│   │   ├── context.go       # InstallContext struct (shared state for all steps)
-│   │   ├── configuration.go # ConfigureSystem (merged: fstab→bootloader→system→greetd→plymouth→zram→services)
-│   │   ├── format.go        # FormatDisk() + setupBtrfsSubvolumes()
-│   │   ├── mount.go         # MountFilesystem() + verifyMount()
-│   │   ├── install_packages.go # installPackages(), Install(), InstallDesktop() (pacstrap with line-count progress)
-│   │   ├── fstab.go         # GenerateFstab() (custom for btrfs, standard for ext4)
-│   │   ├── users.go         # SetupUsers() (useradd, chpasswd, sudoers, ISO file copy)
-│   │   ├── cleanup.go       # CleanupMounts() (lazy recursive unmount)
-│   │   ├── command.go       # Run(), runChroot(), writeFile(), appendFile() helpers
+│   │   ├── installer.go     # Installer orchestrator (shared by CLI + GUI). Install() runs 7 steps.
+│   │   ├── step.go          # Step interface + stepFunc + Steps()/stepWeights()
+│   │   ├── context.go       # InstallContext struct (shared state, Cancel channel, Logger)
+│   │   ├── command.go       # Run(), runChroot(), writeFile(), appendFile(), GetLogger()
 │   │   ├── errors.go        # ValidationError, InstallError types
 │   │   ├── logger.go        # Logger interface + ConsoleLogger (shared by CLI + GUI)
+│   │   ├── cleanup.go       # CleanupMounts() (lazy recursive unmount)
+│   │   ├── primitives/      # Low-level disk primitives (partition/format/mount helpers)
+│   │   ├── format/          # FormatDisk() + setupBtrfsSubvolumes()
+│   │   ├── mount/           # MountFilesystem() + verifyMount()
+│   │   ├── installbase/     # base pacstrap (basePackages) with line-count progress
+│   │   ├── installdesktop/  # desktop pacstrap (desktopPackages) with line-count progress
+│   │   ├── users/           # SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy)
+│   │   ├── configure/       # ConfigureSystem (merged: fstab→bootloader→system→greetd→plymouth→zram→services)
+│   │   ├── clearcache/      # ClearCache() (pacman -Scc in chroot)
 │   │   ├── greetd/
 │   │   │   ├── greetd.go    # Greetd configuration type
 │   │   │   ├── config.go    # Config struct
-│   │   │   ├── sync.go      # syncDmsGreeter()
+│   │   │   ├── sync.go      # syncDmsGreeter() (per-user slot copies)
 │   │   │   ├── memory.go    # Memory type
 │   │   │   └── data/greetd/
-│   │   │       ├── config.toml   # Embedded greetd config template
+│   │   │       ├── config.toml   # Embedded greetd config template (includes --cache-dir)
 │   │   │       └── memory.json   # Embedded greetd memory template
 │   │   ├── progress/
 │   │   │   ├── pacstrap.go    # PacstrapProgressTracker (line-count-based progress)
@@ -104,21 +116,23 @@ AestheticOS-Installer/
 │   │   ├── main.ts          # Vite entry point
 │   │   ├── style.css        # Global styles
 │   │   ├── vite-env.d.ts    # Vite type declarations
-│   │   ├── components/
-│   │   │   ├── AppHeader.svelte  # Top bar with page title
-│   │   │   ├── AppFooter.svelte  # Bottom bar with back/next buttons
-│   │   │   ├── Button.svelte     # Reusable button component
-│   │   │   ├── ConfirmDialog.svelte
-│   │   │   ├── Dropdown.svelte   # Dropdown/select component
-│   │   │   ├── ErrorBanner.svelte
-│   │   │   └── PageLayout.svelte # Page wrapper with header/footer
 │   │   ├── lib/
 │   │   │   ├── constants.ts       # Frontend constants (auto-generated from Go)
 │   │   │   ├── navigation.ts      # Page navigation state
-│   │   │   ├── state.svelte.ts    # Svelte 5 store for installer state
+│   │   │   ├── store.svelte.ts    # Svelte 5 store (installState, navState, isPageValid())
+│   │   │   ├── i18n/              # @svelte-intl runtime, locale registry, supported locales
 │   │   │   ├── types.ts           # TypeScript type definitions
 │   │   │   ├── validate.ts        # Frontend validation helpers
+│   │   │   ├── validate-messages.ts # Validation message strings
 │   │   │   └── validate.test.ts   # Validation tests
+│   │   ├── translations/          # i18n locale JSON files (28 locales; RTL for ar-SA/he-IL)
+│   │   ├── assets/                # Nunito fonts (Latin + Cyrillic), app logo
+│   │   ├── components/
+│   │   │   ├── AppHeader.svelte   # Top bar with page title (+ DRY RUN badge)
+│   │   │   ├── AppFooter.svelte   # Bottom bar with back/next buttons (+ step dots)
+│   │   │   ├── Button.svelte      # Reusable button component
+│   │   │   ├── ConfirmDialog.svelte
+│   │   │   └── ScrollBox.svelte   # Scrollable container component
 │   │   ├── pages/
 │   │   │   ├── WelcomePage.svelte         # Language/region selection
 │   │   │   ├── UserAccountPage.svelte     # Username + password
@@ -126,19 +140,11 @@ AestheticOS-Installer/
 │   │   │   ├── ConfirmationPage.svelte    # Summary + root check + confirm dialog
 │   │   │   ├── InstallationPage.svelte    # Progress bar + live events
 │   │   │   └── FinishPage.svelte          # Success screen
-│   │   └── style.css
 │   └── wailsjs/             # Auto-generated Wails bindings
 ├── build/
 │   └── bin/               # Built binaries (aestheticos-installer, aestheticos-installer-cli)
 └── docs/
-    ├── AGENTS.md            # Agent context (architecture, conventions, rules)
-    ├── OVERVIEW.md          # Architecture details
-    ├── RULES.md             # Development conventions
-    ├── EXECUTION_FLOW.md    # Execution flow diagrams
-    ├── CONTRIBUTING.md      # Code style, commit conventions, PR template
-    ├── SECURITY.md          # Vulnerability reporting policy
-    ├── TROUBLESHOOTING.md   # Common failures, log inspection, recovery
-    └── CHANGELOG.md         # Version history
+    └── i18n-plan.md         # i18n migration/implementation plan
 ```
 
 ## Building
@@ -237,16 +243,17 @@ The GUI spawns the CLI binary via `sudo` for all privileged operations — the G
 
 ## Installation Steps
 
-The installer runs **6 top-level steps** (12 logical sub-steps). The last step merges 7 configuration tasks into one:
+The installer runs **7 top-level steps** (the last two merge several sub-tasks into one):
 
 | # | Step | Weight | Description |
 |---|------|--------|-------------|
 | 1 | Format Disk | 3% | GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes |
 | 2 | Mount Filesystem | 2% | Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` |
-| 3 | Install Base | 45% | `pacstrap` base packages + linux-lts |
-| 4 | Install Desktop | 35% | `pacstrap` Hyprland, DMS greeter, Firefox, PipeWire, etc. |
+| 3 | Install Base | 38% | `pacstrap` base packages + linux-lts (+ linux-firmware) |
+| 4 | Install Desktop | 51% | `pacstrap` Hyprland, DMS greeter, Firefox, PipeWire, etc. |
 | 5 | Setup Users | 2% | Create user (wheel group), set passwords, sudoers, copy ISO skel files |
-| 6 | Configure System | 13% | fstab → bootloader → hostname/locale/timezone → greetd → Plymouth BGRT → zram swap → services |
+| 6 | Configure System | 4% | fstab → bootloader → hostname/locale/timezone → greetd → Plymouth BGRT → zram swap → services |
+| 7 | Clear Cache | 1% | `pacman -Scc` in the chroot to free disk space |
 
 **Step 6 sub-steps:** Generate fstab, configure systemd-boot bootloader, set hostname/timezone/locale/keymap/mirrors, configure greetd + DMS greeter, configure Plymouth BGRT silent boot, configure zram compressed swap, enable systemd services (NetworkManager, greetd, bluetooth).
 

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Minimum disk size reduced from 16 GiB to 8 GiB** — the on-disk swap file was removed in favor of zram (compressed RAM-based swap), so no disk space is reserved for swap. The minimum was lowered to 8 GiB (base system + desktop packages + overhead ≈ 6–7 GB). Updated `MinDiskSizeBytes`, the validation error message, and small-disk documentation.
+
 ### Fixed
 - **DMS greeter theme/wallpaper sync made robust** — `SyncDmsGreeter` now copies `settings.json`, `session.json`, and `dms-colors.json` into the per-user greeter slot as real files (with `{}` fallbacks when the sources are missing at install time) instead of dangling symlinks, and copies any referenced wallpaper into the slot while rewriting the paths in `session.json`. The greeter reads this slot (keyed by `memory.json`'s `lastSuccessfulUser`), so it can now read the theme and wallpaper even when those files live outside the ACL-covered directories. `customThemeFile` is resolved to a copy inside the slot as well.
 - **greetd config passes explicit cache dir** — the embedded `/etc/greetd/config.toml` command now includes `--cache-dir /var/cache/dms-greeter` so the greeter's cache location is deterministic.

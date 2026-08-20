@@ -81,7 +81,7 @@ func ValidateDiskSize(diskPath string) error {
 		return fmt.Errorf("failed to parse disk size %q: %w", sizeStr, err)
 	}
 	if sizeBytes < MinDiskSizeBytes {
-		return fmt.Errorf("disk %s is too small: %s (minimum 16 GB required)", diskPath, FormatSize(sizeStr))
+		return fmt.Errorf("disk %s is too small: %s (minimum 8 GB required)", diskPath, FormatSize(sizeStr))
 	}
 	return nil
 }

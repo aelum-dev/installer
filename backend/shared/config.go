@@ -98,8 +98,10 @@ var ReservedUsernames = map[string]bool{
 // MinDiskSizeGB is the minimum disk size in gigabytes.
 const MinDiskSizeGB = 8
 
-// MinDiskSizeBytes is the minimum disk size in bytes (16 GiB).
-// Accounts for: base system (~1.5GB) + desktop packages (~4GB) + swap (dynamic, up to 16GB) + overhead (~1GB).
+// MinDiskSizeBytes is the minimum disk size in bytes (8 GiB).
+// Reduced from 16 GiB once the on-disk swap file was removed in favor of zram
+// (compressed RAM-based swap). Accounts for: base system (~1.5GB) + desktop
+// packages (~4GB) + overhead (~1GB).
 const MinDiskSizeBytes = MinDiskSizeGB * 1024 * 1024 * 1024
 
 // --- Filesystem types --------------------------------------------------------

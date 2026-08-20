@@ -16,58 +16,63 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
 ## Architecture — Where Everything Lives
 ```
 .                               — Project root
-  main.go                       — Wails app entry point (embeds frontend/dist, runs gui.NewApp)
+  main.go                       — Wails app entry point (embeds frontend/dist, runs gui.NewApp). Handles AESTHETIC_START_PAGE, catches SIGINT/SIGTERM/SIGHUP to cancel install + force-cleanup mounts.
   backend/
     cli/main.go                 — CLI installer. Password read from stdin (never flags).
     cli/main_test.go            — CLI tests
     gui/
-      app.go                    — Wails app struct, StartUp, OnBeforeClose
-      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
+      app.go                    — Wails app struct, NewApp, StartUp (CheckRoot→dry-run fallback, GetUILocale), OnBeforeClose, CancelInstallation, WaitForCleanup, SetStartPage
+      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetFileSystem, GetUILocale, SetUILocale)
       installation.go           — StartInstallation (spawns CLI via sudo, reads JSON progress from stderr)
-      navigation.go             — Page IDs, navigation state
+      navigation.go             — Page IDs, navigation state, GetUILocale/SetUILocale
       root_check.go             — Sudo verification
       validation.go             — Validate + Save methods (validate = no state mutation)
       root_check_test.go        — Root check tests
       validation_test.go        — Validation tests
     install/
       installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 7 steps.
-      step.go                   — Step interface + step implementations (FormatDiskStep, etc.) + Steps()
-      configuration.go          — ConfigureSystem (merged step: GenerateFstab→bootloader→system→greetd→plymouth→zram→services)
+      step.go                   — Step interface + stepFunc + Steps()/stepWeights() (order + weights)
+      context.go                — InstallContext struct (shared state, Cancel channel, Logger)
       errors.go                 — ValidationError, InstallError types
-      logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
-      format.go                 — FormatDisk() + setupBtrfsSubvolumes()
-      mount.go                  — MountFilesystem() + verifyMount()
-      install_packages.go       — installPackages(), Install(), InstallDesktop() (pacstrap with line-count progress)
-      clearcache.go             — ClearCache() for package manager cache cleanup
-      users.go                  — SetupUsers() (useradd, chpasswd, sudoers, ISO file copy)
-      cleanup.go                — CleanupMounts() (lazy recursive unmount)
-      command.go                — Run(), runChroot(), writeFile(), appendFile() helpers
-      context.go                — InstallContext struct (shared state for all steps)
+      command.go                — Run(), runChroot(), writeFile(), appendFile(), GetLogger() helpers
+      primitives/
+        primitives.go           — Low-level disk primitives (partition/format/mount helpers)
+      format/
+        format.go               — FormatDisk() + setupBtrfsSubvolumes() (+ format_test.go)
+      mount/
+        mount.go                — MountFilesystem() + verifyMount() (+ mount_test.go)
+      installbase/
+        install.go              — base pacstrap (basePackages) with line-count progress (+ install_test.go)
+      installdesktop/
+        install.go              — desktop pacstrap (desktopPackages) with line-count progress (+ install_test.go)
+      users/
+        users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
+      configure/
+        configure.go            — ConfigureSystem (merged step: GenerateFstab→bootloader→system→greetd→plymouth→zram→services) (+ fstab_test.go, swap_test.go)
+      clearcache/
+        clearcache.go           — ClearCache() (pacman -Scc in chroot) (+ clearcache_test.go)
       greetd/
         greetd.go               — Greetd configuration type
         config.go               — Config struct
-        sync.go                 — syncDmsGreeter()
+        sync.go                 — syncDmsGreeter() (per-user slot copies of settings/session/colors + wallpaper) (+ sync_test.go)
         memory.go               — Memory type
         data/greetd/
-          config.toml           — Embedded greetd config template
+          config.toml           — Embedded greetd config template (includes --cache-dir)
           memory.json           — Embedded greetd memory template
       progress/
         pacstrap.go             — PacstrapProgressTracker (line-count-based progress)
         pacstrap_test.go        — Progress tracker tests
-      installer_test.go         — Installer unit tests
-      installer_integration_test.go — Integration tests
-      install_packages_test.go  — Install packages tests
-      fstab_test.go             — Fstab tests
-      swap_test.go              — Swap/zram tests
+      *_test.go                 — Unit + integration tests (installer, installer_integration)
     shared/
       types.go                  — DiskInfo, PartitionInfo, UserAccountData, DiskSelectionData
-      config.go                 — ALL constants: paths, command names, weights, thresholds, etc.
+      config.go                 — ALL constants: paths, command names, weights, thresholds, wallpaper, progress-tick, etc.
+      logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
       disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath()
-      disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1)
-      regions.go                — 28 locale/region definitions
-      locales.go                — Language list
+      disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1, also used in dry-run)
+      regions.go                — Locale/region definitions
+      locales.go                — Language list (28 languages)
       btrfs.go                  — BtrfsSubvolume definitions + GetBtrfsSubvolumes()
-      validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection()
+      validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection(), ValidateDiskSize()
       mirrorlist.go             — Embedded mirrorlists per region
       mirrorlist_gen.go         — Mirrorlist refresh script
       logpath.go                — GetLogPath()
@@ -83,26 +88,33 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
       App.svelte                — Root component (wizard page router)
       App.test.ts               — App component tests
       main.ts                   — Vite entry point
-      style.css                 — Global styles
+      style.css                 — Global styles (+ shared layout)
       vite-env.d.ts             — Vite type declarations
+      assets/
+        fonts/                  — Nunito (Latin + Cyrillic woff2), OFL.txt
+        images/                 — logo-universal.png
+      translations/             — i18n locale JSON files (28 locales, en-US + RTL for ar-SA/he-IL)
       components/
-        AppHeader.svelte        — Top bar with page title
-        AppFooter.svelte        — Bottom bar with back/next buttons
+        AppHeader.svelte        — Top bar with page title (+ DRY RUN badge)
+        AppFooter.svelte        — Bottom bar with back/next buttons (+ step indicator dots)
         Button.svelte           — Reusable button component
         ConfirmDialog.svelte    — Confirmation dialog modal
-        Dropdown.svelte         — Dropdown/select component
-        ErrorBanner.svelte      — Error message display
-        PageLayout.svelte       — Page wrapper with header/footer
+        ScrollBox.svelte        — Scrollable container component
       lib/
         constants.ts            — Frontend constants (auto-generated from Go via gen-ts-constants.go)
         navigation.ts           — Page navigation state
-        state.svelte.ts         — Svelte 5 store for installer state
+        store.svelte.ts         — Svelte 5 store (`installState`, `navState`, `isPageValid()`)
+        i18n/
+          index.svelte.ts       — svelte-intl runtime + locale loading
+          index.ts              — Intl config, locale registry
+          locales.ts            — Supported locale list
         types.ts                — TypeScript type definitions
         validate.ts             — Frontend validation helpers
+        validate-messages.ts    — Validation message strings
         validate.test.ts        — Validation tests
       pages/
         WelcomePage.svelte      — Language/region selection
-        UserAccountPage.svelte  — Username + password
+        UserAccountPage.svelte  — Username + password (interactive validation hints)
         DiskSelectionPage.svelte — Disk cards + filesystem pills
         ConfirmationPage.svelte — Summary + root check + confirm dialog
         InstallationPage.svelte — Progress bar + live events
@@ -130,23 +142,36 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
 
 ## Installation Steps (7 top-level)
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
-1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes
-2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot`
-3. **InstallBase** (weight 38) — `pacstrap /mnt base linux-lts linux-firmware ...` (basePackages in `install/install_packages.go`)
-4. **InstallDesktop** (weight 51) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktopPackages in `install/install_packages.go`)
-5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files
-6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configuration.go`)
-7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`install/clearcache.go`)
+1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
+2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` (`install/mount/`)
+3. **InstallBase** (weight 38) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, line-count progress, `install/installbase/`)
+4. **InstallDesktop** (weight 51) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
+5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
+6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
+7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
 
 ## Build & Test
 ```bash
 ./build.sh                          # Build all binaries to build/bin/
+# SHARED_DIR=/shared BIN_DIR=/path also copies binaries after build
 go test ./...                       # Run all Go tests
 cd frontend && npm run test         # Run frontend tests (Vitest)
 cd frontend && npm run check        # TypeScript type checking
 ```
 Binaries: `build/bin/aestheticos-installer` (GUI), `build/bin/aestheticos-installer-cli` (CLI)
 The GUI spawns the CLI via `sudo` for all privileged operations.
+
+## Environment Variables
+| Variable | Purpose |
+|----------|---------|
+| `AESTHETIC_DRY_RUN=1` | Simulate installation (steps sleep 200ms); also loads fake disks in `GetDisks()`/`GetDiskPartitions()`; auto-enabled when not root |
+| `AESTHETIC_START_PAGE=N` | Start on page N (0-5) for debugging (see `main.go`) |
+| `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
+| `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
+| `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
+
+## Internationalization (i18n)
+All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales live in `frontend/src/translations/*.json` (28 locales); the registry/messages are in `frontend/src/lib/i18n/`. RTL is supported for Arabic (`ar-SA`) and Hebrew (`he-IL`). Backend exposes `GetUILocale()`/`SetUILocale()` for auto-detection + persistence.
 
 ## Key Patterns (Follow These)
 - **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aestheticos-installer-cli --install <disk>` and reads JSON progress from stderr.
@@ -193,7 +218,7 @@ Welcome (language select)
 ```
 
 ## Constants Reference
-- Min disk size: `shared.MinDiskSizeBytes` = 16 GiB
+- Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram)
 - EFI partition: 128MB, vfat, label "EFI", type GUID `C12A7328...`
 - Root partition: rest of disk, ext4 or btrfs, label "aestheticos", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap` (compression: zstd)
