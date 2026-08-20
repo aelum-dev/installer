@@ -1,7 +1,7 @@
 # AestheticOS Installer
 
 
-https://github.com/user-attachments/assets/ff3c87f9-c308-4d91-9b27-7b59683c8f89
+https://github.com/user-attachments/assets/d180e947-dd2f-4f2f-80db-7841c6dfb487
 
 
 A graphical installer for [AestheticOS](https://github.com/KornienkoDev/AestheticOS) — a fully offline Arch Linux ISO. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
