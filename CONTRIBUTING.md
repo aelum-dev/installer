@@ -22,14 +22,17 @@ Thanks for your interest in contributing! This guide covers the basics.
 ## Testing
 
 ```bash
-# Go tests
-go test ./backend/...
+# Go tests (unit + integration)
+go test ./...
 
 # Frontend tests
 cd frontend && npm run test
 
 # Type checking
 cd frontend && npm run check
+
+# Lint + auto-fix formatting (run after every Go change)
+golangci-lint run ./... --fix
 ```
 
 CI runs all of the above on every push/PR via [GitHub Actions](./.github/workflows/ci.yml).
@@ -38,51 +41,48 @@ CI runs all of the above on every push/PR via [GitHub Actions](./.github/workflo
 
 ```
 backend/
-├── cli/                 # CLI installer
+├── cli/                 # CLI installer (password read from stdin)
 ├── gui/                 # Wails GUI layer
-├── install/             # Installation steps + orchestrator
-│   ├── installer.go     # Installer struct + Install()/RunStep()/Rollback()
-│   ├── step.go          # Step interface + step implementations
-│   ├── plan.go          # Plan struct for step weights/percentages
-│   ├── executor.go      # Executor interface
-│   ├── configuration.go # Merged ConfigureSystem step
+│   ├── app.go           # Wails app struct, StartUp, OnBeforeClose, cancel/cleanup
+│   ├── bindings.go      # Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
+│   ├── installation.go  # StartInstallation (spawns CLI via sudo, reads JSON from stderr)
+│   ├── navigation.go    # Page IDs, navigation state
+│   ├── root_check.go    # Sudo verification
+│   └── validation.go    # Validate + Save methods
+├── install/             # Installation orchestrator + steps
+│   ├── installer.go     # Installer orchestrator (Install()/Rollback())
+│   ├── step.go          # Step interface + stepWeights() (order + progress weights)
+│   ├── context.go       # InstallContext (shared state, Cancel channel, Logger)
+│   ├── command.go       # Run(), runChroot(), writeFile(), appendFile()
 │   ├── errors.go        # Error types
 │   ├── logger.go        # Logger interface + ConsoleLogger
-│   ├── format.go        # Partitioning + formatting
-│   ├── mount.go         # Mount filesystem
-│   ├── install.go       # Pacstrap progress tracking
-│   ├── install_base.go  # Base package installation
-│   ├── install_desktop.go # Desktop package installation
-│   ├── fstab.go         # fstab generation
-│   ├── bootloader.go    # systemd-boot configuration
-│   ├── users.go         # User account setup
-│   ├── system.go        # Hostname, locale, timezone, mirrors
-│   ├── greetd.go        # Login manager configuration
-│   ├── greetd/          # greetd package (config, sync, memory)
-│   ├── plymouth.go      # Plymouth BGRT silent boot
-│   ├── services.go      # systemd service enabling
-│   ├── zram.go          # Compressed swap configuration
-│   ├── copy.go          # ISO-to-target file copying
-│   ├── cleanup.go       # Mount cleanup
-│   ├── command.go       # Run(), runChroot(), writeFile(), appendFile()
-│   ├── rollback.go      # Rollback partial installations
-│   ├── context.go       # InstallContext
-│   ├── checks.go        # Validation helpers
-│   └── progress/        # Pacstrap progress tracker
+│   ├── cleanup.go       # Lazy recursive mount cleanup
+│   ├── format/          # Partitioning + formatting (+ btrfs subvolumes)
+│   ├── mount/           # Mount filesystem + verification
+│   ├── installbase/     # Base pacstrap
+│   ├── installdesktop/  # Desktop pacstrap
+│   ├── users/           # User account setup
+│   ├── configure/       # Merged: fstab→bootloader→system→greetd→plymouth→zram→services
+│   ├── clearcache/      # Clear pacman cache in chroot
+│   ├── greetd/          # greetd config (config, sync, memory)
+│   ├── primitives/      # Low-level disk primitives
+│   ├── progress/        # Pacstrap progress tracker
+│   └── *_test.go        # Unit + integration tests
 ├── validation/          # Centralized validation
-└── shared/              # Types, validators, disk detection, regions
+└── shared/              # Types, validators, disk detection, regions, mirrorlists
 
 frontend/src/
 ├── pages/               # 6 wizard pages
 ├── components/          # Reusable UI components
-└── lib/                 # State, navigation, validation
+├── lib/                 # State, navigation, validation, i18n
+└── translations/        # i18n locale JSON files
 ```
 
 ## Submitting Changes
 
 1. Fork the repo and create a feature branch
 2. Make your changes
-3. Run `go test ./backend/...` and `cd frontend && npm run test`
+3. Run `go test ./...` and `cd frontend && npm run test`
 4. Run `./build.sh` to verify the full build
 5. Commit with a clear message, then push and open a PR
 

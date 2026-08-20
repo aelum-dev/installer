@@ -152,4 +152,4 @@ When reporting a bug, include:
    - Filesystem selected (ext4 / btrfs)
    - Any custom flags used
 
-Use the [GitHub issue template](https://github.com/AestheticOS/AestheticOS-Installer/issues/new) when available.
+Use the [GitHub issue template](https://github.com/KornienkoDev/AestheticOS-Installer/issues/new) when available.

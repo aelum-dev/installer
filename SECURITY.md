@@ -11,7 +11,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 **Do not open a public issue.** Instead, choose one of these channels:
 
 1. **Email**: Send a description to the project maintainer's email (see [README](README.md))
-2. **GitHub Security Advisories**: Use the [Report a vulnerability](https://github.com/AestheticOS/AestheticOS-Installer/security/advisories/new) button
+2. **GitHub Security Advisories**: Use the [Report a vulnerability](https://github.com/KornienkoDev/AestheticOS-Installer/security/advisories/new) button
 
 ### What to Include
 
