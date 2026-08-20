@@ -15,6 +15,10 @@ Just boot the ISO, run the installer, and answer a few questions. No terminal, n
 - **Beautiful desktop** — Hyprland + DankMaterialShell, greetd login, Alacritty terminal, Firefox, and PipeWire audio, all pre-configured.
 - **Fast, quiet boot** — Plymouth boot splash
 
+## Language selection
+
+The first thing you'll pick is your language — there are 28 to choose from. The installer uses that choice to set both your system locale and the mirror country, so downloads come from a nearby mirror. Note that not all 28 languages are fully translated in the DMS desktop yet — you can always change the desktop language later in DMS settings.
+
 ## Getting started
 
 1. Clone this repo and the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) live-ISO repo.
