@@ -67,10 +67,12 @@ func TestPacstrapProgressTracker_PhaseTransition(t *testing.T) {
 	tr.UpdateHook(3, 10)
 
 	// After phase 1 completed fully (3/3) and phase 2 at 3/10:
-	// completedPhasesTotal=3, currentPhaseTotal=10, currentPhaseCurrent=3
-	// overall: (3+3)/(3+10) = 46%
+	// Raw ratio: completedPhasesTotal=3, currentPhaseTotal=10, currentPhaseCurrent=3
+	// overall: (3+3)/(3+10) = 46%. But phase 1 already reported 100%, so the
+	// monotonic clamp keeps the displayed progress at 100% (the bar must never
+	// move backwards when a new hook phase enlarges the total work).
 	got := tr.UpdateHook(3, 10)
-	want := 46
+	want := 100
 	if got != want {
 		t.Errorf("after phase transition: got %d%%, want %d%%", got, want)
 	}
@@ -90,13 +92,12 @@ func TestPacstrapProgressTracker_PhaseJump(t *testing.T) {
 	tr.UpdateHook(1, 20)
 	tr.UpdateHook(2, 20)
 
-	// OLD BUG: completedPhasesTotal would be 5 (M of phase 1),
-	// giving (5+2)/(5+20) = 28%
-	// FIX: completedPhasesTotal is 3 (highest N observed in phase 1),
-	// giving (3+2)/(3+20) = 21%
+	// Raw ratio: completedPhasesTotal is 3 (highest N observed in phase 1),
+	// giving (3+2)/(3+20) = 21%. Phase 1 had already reported 60%, so the
+	// monotonic clamp keeps the displayed progress at 60% (forward-only bar).
 	got := tr.UpdateHook(2, 20)
-	if got != 21 {
-		t.Errorf("phase jump: got %d%%, want 21%% (bug would give 28%%)", got)
+	if got != 60 {
+		t.Errorf("phase jump: got %d%%, want 60%% (raw ratio would be 21%%)", got)
 	}
 }
 

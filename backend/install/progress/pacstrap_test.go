@@ -90,9 +90,11 @@ func TestPacstrapProgressTracker_HookPhaseTransition(t *testing.T) {
 	// Phase 2: 5 items, 2 completed.
 	got := tr.UpdateHook(2, 5)
 
-	// completedPhases=3, currentTotal=5, currentCurrent=2
-	// totalUnits=3+5=8, currentUnits=3+2=5 → 62%
-	want := 62
+	// Raw ratio would be: completedPhases=3, currentTotal=5, currentCurrent=2
+	// totalUnits=3+5=8, currentUnits=3+2=5 → 62%. But phase 1 already reached
+	// 100%, so the monotonic clamp keeps the reported progress at 100% (the
+	// bar must never move backwards when a new hook phase enlarges the total).
+	want := 100
 	if got != want {
 		t.Errorf("phase transition: got %d%%, want %d%%", got, want)
 	}
@@ -109,9 +111,10 @@ func TestPacstrapProgressTracker_HookPhaseIncomplete(t *testing.T) {
 	// Phase 2: 10 items, 4 completed.
 	got := tr.UpdateHook(4, 10)
 
-	// completedPhases=3 (highest N observed), currentTotal=10, currentCurrent=4
-	// totalUnits=3+10=13, currentUnits=3+4=7 → 53%
-	want := 53
+	// Raw ratio would be: completedPhases=3 (highest N observed),
+	// currentTotal=10, currentCurrent=4 → totalUnits=13, currentUnits=7 → 53%.
+	// Phase 1 had already reported 60%, so the monotonic clamp holds at 60%.
+	want := 60
 	if got != want {
 		t.Errorf("incomplete phase jump: got %d%%, want %d%%", got, want)
 	}
@@ -133,6 +136,70 @@ func TestPacstrapProgressTracker_AdvancePercentBounds(t *testing.T) {
 	}
 	if got < 0 {
 		t.Errorf("progress went negative: got %d%%", got)
+	}
+}
+
+// TestPacstrapProgressTracker_MonotonicAcrossHooks ensures the reported
+// percentage never moves backwards when pacstrap transitions from the install
+// phase into the post-transaction hook phase — the denominator jumps by the
+// new phase's total (M) before the numerator can keep up, which used to make
+// the progress bar visibly jump backwards (e.g. 93% -> 90% -> 93%).
+func TestPacstrapProgressTracker_MonotonicAcrossHooks(t *testing.T) {
+	tr := NewPacstrapProgressTracker()
+	tr.SetTotalPackages(150)
+
+	// Verify phase.
+	for i := 0; i < 15; i++ {
+		tr.ProcessLine("checking step...")
+	}
+
+	// Download + install all packages (reaches ~100% of the install work).
+	for i := 0; i < 150; i++ {
+		tr.ProcessLine("pkg downloading...")
+		tr.ProcessLine("installing pkg...")
+	}
+
+	last := tr.CalculatePercent()
+	if last < 99 {
+		t.Fatalf("expected install phase to reach ~100%%, got %d%%", last)
+	}
+
+	// Enter the post-transaction hook phase with a large M. The denominator
+	// jumps by M before the numerator can follow, which used to cause a
+	// backwards jump. Progress must stay >= what we had before the hooks.
+	for n := 1; n <= 30; n++ {
+		got := tr.UpdateHook(n, 30)
+		if got < last {
+			t.Errorf("progress moved backwards at hook (%d/30): got %d%%, was %d%%", n, got, last)
+		}
+		last = got
+	}
+
+	if last != 100 {
+		t.Errorf("expected final progress to reach 100%%, got %d%%", last)
+	}
+}
+
+// TestPacstrapProgressTracker_MonotonicMultiPhaseHooks checks monotonicity
+// across several hook phases with differing totals.
+func TestPacstrapProgressTracker_MonotonicMultiPhaseHooks(t *testing.T) {
+	tr := NewPacstrapProgressTracker()
+	tr.SetTotalPackages(100)
+
+	for i := 0; i < 100; i++ {
+		tr.ProcessLine("pkg downloading...")
+		tr.ProcessLine("installing pkg...")
+	}
+	last := tr.CalculatePercent()
+
+	// Multiple hook phases, each with a different (and larger) total.
+	phases := [][2]int{{1, 5}, {5, 5}, {1, 20}, {20, 20}, {1, 40}, {40, 40}}
+	for _, p := range phases {
+		got := tr.UpdateHook(p[0], p[1])
+		if got < last {
+			t.Errorf("progress moved backwards: got %d%%, was %d%%", got, last)
+		}
+		last = got
 	}
 }
 

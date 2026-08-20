@@ -40,6 +40,11 @@ var packagesRegex = regexp.MustCompile(`Packages \((\d+)\)`)
 // Progress = (downloaded + verified + installed + hookCurrent) /
 //
 //	(2*totalPackages + verified + hookDenominator) * 100
+//
+// The reported percentage is clamped to be monotonically non-decreasing.
+// When pacstrap enters the post-transaction hook phase the denominator jumps
+// by the new phase's total (M) before the numerator can keep up, which would
+// otherwise make the bar visibly jump backwards (e.g. 93% → 90% → 93%).
 type PacstrapProgressTracker struct {
 	totalPackages int // from "Packages (N)"
 
@@ -52,6 +57,10 @@ type PacstrapProgressTracker struct {
 	hookCompletedPhases int
 	hookCurrentTotal    int
 	hookCurrentCurrent  int
+
+	// maxPercent holds the highest percentage ever reported so the tracker can
+	// guarantee forward-only progress (see CalculatePercent).
+	maxPercent int
 }
 
 // NewPacstrapProgressTracker creates a new progress tracker.
@@ -187,7 +196,14 @@ func (t *PacstrapProgressTracker) CalculatePercent() int {
 	if pct < 0 {
 		pct = 0
 	}
-	return pct
+
+	// Guarantee forward-only progress. The raw ratio can momentarily drop
+	// (e.g. when a new hook phase enlarges the denominator), but the displayed
+	// bar must never move backwards.
+	if pct > t.maxPercent {
+		t.maxPercent = pct
+	}
+	return t.maxPercent
 }
 
 // --- Step progress tracker --------------------------------------------------
