@@ -22,7 +22,7 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		return fmt.Errorf("failed to add greeter user to greeter group: %w: %s", err, string(output))
 	}
 
-	// 2. Set ACLs on parent directories
+	// 2. Set ACLs on parent directories so the greeter user can traverse home.
 	aclDirs := []string{home, filepath.Join(home, ".config"), filepath.Join(home, ".local"),
 		filepath.Join(home, ".cache"), filepath.Join(home, ".local", "state"),
 		filepath.Join(home, ".local", "share")}
@@ -36,19 +36,26 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 3. Set group ownership on DMS config directories
+	// 3. Set group ownership on DMS / quickshell / session directories so the
+	// greeter can read theme and session metadata.
 	dmsConfigDirs := []string{
 		filepath.Join(home, ".config", "DankMaterialShell"),
 		filepath.Join(home, ".local", "state", "DankMaterialShell"),
 		filepath.Join(home, ".cache", "DankMaterialShell"),
-		filepath.Join(home, ".local", "share", "color-schemes"),
+		filepath.Join(home, ".cache", "quickshell"),
+		filepath.Join(home, ".config", "quickshell"),
+		filepath.Join(home, ".local", "share", "wayland-sessions"),
+		filepath.Join(home, ".local", "share", "xsessions"),
 	}
 	for _, dir := range dmsConfigDirs {
+		if _, err := exec.RunChroot("mkdir", "-p", dir); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+		if _, err := exec.RunChroot("test", "-d", dir); err != nil {
+			continue
+		}
 		output, err = exec.RunChroot("chgrp", "-R", "greeter", dir)
 		if err != nil {
-			if _, testErr := exec.RunChroot("test", "-d", dir); testErr != nil {
-				continue
-			}
 			return fmt.Errorf("failed to chgrp %s: %w: %s", dir, err, string(output))
 		}
 		output, err = exec.RunChroot("chmod", "-R", "g+rX", dir)
@@ -81,10 +88,12 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 5. Create per-user slot with symlinks to the user's live config files.
-	// Using symlinks (not static copies) ensures the greeter always reads
-	// up-to-date settings — including wallpaper changes made after install.
-	// Each user gets their own slot so multi-user systems work correctly.
+	// 5. Create a per-user greeter slot with symlinks to the user's live config
+	// files. Using symlinks (not static copies) ensures the greeter always reads
+	// up-to-date settings — including wallpaper changes made after install — and
+	// keeps each user's slot independent on multi-user systems. The skel-seeded
+	// home defaults resolve immediately, and any later wallpaper the user picks
+	// in DMS is reflected at the greeter without another sync.
 	userSlot := filepath.Join(cacheDir, "users", username)
 	if _, err := exec.RunChroot("mkdir", "-p", userSlot); err != nil {
 		return fmt.Errorf("failed to create user slot dir: %w", err)
@@ -99,7 +108,7 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		if _, err := exec.RunChroot("rm", "-f", link); err != nil {
 			return fmt.Errorf("failed to remove existing file %s: %w", link, err)
 		}
-		output, err = exec.RunChroot("ln", "-sf", target, link)
+		output, err := exec.RunChroot("ln", "-sf", target, link)
 		if err != nil {
 			return fmt.Errorf("failed to create symlink %s -> %s: %w: %s", link, target, err, string(output))
 		}

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **DMS greeter theme/wallpaper sync made robust** — `SyncDmsGreeter` now copies `settings.json`, `session.json`, and `dms-colors.json` into the per-user greeter slot as real files (with `{}` fallbacks when the sources are missing at install time) instead of dangling symlinks, and copies any referenced wallpaper into the slot while rewriting the paths in `session.json`. The greeter reads this slot (keyed by `memory.json`'s `lastSuccessfulUser`), so it can now read the theme and wallpaper even when those files live outside the ACL-covered directories. `customThemeFile` is resolved to a copy inside the slot as well.
+- **greetd config passes explicit cache dir** — the embedded `/etc/greetd/config.toml` command now includes `--cache-dir /var/cache/dms-greeter` so the greeter's cache location is deterministic.
+- **greeter group + traversal dirs** — the installer now runs `groupadd -r greeter` before creating the greeter user, and extends the `chgrp greeter` set to include `quickshell` config/cache and the user's `wayland-sessions`/`xsessions` directories so the greeter can launch Hyprland and read quickshell state.
+
+### Added
+- **greetd sync tests** — in-memory fake-filesystem tests covering path resolution, missing-config `{}` fallbacks, per-user slot copies, and wallpaper path rewriting.
+
+### Fixed
 - **DMS greeter wallpaper not syncing** — The installer's `SyncDmsGreeter` was copying static snapshots of `settings.json`, `session.json`, and `colors.json` into the per-user cache slot (`/var/cache/dms-greeter/users/<username>/`). At install time the user hasn't set a wallpaper yet, so `session.json` contained default paths (`/usr/share/DankMaterialShell/wallpaper-*.png`). The greeter's `GreeterUsersService.hasSyncedTheme()` returns `true` when the per-user slot exists, causing it to read stale config from that slot instead of the live files. Fixed by creating per-user symlinks (not static copies) inside each user's slot — this keeps config in sync with the user's home directory and correctly supports multi-user systems where each user has their own slot.
 
 ### Changed

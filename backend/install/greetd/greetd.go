@@ -28,6 +28,15 @@ type InstallContext struct {
 // ConfigureGreetd sets up greetd as the login manager with the DMS greeter.
 // Runs inside the installed system via arch-chroot as root.
 func ConfigureGreetd(exec Executor, ctx *InstallContext) error {
+	// Ensure the greeter system group exists. systemd-sysusers below also
+	// creates it, but we add it explicitly to match the packaged dms-greeter
+	// behaviour and to be robust about package ordering.
+	if _, err := exec.RunChroot("groupadd", "-r", "greeter"); err != nil {
+		// Ignore errors (e.g. group already exists); systemd-sysusers ensures
+		// the group as a fallback.
+		ctx.Logger.Error("could not ensure greeter group exists (ignoring): %v", err)
+	}
+
 	// Step 1: Create greeter user and directories
 	output, err := exec.RunChroot("systemd-sysusers", "--root=/", "--no-pager")
 	if err != nil {
