@@ -17,9 +17,22 @@ Just boot the ISO, run the installer, and answer a few questions. No terminal, n
 
 ## Getting started
 
-1. Flash the [AestheticOS ISO](https://github.com/KornienkoDev/AestheticOS) to a USB drive and boot from it.
-2. Launch the installer from the ISO.
-3. Follow the wizard: choose your language, create your account, select your disk, and confirm.
+1. Clone this repo and the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) live-ISO repo.
+2. Build the installer:
+
+   ```bash
+   ./build.sh
+   ```
+
+3. Copy both binaries into the ISO's airootfs so they're included when the ISO is rebuilt:
+
+   ```bash
+   cp build/bin/aestheticos-installer build/bin/aestheticos-installer-cli ~/airootfs/usr/local/bin/
+   ```
+
+4. Build the live ISO from the AestheticOS repo (this bakes the installer into the airootfs). The resulting ISO is written to `output/`.
+5. Flash the ISO to a USB drive (or [Ventoy](https://www.ventoy.io/)), boot from it, and let the installer launch automatically.
+6. Follow the wizard: choose your language, create your account, select your disk, and confirm.
 
 The installer runs entirely from the live ISO — it needs no internet connection.
 
