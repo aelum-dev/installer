@@ -14,7 +14,7 @@
 	import FinishPage from '$pages/FinishPage.svelte';
 
 	import type { PageID } from '$lib/types';
-	import { PAGE_IDS, PAGES_NO_NAV, TOTAL_PAGES } from '$lib/types';
+	import { PAGE_IDS, TOTAL_PAGES } from '$lib/types';
 	import { goNext, goBack, finish } from '$lib/navigation';
 	import { installState, navState, getIsDryRun, setDryRun } from '$lib/store.svelte';
 	import { getIsRTL } from '$lib/i18n/index.svelte';
@@ -106,9 +106,7 @@
 	</main>
 
 	<ConfirmDialog />
-	{#if !PAGES_NO_NAV.has(navState.currentPage as PageID)}
-		<AppFooter currentPage={navState.currentPage} onNext={handleNext} onBack={handleBack} onFinish={handleFinish} />
-	{/if}
+	<AppFooter currentPage={navState.currentPage} onNext={handleNext} onBack={handleBack} onFinish={handleFinish} />
 </div>
 
 <style>

@@ -123,29 +123,31 @@
 
 <div class="centered-page">
 	<div class="centered-inner">
-		<h2 class="page-title">{t('page.installation.title')}</h2>
-		{#if installState.diskId}
-			<p class="hint">
-				{t('page.installation.target')}: <strong>{installState.diskId}</strong>
-			</p>
-		{/if}
-		<div class="progress-container">
-			<div class="progress-bar-bg">
-				<div
-					class:running={isRunning}
-					class="progress-bar-fill"
-					style="--progress: {progress}%"
-				></div>
+		<div class="content-wrapper">
+			<h2 class="page-title">{t('page.installation.title')}</h2>
+			{#if installState.diskId}
+				<p class="hint">
+					{t('page.installation.target')}: <strong>{installState.diskId}</strong>
+				</p>
+			{/if}
+			<div class="progress-container">
+				<div class="progress-bar-bg">
+					<div
+						class:running={isRunning}
+						class="progress-bar-fill"
+						style="--progress: {progress}%"
+					></div>
+				</div>
+				<div class="progress-info">
+					<span class="progress-percent">{progress}%</span>
+					<span class="progress-time">{formatTime(elapsedSeconds)}</span>
+				</div>
 			</div>
-			<div class="progress-info">
-				<span class="progress-percent">{progress}%</span>
-				<span class="progress-time">{formatTime(elapsedSeconds)}</span>
-			</div>
+			<p class="step-label">{currentLabel}</p>
+			{#if errorMessage}
+				<p class="error-hint">{t('page.installation.checkLog', { logPath: `~/${AppDataDir}/${LogFileName}` })}</p>
+			{/if}
 		</div>
-		<p class="step-label">{currentLabel}</p>
-		{#if errorMessage}
-			<p class="error-hint">{t('page.installation.checkLog', { logPath: `~/${AppDataDir}/${LogFileName}` })}</p>
-		{/if}
 	</div>
 </div>
 
@@ -159,11 +161,9 @@
 
 	.progress-container {
 		width: 100%;
-		max-width: 600px;
 		display: flex;
 		flex-direction: column;
 		gap: var(--gap-xs);
-		margin: 0 auto;
 	}
 
 	.progress-bar-bg {
@@ -246,6 +246,15 @@
 		width: 100%;
 		padding-inline: var(--spacing-xl);
 		box-sizing: border-box;
+	}
+
+	.content-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--spacing-lg);
+		width: 100%;
+		max-width: 600px;
 	}
 
 	.page-title {

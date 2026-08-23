@@ -9,11 +9,9 @@
 	let { currentPage, onNext, onBack, onFinish }: { currentPage: number; onNext: () => void; onBack: () => void; onFinish: () => void } = $props();
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
-	const isWelcomePage = $derived(currentPage === PAGE_IDS.WELCOME);
 	const isInstallationPage = $derived(currentPage === PAGE_IDS.INSTALLATION);
 	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage && !isInstallationPage);
 	const showNext = $derived(!isLastPage && !isInstallationPage);
-	const showSteps = $derived(!isInstallationPage && !isLastPage);
 
 	const steps = $derived(Array.from({ length: TOTAL_PAGES }, (_, i) => i));
 
@@ -57,17 +55,15 @@
 			</button>
 		{/if}
 	</div>
-	{#if showSteps}
-		<div class="footer-center">
-			{#each steps as step, index}
-				<div
-					class={['step-dot', `step-dot--${getStepState(index)}`]}
-					aria-label={`Step ${index + 1}`}
-					aria-current={index === currentPage ? 'step' : undefined}
-				></div>
-			{/each}
-		</div>
-	{/if}
+	<div class="footer-center">
+		{#each steps as step, index}
+			<div
+				class={['step-dot', `step-dot--${getStepState(index)}`]}
+				aria-label={`Step ${index + 1}`}
+				aria-current={index === currentPage ? 'step' : undefined}
+			></div>
+		{/each}
+	</div>
 	<div class="footer-right">
 		{#if showNext}
 			<button
@@ -95,6 +91,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding-top: var(--spacing-lg);
+		min-height: 40px;
 	}
 
 	.footer-left {
