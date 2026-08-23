@@ -3,6 +3,17 @@
 ## Project Identity
 Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). Also ships CLI (`aestheticos-installer-cli`) for headless use. The GUI spawns the CLI via `sudo` for privileged ops. Offline installer — all packages from the live ISO's pacman database.
 
+## Connection to the AestheticOS ISO repo
+
+This repo is the **installer**; the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) repo builds the **live ISO**. They are two halves of one product:
+
+- The ISO is barebones — on boot, greetd starts a minimal Hyprland that auto-launches `aestheticos-installer`.
+- Built binaries are baked into the ISO at `airootfs/usr/local/bin/` (`aestheticos-installer`, `aestheticos-installer-cli`), via `BIN_DIR` in `build.sh`.
+- Every install package comes from the ISO's embedded offline mirror (`airootfs/var/cache/aestheticos/offline-mirror/`); the install needs no network.
+- After install, the target is a normal Arch machine and uses the internet normally. The per-region mirrorlist written here (`/etc/pacman.d/mirrorlist`) is only for future online updates — it does **not** feed the install.
+
+In short: this repo = what installs onto the disk; the AestheticOS repo = the ISO that boots and launches this repo.
+
 ## Live ISO vs Installed System (CRITICAL — #1 source of bugs)
 | Term | What | Key Paths |
 |------|------|-----------|
