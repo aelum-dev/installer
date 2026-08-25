@@ -13,6 +13,45 @@ set -e
 
 cd "$(dirname "$0")"
 
+# ── Smart dependency checks ───────────────────────────────────────────
+_tmpfile=$(mktemp)
+trap 'rm -f "$_tmpfile"' EXIT
+
+check_command() {
+  local cmd="$1" desc="$2" version_flag="${3:---version}"
+  if command -v "$cmd" &>/dev/null; then
+    "$cmd" "$version_flag" > "$_tmpfile" 2>&1
+    local ver_output
+    ver_output=$(head -1 "$_tmpfile") && echo "  ✓ $desc: $ver_output" && return 0
+  fi
+  echo "  ✗ $desc not found — installing…"
+  case "$cmd" in
+    node)
+      echo "Install Node.js (v22+) from your package manager or https://nodejs.org or your package manager."
+      exit 1
+      ;;
+    wails)
+      go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      ;;
+  esac
+  # Verify installation succeeded
+  if command -v "$cmd" &>/dev/null; then
+    "$cmd" "$version_flag" > "$_tmpfile" 2>&1
+    local ver_output
+    ver_output=$(head -1 "$_tmpfile") && echo "  ✓ $desc: $ver_output"
+  else
+    echo "  ✗ Failed to install $desc — aborting."
+    exit 1
+  fi
+}
+
+echo "=== Checking dependencies ==="
+check_command go "Go" "version"
+check_command node "Node.js"
+check_command wails "Wails CLI" "version"
+echo
+# ── End dependency checks ─────────────────────────────────────────────
+
 # Sync dependencies — fails the build if go.mod/go.sum drift from go.sum
 
 go mod tidy
