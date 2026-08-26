@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"aestheticos-installer/backend/install/primitives"
 	"aestheticos-installer/backend/install/progress"
@@ -75,6 +76,26 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
+	// Capture stderr for crash reporting when pacstrap fails.
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	var stderrBuf strings.Builder
+	go func() {
+		buf := bufio.NewReader(stderr)
+		for {
+			line, err := buf.ReadString('\n')
+			if line != "" {
+				stderrBuf.WriteString(line)
+			}
+			if err != nil {
+				break
+			}
+		}
+	}()
+
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start pacstrap: %w", err)
 	}
@@ -118,6 +139,10 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 			return fmt.Errorf("pacstrap stdout scan: %w", scanErr)
 		}
 		if err := cmd.Wait(); err != nil {
+			errMsg := strings.TrimSpace(stderrBuf.String())
+			if errMsg != "" {
+				return fmt.Errorf("pacstrap failed:\n%s", errMsg)
+			}
 			return fmt.Errorf("pacstrap failed: %w", err)
 		}
 		return nil
