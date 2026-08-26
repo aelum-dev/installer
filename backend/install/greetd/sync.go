@@ -24,11 +24,22 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 
 	// 2. Set ACLs on parent directories so the greeter user can traverse home.
 	aclDirs := []string{home, filepath.Join(home, ".config"), filepath.Join(home, ".local"),
-		filepath.Join(home, ".cache"), filepath.Join(home, ".local", "state"),
-		filepath.Join(home, ".local", "share")}
+		filepath.Join(home, ".cache"), filepath.Join(home, ".local", "state")}
 	for _, dir := range aclDirs {
 		if _, err := exec.RunChroot("mkdir", "-p", dir); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+		// These directories are created (or left) under the user's home, but the
+		// commands above run as root. /etc/skel does not ship every XDG directory
+		// (e.g. it has no .local/share), so any directory mkdir created here would
+		// otherwise stay root-owned. That blocks the user from writing to their own
+		// XDG paths after install — most visibly matugen failing to create
+		// ~/.local/share/color-schemes/, which breaks dynamic color generation and
+		// the "Apply Qt colors" action. Hand ownership back to the user; the greeter
+		// still reaches the data through the rX ACL and the greeter group.
+		chownOut, chownErr := exec.RunChroot("chown", username, dir)
+		if chownErr != nil {
+			return fmt.Errorf("failed to chown %s: %w: %s", dir, chownErr, string(chownOut))
 		}
 		output, err = exec.RunChroot("setfacl", "-m", "g:greeter:rX", dir)
 		if err != nil {
@@ -36,16 +47,12 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 3. Set group ownership on DMS / quickshell / session directories so the
-	// greeter can read theme and session metadata.
+	// 3. Set group ownership on DMS directories so the greeter can read theme
+	// and session metadata.
 	dmsConfigDirs := []string{
 		filepath.Join(home, ".config", "DankMaterialShell"),
 		filepath.Join(home, ".local", "state", "DankMaterialShell"),
 		filepath.Join(home, ".cache", "DankMaterialShell"),
-		filepath.Join(home, ".cache", "quickshell"),
-		filepath.Join(home, ".config", "quickshell"),
-		filepath.Join(home, ".local", "share", "wayland-sessions"),
-		filepath.Join(home, ".local", "share", "xsessions"),
 	}
 	for _, dir := range dmsConfigDirs {
 		if _, err := exec.RunChroot("mkdir", "-p", dir); err != nil {
