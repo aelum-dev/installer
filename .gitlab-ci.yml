@@ -1,0 +1,71 @@
+# GitLab CI/CD pipeline for the AestheticOS Installer.
+#
+# Mirrors the previous GitHub Actions workflow (now removed) so the same
+# gates run on every push/merge request:
+#   - backend : go mod tidy check, gofmt, frontend build, golangci-lint, go vet, go test -race
+#   - frontend: svelte-check (typecheck) + vitest
+#   - security: gitleaks (secret scan)
+#
+# Runs on every branch. Scope it down (e.g. rules: only main) if you prefer.
+
+stages:
+  - build
+  - test
+  - security
+
+variables:
+  GO_VERSION: "1.25"
+  NODE_VERSION: "22"
+
+# ── backend: Go + frontend build gates ────────────────────────────────────────
+backend:
+  stage: build
+  image: golang:1.25-bookworm
+  cache:
+    key:
+      files:
+        - go.sum
+    paths:
+      - "$HOME/go/pkg/mod/"
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends curl ca-certificates build-essential gnupg
+    # Node.js 22 (needed for the frontend build step) via NodeSource.
+    - curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+    - apt-get install -y --no-install-recommends nodejs
+    # golangci-lint v2 (matches the previous workflow's pinned version).
+    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(go env GOPATH)/bin" v2.12.0
+  script:
+    # Fail if go.mod/go.sum drift from go.sum.
+    - go mod tidy && git diff --exit-code
+    # Fail if any Go file is not gofmt-formatted (the old workflow applied gofmt
+    # silently; this one fails the build instead).
+    - test -z "$(gofmt -l .)" || { gofmt -l .; echo "Go code is not gofmt-formatted"; exit 1; }
+    # Frontend must build (Wails embeds it into the binary).
+    - cd frontend && npm install && npm run build && cd ..
+    # Lint, then test with the race detector (needs cgo → build-essential above).
+    - golangci-lint run ./...
+    - go vet ./...
+    - go test -race ./...
+
+# ── frontend: typecheck + unit tests ──────────────────────────────────────────
+frontend:
+  stage: test
+  image: node:${NODE_VERSION}-bookworm
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/node_modules/
+  script:
+    # Regenerate TS constants from Go so the typecheck sees the live values.
+    - go run ./backend/scripts/gen-ts-constants.go
+    - cd frontend && npm run check && npm run test
+
+# ── security: secret scanning ─────────────────────────────────────────────────
+security:
+  stage: security
+  image: gitleaks/gitleaks
+  script:
+    - gitleaks detect --source . --redact --exit-code=1

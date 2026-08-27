@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Migrated from GitHub to GitLab** — removed the `.github/` directory (GitHub Actions CI workflow, PR template, and issue templates) and added `.gitlab-ci.yml`, which replicates the same gates (gofmt, `go mod tidy`, frontend build, golangci-lint, `go vet`, `go test -race`, svelte-check, vitest, gitleaks). Updated README, AGENTS, SECURITY, TROUBLESHOOTING, and CONTRIBUTING docs to reference the GitLab project and use Merge Request terminology.
 - **README simplified for release** — rewritten to focus on end users: what the installer is, a demonstration video, the desktop you get, and a concise getting-started workflow (build the installer, bake it into the AestheticOS live ISO, flash, and boot). Removed developer-only sections (project structure, build/test details, security design, step-by-step internals) now covered by AGENTS.md and the other docs.
 - **Minimum disk size reduced from 16 GiB to 8 GiB** — the on-disk swap file was removed in favor of zram (compressed RAM-based swap), so no disk space is reserved for swap. The minimum was lowered to 8 GiB (base system + desktop packages + overhead ≈ 6–7 GB). Updated `MinDiskSizeBytes`, the validation error message, and small-disk documentation.
 

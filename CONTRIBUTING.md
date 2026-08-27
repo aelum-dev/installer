@@ -35,8 +35,6 @@ cd frontend && npm run check
 golangci-lint run ./... --fix
 ```
 
-CI runs all of the above on every push/PR via [GitHub Actions](./.github/workflows/ci.yml).
-
 ## Project Structure
 
 ```
@@ -84,7 +82,7 @@ frontend/src/
 2. Make your changes
 3. Run `go test ./...` and `cd frontend && npm run test`
 4. Run `./build.sh` to verify the full build
-5. Commit with a clear message, then push and open a PR
+5. Commit with a clear message, then push and open a merge request
 
 ## Code Style
 
@@ -114,14 +112,14 @@ feat(cli): add --version flag with ldflags injection
 refactor(format): replace magic numbers in stepWeights with constants
 ```
 
-## Pull Requests
+## Merge Requests
 
 1. Fork and create a feature branch
 2. Write or update tests for your changes
 3. Run the full test suite: `go test ./...` and `cd frontend && npm run test`
 4. Build to verify: `./build.sh`
 5. Squash commits into a single logical commit per feature
-6. Open a PR with:
+6. Open a merge request with:
    - Clear description of what and why
    - Link to related issue
    - Screenshots for UI changes

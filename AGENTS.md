@@ -5,7 +5,7 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
 
 ## Connection to the AestheticOS ISO repo
 
-This repo is the **installer**; the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) repo builds the **live ISO**. They are two halves of one product:
+This repo is the **installer**; the [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) repo builds the **live ISO**. They are two halves of one product:
 
 - The ISO is barebones — on boot, greetd starts a minimal Hyprland that auto-launches `aestheticos-installer`.
 - Built binaries are baked into the ISO at `airootfs/usr/local/bin/` (`aestheticos-installer`, `aestheticos-installer-cli`), via `BIN_DIR` in `build.sh`.
@@ -142,7 +142,6 @@ In short: this repo = what installs onto the disk; the AestheticOS repo = the IS
     appicon.png                 — Application icon
     README.md                   — Build directory documentation
   .agents/                      — Agent skills directory
-  .github/                      — GitHub workflows
   wails.json                    — Wails configuration
   go.mod / go.sum               — Go module files
   Makefile                      — Build targets
