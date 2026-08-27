@@ -8,9 +8,9 @@ Just boot the ISO and run the installer — a few clicks in the GUI, no terminal
 
 ## How this fits into AestheticOS
 
-This repo is the **installer** half of the AestheticOS project. The [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer. You build the installer here, drop its binaries into the ISO's `airootfs`, and rebuild the ISO so the installer is baked in and runs automatically on first boot.
+This repo is the **installer** half of the AestheticOS project. The [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
 
-In short: **AestheticOS = the ISO**, **this repo = the software that installs onto your disk inside that ISO.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
+In short: **AestheticOS = the ISO**, **this repo = the software that installs AestheticOS onto your disk.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
 
 ## What you get
 
