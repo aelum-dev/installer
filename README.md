@@ -1,6 +1,6 @@
 # AestheticOS Installer
 
-🎬 **[Watch the full install demo](./media/installer-demo.mp4)** — boot the ISO and watch the wizard run end to end.
+![Demo Video](media/installer-demo.mp4)
 
 A graphical installer for [AestheticOS](https://gitlab.com/aestheticos/AestheticOS), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
 
