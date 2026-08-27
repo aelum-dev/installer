@@ -63,6 +63,9 @@ frontend:
         - frontend/package-lock.json
     paths:
       - frontend/node_modules/
+  before_script:
+    # Install deps so the job works even when the cache is cold (first push).
+    - cd frontend && npm install && cd ..
   script:
     # frontend/src/lib/constants.ts is committed to the repo, so the typecheck
     # and tests use the versioned file. This is a Node-only image (no Go), and
