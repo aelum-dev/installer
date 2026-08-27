@@ -64,8 +64,9 @@ frontend:
     paths:
       - frontend/node_modules/
   script:
-    # Regenerate TS constants from Go so the typecheck sees the live values.
-    - go run ./backend/scripts/gen-ts-constants.go
+    # frontend/src/lib/constants.ts is committed to the repo, so the typecheck
+    # and tests use the versioned file. This is a Node-only image (no Go), and
+    # constants are regenerated locally by build.sh before committing.
     - cd frontend && npm run check && npm run test
 
 # ── security: secret scanning ─────────────────────────────────────────────────
