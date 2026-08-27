@@ -1,12 +1,14 @@
 # AestheticOS Installer
 
-A graphical installer for [AestheticOS](https://github.com/KornienkoDev/AestheticOS), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
+<video controls width="100%" src="./media/installer-demo.mp4"></video>
+
+A graphical installer for [AestheticOS](https://gitlab.com/aestheticos/AestheticOS), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
 
 Just boot the ISO and run the installer — a few clicks in the GUI, no terminal or network needed to install.
 
 ## How this fits into AestheticOS
 
-This repo is the **installer** half of the AestheticOS project. The [AestheticOS](https://github.com/KornienkoDev/AestheticOS) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer. You build the installer here, drop its binaries into the ISO's `airootfs`, and rebuild the ISO so the installer is baked in and runs automatically on first boot.
+This repo is the **installer** half of the AestheticOS project. The [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer. You build the installer here, drop its binaries into the ISO's `airootfs`, and rebuild the ISO so the installer is baked in and runs automatically on first boot.
 
 In short: **AestheticOS = the ISO**, **this repo = the software that installs onto your disk inside that ISO.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
 
@@ -23,7 +25,7 @@ The first thing you'll pick is your language — there are 28 to choose from. Th
 
 ## Getting started
 
-1. Clone this repo and the [AestheticOS](https://github.com/KornienkoDev/AestheticOS) live-ISO repo (side by side, e.g. `~/Projects/AestheticOS-Installer` and `~/Projects/AestheticOS`).
+1. Clone this repo and the [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) live-ISO repo (side by side, e.g. `~/Projects/AestheticOS-Installer` and `~/Projects/AestheticOS`).
 2. Build the installer (outputs `build/bin/aestheticos-installer` and `build/bin/aestheticos-installer-cli`):
 
    ```bash
