@@ -1,7 +1,7 @@
 package install
 
 import (
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 // Re-export from shared for backward compatibility.

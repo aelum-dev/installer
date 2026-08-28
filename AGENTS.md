@@ -1,18 +1,18 @@
-# AestheticOS Installer — Agent Context
+# Aelum Installer — Agent Context
 
 ## Project Identity
-Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). Also ships CLI (`aestheticos-installer-cli`) for headless use. The GUI spawns the CLI via `sudo` for privileged ops. Offline installer — all packages from the live ISO's pacman database.
+Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). Also ships CLI (`aelum-installer-cli`) for headless use. The GUI spawns the CLI via `sudo` for privileged ops. Offline installer — all packages from the live ISO's pacman database.
 
-## Connection to the AestheticOS ISO repo
+## Connection to the Aelum ISO repo
 
-This repo is the **installer**; the [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) repo builds the **live ISO**. They are two halves of one product:
+This repo is the **installer**; the [Aelum](https://gitlab.com/aelum/Aelum) repo builds the **live ISO**. They are two halves of one product:
 
-- The ISO is barebones — on boot, greetd starts a minimal Hyprland that auto-launches `aestheticos-installer`.
-- Built binaries are baked into the ISO at `airootfs/usr/local/bin/` (`aestheticos-installer`, `aestheticos-installer-cli`), via `BIN_DIR` in `build.sh`.
-- Every install package comes from the ISO's embedded offline mirror (`airootfs/var/cache/aestheticos/offline-mirror/`); the install needs no network.
+- The ISO is barebones — on boot, greetd starts a minimal Hyprland that auto-launches `aelum-installer`.
+- Built binaries are baked into the ISO at `airootfs/usr/local/bin/` (`aelum-installer`, `aelum-installer-cli`), via `BIN_DIR` in `build.sh`.
+- Every install package comes from the ISO's embedded offline mirror (`airootfs/var/cache/aelum/offline-mirror/`); the install needs no network.
 - After install, the target is a normal Arch machine and uses the internet normally. The per-region mirrorlist written here (`/etc/pacman.d/mirrorlist`) is only for future online updates — it does **not** feed the install.
 
-In short: this repo = what installs onto the disk; the AestheticOS repo = the ISO that boots and launches this repo.
+In short: this repo = what installs onto the disk; the Aelum repo = the ISO that boots and launches this repo.
 
 ## Live ISO vs Installed System (CRITICAL — #1 source of bugs)
 | Term | What | Key Paths |
@@ -27,7 +27,7 @@ In short: this repo = what installs onto the disk; the AestheticOS repo = the IS
 ## Architecture — Where Everything Lives
 ```
 .                               — Project root
-  main.go                       — Wails app entry point (embeds frontend/dist, runs gui.NewApp). Handles AESTHETIC_START_PAGE, catches SIGINT/SIGTERM/SIGHUP to cancel install + force-cleanup mounts.
+  main.go                       — Wails app entry point (embeds frontend/dist, runs gui.NewApp). Handles AELUM_START_PAGE, catches SIGINT/SIGTERM/SIGHUP to cancel install + force-cleanup mounts.
   backend/
     cli/main.go                 — CLI installer. Password read from stdin (never flags).
     cli/main_test.go            — CLI tests
@@ -136,7 +136,7 @@ In short: this repo = what installs onto the disk; the AestheticOS repo = the IS
       go/models.ts              — Wails-generated TypeScript models
       runtime/                  — Wails runtime JS+TS
   build/
-    bin/                        — Built binaries (aestheticos-installer, aestheticos-installer-cli)
+    bin/                        — Built binaries (aelum-installer, aelum-installer-cli)
     darwin/                     — macOS build output
     windows/                    — Windows build output
     appicon.png                 — Application icon
@@ -168,14 +168,14 @@ go test ./...                       # Run all Go tests
 cd frontend && npm run test         # Run frontend tests (Vitest)
 cd frontend && npm run check        # TypeScript type checking
 ```
-Binaries: `build/bin/aestheticos-installer` (GUI), `build/bin/aestheticos-installer-cli` (CLI)
+Binaries: `build/bin/aelum-installer` (GUI), `build/bin/aelum-installer-cli` (CLI)
 The GUI spawns the CLI via `sudo` for all privileged operations.
 
 ## Environment Variables
 | Variable | Purpose |
 |----------|---------|
-| `AESTHETIC_DRY_RUN=1` | Simulate installation (steps sleep 200ms); also loads fake disks in `GetDisks()`/`GetDiskPartitions()`; auto-enabled when not root |
-| `AESTHETIC_START_PAGE=N` | Start on page N (0-5) for debugging (see `main.go`) |
+| `AELUM_DRY_RUN=1` | Simulate installation (steps sleep 200ms); also loads fake disks in `GetDisks()`/`GetDiskPartitions()`; auto-enabled when not root |
+| `AELUM_START_PAGE=N` | Start on page N (0-5) for debugging (see `main.go`) |
 | `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
 | `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
 | `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
@@ -184,11 +184,11 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales live in `frontend/src/translations/*.json` (28 locales); the registry/messages are in `frontend/src/lib/i18n/`. RTL is supported for Arabic (`ar-SA`) and Hebrew (`he-IL`). Backend exposes `GetUILocale()`/`SetUILocale()` for auto-detection + persistence.
 
 ## Key Patterns (Follow These)
-- **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aestheticos-installer-cli --install <disk>` and reads JSON progress from stderr.
+- **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aelum-installer-cli --install <disk>` and reads JSON progress from stderr.
 - **Direct exec for root ops**: Install steps use `Run()` (exec.Command) and `runChroot()` (arch-chroot) directly — no helper binary.
 - **InstallContext**: Shared state passed through all install steps. New fields go here, not in Installer struct.
 - **Progress tracking**: pacstrap uses line-count-based tracker in `install/progress/pacstrap.go`. Step weights in `install/step.go`.
-- **Dry run**: `AESTHETIC_DRY_RUN=1` — steps sleep 200ms instead of executing.
+- **Dry run**: `AELUM_DRY_RUN=1` — steps sleep 200ms instead of executing.
 - **Fake disks**: `FAKE_DISKS=1` — synthetic disk data for frontend dev.
 - **Rollback**: `--rollback /dev/vda` — unmounts + wipes partition signatures.
 - **Password**: CLI reads from stdin (masked in terminal, piped for automation). Never a flag.
@@ -210,7 +210,7 @@ All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales l
 ## Security
 - Passwords read from stdin (never CLI flags — avoids /proc, ps, shell history).
 - Helper runs via sudo with restricted command whitelists — never full root access.
-- Installation log at `~/.local/share/aestheticos-installer/installation.log` is not encrypted.
+- Installation log at `~/.local/share/aelum-installer/installation.log` is not encrypted.
 
 ## Desktop Environment
 Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Alacritty + Firefox + PipeWire. Boot splash: Plymouth BGRT.
@@ -230,10 +230,10 @@ Welcome (language select)
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram)
 - EFI partition: 128MB, vfat, label "EFI", type GUID `C12A7328...`
-- Root partition: rest of disk, ext4 or btrfs, label "aestheticos", type GUID `4F68BCE3...`
+- Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap` (compression: zstd)
-- Default username: `shared.DefaultCLIUsername` = "aesthetic"
-- Default hostname: `shared.DefaultHostname` = "aestheticos"
+- Default username: `shared.DefaultCLIUsername` = "aelum"
+- Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"
 - ESP mount: `shared.BootMountPoint` = "/mnt/boot"
 - Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=38`, `WeightInstallDesktop=51`, `WeightSetupUsers=2`, `WeightConfigureSystem=4`, `WeightClearCache=1`

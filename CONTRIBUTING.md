@@ -1,4 +1,4 @@
-# Contributing to AestheticOS Installer
+# Contributing to Aelum Installer
 
 Thanks for your interest in contributing! This guide covers the basics.
 

@@ -3,7 +3,7 @@ package gui
 import (
 	"testing"
 
-	"aestheticos-installer/backend/install"
+	"aelum-installer/backend/install"
 )
 
 func TestRootCheckResult_Structure(t *testing.T) {

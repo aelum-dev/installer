@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"sync/atomic"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 // PageID represents a page in the installer wizard.

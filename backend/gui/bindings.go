@@ -1,6 +1,6 @@
 package gui
 
-import "aestheticos-installer/backend/shared"
+import "aelum-installer/backend/shared"
 
 // GetDisks returns a list of available block devices. Wails binding.
 func (a *App) GetDisks() ([]shared.DiskInfo, error) {

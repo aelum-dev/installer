@@ -1,20 +1,20 @@
-// aestheticos-installer-cli is a CLI-based Arch Linux installer that performs automatic installation.
+// aelum-installer-cli is a CLI-based Arch Linux installer that performs automatic installation.
 //
 // Full installation:
 //
-//	./aestheticos-installer-cli --install /dev/vda [--dry-run]
+//	./aelum-installer-cli --install /dev/vda [--dry-run]
 //
 // Individual steps (each takes a disk path):
 //
-//	./aestheticos-installer-cli --format-disk /dev/vda
-//	./aestheticos-installer-cli --mount-filesystem /dev/vda
-//	./aestheticos-installer-cli --install-system /dev/vda
-//	./aestheticos-installer-cli --setup-users /dev/vda
-//	./aestheticos-installer-cli --configure-system /dev/vda
+//	./aelum-installer-cli --format-disk /dev/vda
+//	./aelum-installer-cli --mount-filesystem /dev/vda
+//	./aelum-installer-cli --install-system /dev/vda
+//	./aelum-installer-cli --setup-users /dev/vda
+//	./aelum-installer-cli --configure-system /dev/vda
 //
 // Password is read interactively from the terminal. For non-interactive use, pipe it via stdin:
 //
-//	echo 'mypassword' | ./aestheticos-installer-cli --install /dev/vda
+//	echo 'mypassword' | ./aelum-installer-cli --install /dev/vda
 package main
 
 import (
@@ -26,8 +26,8 @@ import (
 	"strings"
 	"syscall"
 
-	"aestheticos-installer/backend/install"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install"
+	"aelum-installer/backend/shared"
 
 	"golang.org/x/term"
 )
@@ -72,7 +72,7 @@ func run(args []string) int {
 	os.Args = args
 
 	// Create a new flag set for each run to avoid flag redefinition in tests.
-	fs := flag.NewFlagSet("aestheticos-installer-cli", flag.ContinueOnError)
+	fs := flag.NewFlagSet("aelum-installer-cli", flag.ContinueOnError)
 
 	// Set custom usage function for --help
 	fs.Usage = func() {
@@ -272,7 +272,7 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 	}
 
 	// Run full installation
-	log.Info("Installing AestheticOS to %s...", disk)
+	log.Info("Installing Aelum to %s...", disk)
 	err := installer.Install()
 	if err != nil {
 		// If interrupted by SIGINT, exit with 130 (standard POSIX signal exit code)

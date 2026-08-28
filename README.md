@@ -1,16 +1,16 @@
-# AestheticOS Installer
+# Aelum Installer
 
 ![Demo Video](media/installer-demo.mp4)
 
-A graphical installer for [AestheticOS](https://gitlab.com/aestheticos/AestheticOS), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
+A graphical installer for [Aelum](https://gitlab.com/aelum/Aelum), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
 
 Just boot the ISO and run the installer — a few clicks in the GUI, no terminal or network needed to install.
 
-## How this fits into AestheticOS
+## How this fits into Aelum
 
-This repo is the **installer** half of the AestheticOS project. The [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
+This repo is the **installer** half of the Aelum project. The [Aelum](https://gitlab.com/aelum/Aelum) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
 
-In short: **AestheticOS = the ISO**, **this repo = the software that installs AestheticOS onto your disk.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
+In short: **Aelum = the ISO**, **this repo = the software that installs Aelum onto your disk.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
 
 ## What you get
 
@@ -25,26 +25,26 @@ The first thing you'll pick is your language — there are 28 to choose from. Th
 
 ## Getting started
 
-1. Clone this repo and the [AestheticOS](https://gitlab.com/aestheticos/AestheticOS) live-ISO repo (side by side, e.g. `~/Projects/AestheticOS-Installer` and `~/Projects/AestheticOS`).
-2. Build the installer (outputs `build/bin/aestheticos-installer` and `build/bin/aestheticos-installer-cli`):
+1. Clone this repo and the [Aelum](https://gitlab.com/aelum/Aelum) live-ISO repo (side by side, e.g. `~/Projects/Aelum-Installer` and `~/Projects/Aelum`).
+2. Build the installer (outputs `build/bin/aelum-installer` and `build/bin/aelum-installer-cli`):
 
    ```bash
    ./build.sh
    ```
 
-3. Copy both binaries into the AestheticOS repo's airootfs so they're included when the ISO is rebuilt:
+3. Copy both binaries into the Aelum repo's airootfs so they're included when the ISO is rebuilt:
 
    ```bash
-   cp build/bin/aestheticos-installer build/bin/aestheticos-installer-cli ~/Projects/AestheticOS/airootfs/usr/local/bin/
+   cp build/bin/aelum-installer build/bin/aelum-installer-cli ~/Projects/Aelum/airootfs/usr/local/bin/
    ```
 
    `build.sh` can also do this for you with `BIN_DIR`, e.g.:
 
    ```bash
-   BIN_DIR=~/Projects/AestheticOS/airootfs/usr/local/bin ./build.sh
+   BIN_DIR=~/Projects/Aelum/airootfs/usr/local/bin ./build.sh
    ```
 
-4. Build the live ISO from the AestheticOS repo (this bakes the installer into the airootfs). The resulting ISO is written to `output/`.
+4. Build the live ISO from the Aelum repo (this bakes the installer into the airootfs). The resulting ISO is written to `output/`.
 5. Flash the ISO to a USB drive (or [Ventoy](https://www.ventoy.io/)), boot from it, and let the installer launch automatically.
 6. Follow the wizard: choose your language, create your account, select your disk, and confirm.
 
@@ -56,13 +56,13 @@ Prefer headless or scripted installs? The installer also ships a CLI:
 
 ```bash
 # GUI
-sudo ./build/bin/aestheticos-installer
+sudo ./build/bin/aelum-installer
 
 # CLI — full install (you'll be prompted for your password)
-sudo ./build/bin/aestheticos-installer-cli --install /dev/vda
+sudo ./build/bin/aelum-installer-cli --install /dev/vda
 
 # CLI — btrfs root instead of ext4
-sudo ./build/bin/aestheticos-installer-cli --install /dev/vda --filesystem btrfs
+sudo ./build/bin/aelum-installer-cli --install /dev/vda --filesystem btrfs
 ```
 
 ## Want to build or contribute?

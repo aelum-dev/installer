@@ -88,12 +88,12 @@ func (f *fakeFS) WriteFile(path, content string) error {
 func (f *fakeFS) Logger() Logger { return nil }
 
 func testContext() *InstallContext {
-	return &InstallContext{Username: "aesthetic"}
+	return &InstallContext{Username: "aelum"}
 }
 
 func TestSyncCreatesSymlinksToLiveConfig(t *testing.T) {
 	fs := newFakeFS()
-	home := "/home/aesthetic"
+	home := "/home/aelum"
 	fs.seedUser(home)
 
 	ctx := testContext()
@@ -101,7 +101,7 @@ func TestSyncCreatesSymlinksToLiveConfig(t *testing.T) {
 		t.Fatalf("SyncDmsGreeter: %v", err)
 	}
 
-	slot := filepath.Join("/var/cache/dms-greeter", "users", "aesthetic")
+	slot := filepath.Join("/var/cache/dms-greeter", "users", "aelum")
 	homeSettings := filepath.Join(home, ".config", "DankMaterialShell", "settings.json")
 	homeSession := filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json")
 	homeColors := filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json")
@@ -148,7 +148,7 @@ func TestSyncCreatesSymlinksEvenWhenConfigMissing(t *testing.T) {
 		t.Fatalf("SyncDmsGreeter: %v", err)
 	}
 
-	slot := filepath.Join("/var/cache/dms-greeter", "users", "aesthetic")
+	slot := filepath.Join("/var/cache/dms-greeter", "users", "aelum")
 	// Symlinks must still be created (dangling is fine) so the greeter picks up
 	// the config the moment DMS writes it after first login.
 	for _, name := range []string{"settings.json", "session.json", "colors.json"} {

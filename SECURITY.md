@@ -30,7 +30,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 The installer uses a **CLI-spawn pattern** to limit root access:
 
-- The GUI runs as root and spawns `aestheticos-installer-cli` via `sudo`
+- The GUI runs as root and spawns `aelum-installer-cli` via `sudo`
 - The CLI binary handles all privileged operations directly via `exec.Command` and `arch-chroot`
 - No separate helper binary is needed — the CLI is the privileged component
 - Passwords are read from stdin (never CLI flags) to avoid `/proc`, `ps`, and shell history exposure
@@ -50,7 +50,7 @@ On the installed system, `/etc/sudoers.d/wheel` is written for the new user:
 
 - The CLI binary requires passwordless sudo for privileged operations — ensure the sudoers rule is restricted to the CLI binary path only
 - Disk paths are validated with regex to prevent shell injection, but the CLI still runs commands as root — trust the installer binary
-- The installation log (`~/.local/share/aestheticos-installer/installation.log`) may contain sensitive information — it is not encrypted
+- The installation log (`~/.local/share/aelum-installer/installation.log`) may contain sensitive information — it is not encrypted
 - Passwords are zeroed from memory (`[]byte`) after being copied to `InstallContext` to minimize exposure time
 
 ## Responsible Disclosure Timeline

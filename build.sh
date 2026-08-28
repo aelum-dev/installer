@@ -1,5 +1,5 @@
 #!/bin/bash
-# build.sh — Build all AestheticOS Installer binaries.
+# build.sh — Build all Aelum Installer binaries.
 #
 # Usage:
 #   ./build.sh              Build only (outputs to build/bin/)
@@ -7,8 +7,8 @@
 #   BIN_DIR=/path ./build.sh      Also copy to a distro airootfs bin dir
 #
 # Outputs:
-#   build/bin/aestheticos-installer          GUI (Wails)
-#   build/bin/aestheticos-installer-cli      CLI installer
+#   build/bin/aelum-installer          GUI (Wails)
+#   build/bin/aelum-installer-cli      CLI installer
 set -e
 
 cd "$(dirname "$0")"
@@ -78,27 +78,27 @@ cd frontend && npm run build && cd ..
 # Clean previous build artifacts to avoid stale binaries
 echo "=== Cleaning previous build ==="
 mkdir -p build/bin
-rm -f build/bin/aestheticos-installer build/bin/aestheticos-installer-cli
+rm -f build/bin/aelum-installer build/bin/aelum-installer-cli
 
 echo "=== Building Go binaries with Wails ==="
 wails build -clean -tags webkit2_41
 
-echo "=== Building aestheticos-installer-cli ==="
-go build -ldflags "-X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" -o build/bin/aestheticos-installer-cli ./backend/cli
+echo "=== Building aelum-installer-cli ==="
+go build -ldflags "-X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" -o build/bin/aelum-installer-cli ./backend/cli
 
 if [ -n "$SHARED_DIR" ]; then
 	echo "=== Copying executables to ${SHARED_DIR} ==="
 	mkdir -p "$SHARED_DIR"
-	cp build/bin/aestheticos-installer "$SHARED_DIR/"
-	cp build/bin/aestheticos-installer-cli "$SHARED_DIR/"
-	chmod +x "$SHARED_DIR/aestheticos-installer" "$SHARED_DIR/aestheticos-installer-cli"
+	cp build/bin/aelum-installer "$SHARED_DIR/"
+	cp build/bin/aelum-installer-cli "$SHARED_DIR/"
+	chmod +x "$SHARED_DIR/aelum-installer" "$SHARED_DIR/aelum-installer-cli"
 fi
 
 if [ -n "$BIN_DIR" ]; then
 	echo "=== Copying executables to distro ${BIN_DIR} ==="
 	mkdir -p "$BIN_DIR"
-	cp build/bin/aestheticos-installer "$BIN_DIR/"
-	cp build/bin/aestheticos-installer-cli "$BIN_DIR/"
+	cp build/bin/aelum-installer "$BIN_DIR/"
+	cp build/bin/aelum-installer-cli "$BIN_DIR/"
 fi
 
 echo "=== Done! ==="

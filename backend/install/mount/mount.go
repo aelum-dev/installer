@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"aestheticos-installer/backend/install/primitives"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/shared"
 )
 
 // Run mounts the root partition, any btrfs subvolumes, and the EFI partition.

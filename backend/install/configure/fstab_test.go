@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 func TestGenerateExt4Fstab_Contents(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"aestheticos-installer/backend/install/greetd"
-	"aestheticos-installer/backend/install/primitives"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/greetd"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/shared"
 )
 
 // ============================================================================

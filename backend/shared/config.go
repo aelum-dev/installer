@@ -138,7 +138,7 @@ const BootMountPoint = "/mnt/boot"
 const LogFileName = "installation.log"
 
 // AppDataDir is the XDG data directory for the installer (used for frontend log path).
-const AppDataDir = ".local/share/aestheticos-installer"
+const AppDataDir = ".local/share/aelum-installer"
 
 // --- Time formats ------------------------------------------------------------
 
@@ -187,10 +187,10 @@ const MinFstabContentLengthBytes = 50
 // --- Region defaults ---------------------------------------------------------
 
 // DefaultHostname is the default system hostname.
-const DefaultHostname = "aestheticos"
+const DefaultHostname = "aelum"
 
 // DefaultCLIUsername is the default CLI installer username (test only).
-const DefaultCLIUsername = "aesthetic"
+const DefaultCLIUsername = "aelum"
 
 // --- EFI / GPT ---------------------------------------------------------------
 
@@ -256,13 +256,13 @@ const InitrdFileExtension = ".img"
 const KernelPresetName = "linux-lts"
 
 // BootEntryFileName is the name of the systemd-boot entry file (without .conf).
-const BootEntryFileName = "aestheticos"
+const BootEntryFileName = "aelum"
 
 // BootEntryTitle is the human-readable title shown in the boot menu.
-const BootEntryTitle = "Aesthetic OS"
+const BootEntryTitle = "Aelum"
 
 // BootOptionDescription is the custom description passed to bootctl install.
-const BootOptionDescription = "Aesthetic OS"
+const BootOptionDescription = "Aelum"
 
 // BootLoaderEntriesDir is the subdirectory under the ESP for boot entries.
 const BootLoaderEntriesDir = "loader/entries"

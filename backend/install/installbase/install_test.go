@@ -3,7 +3,7 @@ package installbase
 import (
 	"testing"
 
-	"aestheticos-installer/backend/install/progress"
+	"aelum-installer/backend/install/progress"
 )
 
 func TestBasePackages_NotEmpty(t *testing.T) {

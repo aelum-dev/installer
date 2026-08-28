@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"aestheticos-installer/backend/gui"
-	"aestheticos-installer/backend/install"
+	"aelum-installer/backend/gui"
+	"aelum-installer/backend/install"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -20,7 +20,7 @@ import (
 var assets embed.FS
 
 func main() {
-	dryRun := os.Getenv("AESTHETIC_DRY_RUN") == "1"
+	dryRun := os.Getenv("AELUM_DRY_RUN") == "1"
 
 	if dryRun {
 		fmt.Println("[DRY RUN MODE] Installation steps will be simulated.")
@@ -29,9 +29,9 @@ func main() {
 	// Create an instance of the app structure
 	app := gui.NewApp(dryRun)
 
-	// Set start page from AESTHETIC_START_PAGE env var (0-5) for debugging.
+	// Set start page from AELUM_START_PAGE env var (0-5) for debugging.
 	// Unset or invalid values start on the Welcome page (default).
-	if startPageStr := os.Getenv("AESTHETIC_START_PAGE"); startPageStr != "" {
+	if startPageStr := os.Getenv("AELUM_START_PAGE"); startPageStr != "" {
 		var startPage int
 		if _, err := fmt.Sscanf(startPageStr, "%d", &startPage); err == nil {
 			if err := app.SetStartPage(gui.PageID{Value: startPage}); err != nil {
@@ -79,7 +79,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "aesthetic-os-installer",
+		Title:     "aelum-installer",
 		Width:     900,
 		Height:    600,
 		MinWidth:  900,

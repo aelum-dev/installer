@@ -1,4 +1,4 @@
-# GitLab CI/CD pipeline for the AestheticOS Installer.
+# GitLab CI/CD pipeline for the Aelum Installer.
 #
 # Mirrors the previous GitHub Actions workflow (now removed) so the same
 # gates run on every push/merge request:

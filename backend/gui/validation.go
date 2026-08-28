@@ -1,8 +1,8 @@
 package gui
 
 import (
-	"aestheticos-installer/backend/shared"
-	"aestheticos-installer/backend/validation"
+	"aelum-installer/backend/shared"
+	"aelum-installer/backend/validation"
 )
 
 // ValidateUserAccount validates user account data (no state mutation).

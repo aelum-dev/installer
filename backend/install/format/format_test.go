@@ -3,7 +3,7 @@ package format
 import (
 	"testing"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 func TestRun_PartitionLayout(t *testing.T) {

@@ -8,9 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Rebranded from AestheticOS to Aelum** — project-wide rename: module path (`aelum-installer`), display name, default hostname and username (`aelum`), env vars (`AELUM_DRY_RUN`, `AELUM_START_PAGE`), ISO label (`AELUM_`), binaries (`aelum-installer`/`aelum-installer-cli`), boot-entry names, live-ISO user/home dir, all 28 frontend translations, and docs. GitLab namespace moved to `gitlab.com/aelum/*`.
 - **Migrated from GitHub to GitLab** — removed the `.github/` directory (GitHub Actions CI workflow, PR template, and issue templates) and added `.gitlab-ci.yml`, which replicates the same gates (gofmt, `go mod tidy`, frontend build, golangci-lint, `go vet`, `go test -race`, svelte-check, vitest, gitleaks). Updated README, AGENTS, SECURITY, TROUBLESHOOTING, and CONTRIBUTING docs to reference the GitLab project and use Merge Request terminology.
 - **GitLab CI golangci-lint install fixed** — golangci-lint v2.12.0 is now installed via `go install github.com/golangci/golangci-lint/v2@v2.12.0` instead of the official install.sh (whose embedded checksum verification fails on some releases). The backend job is pinned to `golang:1.25.0-bookworm` so its stdlib matches staticcheck v0.7.0's declared `go 1.25.0` requirement; Go 1.26+/1.27 rewrite `internal/poll`, which makes the IR builder panic.
-- **README simplified for release** — rewritten to focus on end users: what the installer is, a demonstration video, the desktop you get, and a concise getting-started workflow (build the installer, bake it into the AestheticOS live ISO, flash, and boot). Removed developer-only sections (project structure, build/test details, security design, step-by-step internals) now covered by AGENTS.md and the other docs.
+- **README simplified for release** — rewritten to focus on end users: what the installer is, a demonstration video, the desktop you get, and a concise getting-started workflow (build the installer, bake it into the Aelum live ISO, flash, and boot). Removed developer-only sections (project structure, build/test details, security design, step-by-step internals) now covered by AGENTS.md and the other docs.
 - **Minimum disk size reduced from 16 GiB to 8 GiB** — the on-disk swap file was removed in favor of zram (compressed RAM-based swap), so no disk space is reserved for swap. The minimum was lowered to 8 GiB (base system + desktop packages + overhead ≈ 6–7 GB). Updated `MinDiskSizeBytes`, the validation error message, and small-disk documentation.
 
 ### Fixed
@@ -35,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Cyrillic font support** — Added `nunito-v16-cyrillic-regular.woff2` to frontend assets. Browser merges Latin and Cyrillic subsets automatically, so Cyrillic text (e.g. usernames) now renders in Nunito instead of falling back to system fonts.
 - **Interactive validation hints** — UserAccountPage shows real-time checkmark icons (dark rose primary color) for each password/username requirement with smooth fade-in transitions.
-- **AppDataDir constant** — Backend constant for XDG data directory path (`~/.local/share/aestheticos-installer`).
+- **AppDataDir constant** — Backend constant for XDG data directory path (`~/.local/share/aelum-installer`).
 - **Full internationalization (i18n)** — All UI strings are now translated via `@svelte-intl/svelte-intl`. Supports 16 locales (en-US, de-DE, es-ES, fr-FR, it-IT, pt-BR, ru-RU, zh-CN, zh-TW, ja-JP, ko-KR, uk-UA, pl-PL, tr-TR, ar-SA, he-IL). German translation shipped. RTL support for Arabic and Hebrew.
 - **Fixed validation** — Restore inline error messages for username (including min-length), password, and confirmPassword fields. Added missing `< MinUsernameLength` check. All 38 frontend tests passing.
 - **Fixed i18n** — Translate `validation.passwordsMatch` key in all 26 non-EN/CN locales (was English-only).
@@ -67,13 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logging system rewritten** — Terminal output is now byte-identical to `installation.log`. A single atomic `writeLine()` path formats each message once with a full timestamp and writes the exact same bytes to both stdout and the log file. The tick goroutine no longer emits standalone progress lines during pacstrap (only updates the context), eliminating duplicate percentage lines.
 
 ### Removed
-- **Privileged helper binary** — Removed `aestheticos-helper` entirely. All privileged operations now run directly via `exec.Command` (running as root on the live ISO) or `arch-chroot` for installed-system operations. This eliminates the sudo wrapper layer, simplifies the build pipeline (one fewer binary), and removes the command whitelist/security surface area. The helper source (`backend/cmd/helper/`) and binary have been deleted.
+- **Privileged helper binary** — Removed `aelum-helper` entirely. All privileged operations now run directly via `exec.Command` (running as root on the live ISO) or `arch-chroot` for installed-system operations. This eliminates the sudo wrapper layer, simplifies the build pipeline (one fewer binary), and removes the command whitelist/security surface area. The helper source (`backend/cmd/helper/`) and binary have been deleted.
 - `FindHelper()` and `CheckRoot(helperPath)` — replaced with direct sudo checks (`sudo -n true`)
 - `HelperCmd*` constants and `runHelper()` function
 - `helperPath` field from `Installer` struct — `NewInstaller()` signature simplified
 
 ### Changed
-- **GUI now spawns CLI binary** — `StartInstallation()` spawns `sudo aestheticos-installer-cli --install <disk> --filesystem <type>` and reads JSON progress events from stderr. This ensures all privileged operations run as root via the CLI.
+- **GUI now spawns CLI binary** — `StartInstallation()` spawns `sudo aelum-installer-cli --install <disk> --filesystem <type>` and reads JSON progress events from stderr. This ensures all privileged operations run as root via the CLI.
 - `writeFile()` / `appendFile()` now use native Go `os.WriteFile` / `os.OpenFile` instead of helper commands
 - `runChroot()` now calls `arch-chroot /mnt <args...>` directly
 - `formatPartition()` uses explicit `mkfs.fat` / `mkfs.ext4` / `mkfs.btrfs` instead of generic `mkfs`
@@ -81,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ConfigureSystemBase()` uses `ln -sf` directly
 - `validateMountedSystem()` no longer checks for helper path
 - Root check now verifies `sudo -n true`
-- `build.sh` no longer builds or copies `aestheticos-helper`
+- `build.sh` no longer builds or copies `aelum-helper`
 - Integration tests updated: fake disk data includes QEMU VirtIO disk (`vda`)
 - Replaced `interrupted` flag coordination with `sync.Once` for cleanup — `RunCleanup()` is now the single entry point, called from defer, `OnBeforeClose`, SIGTERM handler, and panic recovery.
 - Renamed `Cleanup()` to `RunCleanup()` (exported) for consistency

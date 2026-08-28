@@ -1,4 +1,4 @@
-# AestheticOS Installer — Project Overview
+# Aelum Installer — Project Overview
 
 ## Live ISO vs Installed System
 
@@ -17,9 +17,9 @@
 
 ## What It Is
 
-AestheticOS Installer is a **graphical Arch Linux installer** built with [Wails v2](https://wails.io/) (Go backend + Svelte 5 frontend). It provides a step-by-step wizard to install a custom Arch Linux desktop environment ("AestheticOS") onto a target disk.
+Aelum Installer is a **graphical Arch Linux installer** built with [Wails v2](https://wails.io/) (Go backend + Svelte 5 frontend). It provides a step-by-step wizard to install a custom Arch Linux desktop environment ("Aelum") onto a target disk.
 
-It also ships a **CLI installer** (`aestheticos-installer-cli`) for headless/automated use. The GUI spawns the CLI binary via `sudo` for all privileged operations — no separate helper binary is needed.
+It also ships a **CLI installer** (`aelum-installer-cli`) for headless/automated use. The GUI spawns the CLI binary via `sudo` for all privileged operations — no separate helper binary is needed.
 
 **This is an offline installer.** All packages are pulled from the live ISO's pacman database — no network connectivity is required or used during installation.
 
@@ -81,7 +81,7 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) for headless/aut
                           │
                           ▼
               ┌──────────────────────────┐
-              │ aestheticos-installer-cli│
+              │ aelum-installer-cli│
               │ (sudo-privileged)        │
               │ • Direct exec.Command    │
               │ • arch-chroot /mnt       │
@@ -93,8 +93,8 @@ It also ships a **CLI installer** (`aestheticos-installer-cli`) for headless/aut
 
 | Binary | Purpose | Entry Point |
 |--------|---------|-------------|
-| `aestheticos-installer` | GUI wizard (Wails) | `main.go` |
-| `aestheticos-installer-cli` | CLI automated install | `backend/cli/main.go` |
+| `aelum-installer` | GUI wizard (Wails) | `main.go` |
+| `aelum-installer-cli` | CLI automated install | `backend/cli/main.go` |
 
 The GUI spawns the CLI via `sudo` — all privileged operations run inside the CLI process.
 
@@ -162,7 +162,7 @@ Welcome (language select)
 ## Key Design Decisions
 
 ### CLI Spawning Pattern
-The GUI spawns `aestheticos-installer-cli` via `sudo` for all privileged operations. The CLI runs as root and:
+The GUI spawns `aelum-installer-cli` via `sudo` for all privileged operations. The CLI runs as root and:
 - Executes system commands directly via `exec.Command`
 - Runs commands inside the installed system via `arch-chroot /mnt`
 - Emits JSON progress events to stderr (read by the GUI)
@@ -191,7 +191,7 @@ Static files from the live ISO are copied to the installed system during `SetupU
 - `/etc/greetd/hypr.lua`
 
 ### Dry Run Mode
-Set `AESTHETIC_DRY_RUN=1` environment variable to simulate installation (steps sleep 200ms instead of executing). Useful for UI testing.
+Set `AELUM_DRY_RUN=1` environment variable to simulate installation (steps sleep 200ms instead of executing). Useful for UI testing.
 
 ### Fake Disks
 Set `FAKE_DISKS=1` to get synthetic disk data for frontend development without real hardware.
@@ -216,7 +216,7 @@ Region-specific mirrorlists are embedded in the binary. A `mirrorlist_gen.go` sc
 
 - **Host**: `~/Projects/shared`
 - **VM**: `/shared` (mounted from host shared dir)
-- **ISO bin dir**: `~/Projects/AestheticOS/airootfs/usr/local/bin`
+- **ISO bin dir**: `~/Projects/Aelum/airootfs/usr/local/bin`
 - Built binaries are copied to both locations by `build.sh`
 
 ---
@@ -258,7 +258,7 @@ go test ./...          # Run all Go tests (unit + integration)
 ## Project Structure
 
 ```
-AestheticOS-Installer/
+Aelum-Installer/
 ├── main.go                      # Wails app entry point (StartPage support)
 ├── wails.json                   # Wails config
 ├── build.sh / run.sh            # Build & dev scripts
@@ -337,7 +337,7 @@ AestheticOS-Installer/
 
 ---
 
-## Desktop Environment (AestheticOS)
+## Desktop Environment (Aelum)
 
 The installed system includes:
 - **Window Manager**: Hyprland (Wayland compositor)

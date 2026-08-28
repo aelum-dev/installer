@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"aestheticos-installer/backend/install/primitives"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/shared"
 )
 
 // ============================================================================

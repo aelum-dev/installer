@@ -21,7 +21,7 @@ Complete map of how every path flows through the codebase.
 ```
 main() [main.go:31]
   │
-  ├─> dryRun = env.AESTHETIC_DRY_RUN == "1"
+  ├─> dryRun = env.AELUM_DRY_RUN == "1"
   │
   ├─> gui.NewApp(dryRun)           # Create app struct
   │
@@ -60,12 +60,12 @@ Frontend: ConfirmationPage.svelte
                       │
                       ├─> CheckRoot()  # Verify sudo access
                       │
-                      ├─> findCLIBinary()  # Locate aestheticos-installer-cli
+                      ├─> findCLIBinary()  # Locate aelum-installer-cli
                       │
                       └─> StartInstallation():
                           │
                           ├─> context.WithCancel()  # Create cancelable context
-                          ├─> exec.CommandContext(ctx, "sudo", "aestheticos-installer-cli", ...)
+                          ├─> exec.CommandContext(ctx, "sudo", "aelum-installer-cli", ...)
                           │
                           ├─> cmd.Start()  # Spawn CLI process
                           │
@@ -224,7 +224,7 @@ User closes window
       │   ├─> WaitForCleanup()  # Wait for CLI to exit
       │   └─> logger.Close()
       │
-      └─> exec.Command("sudo", "aestheticos-installer-cli", "--cleanup")
+      └─> exec.Command("sudo", "aelum-installer-cli", "--cleanup")
           └─> CleanupMounts(logger, "")  # Fallback: unmount /mnt
 ```
 
@@ -521,6 +521,6 @@ type InstallContext struct {
 
 - **No cancel button in frontend** — user can only cancel via Ctrl+C or window close
 - **Password never in flags** — read from stdin (masked in terminal)
-- **GUI runs as normal user** — all privileged ops via `sudo aestheticos-installer-cli`
+- **GUI runs as normal user** — all privileged ops via `sudo aelum-installer-cli`
 - **CLI signal handler works even when launched by GUI** — signal is sent to specific PID, not process group
 - **exec.CommandContext cancel is NOT used in CancelInstallation()** — would SIGKILL before cleanup

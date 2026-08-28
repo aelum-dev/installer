@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 // TestMain overrides simulateStep to use 100ms per step instead of the real duration.

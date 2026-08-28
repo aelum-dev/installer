@@ -1,14 +1,14 @@
 package install
 
 import (
-	"aestheticos-installer/backend/install/clearcache"
-	"aestheticos-installer/backend/install/configure"
-	"aestheticos-installer/backend/install/format"
-	"aestheticos-installer/backend/install/installbase"
-	"aestheticos-installer/backend/install/installdesktop"
-	"aestheticos-installer/backend/install/mount"
-	"aestheticos-installer/backend/install/users"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/clearcache"
+	"aelum-installer/backend/install/configure"
+	"aelum-installer/backend/install/format"
+	"aelum-installer/backend/install/installbase"
+	"aelum-installer/backend/install/installdesktop"
+	"aelum-installer/backend/install/mount"
+	"aelum-installer/backend/install/users"
+	"aelum-installer/backend/shared"
 )
 
 // Step defines a single installation step.

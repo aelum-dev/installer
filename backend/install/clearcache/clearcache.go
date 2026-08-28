@@ -3,8 +3,8 @@ package clearcache
 import (
 	"os"
 
-	"aestheticos-installer/backend/install/primitives"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/shared"
 )
 
 // Run clears the pacman package cache in the installed system.

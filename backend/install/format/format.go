@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"aestheticos-installer/backend/install/primitives"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/shared"
 )
 
 // Run partitions and formats the target disk, then stores partition info
@@ -187,9 +187,9 @@ func formatPartition(diskID string, num int, p struct {
 	case shared.FileSystemVfat:
 		cmd = primitives.Run("mkfs.fat", "-F", "32", "-n", "EFI", path)
 	case shared.FileSystemExt4:
-		cmd = primitives.Run("mkfs.ext4", "-F", "-E", "lazy_itable_init=0", "-L", "aestheticos", path)
+		cmd = primitives.Run("mkfs.ext4", "-F", "-E", "lazy_itable_init=0", "-L", "aelum", path)
 	case shared.FileSystemBtrfs:
-		cmd = primitives.Run("mkfs.btrfs", "-f", "-L", "aestheticos", path)
+		cmd = primitives.Run("mkfs.btrfs", "-f", "-L", "aelum", path)
 	default:
 		return fmt.Errorf("unsupported filesystem: %s", p.Fstype)
 	}

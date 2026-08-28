@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"aestheticos-installer/backend/install/primitives"
-	"aestheticos-installer/backend/install/progress"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/install/progress"
+	"aelum-installer/backend/shared"
 )
 
 // basePackages are the essential system packages installed during the base

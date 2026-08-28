@@ -1,8 +1,8 @@
 package installdesktop
 
 import (
-	"aestheticos-installer/backend/install/installbase"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install/installbase"
+	"aelum-installer/backend/shared"
 )
 
 // desktopPackages are user-space packages installed during the desktop

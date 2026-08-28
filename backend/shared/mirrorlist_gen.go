@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"os"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 func main() {

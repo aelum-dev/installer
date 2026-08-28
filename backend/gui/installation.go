@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -27,19 +27,19 @@ type InstallationProgress struct {
 	Phase   string `json:"phase"` // "running" | "done" | "error"
 }
 
-// findCLIBinary locates the aestheticos-installer-cli binary.
+// findCLIBinary locates the aelum-installer-cli binary.
 func findCLIBinary() string {
 	if exe, err := os.Executable(); err == nil {
-		if p := filepath.Join(filepath.Dir(exe), "aestheticos-installer-cli"); fileExists(p) {
+		if p := filepath.Join(filepath.Dir(exe), "aelum-installer-cli"); fileExists(p) {
 			return p
 		}
 	}
 	for _, dir := range []string{"/usr/local/bin", "/usr/bin", "."} {
-		if p := filepath.Join(dir, "aestheticos-installer-cli"); fileExists(p) {
+		if p := filepath.Join(dir, "aelum-installer-cli"); fileExists(p) {
 			return p
 		}
 	}
-	return "aestheticos-installer-cli"
+	return "aelum-installer-cli"
 }
 
 func fileExists(path string) bool {

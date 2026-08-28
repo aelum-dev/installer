@@ -1,4 +1,4 @@
-module aestheticos-installer
+module aelum-installer
 
 go 1.25.0
 

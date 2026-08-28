@@ -3,7 +3,7 @@ package install
 import (
 	"testing"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 func TestInstaller_StepNames(t *testing.T) {

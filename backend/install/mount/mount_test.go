@@ -3,7 +3,7 @@ package mount
 import (
 	"testing"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 func TestRun_ContextValidation(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 // ============================================================================

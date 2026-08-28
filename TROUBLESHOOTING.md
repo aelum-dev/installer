@@ -7,7 +7,7 @@ Common issues and how to resolve them.
 The installer writes a detailed log to:
 
 ```
-~/.local/share/aestheticos-installer/installation.log
+~/.local/share/aelum-installer/installation.log
 ```
 
 On the live ISO, the path is:
@@ -34,13 +34,13 @@ On the live ISO, the path is:
 
 ```bash
 # Last 50 lines
-tail -50 ~/.local/share/aestheticos-installer/installation.log
+tail -50 ~/.local/share/aelum-installer/installation.log
 
 # Search for errors
-grep -i "error\|failed" ~/.local/share/aestheticos-installer/installation.log
+grep -i "error\|failed" ~/.local/share/aelum-installer/installation.log
 
 # See only a specific step
-sed -n '/Starting step: Formatting disk/,/Starting step: Mounting filesystem/p' ~/.local/share/aestheticos-installer/installation.log
+sed -n '/Starting step: Formatting disk/,/Starting step: Mounting filesystem/p' ~/.local/share/aelum-installer/installation.log
 ```
 
 ## Common Failures
@@ -59,7 +59,7 @@ mount | grep /dev/sda
 sudo umount -R /mnt 2>/dev/null
 
 # Try rollback to clean up
-sudo ./aestheticos-installer-cli --rollback /dev/sda
+sudo ./aelum-installer-cli --rollback /dev/sda
 ```
 
 ### "pacstrap failed" / "no mirror list available"
@@ -90,7 +90,7 @@ efibootmgr --version
 
 **Fix**: Run the format step first:
 ```bash
-./aestheticos-installer-cli --format-disk /dev/sda
+./aelum-installer-cli --format-disk /dev/sda
 ```
 
 ### Rollback Leaves Disk in Unknown State
@@ -127,16 +127,16 @@ If an installation is partially complete and you want to start fresh:
 
 ```bash
 # 1. Roll back the disk
-sudo ./aestheticos-installer-cli --rollback /dev/sda
+sudo ./aelum-installer-cli --rollback /dev/sda
 
 # 2. Verify it's clean
 lsblk /dev/sda
 # Should show partitions but no mountpoints
 
 # 3. Re-run installation (password entered interactively)
-sudo ./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
+sudo ./aelum-installer-cli --install /dev/sda --filesystem btrfs
 # Or pipe it for non-interactive use:
-# echo 'mypassword' | sudo ./aestheticos-installer-cli --install /dev/sda --filesystem btrfs
+# echo 'mypassword' | sudo ./aelum-installer-cli --install /dev/sda --filesystem btrfs
 ```
 
 ## Reporting Bugs
@@ -145,11 +145,11 @@ When reporting a bug, include:
 
 1. **What you expected** vs **what actually happened**
 2. **Steps to reproduce** (exact commands, disk type, filesystem choice)
-3. **Log file** — attach `~/.local/share/aestheticos-installer/installation.log`
+3. **Log file** — attach `~/.local/share/aelum-installer/installation.log`
 4. **Environment**:
    - Live ISO version
    - Target disk model and size
    - Filesystem selected (ext4 / btrfs)
    - Any custom flags used
 
-Report issues on [GitLab](https://gitlab.com/aestheticos/installer/-/issues).
+Report issues on [GitLab](https://gitlab.com/aelum/installer/-/issues).

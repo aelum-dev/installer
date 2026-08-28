@@ -50,7 +50,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - aestheticos-installer
+        - aelum-installer
 
 issues:
   max-issues-per-linter: 0

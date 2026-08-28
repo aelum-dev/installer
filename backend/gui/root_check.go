@@ -3,7 +3,7 @@ package gui
 import (
 	"os/exec"
 
-	"aestheticos-installer/backend/install"
+	"aelum-installer/backend/install"
 )
 
 // CheckRoot verifies that passwordless sudo is available.

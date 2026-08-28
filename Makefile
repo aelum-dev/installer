@@ -1,4 +1,4 @@
-# AestheticOS Installer — Makefile
+# Aelum Installer — Makefile
 #
 # Targets:
 #   make build      Build all binaries (go test + build.sh)

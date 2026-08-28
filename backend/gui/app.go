@@ -7,8 +7,8 @@ import (
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"aestheticos-installer/backend/install"
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/install"
+	"aelum-installer/backend/shared"
 )
 
 // NewApp creates a new App application struct

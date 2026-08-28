@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"aestheticos-installer/backend/shared"
+	"aelum-installer/backend/shared"
 )
 
 // InstallationProgress is emitted as an event to the frontend.
