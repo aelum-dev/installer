@@ -46,6 +46,53 @@ On the installed system, `/etc/sudoers.d/wheel` is written for the new user:
 %wheel ALL=(ALL:ALL) ALL
 ```
 
+## ISO Build & Download Trust Model
+
+The Aelum live ISO is built to run **fully offline**, and that design choice has
+security implications worth stating explicitly.
+
+### Build-time package trust
+
+- The ISO is assembled by `docker/build.sh` inside a privileged `archlinux`
+  container. Official packages are downloaded with `pacman -Syw` into an embedded
+  offline mirror (`airootfs/var/cache/aelum/offline-mirror/`), and AUR packages
+  are compiled from source via `makepkg`.
+- During the offline build, `SigLevel` is set to `Never` in
+  `live-iso/pacman-offline.conf`. This is intentional: the mirror is a fixed,
+  snapshot bundle, and enforcing signature verification against the live Arch
+  keyring would require network access — which the offline build must not have.
+- AUR packages are cloned directly from `aur.archlinux.org` and built with
+  `--skipinteg`, so their integrity is not cryptographically verified at build
+  time. Trust is placed in the upstream package names and in the pinned
+  installer/live-iso commit the build clones.
+
+### Post-install network trust
+
+Once installed, the system is a normal Arch machine. The installer writes a
+per-region `mirrorlist` (see `installer/backend/shared/mirrorlist/`) so future
+online updates resolve against official Arch mirrors with their normal
+signature enforcement. The offline `SigLevel = Never` applies **only** to the
+build-time mirror, never to the installed system.
+
+### Verifying a released ISO
+
+ISOs are published to Cloudflare R2 (too large for GitLab releases) and linked
+from the website. Each release ships:
+
+- `SHA-256` and `SHA-512` checksum files
+- a detached ASCII-armored GPG signature (`.asc`)
+
+Use `docker/make-release.sh` to generate these artifacts locally before upload.
+Users can verify a download with:
+
+```sh
+sha256sum -c aelum-*-x86_64.iso.sha256
+gpg --verify aelum-*-x86_64.iso.asc aelum-*-x86_64.iso
+```
+
+The maintainer's public signing key is published alongside releases; pin and
+verify it before trusting a signature.
+
 ## Known Security Considerations
 
 - The CLI binary requires passwordless sudo for privileged operations — ensure the sudoers rule is restricted to the CLI binary path only
