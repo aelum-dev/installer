@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -48,6 +49,7 @@ const (
 // using the same timestamp. Terminal output is byte-identical to the log.
 // Progress state is accessed atomically so no mutex is needed.
 type ConsoleLogger struct {
+	logFileOnce     sync.Once
 	logFile         *os.File
 	progressLabel   atomic.Pointer[string]
 	progressPercent atomic.Int32
@@ -58,16 +60,17 @@ func NewConsoleLogger() *ConsoleLogger {
 }
 
 func (l *ConsoleLogger) getLogFile() *os.File {
-	if l.logFile != nil {
-		return l.logFile
-	}
-	logPath := GetLogPath()
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, LogFileMode)
-	if err != nil {
-		return nil
-	}
-	l.logFile = f
-	return f
+	// Lazy-open the log file exactly once, safely under concurrent access
+	// (the command scanner, progress tick goroutine, and main updater all
+	// call writeLine -> getLogFile simultaneously). sync.Once removes the
+	// data race on the logFile field that a bare nil check had.
+	l.logFileOnce.Do(func() {
+		logPath := GetLogPath()
+		if f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, LogFileMode); err == nil {
+			l.logFile = f
+		}
+	})
+	return l.logFile
 }
 
 // Close closes the log file.

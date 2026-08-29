@@ -48,9 +48,12 @@ func WriteFile(targetPath string, content string) error {
 
 // AppendFile appends content to a file inside the installed system.
 // targetPath should be absolute path inside the chroot (e.g., "/etc/vconsole.conf").
-// If the path already starts with MountRoot, it is used as-is.
+// MountRoot is the installed-system mount point, so chroot-relative paths get
+// it prepended. Paths already under MountRoot (e.g. ESP files at /mnt/boot/...)
+// are used as-is.
 func AppendFile(targetPath string, content string) error {
-	// Prepend mount root for chroot-relative paths, but leave host paths as-is
+	// Prepend mount root for chroot-relative paths, but leave paths already
+	// under MountRoot (e.g. ESP files at /mnt/boot/...) as-is.
 	hostPath := targetPath
 	if !strings.HasPrefix(targetPath, shared.MountRoot) {
 		hostPath = shared.MountRoot + targetPath

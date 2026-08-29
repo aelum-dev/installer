@@ -374,6 +374,9 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 		return fmt.Errorf("failed to read locale.gen: %w", err)
 	}
 	localeGenContent := strings.Replace(string(data), "#"+region.Locale, region.Locale, 1)
+	if localeGenContent == string(data) {
+		return fmt.Errorf("locale %q not found (commented out) in /etc/locale.gen; cannot generate it", region.Locale)
+	}
 	if err := primitives.WriteFile("/etc/locale.gen", localeGenContent); err != nil {
 		return err
 	}

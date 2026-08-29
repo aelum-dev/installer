@@ -231,7 +231,7 @@ Welcome (language select)
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram)
 - EFI partition: 128MB, vfat, label "EFI", type GUID `C12A7328...`
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
-- Btrfs subvolumes: `@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap` (compression: zstd)
+- Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Default username: `shared.DefaultCLIUsername` = "aelum"
 - Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"

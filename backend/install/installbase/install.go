@@ -151,6 +151,8 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 		// Cleanup is handled by the Installer's defer, not here.
 		_ = cmd.Process.Kill()
 		<-scanDone
+		// Reap the killed child so it does not linger as a zombie.
+		_ = cmd.Wait()
 		return fmt.Errorf("interrupted")
 	}
 }

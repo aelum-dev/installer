@@ -30,7 +30,7 @@ It also ships a **CLI installer** (`aelum-installer-cli`) for headless/automated
 | Layer | Technology |
 |-------|-----------|
 | **GUI Framework** | [Wails v2](https://wails.io/) (Go + WebView2/WebKit) |
-| **Backend** | Go 1.25 |
+| **Backend** | Go 1.26 |
 | **Frontend** | Svelte 5 (TypeScript), Vite, Tailwind-like CSS variables |
 | **Target OS** | Arch Linux (installed via `pacstrap`) |
 | **Desktop** | Hyprland + DankMaterialShell (based on Quickshell) + DMS Greeter (greetd) |
@@ -200,7 +200,7 @@ Set `FAKE_DISKS=1` to get synthetic disk data for frontend development without r
 The installer supports starting on any page via the `StartPage` constant in `main.go` (0=Welcome, 1=User Account, etc.). Set to `-1` for default Welcome page. The GUI exposes `GetStartPage()` and `SetStartPage()` Wails bindings.
 
 ### btrfs Subvolumes
-When btrfs is selected, 7 subvolumes are created: `@`, `@home`, `@srv`, `@cache`, `@tmp`, `@log`, `@swap`. Each has configurable compression (zstd) and mount options. `@` is set as default. `@cache`, `@tmp`, `@swap` use `nodatacow` to avoid CoW overhead.
+When btrfs is selected, 6 subvolumes are created: `@` (default), `@home`, `@srv`, `@cache`, `@tmp`, `@log`. Each has configurable compression (zstd) and mount options. `@` is set as default. `@cache` and `@tmp` use `nodatacow` to avoid CoW overhead. Swap is provided by zram, not a subvolume.
 
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:

@@ -47,7 +47,11 @@ func main() {
 	// handler prints "shutting down" and hangs because the Wails WebView can't
 	// tear down gracefully.
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// Catch SIGINT (Ctrl+C), SIGTERM (WM close / killactive) and SIGHUP
+	// (terminal hangup) so we can run cleanup before exiting. Without this,
+	// the Go runtime's default handler prints "shutting down" and hangs
+	// because the Wails WebView can't tear down gracefully.
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
 		<-sigChan
 		fmt.Println("\nInterrupted — cancelling installation...")
@@ -73,9 +77,6 @@ func main() {
 		install.GetLogger().Close()
 		os.Exit(0)
 	}()
-
-	// Also catch SIGHUP (terminal hangup) for completeness.
-	signal.Notify(sigChan, syscall.SIGHUP)
 
 	// Create application with options
 	err := wails.Run(&options.App{

@@ -226,8 +226,9 @@ func setupBtrfsSubvolumes(ctx *shared.InstallContext, diskID string, subvolumes 
 	}
 	var targetID string
 	for _, line := range strings.Split(strings.TrimSpace(string(listOut)), "\n") {
-		prefix := "path @\n"
-		if strings.HasSuffix(line+"\n", prefix) {
+		// btrfs subvolume list emits lines like "ID 258 gen ... top level 5 path @".
+		// Match the subvolume whose path is exactly "@" and take its ID (field 1).
+		if strings.HasSuffix(strings.TrimSpace(line), "path @") {
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
 				targetID = fields[1]

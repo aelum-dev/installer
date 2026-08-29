@@ -71,12 +71,13 @@ func ConfigureGreetd(exec Executor, ctx *InstallContext) error {
 		return err
 	}
 
-	// Step 3: Sync DMS greeter
+	// Step 3: Sync DMS greeter.
+	// Fail loudly if this errors: a silently broken greeter (missing ACLs, home
+	// not ready, etc.) leaves the user at a login screen with no working theme,
+	// which is worse than a clear install failure they can act on.
 	if ctx.Username != "" {
 		if err := SyncDmsGreeter(exec, ctx); err != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Failed to sync DMS greeter: %v (user can run 'dms greeter sync' later)", err)
-			}
+			return fmt.Errorf("failed to sync DMS greeter: %w", err)
 		}
 	}
 

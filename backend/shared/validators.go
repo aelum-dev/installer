@@ -97,7 +97,7 @@ func ValidateDiskSelection(data DiskSelectionData) error {
 	var sizeBytes uint64
 	fmt.Sscanf(data.Size, "%d", &sizeBytes) //nolint:errcheck // format is validated before calling
 	if sizeBytes < MinDiskSizeBytes {
-		return fmt.Errorf("selected disk is too small. minimum 16 GB required")
+		return fmt.Errorf("selected disk is too small. minimum 8 GiB required")
 	}
 	if data.FileSystem == "" {
 		return fmt.Errorf("please select a filesystem")
