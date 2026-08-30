@@ -28,6 +28,7 @@
 		'Setting up users': 'step.setupUsers',
 		'Configuring system': 'step.configuringSystem',
 		'Clearing package cache': 'step.clearingCache',
+		'Verifying system': 'step.verifyingSystem',
 	};
 
 	function translateStepLabel(rawLabel: string): string {
