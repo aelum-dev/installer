@@ -70,6 +70,7 @@
   "step.setupUsers": "...מגדיר משתמשים",
   "step.configuringSystem": "...מגדיר מערכת",
   "step.clearingCache": "...מנקה מטמון חבילות",
+  "step.verifyingSystem": "מאמת את המערכת...",
   "validation.serial": "מספר סידורי",
   "disk.name": "שם",
   "disk.type": "סוג",

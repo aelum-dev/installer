@@ -70,6 +70,7 @@
   "step.setupUsers": "Setter opp brukere...",
   "step.configuringSystem": "Konfigurerer system...",
   "step.clearingCache": "Tømmer pakkebuffer...",
+  "step.verifyingSystem": "Verifiserer systemet...",
   "validation.serial": "Serienummer",
   "disk.name": "Navn",
   "disk.type": "Type",

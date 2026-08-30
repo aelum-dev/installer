@@ -70,6 +70,7 @@
   "step.setupUsers": "Menyiapkan pengguna...",
   "step.configuringSystem": "Mengonfigurasi sistem...",
   "step.clearingCache": "Membersihkan cache paket...",
+  "step.verifyingSystem": "Memverifikasi sistem...",
   "validation.serial": "Nomor seri",
   "disk.name": "Nama",
   "disk.type": "Tipe",

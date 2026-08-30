@@ -70,6 +70,7 @@
   "step.setupUsers": "Määritetään käyttäjiä...",
   "step.configuringSystem": "Määritetään järjestelmää...",
   "step.clearingCache": "Tyhjennetään pakettivälimuistia...",
+  "step.verifyingSystem": "Varmistetaan järjestelmää...",
   "validation.serial": "Sarjanumero",
   "disk.name": "Nimi",
   "disk.type": "Tyyppi",

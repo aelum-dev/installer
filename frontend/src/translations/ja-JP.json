@@ -70,6 +70,7 @@
   "step.setupUsers": "ユーザーを設定中...",
   "step.configuringSystem": "システムを構成中...",
   "step.clearingCache": "パッケージキャッシュをクリア中...",
+  "step.verifyingSystem": "システムを確認中...",
   "validation.serial": "シリアル番号",
   "disk.name": "名前",
   "disk.type": "種類",

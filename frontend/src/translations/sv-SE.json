@@ -70,6 +70,7 @@
   "step.setupUsers": "Ställer in användare...",
   "step.configuringSystem": "Konfigurerar system...",
   "step.clearingCache": "Rensar paketcache...",
+  "step.verifyingSystem": "Verifierar systemet...",
   "validation.serial": "Serienummer",
   "disk.name": "Namn",
   "disk.type": "Typ",

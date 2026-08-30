@@ -70,6 +70,7 @@
   "step.setupUsers": "Agordante uzantojn...",
   "step.configuringSystem": "Agordante sistemon...",
   "step.clearingCache": "Purigante pakaĵan kaŝmemoron...",
+  "step.verifyingSystem": "Verifante la sistemon...",
   "validation.serial": "Seri numero",
   "disk.name": "Nomo",
   "disk.type": "Tipo",

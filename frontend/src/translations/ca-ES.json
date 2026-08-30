@@ -70,6 +70,7 @@
   "step.setupUsers": "S'estan configurant els usuaris...",
   "step.configuringSystem": "S'està configurant el sistema...",
   "step.clearingCache": "S'està netejant la memòria cau dels paquets...",
+  "step.verifyingSystem": "Verificant el sistema...",
   "validation.serial": "Número de sèrie",
   "disk.name": "Nom",
   "disk.type": "Tipus",

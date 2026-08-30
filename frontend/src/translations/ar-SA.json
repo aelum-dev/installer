@@ -70,6 +70,7 @@
   "step.setupUsers": "...جاري إعداد المستخدمين",
   "step.configuringSystem": "...جاري تكوين النظام",
   "step.clearingCache": "...جاري مسح ذاكرة التخزين المؤقت للحزم",
+  "step.verifyingSystem": "جارٍ التحقق من النظام...",
   "validation.serial": "الرقم التسلسلي",
   "disk.name": "الاسم",
   "disk.type": "النوع",

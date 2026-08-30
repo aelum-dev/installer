@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Installed system verification step** — added a `verify_system` step (weight 1) appended after `clear_cache`, running as part of `Install()`. It is read-only and fast (well under a second): it verifies fstab (root/EFI UUIDs), kernel + initrd images on the ESP, required packages via targeted `pacman -Q` queries, the user account, and the hostname, logging every check and returning a combined error listing all problems. Step weights rebalanced (`WeightInstallBase` 38→37, `WeightInstallDesktop` 51→50) so the total stays at 100.
+- **Added translation for "Verifying system" step** — `step.verifyingSystem` key added to all 28 locale files (ar-SA, bg-BG, ca-ES, de-DE, el-GR, eo, es-ES, fa-IR, fi-FI, fr-FR, he-IL, hu-HU, id-ID, it-IT, ja-JP, ko-KR, nb-NO, nl-NL, pl-PL, pt-BR, ru-RU, sv-SE, tr-TR, uk-UA, vi-VN, zh-CN, zh-TW).
 - **greetd sync tests** — in-memory fake-filesystem tests covering path resolution, missing-config `{}` fallbacks, per-user slot copies, and wallpaper path rewriting.
 
 ### Fixed

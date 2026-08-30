@@ -70,6 +70,7 @@
   "step.setupUsers": "...در حال تنظیم کاربران",
   "step.configuringSystem": "...در حال پیکربندی سیستم",
   "step.clearingCache": "...در حال پاک کردن حافظه پنهان بسته‌ها",
+  "step.verifyingSystem": "در حال بررسی سیستم...",
   "validation.serial": "شماره سریال",
   "disk.name": "نام",
   "disk.type": "نوع",

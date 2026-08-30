@@ -70,6 +70,7 @@
   "step.setupUsers": "正在設定使用者...",
   "step.configuringSystem": "正在設定系統...",
   "step.clearingCache": "正在清除套件快取...",
+  "step.verifyingSystem": "正在驗證系統...",
   "validation.serial": "序列號",
   "disk.name": "名稱",
   "disk.type": "類型",

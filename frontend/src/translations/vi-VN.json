@@ -70,6 +70,7 @@
   "step.setupUsers": "Đang thiết lập người dùng...",
   "step.configuringSystem": "Đang cấu hình hệ thống...",
   "step.clearingCache": "Đang xóa bộ nhớ đệm gói...",
+  "step.verifyingSystem": "Đang xác minh hệ thống...",
   "validation.serial": "Số serial",
   "disk.name": "Tên",
   "disk.type": "Loại",

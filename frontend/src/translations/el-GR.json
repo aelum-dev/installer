@@ -70,6 +70,7 @@
   "step.setupUsers": "Ρύθμιση χρηστών...",
   "step.configuringSystem": "Ρύθμιση συστήματος...",
   "step.clearingCache": "Καθαρισμός προσωρινής μνήμας πακέτων...",
+  "step.verifyingSystem": "Έλεγχος συστήματος...",
   "validation.serial": "Σειριακός αριθμός",
   "disk.name": "Όνομα",
   "disk.type": "Τύπος",

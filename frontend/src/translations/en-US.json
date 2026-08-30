@@ -74,6 +74,7 @@
   "step.setupUsers": "Setting up users...",
   "step.configuringSystem": "Configuring system...",
   "step.clearingCache": "Clearing package cache...",
+  "step.verifyingSystem": "Verifying system...",
   "validation.serial": "Serial",
   "disk.name": "Name",
   "disk.type": "Type",

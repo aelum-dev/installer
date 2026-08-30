@@ -70,6 +70,7 @@
   "step.setupUsers": "Настройка на потребители...",
   "step.configuringSystem": "Конфигуриране на система...",
   "step.clearingCache": "Изчистване на кеша на пакетите...",
+  "step.verifyingSystem": "Проверка на системата...",
   "validation.serial": "Сериен номер",
   "disk.name": "Име",
   "disk.type": "Тип",

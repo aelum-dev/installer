@@ -70,6 +70,7 @@
   "step.setupUsers": "Felhasználók beállítása...",
   "step.configuringSystem": "Rendszer konfigurálása...",
   "step.clearingCache": "Csomag gyorsítótár törlése...",
+  "step.verifyingSystem": "A rendszer ellenőrzése...",
   "validation.serial": "Sorozatszám",
   "disk.name": "Név",
   "disk.type": "Típus",

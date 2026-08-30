@@ -70,6 +70,7 @@
   "step.setupUsers": "Kullanıcılar ayarlanıyor...",
   "step.configuringSystem": "Sistem yapılandırılıyor...",
   "step.clearingCache": "Paket önbelleği temizleniyor...",
+  "step.verifyingSystem": "Sistem doğrulanıyor...",
   "validation.serial": "Seri numarası",
   "disk.name": "Ad",
   "disk.type": "Tür",

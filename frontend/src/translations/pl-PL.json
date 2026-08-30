@@ -70,6 +70,7 @@
   "step.setupUsers": "Konfigurowanie użytkowników...",
   "step.configuringSystem": "Konfigurowanie systemu...",
   "step.clearingCache": "Wyczyść pamięć podręczną pakietów...",
+  "step.verifyingSystem": "Weryfikacja systemu...",
   "validation.serial": "Numer seryjny",
   "disk.name": "Nazwa",
   "disk.type": "Typ",
