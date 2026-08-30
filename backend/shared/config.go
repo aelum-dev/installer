@@ -290,10 +290,10 @@ const WeightFormatDisk = 3
 const WeightMountFilesystem = 2
 
 // WeightInstallBase is the weight for the base system pacstrap step.
-const WeightInstallBase = 38
+const WeightInstallBase = 37
 
 // WeightInstallDesktop is the weight for the desktop environment pacstrap step.
-const WeightInstallDesktop = 51
+const WeightInstallDesktop = 50
 
 // WeightSetupUsers is the weight for the user setup step.
 const WeightSetupUsers = 2
@@ -303,6 +303,9 @@ const WeightConfigureSystem = 4
 
 // WeightClearCache is the weight for the cache clearing step.
 const WeightClearCache = 1
+
+// WeightVerifySystem is the weight for the installed-system verification step.
+const WeightVerifySystem = 1
 
 // --- Wallpapers -------------------------------------------------------------
 

@@ -5,8 +5,8 @@ import (
 )
 
 func TestDesktopPackages_NotEmpty(t *testing.T) {
-	if len(desktopPackages) == 0 {
-		t.Error("expected non-empty desktopPackages")
+	if len(DesktopPackages) == 0 {
+		t.Error("expected non-empty DesktopPackages")
 	}
 }
 
@@ -14,14 +14,14 @@ func TestDesktopPackages_ContainsEssential(t *testing.T) {
 	expected := []string{"hyprland", "greetd", "alacritty", "firefox"}
 	for _, pkg := range expected {
 		found := false
-		for _, p := range desktopPackages {
+		for _, p := range DesktopPackages {
 			if p == pkg {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("expected desktopPackages to contain %q", pkg)
+			t.Errorf("expected DesktopPackages to contain %q", pkg)
 		}
 	}
 }

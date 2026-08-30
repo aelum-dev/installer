@@ -8,6 +8,7 @@ import (
 	"aelum-installer/backend/install/installdesktop"
 	"aelum-installer/backend/install/mount"
 	"aelum-installer/backend/install/users"
+	"aelum-installer/backend/install/verify"
 	"aelum-installer/backend/shared"
 )
 
@@ -41,6 +42,7 @@ func Steps() []Step {
 		&stepFunc{"setup_users", "Setting up users", users.Run},
 		&stepFunc{"configure_system", "Configuring system", configure.Run},
 		&stepFunc{"clear_cache", "Clearing package cache", clearcache.Run},
+		&stepFunc{"verify_system", "Verifying system", verify.Run},
 	}
 }
 
@@ -54,5 +56,6 @@ func stepWeights() []int {
 		shared.WeightSetupUsers,
 		shared.WeightConfigureSystem,
 		shared.WeightClearCache,
+		shared.WeightVerifySystem,
 	}
 }

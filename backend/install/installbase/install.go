@@ -14,7 +14,7 @@ import (
 // basePackages are the essential system packages installed during the base
 // system step. Kept minimal so this step finishes quickly and the progress
 // bar moves smoothly.
-var basePackages = []string{
+var BasePackages = []string{
 	// Base system
 	"base",
 	"linux-lts",
@@ -47,7 +47,7 @@ var basePackages = []string{
 
 // Run installs the Arch Linux base system via pacstrap.
 func Run(ctx *shared.InstallContext) error {
-	return InstallPackages(ctx, basePackages, "base system")
+	return InstallPackages(ctx, BasePackages, "base system")
 }
 
 // InstallPackages runs pacstrap with the given package list.

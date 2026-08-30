@@ -8,7 +8,7 @@ import (
 // desktopPackages are user-space packages installed during the desktop
 // environment step. Split from basePackages so the install progress bar
 // moves smoothly instead of stalling during the long pacstrap call.
-var desktopPackages = []string{
+var DesktopPackages = []string{
 	// Boot splash
 	"plymouth",
 
@@ -68,5 +68,5 @@ var desktopPackages = []string{
 
 // Run installs desktop environment packages via pacstrap.
 func Run(ctx *shared.InstallContext) error {
-	return installbase.InstallPackages(ctx, desktopPackages, "desktop environment")
+	return installbase.InstallPackages(ctx, DesktopPackages, "desktop environment")
 }

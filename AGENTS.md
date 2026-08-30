@@ -150,15 +150,16 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
   run.sh                        — Run script
 ```
 
-## Installation Steps (7 top-level)
+## Installation Steps (8 top-level)
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` (`install/mount/`)
-3. **InstallBase** (weight 38) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, line-count progress, `install/installbase/`)
-4. **InstallDesktop** (weight 51) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
+3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, line-count progress, `install/installbase/`)
+4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
+8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs), kernel + initrd on the ESP, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
 
 ## Build & Test
 ```bash
@@ -236,4 +237,4 @@ Welcome (language select)
 - Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"
 - ESP mount: `shared.BootMountPoint` = "/mnt/boot"
-- Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=38`, `WeightInstallDesktop=51`, `WeightSetupUsers=2`, `WeightConfigureSystem=4`, `WeightClearCache=1`
+- Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=37`, `WeightInstallDesktop=50`, `WeightSetupUsers=2`, `WeightConfigureSystem=4`, `WeightClearCache=1`, `WeightVerifySystem=1` (total 100)

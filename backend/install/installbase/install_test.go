@@ -7,8 +7,8 @@ import (
 )
 
 func TestBasePackages_NotEmpty(t *testing.T) {
-	if len(basePackages) == 0 {
-		t.Error("expected non-empty basePackages")
+	if len(BasePackages) == 0 {
+		t.Error("expected non-empty BasePackages")
 	}
 }
 
@@ -16,14 +16,14 @@ func TestBasePackages_ContainsEssential(t *testing.T) {
 	expected := []string{"base", "linux-lts", "linux-firmware"}
 	for _, pkg := range expected {
 		found := false
-		for _, p := range basePackages {
+		for _, p := range BasePackages {
 			if p == pkg {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("expected basePackages to contain %q", pkg)
+			t.Errorf("expected BasePackages to contain %q", pkg)
 		}
 	}
 }

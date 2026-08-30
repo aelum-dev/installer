@@ -58,8 +58,8 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 
 	// Last event should be the last step at 100% done.
 	last := progressEvents[len(progressEvents)-1]
-	if !strings.Contains(last, "Clearing package cache:100:done") {
-		t.Errorf("expected last event to be Clearing package cache at 100%% done, got: %s", last)
+	if !strings.Contains(last, "Verifying system:100:done") {
+		t.Errorf("expected last event to be Verifying system at 100%% done, got: %s", last)
 	}
 }
 
@@ -88,8 +88,8 @@ func TestInstall_DryRun_Btrfs(t *testing.T) {
 		t.Fatalf("expected success in dry-run btrfs, got error: %v", err)
 	}
 
-	// All 7 steps should have been invoked.
-	if len(stepLabels) != 7 {
+	// All 8 steps should have been invoked.
+	if len(stepLabels) != 8 {
 		t.Errorf("expected 14 step labels, got %d: %v", len(stepLabels), stepLabels)
 	}
 }
@@ -280,7 +280,7 @@ func TestRunStep_DryRun(t *testing.T) {
 }
 
 // TestCumulativePercentages verifies the percentage calculation
-// across all 6 installation steps.
+// across all installation steps.
 func TestCumulativePercentages(t *testing.T) {
 	steps := Steps()
 	weights := stepWeights()
@@ -325,8 +325,8 @@ func TestStepWeightsSum(t *testing.T) {
 	for _, w := range stepWeights() {
 		total += w
 	}
-	if total != 101 {
-		t.Errorf("expected step weights to sum to 101, got %d", total)
+	if total != 100 {
+		t.Errorf("expected step weights to sum to 100, got %d", total)
 	}
 }
 

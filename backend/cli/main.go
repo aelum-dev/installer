@@ -88,6 +88,7 @@ func run(args []string) int {
 	installSystemFlag := fs.String("install-system", "", "Disk to install base system to")
 	setupUsersFlag := fs.String("setup-users", "", "Disk to set up users on")
 	configureSysFlag := fs.String("configure-system", "", "Disk to configure system on")
+	verifySystemFlag := fs.String("verify-system", "", "Disk to verify after install (runs only the verification step)")
 
 	dryRun := fs.Bool("dry-run", false, "Simulate installation without making changes")
 	rollbackFlag := fs.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
@@ -137,6 +138,7 @@ func run(args []string) int {
 		installSystemFlag, "install",
 		setupUsersFlag, "setup_users",
 		configureSysFlag, "configure_system",
+		verifySystemFlag, "verify_system",
 	)...)
 
 	if disk == "" {
@@ -194,7 +196,9 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 	// In dry-run mode, skip password — no real accounts are created.
 	var password string
 	var pwErr error
-	if !dryRun {
+	// The verification step only reads the installed system; it creates nothing,
+	// so it needs no password. Skip the read for it (and for dry-run).
+	if !dryRun && stepName != "verify_system" {
 		password, pwErr = readPasswordFunc()
 		if pwErr != nil {
 			log.Error("failed to read password: %v", pwErr)
@@ -364,6 +368,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --install-system <disk> [--dry-run]                            Install base system\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --setup-users <disk> [--dry-run]                               Set up user accounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                          Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --verify-system <disk> [--dry-run]                           Verify the installed system (fstab, kernel, packages, user, hostname)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --cleanup                                                    Unmount /mnt and clean up stale mounts\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Username: passed via --username flag or read interactively from the terminal.\n")
