@@ -1,8 +1,8 @@
 {
   "app.brand": "Aelum",
   "app.dryRun": "تشغيل تجريبي",
-  "page.welcome.title": "مرحبًا بكم في Aelum",
-  "page.welcome.subtitle": "سيتيحكم هذا المثبّت عبر إعداد نظامك.",
+  "page.welcome.title": "مرحبًا بك في Aelum",
+  "page.welcome.subtitle": "سيوجهك هذا المثبّت خلال إعداد نظامك.",
   "page.welcome.loading": "...جاري التحميل",
   "page.userAccount.title": "إنشاء حساب مستخدم",
   "page.userAccount.username": "اسم المستخدم",
@@ -75,9 +75,9 @@
   "disk.name": "الاسم",
   "disk.type": "النوع",
   "disk.size": "الحجم",
-  "disk.mount": "التوصيل",
+  "disk.mount": "نقطة التثبيت",
   "disk.existing": "موجود",
-  "disk.mounted": "متصل",
+  "disk.mounted": "مثبت",
   "page.userAccount.subtitle": "اختر اسم مستخدم وكلمة مرور آمنة لنظامك.",
   "page.userAccount.usernameHint": "اسم المستخدم: 3+ أحرف، حروف وأرقام فقط",
   "page.userAccount.passwordHint": "كلمة المرور: 6 أحرف على الأقل"

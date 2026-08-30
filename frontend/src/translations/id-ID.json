@@ -1,6 +1,6 @@
 {
   "app.brand": "Aelum",
-  "app.dryRun": "PENJALANAN KERING",
+  "app.dryRun": "Mode Uji",
   "page.welcome.title": "Selamat datang di Aelum",
   "page.welcome.subtitle": "Pemasang ini akan memandu Anda melalui pengaturan sistem Anda.",
   "page.welcome.loading": "Memuat...",
@@ -75,8 +75,8 @@
   "disk.name": "Nama",
   "disk.type": "Tipe",
   "disk.size": "Ukuran",
-  "disk.mount": "Titik",
-  "disk.existing": "Ada",
+  "disk.mount": "Titik pasang",
+  "disk.existing": "Sudah Ada",
   "disk.mounted": "Dipasang",
   "page.userAccount.subtitle": "Pilih nama pengguna dan kata sandi yang aman untuk sistem Anda.",
   "page.userAccount.usernameHint": "Nama pengguna: 3+ karakter, hanya huruf dan angka",

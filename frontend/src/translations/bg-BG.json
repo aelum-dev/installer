@@ -1,6 +1,6 @@
 {
   "app.brand": "Aelum",
-  "app.dryRun": "РЕЖИМ НА ПРОБЕН ПРЕБЕГ",
+  "app.dryRun": "Опитен режим",
   "page.welcome.title": "Добре дошли в Aelum",
   "page.welcome.subtitle": "Този инсталатор ще ви насочи през настройката на системата.",
   "page.welcome.loading": "Зареждане...",
@@ -75,9 +75,9 @@
   "disk.name": "Име",
   "disk.type": "Тип",
   "disk.size": "Размер",
-  "disk.mount": "Точка",
-  "disk.existing": "Съществуваща",
-  "disk.mounted": "Подключена",
+  "disk.mount": "Точка на монтиране",
+  "disk.existing": "Съществуващ",
+  "disk.mounted": "Монтиран",
   "page.userAccount.subtitle": "Изберете потребителско име и сигурна парола за вашата система.",
   "page.userAccount.usernameHint": "Потребителско име: 3+ знака, само букви и цифри",
   "page.userAccount.passwordHint": "Парола: минимум 6 знака"

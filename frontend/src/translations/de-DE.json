@@ -28,7 +28,7 @@
   "page.confirmation.sectionDisk": "Zielfestplatte",
   "page.confirmation.username": "Benutzername",
   "page.confirmation.password": "Passwort",
-  "validation.username": "Passwort",
+  "validation.username": "Benutzername",
   "page.installation.title": "Aelum wird installiert",
   "page.installation.target": "Ziel",
   "page.installation.completed": "Installation abgeschlossen!",
@@ -78,7 +78,7 @@
   "disk.mount": "Einhängpunkt",
   "disk.existing": "Vorhanden",
   "disk.mounted": "Eingehängt",
-  "page.userAccount.subtitle": "Wähle einen Benutzernamen und ein sicheres Passwort für dein System.",
+  "page.userAccount.subtitle": "Wählen Sie einen Benutzernamen und ein sicheres Passwort für Ihr System.",
   "page.userAccount.usernameHint": "Benutzername: 3+ Zeichen, nur Buchstaben und Zahlen",
   "page.userAccount.passwordHint": "Passwort: mindestens 6 Zeichen"
 }

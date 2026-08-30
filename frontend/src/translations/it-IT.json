@@ -1,6 +1,6 @@
 {
   "app.brand": "Aelum",
-  "app.dryRun": "ESECUZIONE DRY",
+  "app.dryRun": "Esecuzione di prova",
   "page.welcome.title": "Benvenuto in Aelum",
   "page.welcome.subtitle": "Questo installatore ti guiderà attraverso la configurazione del sistema.",
   "page.welcome.loading": "Caricamento...",
@@ -75,7 +75,7 @@
   "disk.name": "Nome",
   "disk.type": "Tipo",
   "disk.size": "Dimensione",
-  "disk.mount": "Punto",
+  "disk.mount": "Punto di montaggio",
   "disk.existing": "Esistente",
   "disk.mounted": "Montato",
   "page.userAccount.subtitle": "Scegli un nome utente e una password sicura per il tuo sistema.",
