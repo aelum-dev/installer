@@ -4,6 +4,9 @@
 	import { installState } from '$lib/store.svelte';
 	import type { DiskInfo } from '$lib/types';
 	import { t } from '$lib/i18n';
+	import { glyph, STEP_ICONS } from '$lib/icons';
+
+	const pageIcon = glyph(STEP_ICONS.confirmation);
 
 	interface Language {
 		code: string;
@@ -30,6 +33,7 @@
 
 <div class="page-layout">
 	<div class="page-info">
+		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2>{t('page.confirmation.title')}</h2>
 		<p>{t('page.confirmation.subtitle')}</p>
 	</div>
@@ -93,7 +97,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-lg);
+		gap: var(--spacing-sm);
 		flex: 1;
 	}
 

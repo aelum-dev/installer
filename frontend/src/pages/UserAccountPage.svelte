@@ -3,6 +3,9 @@
 	import { validateUserAccount } from '$lib/validate';
 	import { getValidationMessages } from '$lib/validate-messages';
 	import { t } from '$lib/i18n';
+	import { glyph, STEP_ICONS } from '$lib/icons';
+
+	const pageIcon = glyph(STEP_ICONS.userAccount);
 
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
@@ -39,6 +42,7 @@
 
 <div class="page-layout">
 	<div class="page-info">
+		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2>{t('page.userAccount.title')}</h2>
 		<p>{t('page.userAccount.subtitle')}</p>
 		<div class="requirements">
@@ -128,7 +132,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-lg);
+		gap: var(--spacing-sm);
 		flex: 1;
 	}
 

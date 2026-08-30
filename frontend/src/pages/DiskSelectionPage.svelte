@@ -8,7 +8,9 @@
 	import { FILESYSTEMS } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
+	import { glyph, STEP_ICONS } from '$lib/icons';
 
+	const pageIcon = glyph(STEP_ICONS.diskSelection);
 	const minDiskSizeFormatted = $derived.by(() => {
 		const n = MinDiskSizeBytes;
 		const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -83,6 +85,7 @@
 
 <div class="page-layout">
 	<div class="page-info">
+		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2>{t('page.diskSelection.title')}</h2>
 		<p>{t('page.diskSelection.subtitle')}</p>
 		<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
@@ -262,7 +265,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-lg);
+		gap: var(--spacing-sm);
 		flex: 1;
 	}
 

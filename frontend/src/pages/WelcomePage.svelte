@@ -4,6 +4,9 @@
 	import { installState } from '$lib/store.svelte';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
 	import ScrollBox from '$components/ScrollBox.svelte';
+	import { glyph, STEP_ICONS } from '$lib/icons';
+
+	const pageIcon = glyph(STEP_ICONS.welcome);
 
 	interface Language {
 		code: string;
@@ -52,6 +55,7 @@
 
 <div class="page-layout">
 	<div class="page-info">
+		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2>{t('page.welcome.title')}</h2>
 		<p>{t('page.welcome.subtitle')}</p>
 	</div>
@@ -93,7 +97,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-lg);
+		gap: var(--spacing-sm);
 		flex: 1;
 	}
 

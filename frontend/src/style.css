@@ -149,6 +149,30 @@ body {
     url("assets/fonts/nunito-v16-cyrillic-regular.woff2") format("woff2");
 }
 
+/* Nerd Fonts (Symbols) — self-hosted icon glyph set used for step icons. */
+@font-face {
+    font-family: "NerdFontsSymbols Nerd Font";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local(""),
+    url("assets/fonts/NerdFontsSymbols.woff2") format("woff2");
+}
+
+.nf-icon {
+    font-family: "NerdFontsSymbols Nerd Font";
+    font-size: var(--font-size-xl);
+    line-height: 1;
+    vertical-align: -0.12em;
+}
+
+/* Step icon in the wizard's left column (page-info). */
+.page-icon {
+    color: var(--color-primary);
+    margin-bottom: 0;
+    font-size: calc(var(--font-size-xl) * 2);
+}
+
 #app {
     height: 100%;
     text-align: center;
