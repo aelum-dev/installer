@@ -80,5 +80,7 @@
   "disk.mounted": "اتصال شده",
   "page.userAccount.subtitle": "یک نام کاربری و رمز عبور امن برای سیستم خود انتخاب کنید.",
   "page.userAccount.usernameHint": "نام کاربری: 3+ کاراکتر، فقط حروف و اعداد",
-  "page.userAccount.passwordHint": "رمز عبور: حداقل 6 کاراکتر"
+  "page.userAccount.passwordHint": "رمز عبور: حداقل 6 کاراکتر",
+  "disk.removable": "درایو قابل حذف",
+  "disk.removableWarning": "درایو قابل حذف (USB/SD/MMC) — انتخاب آن تمام داده‌ها را پاک می‌کند."
 }

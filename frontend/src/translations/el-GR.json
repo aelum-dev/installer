@@ -80,5 +80,7 @@
   "disk.mounted": "Συνδεδεμένο",
   "page.userAccount.subtitle": "Επιλέξτε ένα όνομα χρήστη και έναν ασφαλή κωδικό για το σύστημά σας.",
   "page.userAccount.usernameHint": "Όνομα χρήστη: 3+ χαρακτήρες, μόνο γράμματα και αριθμοί",
-  "page.userAccount.passwordHint": "Κωδικός: τουλάχιστον 6 χαρακτήρες"
+  "page.userAccount.passwordHint": "Κωδικός: τουλάχιστον 6 χαρακτήρες",
+  "disk.removable": "Αφαιρούμενη συσκευή",
+  "disk.removableWarning": "Αφαιρούμενη συσκευή (USB/SD/MMC) — η επιλογή της θα διαγράψει όλα τα δεδομένα."
 }

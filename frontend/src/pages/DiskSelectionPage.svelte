@@ -33,7 +33,7 @@
 			error = `Failed to load disks: ${err instanceof Error ? err.message : String(err)}`;
 		} finally {
 			loading = false;
-			
+
 			// If a disk was already selected (navigated back), expand it
 			if (installState.diskId && disks.length > 0) {
 				const selected = disks.find((d) => d.path === installState.diskId);
@@ -132,15 +132,15 @@
 							disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
 						>
 							<div class="card-header">
-								<div class="disk-icon">
-									{#if disk.rotational}
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-											<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-										</svg>
+								<div class="disk-icon" aria-hidden="true">
+									{#if disk.isRemovable}
+										<span class="disk-icon-glyph removable-glyph">{glyph('f129e')}</span> <!-- removable: USB/SD/MMC flash drive (md-usb_flash_drive) -->
 									{:else}
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-										</svg>
+										{#if disk.rotational}
+											<span class="disk-icon-glyph">{glyph('ede9')}</span> <!-- HDD: spinning disc -->
+										{:else}
+											<span class="disk-icon-glyph">{glyph('f061a')}</span> <!-- SSD: flash chip -->
+										{/if}
 									{/if}
 								</div>
 								<div class="card-title">
@@ -160,8 +160,11 @@
 								</div>
 							</div>
 
-							{#if installState.diskId === disk.path && (disk.fstype || disk.mountpoint)}
+							{#if installState.diskId === disk.path && (disk.fstype || disk.mountpoint || disk.isRemovable)}
 								<div class="card-tags">
+									{#if disk.isRemovable}
+										<span class="tag removable-tag">{t('disk.removableWarning')}</span>
+									{/if}
 									{#if disk.fstype}
 										<span class="tag fstype-tag">{t('disk.existing')} {disk.fstype}</span>
 									{/if}
@@ -216,7 +219,7 @@
 						</button>
 					{/each}
 				</div>
-			</ScrollBox>
+				</ScrollBox>
 			</div>
 		{/if}
 	</div>
@@ -330,7 +333,6 @@
 		color: var(--color-on-primary);
 	}
 
-
 	.disk-list {
 		display: flex;
 		flex-direction: column;
@@ -381,6 +383,12 @@
 		background: var(--color-bg-hover);
 		color: var(--color-text-muted);
 		flex-shrink: 0;
+	}
+
+	.disk-icon-glyph {
+		font-family: "NerdFontsSymbols Nerd Font";
+		font-size: 18px;
+		line-height: 1;
 	}
 
 	.disk-card.selected .disk-icon {
@@ -544,6 +552,13 @@
 
 	.tag.mounted-tag {
 		background: var(--color-danger-bg);
-		color: var(--color-danger-text);
+		color: var(--color-primary);
+	}
+
+	.tag.removable-tag {
+		background: var(--color-primary);
+		color: var(--color-on-primary);
+		width: 100%;
+		padding: 3px 8px;
 	}
 </style>

@@ -1,6 +1,7 @@
-// NerdFontsSymbols helpers — the installer ships the same self-hosted icon
-// glyph set as the website (frontend/src/assets/fonts/NerdFontsSymbols.woff2).
-// Icons are referenced by their Nerd Fonts code point in hex (e.g. "f0ac").
+// NerdFontsSymbols helpers — the installer ships a minimal self-hosted icon
+// glyph subset (frontend/src/assets/fonts/NerdFontsSymbols.woff2), managed from
+// the website's scripts/icons.py with the --woff2 flag. Icons are referenced by
+// their Nerd Fonts code point in hex (e.g. "f0ac").
 
 // Render a NerdFontsSymbols glyph from a hex code point.
 export function glyph(hex: string): string {

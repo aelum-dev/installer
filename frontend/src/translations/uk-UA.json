@@ -80,5 +80,7 @@
   "disk.mounted": "Змонтовано",
   "page.userAccount.subtitle": "Оберіть ім'я користувача та надійний пароль для вашої системи.",
   "page.userAccount.usernameHint": "Ім'я користувача: 3+ символи, лише літери та цифри",
-  "page.userAccount.passwordHint": "Пароль: щонайменше 6 символів"
+  "page.userAccount.passwordHint": "Пароль: щонайменше 6 символів",
+  "disk.removable": "Знімний диск",
+  "disk.removableWarning": "Знімний диск (USB/SD/MMC) — видалить усі дані."
 }

@@ -80,5 +80,7 @@
   "disk.mounted": "Liitetty",
   "page.userAccount.subtitle": "Valitse käyttäjätunnus ja turvallinen salasana järjestelmällesi.",
   "page.userAccount.usernameHint": "Käyttäjänimi: 3+ merkkiä, vain kirjaimet ja numerot",
-  "page.userAccount.passwordHint": "Salasana: vähintään 6 merkkiä"
+  "page.userAccount.passwordHint": "Salasana: vähintään 6 merkkiä",
+  "disk.removable": "Irrotettava asema",
+  "disk.removableWarning": "Irrotettava asema (USB/SD/MMC) — valinta tyhjentää kaikki tiedot."
 }

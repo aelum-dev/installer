@@ -81,5 +81,7 @@
   "disk.size": "Size",
   "disk.mount": "Mount",
   "disk.existing": "Existing",
-  "disk.mounted": "Mounted"
+  "disk.mounted": "Mounted",
+  "disk.removable": "Removable drive",
+  "disk.removableWarning": "Removable drive (USB/SD/MMC) — selecting this will erase any data on it."
 }

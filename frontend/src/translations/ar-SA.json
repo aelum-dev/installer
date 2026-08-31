@@ -80,5 +80,7 @@
   "disk.mounted": "مثبت",
   "page.userAccount.subtitle": "اختر اسم مستخدم وكلمة مرور آمنة لنظامك.",
   "page.userAccount.usernameHint": "اسم المستخدم: 3+ أحرف، حروف وأرقام فقط",
-  "page.userAccount.passwordHint": "كلمة المرور: 6 أحرف على الأقل"
+  "page.userAccount.passwordHint": "كلمة المرور: 6 أحرف على الأقل",
+  "disk.removable": "محرك قابل للإزالة",
+  "disk.removableWarning": "محرك قابل للإزالة (USB/SD/MMC) — سيؤدي تحديده إلى مسح أي بيانات عليه."
 }

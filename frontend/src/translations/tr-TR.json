@@ -80,5 +80,7 @@
   "disk.mounted": "Bağlanmış",
   "page.userAccount.subtitle": "Sisteminiz için bir kullanıcı adı ve güvenli bir şifre seçin.",
   "page.userAccount.usernameHint": "Kullanıcı adı: 3+ karakter, sadece harf ve rakam",
-  "page.userAccount.passwordHint": "Şifre: en az 6 karakter"
+  "page.userAccount.passwordHint": "Şifre: en az 6 karakter",
+  "disk.removable": "Taşınabilir sürücü",
+  "disk.removableWarning": "Taşınabilir sürücü (USB/SD/MMC) — seçmek tüm verileri silecek."
 }

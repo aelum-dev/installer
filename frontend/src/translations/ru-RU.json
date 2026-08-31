@@ -80,5 +80,7 @@
   "disk.mounted": "Смонтирован",
   "page.userAccount.subtitle": "Выберите имя пользователя и надёжный пароль для вашей системы.",
   "page.userAccount.usernameHint": "Имя пользователя: 3+ символа, только буквы и цифры",
-  "page.userAccount.passwordHint": "Пароль: минимум 6 символов"
+  "page.userAccount.passwordHint": "Пароль: минимум 6 символов",
+  "disk.removable": "Съемный диск",
+  "disk.removableWarning": "Съемный диск (USB/SD/MMC) — выбор удалит все данные."
 }

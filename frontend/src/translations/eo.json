@@ -80,5 +80,7 @@
   "disk.mounted": "Muntita",
   "page.userAccount.subtitle": "Elektu uzantnomon kaj pasvorton por via sistemo.",
   "page.userAccount.usernameHint": "Uzantnomo: 3+ signoj, nur literoj kaj nombroj",
-  "page.userAccount.passwordHint": "Pasvorto: almenaŭ 6 signoj"
+  "page.userAccount.passwordHint": "Pasvorto: almenaŭ 6 signoj",
+  "disk.removable": "Forprenebla disko",
+  "disk.removableWarning": "Forprenebla disko (USB/SD/MMC) — elekti ĝin forigos ĉiujn datumojn."
 }

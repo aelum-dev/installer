@@ -80,5 +80,7 @@
   "disk.mounted": "Montat",
   "page.userAccount.subtitle": "Trieu un nom d'usuari i una contrasenya segura per al vostre sistema.",
   "page.userAccount.usernameHint": "Nom d'usuari: 3+ caràcters, només lletres i números",
-  "page.userAccount.passwordHint": "Contrasenya: mínim 6 caràcters"
+  "page.userAccount.passwordHint": "Contrasenya: mínim 6 caràcters",
+  "disk.removable": "Unitat extraïble",
+  "disk.removableWarning": "Unitat extraïble (USB/SD/MMC) — seleccionar-la esborrarà les dades."
 }

@@ -80,5 +80,7 @@
   "disk.mounted": "Gemonteerd",
   "page.userAccount.subtitle": "Kies een gebruikersnaam en een wachtwoord voor je systeem.",
   "page.userAccount.usernameHint": "Gebruikersnaam: 3+ tekens, alleen letters en cijfers",
-  "page.userAccount.passwordHint": "Wachtwoord: minimaal 6 tekens"
+  "page.userAccount.passwordHint": "Wachtwoord: minimaal 6 tekens",
+  "disk.removable": "Verwijderbare schijf",
+  "disk.removableWarning": "Verwijderbare schijf (USB/SD/MMC) — selectie verwijdert alle gegevens."
 }

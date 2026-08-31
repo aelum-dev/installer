@@ -80,5 +80,7 @@
   "disk.mounted": "מורכב",
   "page.userAccount.subtitle": "בחר שם משתמש וסיסמה מאובטחת למערכת שלך.",
   "page.userAccount.usernameHint": "שם משתמש: 3+ תווים, אותיות ומספרים בלבד",
-  "page.userAccount.passwordHint": "סיסמה: מינימום 6 תווים"
+  "page.userAccount.passwordHint": "סיסמה: מינימום 6 תווים",
+  "disk.removable": "כונן נשלף",
+  "disk.removableWarning": "כונן נשלף (USB/SD/MMC) — בחירה זו תמחק את כל הנתונים."
 }

@@ -80,5 +80,7 @@
   "disk.mounted": "Monté",
   "page.userAccount.subtitle": "Choisissez un nom d'utilisateur et un mot de passe sécurisé pour votre système.",
   "page.userAccount.usernameHint": "Nom d'utilisateur : 3+ caractères, lettres et chiffres uniquement",
-  "page.userAccount.passwordHint": "Mot de passe : minimum 6 caractères"
+  "page.userAccount.passwordHint": "Mot de passe : minimum 6 caractères",
+  "disk.removable": "Unité amovible",
+  "disk.removableWarning": "Unité amovible (USB/SD/MMC) — la sélection effacera toutes les données."
 }

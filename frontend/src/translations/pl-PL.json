@@ -80,5 +80,7 @@
   "disk.mounted": "Zamontowany",
   "page.userAccount.subtitle": "Wybierz nazwę użytkownika i bezpieczne hasło dla swojego systemu.",
   "page.userAccount.usernameHint": "Nazwa użytkownika: 3+ znaki, tylko litery i cyfry",
-  "page.userAccount.passwordHint": "Hasło: minimum 6 znaków"
+  "page.userAccount.passwordHint": "Hasło: minimum 6 znaków",
+  "disk.removable": "Urządzenie wymienne",
+  "disk.removableWarning": "Urządzenie wymienne (USB/SD/MMC) — wybranie usunie wszystkie dane."
 }

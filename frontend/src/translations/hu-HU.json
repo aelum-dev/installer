@@ -80,5 +80,7 @@
   "disk.mounted": "Csatolva",
   "page.userAccount.subtitle": "Válasszon felhasználónevet és biztonságos jelszót a rendszeréhez.",
   "page.userAccount.usernameHint": "Felhasználónév: 3+ karakter, csak betűk és számok",
-  "page.userAccount.passwordHint": "Jelszó: minimum 6 karakter"
+  "page.userAccount.passwordHint": "Jelszó: minimum 6 karakter",
+  "disk.removable": "Hordozható meghajtó",
+  "disk.removableWarning": "Hordozható meghajtó (USB/SD/MMC) — a kiválasztás törli az adatokat."
 }

@@ -82,6 +82,20 @@ func fakeDisks() []DiskInfo {
 			Rotational: true, Readonly: false, Trans: "sata",
 			Fstype: "ext4", Mountpoint: "/mnt/data", Serial: "81VY2A123",
 		},
+		{
+			Name: "sdcard", Path: "/dev/sdcard", Size: "68719476736",
+			SizeFormatted: "64.0 GB", Type: "disk",
+			Model: "Samsung Extreme 64GB", Vendor: "Samsung",
+			Rotational: true, Readonly: false, Trans: "sd",
+			IsRemovable: true, Serial: "S4SNMA01234567",
+		},
+		{
+			Name: "mmcblk1", Path: "/dev/mmcblk1", Size: "137438953472",
+			SizeFormatted: "128.0 GB", Type: "disk",
+			Model: "Samsung EMMC 128GB", Vendor: "Samsung",
+			Rotational: false, Readonly: false, Trans: "mmc",
+			IsRemovable: true, Serial: "BXN4S001234567",
+		},
 	}
 }
 
@@ -132,6 +146,10 @@ func fakePartitions(diskPath string) []PartitionDetail {
 			{Path: "/dev/sdh1", Name: "sdh1", Type: "part", Size: "536870912", SizeFormatted: "512.0 MB", Fstype: "fat32", UUID: "B8C9-D0E1", Mountpoints: []string{"/boot/efi"}},
 			{Path: "/dev/sdh2", Name: "sdh2", Type: "part", Size: "7999649161728", SizeFormatted: "7.3 TB", Fstype: "ext4", UUID: "e1f2-a3b4-c5d6-e7f8", Mountpoints: []string{"/mnt/data"}},
 		}
+	case "/dev/sdcard":
+		return []PartitionDetail{{Path: "/dev/sdcard1", Name: "sdcard1", Type: "part", Size: "68719476736", SizeFormatted: "64.0 GB", Fstype: "vfat", UUID: "C1RD-4RD1", Mountpoints: []string{}}}
+	case "/dev/mmcblk1":
+		return []PartitionDetail{{Path: "/dev/mmcblk1p1", Name: "mmcblk1p1", Type: "part", Size: "137438953472", SizeFormatted: "128.0 GB", Fstype: "vfat", UUID: "MXMC1-128", Mountpoints: []string{}}}
 	default:
 		return []PartitionDetail{}
 	}

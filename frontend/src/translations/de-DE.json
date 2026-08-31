@@ -80,5 +80,7 @@
   "disk.mounted": "Eingehängt",
   "page.userAccount.subtitle": "Wählen Sie einen Benutzernamen und ein sicheres Passwort für Ihr System.",
   "page.userAccount.usernameHint": "Benutzername: 3+ Zeichen, nur Buchstaben und Zahlen",
-  "page.userAccount.passwordHint": "Passwort: mindestens 6 Zeichen"
+  "page.userAccount.passwordHint": "Passwort: mindestens 6 Zeichen",
+  "disk.removable": "Wechseldatenträger",
+  "disk.removableWarning": "Wechseldatenträger (USB/SD/MMC) — die Auswahl löscht alle Daten darauf."
 }

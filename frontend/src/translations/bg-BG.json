@@ -80,5 +80,7 @@
   "disk.mounted": "Монтиран",
   "page.userAccount.subtitle": "Изберете потребителско име и сигурна парола за вашата система.",
   "page.userAccount.usernameHint": "Потребителско име: 3+ знака, само букви и цифри",
-  "page.userAccount.passwordHint": "Парола: минимум 6 знака"
+  "page.userAccount.passwordHint": "Парола: минимум 6 знака",
+  "disk.removable": "Преносимо устройство",
+  "disk.removableWarning": "Преносимо устройство (USB/SD/MMC) — избирането му ще изтрие всички данни."
 }

@@ -80,5 +80,7 @@
   "disk.mounted": "Montert",
   "page.userAccount.subtitle": "Velg et brukernavn og et sikkert passord for systemet ditt.",
   "page.userAccount.usernameHint": "Brukernavn: 3+ tegn, bare bokstaver og tall",
-  "page.userAccount.passwordHint": "Passord: minst 6 tegn"
+  "page.userAccount.passwordHint": "Passord: minst 6 tegn",
+  "disk.removable": "Fjernbar stasjon",
+  "disk.removableWarning": "Fjernbar stasjon (USB/SD/MMC) — valg sletter all data."
 }

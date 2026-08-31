@@ -80,5 +80,7 @@
   "disk.mounted": "Montado",
   "page.userAccount.subtitle": "Elija un nombre de usuario y una contraseña segura para su sistema.",
   "page.userAccount.usernameHint": "Nombre de usuario: 3+ caracteres, solo letras y números",
-  "page.userAccount.passwordHint": "Contraseña: mínimo 6 caracteres"
+  "page.userAccount.passwordHint": "Contraseña: mínimo 6 caracteres",
+  "disk.removable": "Unidad extraíble",
+  "disk.removableWarning": "Unidad extraíble (USB/SD/MMC) — seleccionarla borrará todos los datos."
 }
