@@ -8,11 +8,18 @@ type InstallContext struct {
 	Partitions *PartitionInfo
 	Helper     string
 	Username   string
-	Password   []byte // zeroed after use; never logged or returned
-	Hostname   string
-	Region     Region
-	FileSystem string // root filesystem: "ext4" or "btrfs"
-	Logger     Logger // injected by Installer; nil if not set
+
+	// ManualMode indicates the disk was laid out manually (dualboot-safe):
+	// only the Boot and Root partitions are formatted/mounted; every other
+	// partition is left untouched. When set, ManualLayout describes the plan
+	// and partition.Apply handles formatting instead of format.Run.
+	ManualMode   bool
+	ManualLayout *ManualLayout
+	Password     []byte // zeroed after use; never logged or returned
+	Hostname     string
+	Region       Region
+	FileSystem   string // root filesystem: "ext4" or "btrfs"
+	Logger       Logger // injected by Installer; nil if not set
 
 	// ProgressCallback reports intermediate progress during a step.
 	// Called by the installer's tick goroutine to animate long-running steps.
@@ -73,4 +80,36 @@ type DiskInfo struct {
 	Serial        string `json:"serial"`
 	Trans         string `json:"trans"`
 	IsRemovable   bool   `json:"isRemovable"`
+}
+
+// PartitionRole is the role assigned to a partition in a manual layout plan.
+type PartitionRole string
+
+const (
+	// RoleBoot formats the partition as vfat (ESP) and mounts it at /boot.
+	RoleBoot PartitionRole = "boot"
+	// RoleRoot formats the partition as the root filesystem (ext4/btrfs) and
+	// mounts it at /.
+	RoleRoot PartitionRole = "root"
+	// An empty role means the partition is untouched — not formatted, not
+	// mounted, not in fstab. This is what makes dualboot safe.
+)
+
+// ManualPartition is one row in a manual partition layout plan.
+type ManualPartition struct {
+	Index          int           `json:"index"`
+	Path           string        `json:"path"`   // existing device (e.g. "/dev/sda1"), "" for newly created
+	SizeMB         int64         `json:"sizeMB"` // 0 = consume all remaining free space
+	Role           PartitionRole `json:"role"`   // boot | root | empty = untouched
+	ExistingFstype string        `json:"existingFstype,omitempty"`
+}
+
+// ManualLayout is the user-designed manual partition plan for one disk.
+// FreeMB is always recomputed from the disk total, never stored, so it stays
+// correct after every edit.
+type ManualLayout struct {
+	Disk       string            `json:"disk"`
+	DiskSizeMB int64             `json:"diskSizeMB"`
+	Partitions []ManualPartition `json:"partitions"`
+	FreeMB     int64             `json:"freeMB"`
 }

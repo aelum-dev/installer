@@ -29,6 +29,13 @@ type Installer struct {
 	dryRun     bool
 	esp        string // ESP mount point (default: /mnt/boot)
 
+	// manualMode enables dualboot-safe manual partitioning. When set, the
+	// format step runs partition.Apply with manualLayout instead of the
+	// automatic format.Run. Only the Boot/Root partitions in the layout are
+	// touched; every other partition is preserved.
+	manualMode   bool
+	manualLayout *shared.ManualLayout
+
 	// Logger for step output (injected by CLI/GUI; default is ConsoleLogger)
 	Logger Logger
 
@@ -75,6 +82,12 @@ func (inst *Installer) Install() error {
 	}
 	if inst.region.Code == "" {
 		return fmt.Errorf("region not set")
+	}
+
+	// In manual mode, validate the layout up front so the user gets a clear
+	// error before any step runs.
+	if inst.manualMode && inst.manualLayout == nil {
+		return fmt.Errorf("manual partition layout not set")
 	}
 
 	// Clear previous log
@@ -270,7 +283,7 @@ func (inst *Installer) context() *InstallContext {
 	}
 	// Create a fresh cancel channel for this installation run.
 	inst.cancel = make(chan struct{})
-	return &InstallContext{
+	ctx := &InstallContext{
 		DiskID:     inst.diskID,
 		ESP:        inst.esp,
 		Username:   inst.username,
@@ -281,6 +294,9 @@ func (inst *Installer) context() *InstallContext {
 		Logger:     inst.Logger,
 		Cancel:     inst.cancel,
 	}
+	ctx.ManualMode = inst.manualMode
+	ctx.ManualLayout = inst.manualLayout
+	return ctx
 }
 
 // Cancel closes the install cancellation channel, unblocking any scanner
@@ -342,6 +358,13 @@ var simulateStep = func(cancel chan struct{}, duration time.Duration) error {
 	case <-cancel:
 		return fmt.Errorf("interrupted")
 	}
+}
+
+// SetManualLayout enables manual (dualboot-safe) partitioning with the given
+// layout. The layout is validated by the orchestrator before the first step.
+func (inst *Installer) SetManualLayout(layout *shared.ManualLayout) {
+	inst.manualMode = true
+	inst.manualLayout = layout
 }
 
 // Rollback cleans up a partial or failed installation.

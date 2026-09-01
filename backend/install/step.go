@@ -7,10 +7,21 @@ import (
 	"aelum-installer/backend/install/installbase"
 	"aelum-installer/backend/install/installdesktop"
 	"aelum-installer/backend/install/mount"
+	"aelum-installer/backend/install/partition"
 	"aelum-installer/backend/install/users"
 	"aelum-installer/backend/install/verify"
 	"aelum-installer/backend/shared"
 )
+
+// formatDisk runs the format step. In manual (dualboot) mode it delegates to
+// partition.Apply, which only formats the user-designated Boot and Root
+// partitions; otherwise it runs the automatic format.Run.
+func formatDisk(ctx *shared.InstallContext) error {
+	if ctx.ManualMode && ctx.ManualLayout != nil {
+		return partition.Apply(ctx, ctx.ManualLayout)
+	}
+	return format.Run(ctx)
+}
 
 // Step defines a single installation step.
 type Step interface {
@@ -35,7 +46,7 @@ func (s *stepFunc) Run(ctx *shared.InstallContext) error {
 // DefaultSteps returns the canonical list of installation steps.
 func Steps() []Step {
 	return []Step{
-		&stepFunc{"format_disk", "Formatting disk", format.Run},
+		&stepFunc{"format_disk", "Formatting disk", formatDisk},
 		&stepFunc{"mount_filesystem", "Mounting filesystem", mount.Run},
 		&stepFunc{"install_base", "Installing system", installbase.Run},
 		&stepFunc{"install_desktop", "Installing desktop", installdesktop.Run},

@@ -3,12 +3,27 @@
 	import { GetDisks, GetDiskPartitions } from '@wails/go/gui/App.js';
 	import Button from '$components/Button.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
+	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import { installState } from '$lib/store.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
-	import { FILESYSTEMS } from '$lib/types';
+	import { FILESYSTEMS, ROLE_BOOT, ROLE_ROOT } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
+
+	// Installation mode: automatic (whole disk) vs manual (dualboot-safe).
+	const MODES = ['automatic', 'manual'] as const;
+	type InstallMode = (typeof MODES)[number];
+
+	function setMode(mode: InstallMode): void {
+		if (mode === 'manual') {
+			installState.manualMode = true;
+			// Reload a fresh layout for the selected disk.
+			installState.manualLayout = null;
+		} else {
+			installState.manualMode = false;
+		}
+	}
 
 	const pageIcon = glyph(STEP_ICONS.diskSelection);
 	const minDiskSizeFormatted = $derived.by(() => {
@@ -84,29 +99,26 @@
 </script>
 
 <div class="page-layout">
-	<div class="page-info">
+	<!-- Left sidebar: hidden in manual mode -->
+	<div class="page-info" class:manual-hidden={installState.manualMode}>
 		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2>{t('page.diskSelection.title')}</h2>
 		<p>{t('page.diskSelection.subtitle')}</p>
 		<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
 	</div>
 	<div class="page-content">
-		{#if loading}
-			<div class="state-message">
-				<div class="spinner"></div>
-				<p>{t('page.diskSelection.loading')}</p>
-			</div>
-		{:else if error}
-			<div class="state-message error">
-				<p>{error}</p>
-				<Button variant="secondary" onclick={loadDisks}>Retry</Button>
-			</div>
-		{:else if disks.length === 0}
-			<div class="state-message">
-				<p>{t('page.diskSelection.noDevices')}</p>
-			</div>
-		{:else}
-			<div class="right-content">
+		<!-- Mode + filesystem bar — always visible -->
+		<div class="top-bar">
+			<!-- Manual mode: disk title on the left -->
+			{#if installState.manualMode && installState.disk}
+				<div class="manual-title">
+					<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
+					<h3>{installState.disk.model || installState.disk.name || '—'}</h3>
+				</div>
+			{/if}
+
+			<!-- Right side: fs + mode pills -->
+			<div class="top-bar-controls">
 				<div class="fs-bar">
 					<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
 					<div class="fs-pills">
@@ -122,105 +134,157 @@
 					</div>
 				</div>
 
-				<ScrollBox>
-					<div class="disk-list">
-						{#each disks as disk (disk.path)}
+				<!-- Installation mode: automatic vs manual (dualboot) -->
+				<div class="mode-bar">
+					<span class="mode-label">{t('page.diskSelection.mode')}</span>
+					<div class="mode-pills">
 						<button
 							type="button"
-							class={['disk-card', { selected: installState.diskId === disk.path }]}
-							onclick={() => selectDisk(disk)}
-							disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
+							class={['mode-pill', { selected: !installState.manualMode }]}
+							onclick={() => setMode('automatic')}
 						>
-							<div class="card-header">
-								<div class="disk-icon" aria-hidden="true">
-									{#if disk.isRemovable}
-										<span class="disk-icon-glyph removable-glyph">{glyph('f129e')}</span> <!-- removable: USB/SD/MMC flash drive (md-usb_flash_drive) -->
-									{:else}
-										{#if disk.rotational}
-											<span class="disk-icon-glyph">{glyph('ede9')}</span> <!-- HDD: spinning disc -->
+							{t('manual.modeAutomatic')}
+						</button>
+						<button
+							type="button"
+							class={['mode-pill', { selected: installState.manualMode }]}
+							onclick={() => setMode('manual')}
+						>
+							{t('manual.modeManual')}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Content: switches between automatic and manual -->
+		{#if installState.manualMode}
+			<!-- Manual mode: full-width partition editor -->
+			{#if installState.disk}
+				<ManualPartitionPage disk={installState.disk} />
+			{:else}
+				<div class="state-message">
+					<p>{t('page.diskSelection.selectDiskManual')}</p>
+				</div>
+			{/if}
+		{:else}
+			<!-- Automatic mode: disk selection UI -->
+			{#if loading}
+				<div class="state-message">
+					<div class="spinner"></div>
+					<p>{t('page.diskSelection.loading')}</p>
+				</div>
+			{:else if error}
+				<div class="state-message error">
+					<p>{error}</p>
+					<Button variant="secondary" onclick={loadDisks}>Retry</Button>
+				</div>
+			{:else if disks.length === 0}
+				<div class="state-message">
+					<p>{t('page.diskSelection.noDevices')}</p>
+				</div>
+			{:else}
+				<div class="right-content">
+					<ScrollBox>
+						<div class="disk-list">
+							{#each disks as disk (disk.path)}
+							<button
+								type="button"
+								class={['disk-card', { selected: installState.diskId === disk.path }]}
+								onclick={() => selectDisk(disk)}
+								disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
+							>
+								<div class="card-header">
+									<div class="disk-icon" aria-hidden="true">
+										{#if disk.isRemovable}
+											<span class="disk-icon-glyph removable-glyph">{glyph('f129e')}</span> <!-- removable: USB/SD/MMC flash drive (md-usb_flash_drive) -->
 										{:else}
-											<span class="disk-icon-glyph">{glyph('f061a')}</span> <!-- SSD: flash chip -->
-										{/if}
-									{/if}
-								</div>
-								<div class="card-title">
-									<div class="disk-name">{disk.model || disk.name}</div>
-									<div class="disk-specs">
-										{disk.sizeFormatted}
-										<span class="specs-sep">·</span>
-										{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
-										{#if disk.trans}
-											<span class="specs-sep">·</span>
-											{disk.trans.toUpperCase()}
+											{#if disk.rotational}
+												<span class="disk-icon-glyph">{glyph('ede9')}</span> <!-- HDD: spinning disc -->
+											{:else}
+												<span class="disk-icon-glyph">{glyph('f061a')}</span> <!-- SSD: flash chip -->
+											{/if}
 										{/if}
 									</div>
+									<div class="card-title">
+										<div class="disk-name">{disk.model || disk.name}</div>
+										<div class="disk-specs">
+											{disk.sizeFormatted}
+											<span class="specs-sep">·</span>
+											{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
+											{#if disk.trans}
+												<span class="specs-sep">·</span>
+												{disk.trans.toUpperCase()}
+											{/if}
+										</div>
+									</div>
+									<div class="card-radio">
+										<div class={['radio', { checked: installState.diskId === disk.path }]}></div>
+									</div>
 								</div>
-								<div class="card-radio">
-									<div class={['radio', { checked: installState.diskId === disk.path }]}></div>
-								</div>
-							</div>
 
-							{#if installState.diskId === disk.path && (disk.fstype || disk.mountpoint || disk.isRemovable)}
-								<div class="card-tags">
-									{#if disk.isRemovable}
-										<span class="tag removable-tag">{t('disk.removableWarning')}</span>
-									{/if}
-									{#if disk.fstype}
-										<span class="tag fstype-tag">{t('disk.existing')} {disk.fstype}</span>
-									{/if}
-									{#if disk.mountpoint}
-										<span class="tag mounted-tag">{t('disk.mounted')} {disk.mountpoint}</span>
-									{/if}
-								</div>
-							{/if}
+								{#if installState.diskId === disk.path && (disk.fstype || disk.mountpoint || disk.isRemovable)}
+									<div class="card-tags">
+										{#if disk.isRemovable}
+											<span class="tag removable-tag">{t('disk.removableWarning')}</span>
+										{/if}
+										{#if disk.fstype}
+											<span class="tag fstype-tag">{t('disk.existing')} {disk.fstype}</span>
+										{/if}
+										{#if disk.mountpoint}
+											<span class="tag mounted-tag">{t('disk.mounted')} {disk.mountpoint}</span>
+										{/if}
+									</div>
+								{/if}
 
-							{#if installState.diskId === disk.path}
-								<div class="card-partitions">
-									{#if partitionsLoading}
-										<p class="partition-loading">{t('page.diskSelection.scanPartitions')}</p>
-									{:else if partitions.length > 0}
-										<table class="partition-table">
-											<thead>
-												<tr>
-													<th>{t('disk.name')}</th>
-													<th>{t('disk.type')}</th>
-													<th class="text-right">{t('disk.size')}</th>
-													<th class="text-right">{t('disk.mount')}</th>
-												</tr>
-											</thead>
-											<tbody>
-												{#each partitions as part (part.path)}
+								{#if installState.diskId === disk.path}
+									<div class="card-partitions">
+										{#if partitionsLoading}
+											<p class="partition-loading">{t('page.diskSelection.scanPartitions')}</p>
+										{:else if partitions.length > 0}
+											<table class="partition-table">
+												<thead>
 													<tr>
-														<td class="part-name">{part.name}</td>
-														<td>
-															{#if part.fstype}
-																<span class="part-fstype">{part.fstype}</span>
-															{:else}
-																<span class="part-unknown">—</span>
-															{/if}
-														</td>
-														<td class="text-right">{part.sizeFormatted}</td>
-														<td class="text-right">
-															{#if part.mountpoints && part.mountpoints.length > 0}
-																<span class="part-mount">{part.mountpoints.join(', ')}</span>
-															{:else}
-																<span class="part-empty">—</span>
-															{/if}
-														</td>
+														<th>{t('disk.name')}</th>
+														<th>{t('disk.type')}</th>
+														<th class="text-right">{t('disk.size')}</th>
+														<th class="text-right">{t('disk.mount')}</th>
 													</tr>
-												{/each}
-											</tbody>
-										</table>
-									{:else}
-										<p class="partition-empty">{t('page.diskSelection.noPartitions')}</p>
-									{/if}
-								</div>
-							{/if}
-						</button>
-					{/each}
+												</thead>
+												<tbody>
+													{#each partitions as part (part.path)}
+														<tr>
+															<td class="part-name">{part.name}</td>
+															<td>
+																{#if part.fstype}
+																	<span class="part-fstype">{part.fstype}</span>
+																{:else}
+																	<span class="part-unknown">—</span>
+																{/if}
+															</td>
+															<td class="text-right">{part.sizeFormatted}</td>
+															<td class="text-right">
+																{#if part.mountpoints && part.mountpoints.length > 0}
+																	<span class="part-mount">{part.mountpoints.join(', ')}</span>
+																{:else}
+																	<span class="part-empty">—</span>
+																{/if}
+															</td>
+														</tr>
+													{/each}
+												</tbody>
+											</table>
+										{:else}
+											<p class="partition-empty">{t('page.diskSelection.noPartitions')}</p>
+										{/if}
+									</div>
+								{/if}
+							</button>
+						{/each}
+					</div>
+					</ScrollBox>
 				</div>
-				</ScrollBox>
-			</div>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -261,7 +325,6 @@
 		width: 100%;
 		padding-inline: var(--spacing-xl);
 		box-sizing: border-box;
-		gap: var(--gap-xl);
 	}
 
 	.page-info {
@@ -270,6 +333,15 @@
 		justify-content: center;
 		gap: var(--spacing-sm);
 		flex: 1;
+		transition: opacity 0.2s ease, max-width 0.2s ease;
+	}
+
+	.page-info.manual-hidden {
+		opacity: 0;
+		max-width: 0;
+		overflow: hidden;
+		padding: 0;
+		margin: 0;
 	}
 
 	.page-hint {
@@ -284,6 +356,36 @@
 		flex-direction: column;
 		overflow: hidden;
 		min-height: 0;
+		gap: var(--spacing-md);
+	}
+
+	.top-bar {
+		display: flex;
+		gap: var(--spacing-lg);
+		padding: 0 2px;
+		flex-shrink: 0;
+	}
+
+	.manual-title {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-md);
+		width: 50%;
+		flex-shrink: 0;
+	}
+
+	.manual-title h3 {
+		margin: 0;
+		font-size: var(--font-size-lg);
+		font-weight: 700;
+		color: var(--color-text);
+	}
+
+	.top-bar-controls {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-sm);
+		width: 50%;
 	}
 
 	.fs-bar {
@@ -328,6 +430,53 @@
 	}
 
 	.fs-pill.selected {
+		border-color: var(--color-primary);
+		background: var(--color-primary);
+		color: var(--color-on-primary);
+	}
+
+	.mode-bar {
+		display: flex;
+		align-items: center;
+		gap: var(--gap-sm);
+		padding: 0 2px;
+		flex-shrink: 0;
+	}
+
+	.mode-label {
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text-muted);
+		white-space: nowrap;
+	}
+
+	.mode-pills {
+		display: flex;
+		gap: var(--spacing-xs);
+	}
+
+	.mode-pill {
+		padding: 6px 18px;
+		border: 1.5px solid var(--color-border-light);
+		border-radius: var(--radius-pill);
+		background: transparent;
+		font-family: inherit;
+		font-size: var(--font-size-md);
+		font-weight: 600;
+		color: var(--color-text);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.mode-pill:hover {
+		border-color: var(--color-primary);
+		background: var(--color-bg-hover);
+		color: var(--color-text);
+	}
+
+	.mode-pill.selected {
 		border-color: var(--color-primary);
 		background: var(--color-primary);
 		color: var(--color-on-primary);

@@ -95,12 +95,12 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 	}
 
 	// Format EFI
-	if err := formatPartition(diskID, 1, partitions[0]); err != nil {
+	if err := FormatPartition(shared.DerivePartitionPath(diskID, 1), shared.FileSystemVfat, "EFI"); err != nil {
 		return err
 	}
 
 	// Format root
-	if err := formatPartition(diskID, 2, partitions[1]); err != nil {
+	if err := FormatPartition(shared.DerivePartitionPath(diskID, 2), fsType, "aelum"); err != nil {
 		return err
 	}
 
@@ -117,7 +117,7 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 	var subvolumes []shared.BtrfsSubvolume
 	if fsType == "btrfs" {
 		subvolumes = shared.GetBtrfsSubvolumes()
-		if err := setupBtrfsSubvolumes(ctx, diskID, subvolumes); err != nil {
+		if err := SetupBtrfsSubvolumes(ctx, shared.DerivePartitionPath(diskID, 2), subvolumes); err != nil {
 			return err
 		}
 	}
@@ -167,14 +167,10 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 	return nil
 }
 
-func formatPartition(diskID string, num int, p struct {
-	Name       string
-	SizeMB     int64
-	Fstype     string
-	MountPoint string
-}) error {
-	path := shared.DerivePartitionPath(diskID, num)
-
+// FormatPartition wipes any existing filesystem signatures on path and formats
+// it with the requested filesystem and volume label. Shared by the automatic
+// format step and the manual partition step.
+func FormatPartition(path, fstype, label string) error {
 	// Wipe filesystem signatures before formatting
 	wipeOut, err := primitives.Run("wipefs", "--all", "-f", path).CombinedOutput()
 	if err != nil {
@@ -183,15 +179,15 @@ func formatPartition(diskID string, num int, p struct {
 
 	// Format with appropriate tool
 	var cmd *exec.Cmd
-	switch p.Fstype {
+	switch fstype {
 	case shared.FileSystemVfat:
-		cmd = primitives.Run("mkfs.fat", "-F", "32", "-n", "EFI", path)
+		cmd = primitives.Run("mkfs.fat", "-F", "32", "-n", label, path)
 	case shared.FileSystemExt4:
-		cmd = primitives.Run("mkfs.ext4", "-F", "-E", "lazy_itable_init=0", "-L", "aelum", path)
+		cmd = primitives.Run("mkfs.ext4", "-F", "-E", "lazy_itable_init=0", "-L", label, path)
 	case shared.FileSystemBtrfs:
-		cmd = primitives.Run("mkfs.btrfs", "-f", "-L", "aelum", path)
+		cmd = primitives.Run("mkfs.btrfs", "-f", "-L", label, path)
 	default:
-		return fmt.Errorf("unsupported filesystem: %s", p.Fstype)
+		return fmt.Errorf("unsupported filesystem: %s", fstype)
 	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -200,8 +196,10 @@ func formatPartition(diskID string, num int, p struct {
 	return nil
 }
 
-func setupBtrfsSubvolumes(ctx *shared.InstallContext, diskID string, subvolumes []shared.BtrfsSubvolume) error {
-	rootPath := shared.DerivePartitionPath(diskID, 2)
+// SetupBtrfsSubvolumes creates the standard btrfs subvolume scheme on the
+// mounted root partition and sets the default subvolume. Shared by the
+// automatic format step and the manual partition step.
+func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolumes []shared.BtrfsSubvolume) error {
 	tmp := shared.BtrfsSetupTmpMount
 
 	_ = primitives.Run("mkdir", "-p", tmp).Run()

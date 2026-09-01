@@ -1,6 +1,9 @@
 package gui
 
-import "aelum-installer/backend/shared"
+import (
+	"aelum-installer/backend/install/partition"
+	"aelum-installer/backend/shared"
+)
 
 // GetDisks returns a list of available block devices. Wails binding.
 func (a *App) GetDisks() ([]shared.DiskInfo, error) {
@@ -32,4 +35,28 @@ func (a *App) SetSelectedLanguage(code string) error {
 // GetFileSystem returns the currently selected filesystem type.
 func (a *App) GetFileSystem() string {
 	return a.fileSystem
+}
+
+// GetManualMode reports whether manual (dualboot-safe) partitioning is active.
+func (a *App) GetManualMode() bool {
+	return a.manualMode
+}
+
+// GetManualLayout returns the manual partition layout for a disk, computed from
+// the disk's current partitions. Wails binding.
+func (a *App) GetManualLayout(diskID string) (shared.ManualLayout, error) {
+	return partition.ComputeLayout(diskID)
+}
+
+// ValidateManualLayout validates a manual partition layout without mutating
+// any state. Wails binding.
+func (a *App) ValidateManualLayout(layout shared.ManualLayout) error {
+	return partition.Validate(layout)
+}
+
+// SaveManualLayout stores the manual layout and enables manual mode. Wails
+// binding.
+func (a *App) SaveManualLayout(layout shared.ManualLayout) {
+	a.manualLayout = layout
+	a.manualMode = true
 }

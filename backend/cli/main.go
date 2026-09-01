@@ -19,6 +19,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -27,6 +28,7 @@ import (
 	"syscall"
 
 	"aelum-installer/backend/install"
+	"aelum-installer/backend/install/partition"
 	"aelum-installer/backend/shared"
 
 	"golang.org/x/term"
@@ -96,6 +98,7 @@ func run(args []string) int {
 	fileSystemFlag := fs.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
+	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
@@ -154,7 +157,7 @@ func run(args []string) int {
 	}
 
 	// Run the installation
-	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun)
+	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag)
 }
 
 // resolveUsername resolves the username from flag or stdin.
@@ -174,7 +177,7 @@ func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
 }
 
 // runInstallation performs validation and runs the installation.
-func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool) int {
+func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string) int {
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
@@ -230,6 +233,21 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 
 	// Wire the installer to use the shared logger.
 	installer.Logger = log
+
+	// Manual (dualboot) mode: parse and validate the JSON layout, then hand it
+	// to the installer so the format step only touches the Boot/Root partitions.
+	if manualLayoutJSON != "" {
+		layout, err := parseManualLayout(manualLayoutJSON)
+		if err != nil {
+			log.Error("invalid manual layout: %v", err)
+			return 1
+		}
+		if err := partition.Validate(*layout); err != nil {
+			log.Error("%v", err)
+			return 1
+		}
+		installer.SetManualLayout(layout)
+	}
 
 	// JSON progress events go to stderr (GUI reads them there).
 	// Human-readable output goes to stdout (terminal users see clean logs).
@@ -377,6 +395,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --manual-layout '<json>'   Dualboot: only format the Boot/Root partitions in the layout\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  echo 'mypassword' | %s --install /dev/vda\n", os.Args[0])
@@ -406,6 +425,16 @@ func readUsername() (string, error) {
 		return "", err
 	}
 	return "", nil
+}
+
+// parseManualLayout decodes a manual partition layout from JSON. It is used by
+// the --manual-layout flag for dualboot installs driven by the GUI.
+func parseManualLayout(jsonStr string) (*shared.ManualLayout, error) {
+	var layout shared.ManualLayout
+	if err := json.Unmarshal([]byte(jsonStr), &layout); err != nil {
+		return nil, fmt.Errorf("failed to parse manual layout JSON: %w", err)
+	}
+	return &layout, nil
 }
 
 func readPassword() (string, error) {

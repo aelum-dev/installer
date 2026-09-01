@@ -50,6 +50,14 @@ export function GetLanguages() {
   return window['go']['gui']['App']['GetLanguages']();
 }
 
+export function GetManualLayout(arg1) {
+  return window['go']['gui']['App']['GetManualLayout'](arg1);
+}
+
+export function GetManualMode() {
+  return window['go']['gui']['App']['GetManualMode']();
+}
+
 export function GetSelectedLanguage() {
   return window['go']['gui']['App']['GetSelectedLanguage']();
 }
@@ -68,6 +76,10 @@ export function RebootAndClose() {
 
 export function SaveDiskSelection(arg1) {
   return window['go']['gui']['App']['SaveDiskSelection'](arg1);
+}
+
+export function SaveManualLayout(arg1) {
+  return window['go']['gui']['App']['SaveManualLayout'](arg1);
 }
 
 export function SaveUserAccount(arg1) {
@@ -100,6 +112,10 @@ export function StartInstallation() {
 
 export function ValidateDiskSelection(arg1) {
   return window['go']['gui']['App']['ValidateDiskSelection'](arg1);
+}
+
+export function ValidateManualLayout(arg1) {
+  return window['go']['gui']['App']['ValidateManualLayout'](arg1);
 }
 
 export function ValidateUserAccount(arg1) {

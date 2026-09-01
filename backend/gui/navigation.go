@@ -37,6 +37,8 @@ type App struct {
 	region              shared.Region
 	uiLocale            string // UI language (separate from installed system locale)
 	fileSystem          string // root filesystem: "ext4" or "btrfs"
+	manualMode          bool   // dualboot-safe manual partitioning enabled
+	manualLayout        shared.ManualLayout
 	installationRunning atomic.Bool
 
 	// installCmd is the currently running CLI subprocess, or nil.

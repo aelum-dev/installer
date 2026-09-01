@@ -28,6 +28,10 @@ export function GetInstallationRunning():Promise<boolean>;
 
 export function GetLanguages():Promise<Array<shared.Language>>;
 
+export function GetManualLayout(arg1:string):Promise<shared.ManualLayout>;
+
+export function GetManualMode():Promise<boolean>;
+
 export function GetSelectedLanguage():Promise<string>;
 
 export function GetStartPage():Promise<number>;
@@ -37,6 +41,8 @@ export function GetUILocale():Promise<string>;
 export function RebootAndClose():Promise<void>;
 
 export function SaveDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;
+
+export function SaveManualLayout(arg1:shared.ManualLayout):Promise<void>;
 
 export function SaveUserAccount(arg1:shared.UserAccountData):Promise<void>;
 
@@ -53,6 +59,8 @@ export function SetUILocale(arg1:string):Promise<void>;
 export function StartInstallation():Promise<void>;
 
 export function ValidateDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;
+
+export function ValidateManualLayout(arg1:shared.ManualLayout):Promise<void>;
 
 export function ValidateUserAccount(arg1:shared.UserAccountData):Promise<void>;
 

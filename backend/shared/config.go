@@ -200,6 +200,11 @@ const EFIPartitionSizeMB = 128
 // GPTPartitionStartSector is the first usable sector on a GPT disk (1 MiB).
 const GPTPartitionStartSector = 2048
 
+// GPTOverheadMB is reserved for GPT metadata (the header + partition table at
+// the front of the disk and the backup GPT at the end) that cannot hold user
+// partitions. Used when deriving free space for manual partitioning.
+const GPTOverheadMB = 1
+
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
 var GPTTypeGUIDs = struct {
 	ESP                    string
