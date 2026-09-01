@@ -47,8 +47,8 @@ func TestValidate(t *testing.T) {
 			Disk:       "/dev/sda",
 			DiskSizeMB: 100000,
 			Partitions: []shared.ManualPartition{
-				{Index: 0, Path: "/dev/sda1", SizeMB: 128, Role: shared.RoleBoot},
-				{Index: 1, Path: "/dev/sda2", SizeMB: 50000, Role: shared.RoleRoot},
+				{Index: 0, Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+				{Index: 1, Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
 				{Index: 2, Path: "/dev/sda3", SizeMB: 0}, // empty role = untouched
 			},
 		}
@@ -69,7 +69,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda2", SizeMB: 50000, Role: shared.RoleRoot},
+					{Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
 			wantErr: true,
@@ -79,9 +79,9 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Role: shared.RoleBoot},
-					{Path: "/dev/sda2", SizeMB: 128, Role: shared.RoleBoot},
-					{Path: "/dev/sda3", SizeMB: 50000, Role: shared.RoleRoot},
+					{Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda2", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
 			wantErr: true,
@@ -91,7 +91,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Role: shared.RoleBoot},
+					{Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
 				},
 			},
 			wantErr: true,
@@ -101,9 +101,9 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Role: shared.RoleBoot},
-					{Path: "/dev/sda2", SizeMB: 50000, Role: shared.RoleRoot},
-					{Path: "/dev/sda3", SizeMB: 50000, Role: shared.RoleRoot},
+					{Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
+					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
 			wantErr: true,
@@ -113,8 +113,8 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 60000, Role: shared.RoleBoot},
-					{Path: "/dev/sda2", SizeMB: 60000, Role: shared.RoleRoot},
+					{Path: "/dev/sda1", SizeMB: 60000, Type: shared.TypeESP},
+					{Path: "/dev/sda2", SizeMB: 60000, Type: shared.TypeSystem},
 				},
 			},
 			wantErr: true,
@@ -124,8 +124,8 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 0, Role: shared.RoleBoot},
-					{Path: "/dev/sda2", SizeMB: 0, Role: shared.RoleRoot},
+					{Path: "/dev/sda1", SizeMB: 0, Type: shared.TypeESP},
+					{Path: "/dev/sda2", SizeMB: 0, Type: shared.TypeSystem},
 				},
 			},
 			wantErr: true,
@@ -135,9 +135,9 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Role: shared.PartitionRole("swap")},
-					{Path: "/dev/sda2", SizeMB: 128, Role: shared.RoleBoot},
-					{Path: "/dev/sda3", SizeMB: 50000, Role: shared.RoleRoot},
+					{Path: "/dev/sda1", SizeMB: 128, Type: shared.PartitionType("swap")},
+					{Path: "/dev/sda2", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
 			wantErr: true,
@@ -172,8 +172,8 @@ func TestBuildActions_DualbootInvariant(t *testing.T) {
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
 			{Index: 0, Path: "/dev/sda1", SizeMB: 512, ExistingFstype: "ext4"}, // empty role = untouched
-			{Index: 1, Path: "/dev/sda3", SizeMB: 20000, Role: shared.RoleRoot, ExistingFstype: "ext4"},
-			{Index: 2, Path: "", SizeMB: 128, Role: shared.RoleBoot},
+			{Index: 1, Path: "/dev/sda3", SizeMB: 20000, Type: shared.TypeSystem, ExistingFstype: "ext4"},
+			{Index: 2, Path: "", SizeMB: 128, Type: shared.TypeESP},
 		},
 	}
 
@@ -183,15 +183,15 @@ func TestBuildActions_DualbootInvariant(t *testing.T) {
 	}
 
 	if len(actions) != 2 {
-		t.Fatalf("expected 2 format actions (Boot + Root), got %d", len(actions))
+		t.Fatalf("expected 2 format actions (ESP + System), got %d", len(actions))
 	}
 
 	var boot, root *formatAction
 	for i := range actions {
-		if actions[i].role == shared.RoleBoot {
+		if actions[i].pType == shared.TypeESP {
 			boot = &actions[i]
 		}
-		if actions[i].role == shared.RoleRoot {
+		if actions[i].pType == shared.TypeSystem {
 			root = &actions[i]
 		}
 	}
@@ -239,8 +239,8 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 128, Role: shared.RoleBoot},
-			{Index: 1, Path: "", SizeMB: 0, Role: shared.RoleRoot},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
 		},
 	}
 
@@ -251,7 +251,7 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 
 	var root *formatAction
 	for i := range actions {
-		if actions[i].role == shared.RoleRoot {
+		if actions[i].pType == shared.TypeSystem {
 			root = &actions[i]
 		}
 	}
@@ -287,8 +287,8 @@ func TestComputeLayout_FreeSpace(t *testing.T) {
 
 	var sumMB int64
 	for _, p := range layout.Partitions {
-		if p.Role != "" {
-			t.Errorf("partition %s role = %q, want empty (untouched)", p.Path, p.Role)
+		if p.Type != "" {
+			t.Errorf("partition %s role = %q, want empty (untouched)", p.Path, p.Type)
 		}
 		sumMB += p.SizeMB
 	}

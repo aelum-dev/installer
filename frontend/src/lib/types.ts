@@ -31,13 +31,13 @@ export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, 
 export const FILESYSTEMS = ['ext4', 'btrfs'] as const;
 export type FileSystem = (typeof FILESYSTEMS)[number];
 
-// Manual-partitioning roles (dualboot-safe). Mirrors backend shared.PartitionRole.
-export const ROLE_BOOT = 'boot';
-export const ROLE_ROOT = 'root';
-// An empty role means the partition is untouched (dualboot-safe).
-export type PartitionRole = 'boot' | 'root' | '';
+// Manual-partitioning types (dualboot-safe). Mirrors backend shared.PartitionType.
+export const TYPE_ESP = 'esp';
+export const TYPE_SYSTEM = 'system';
+// An empty type means the partition is untouched (dualboot-safe).
+export type PartitionType = 'esp' | 'system' | '';
 
-export const PARTITION_ROLES: PartitionRole[] = [ROLE_BOOT, ROLE_ROOT, ''];
+export const PARTITION_TYPES: PartitionType[] = [TYPE_ESP, TYPE_SYSTEM, ''];
 
 // ManualPartition mirrors backend shared.ManualPartition — one row in a manual
 // layout plan.
@@ -45,7 +45,7 @@ export interface ManualPartition {
 	index: number;
 	path: string; // existing device (e.g. "/dev/sda1"), "" for newly created
 	sizeMB: number; // 0 = consume all remaining free space
-	role: PartitionRole;
+	type: PartitionType;
 	existingFstype?: string;
 }
 

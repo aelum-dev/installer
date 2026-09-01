@@ -6,7 +6,7 @@
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import { installState } from '$lib/store.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
-	import { FILESYSTEMS, ROLE_BOOT, ROLE_ROOT } from '$lib/types';
+	import { FILESYSTEMS, TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';

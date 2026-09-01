@@ -79,33 +79,33 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 }
 
 // Validate checks a ManualLayout for the invariants required to install:
-//   - exactly one Boot and exactly one Root partition
+//   - exactly one ESP and exactly one System partition
 //   - the sum of partition sizes plus GPT overhead must fit the disk
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
-//   - every role must be a known value
+//   - every type must be a known value
 func Validate(layout shared.ManualLayout) error {
-	var boot, root, zeroSize int
+	var esp, sys, zeroSize int
 	for _, p := range layout.Partitions {
-		switch p.Role {
-		case shared.RoleBoot:
-			boot++
-		case shared.RoleRoot:
-			root++
+		switch p.Type {
+		case shared.TypeESP:
+			esp++
+		case shared.TypeSystem:
+			sys++
 		case "":
-			// empty role = untouched (dualboot-safe)
+			// empty type = untouched (dualboot-safe)
 		default:
-			return fmt.Errorf("invalid partition role %q (want boot or root)", p.Role)
+			return fmt.Errorf("invalid partition type %q (want esp or system)", p.Type)
 		}
 		if p.SizeMB == 0 {
 			zeroSize++
 		}
 	}
 
-	if boot != 1 {
-		return fmt.Errorf("exactly one Boot partition is required (found %d)", boot)
+	if esp != 1 {
+		return fmt.Errorf("exactly one ESP partition is required (found %d)", esp)
 	}
-	if root != 1 {
-		return fmt.Errorf("exactly one Root partition is required (found %d)", root)
+	if sys != 1 {
+		return fmt.Errorf("exactly one System partition is required (found %d)", sys)
 	}
 	if zeroSize > 1 {
 		return fmt.Errorf("only one partition may use \"use all remaining space\"")
@@ -153,14 +153,14 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}()
 
-	// Locate the Boot and Root rows.
-	var boot, root shared.ManualPartition
+	// Locate the ESP and System rows.
+	var esp, sys shared.ManualPartition
 	for _, p := range layout.Partitions {
-		switch p.Role {
-		case shared.RoleBoot:
-			boot = p
-		case shared.RoleRoot:
-			root = p
+		switch p.Type {
+		case shared.TypeESP:
+			esp = p
+		case shared.TypeSystem:
+			sys = p
 		}
 	}
 
@@ -187,7 +187,7 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	// Ensure existing Boot/Root partitions carry the correct GPT type GUID.
+	// Ensure existing ESP/System partitions carry the correct GPT type GUID.
 	for _, a := range actions {
 		if a.isNew {
 			continue
@@ -216,34 +216,34 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	}
 
 	// btrfs root → automatic subvolumes.
-	if root.Role == shared.RoleRoot && ctx.FileSystem == shared.FileSystemBtrfs {
-		if err := format.SetupBtrfsSubvolumes(ctx, root.Path, shared.GetBtrfsSubvolumes()); err != nil {
+	if sys.Type == shared.TypeSystem && ctx.FileSystem == shared.FileSystemBtrfs {
+		if err := format.SetupBtrfsSubvolumes(ctx, sys.Path, shared.GetBtrfsSubvolumes()); err != nil {
 			return err
 		}
 	}
 
-	// Discover UUIDs and populate ctx.Partitions, keyed by role.
-	bootUUID, err := readUUID(boot.Path)
+	// Discover UUIDs and populate ctx.Partitions, keyed by type.
+	espUUID, err := readUUID(esp.Path)
 	if err != nil {
-		return fmt.Errorf("blkid %s: %w", boot.Path, err)
+		return fmt.Errorf("blkid %s: %w", esp.Path, err)
 	}
-	rootUUID, err := readUUID(root.Path)
+	rootUUID, err := readUUID(sys.Path)
 	if err != nil {
-		return fmt.Errorf("blkid %s: %w", root.Path, err)
+		return fmt.Errorf("blkid %s: %w", sys.Path, err)
 	}
 
 	partitions := &shared.PartitionInfo{
 		Disk:        diskID,
-		EFIPart:     boot.Path,
-		EFIUUID:     bootUUID,
-		RootPart:    root.Path,
+		EFIPart:     esp.Path,
+		EFIUUID:     espUUID,
+		RootPart:    sys.Path,
 		RootUUID:    rootUUID,
 		MountPoints: make(map[string]string),
 	}
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		for _, sv := range shared.GetBtrfsSubvolumes() {
 			if sv.MountPoint != "/" {
-				partitions.MountPoints[sv.MountPoint] = root.Path
+				partitions.MountPoints[sv.MountPoint] = sys.Path
 			}
 		}
 	}
@@ -252,15 +252,15 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	return nil
 }
 
-// formatAction describes a single Boot or Root partition to be formatted.
+// formatAction describes a single ESP or System partition to be formatted.
 type formatAction struct {
 	num         int    // GPT partition number
 	path        string // device path
 	startSector int64  // start sector (new partitions only)
 	sizeMB      int64  // size in MB (new partitions only)
 	guid        string // GPT type GUID
-	fstype      string // vfat (Boot) or ctx.FileSystem (Root)
-	role        shared.PartitionRole
+	fstype      string // vfat (ESP) or ctx.FileSystem (System)
+	pType       shared.PartitionType
 	isNew       bool
 }
 
@@ -281,13 +281,13 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 
 	var actions []formatAction
 	for _, p := range layout.Partitions {
-		if p.Role != shared.RoleBoot && p.Role != shared.RoleRoot {
-			continue // empty role = untouched, never formatted or mounted
+		if p.Type != shared.TypeESP && p.Type != shared.TypeSystem {
+			continue // empty type = untouched, never formatted or mounted
 		}
 
 		fstype := fileSystem
 		guid := shared.GPTTypeGUIDs.LinuxRootX86_64
-		if p.Role == shared.RoleBoot {
+		if p.Type == shared.TypeESP {
 			fstype = shared.FileSystemVfat
 			guid = shared.GPTTypeGUIDs.ESP
 		}
@@ -307,7 +307,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 				sizeMB: p.SizeMB,
 				guid:   guid,
 				fstype: fstype,
-				role:   p.Role,
+				pType:  p.Type,
 			})
 			continue
 		}
@@ -340,7 +340,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 			sizeMB:      sizeMB,
 			guid:        guid,
 			fstype:      fstype,
-			role:        p.Role,
+			pType:       p.Type,
 			isNew:       true,
 		})
 		maxNum = num

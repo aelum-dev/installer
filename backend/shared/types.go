@@ -82,16 +82,16 @@ type DiskInfo struct {
 	IsRemovable   bool   `json:"isRemovable"`
 }
 
-// PartitionRole is the role assigned to a partition in a manual layout plan.
-type PartitionRole string
+// PartitionType is the type assigned to a partition in a manual layout plan.
+type PartitionType string
 
 const (
-	// RoleBoot formats the partition as vfat (ESP) and mounts it at /boot.
-	RoleBoot PartitionRole = "boot"
-	// RoleRoot formats the partition as the root filesystem (ext4/btrfs) and
+	// TypeESP formats the partition as vfat (ESP) and mounts it at /boot.
+	TypeESP PartitionType = "esp"
+	// TypeSystem formats the partition as the root filesystem (ext4/btrfs) and
 	// mounts it at /.
-	RoleRoot PartitionRole = "root"
-	// An empty role means the partition is untouched — not formatted, not
+	TypeSystem PartitionType = "system"
+	// An empty type means the partition is untouched — not formatted, not
 	// mounted, not in fstab. This is what makes dualboot safe.
 )
 
@@ -100,7 +100,7 @@ type ManualPartition struct {
 	Index          int           `json:"index"`
 	Path           string        `json:"path"`   // existing device (e.g. "/dev/sda1"), "" for newly created
 	SizeMB         int64         `json:"sizeMB"` // 0 = consume all remaining free space
-	Role           PartitionRole `json:"role"`   // boot | root | empty = untouched
+	Type           PartitionType `json:"type"`   // esp | system | empty = untouched
 	ExistingFstype string        `json:"existingFstype,omitempty"`
 }
 

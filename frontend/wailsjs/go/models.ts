@@ -114,7 +114,7 @@ export namespace shared {
 	    index: number;
 	    path: string;
 	    sizeMB: number;
-	    role: string;
+	    type: string;
 	    existingFstype?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -126,7 +126,7 @@ export namespace shared {
 	        this.index = source["index"];
 	        this.path = source["path"];
 	        this.sizeMB = source["sizeMB"];
-	        this.role = source["role"];
+	        this.type = source["type"];
 	        this.existingFstype = source["existingFstype"];
 	    }
 	}

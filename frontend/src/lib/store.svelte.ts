@@ -3,9 +3,9 @@ import type {
 	FileSystem,
 	ManualLayout,
 	ManualPartition,
-	PartitionRole,
+	PartitionType,
 } from '$lib/types';
-import { ROLE_BOOT, ROLE_ROOT } from '$lib/types';
+import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 import { GPTOverheadMB } from '$lib/constants';
 
 // ── Installation State (shared across pages) ──
@@ -63,7 +63,7 @@ export function isPageValid(page: number): boolean {
 			);
 		case 2: // Disk Selection
 			if (installState.manualMode) {
-				return hasRequiredRoles(installState.manualLayout)
+				return hasRequiredTypes(installState.manualLayout)
 			}
 			return !!installState.diskId && !!installState.fileSystem;
 		case 3: // Confirmation
@@ -101,24 +101,24 @@ export function computeFreeMB(layout: ManualLayout): number {
 	return Math.max(layout.diskSizeMB - used - GPTOverheadMB, 0);
 }
 
-// roleCount returns how many partitions carry the given role.
-export function roleCount(layout: ManualLayout | null, role: PartitionRole): number {
+// typeCount returns how many partitions carry the given type.
+export function typeCount(layout: ManualLayout | null, type: PartitionType): number {
 	if (!layout) return 0;
-	return layout.partitions.filter((p) => p.role === role).length;
+	return layout.partitions.filter((p) => p.type === type).length;
 }
 
-// hasRequiredRoles is true when the layout has exactly one Boot and one Root.
-export function hasRequiredRoles(layout: ManualLayout | null): boolean {
+// hasRequiredTypes is true when the layout has exactly one ESP and one System.
+export function hasRequiredTypes(layout: ManualLayout | null): boolean {
 	if (!layout) return false;
-	return roleCount(layout, ROLE_BOOT) === 1 && roleCount(layout, ROLE_ROOT) === 1;
+	return typeCount(layout, TYPE_ESP) === 1 && typeCount(layout, TYPE_SYSTEM) === 1;
 }
 
-// designate sets a partition's role.
-export function setPartitionRole(
+// setType sets a partition's type.
+export function setPartitionType(
 	partitions: ManualPartition[],
 	index: number,
-	role: PartitionRole,
+	type: PartitionType,
 ): void {
 	const part = partitions.find((p) => p.index === index);
-	if (part) part.role = role;
+	if (part) part.type = type;
 }
