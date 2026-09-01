@@ -114,6 +114,10 @@
 			error = t('manual.addTooSmall');
 			return;
 		}
+		if (addUseRemaining === false && sizeMB > freeMB) {
+			error = t('manual.addTooLarge');
+			return;
+		}
 		const newPart: ManualPartition = {
 			index: nextIndex(),
 			path: '',

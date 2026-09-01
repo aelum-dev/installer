@@ -20,8 +20,10 @@
 	function setMode(mode: InstallMode): void {
 		if (mode === 'manual') {
 			installState.manualMode = true;
-			// Reload a fresh layout for the selected disk.
-			installState.manualLayout = null;
+			// Only reload a fresh layout when a disk is actually selected.
+			if (installState.disk) {
+				installState.manualLayout = null;
+			}
 		} else {
 			installState.manualMode = false;
 		}
@@ -88,7 +90,7 @@
 			}
 			if (existingFstype && existingFstype !== disk.fstype) {
 				disk.fstype = existingFstype;
-				installState.disk = { ...disk };
+				installState.disk = disk;
 			}
 		} catch (err) {
 			console.error(`[DiskSelectionPage] Failed to load partitions: ${err}`);
@@ -121,9 +123,11 @@
 			{#if installState.disk}
 				<ManualPartitionPage disk={installState.disk} />
 			{:else}
-				<StateMessage>
-					<p>{t('page.diskSelection.selectDiskManual')}</p>
-				</StateMessage>
+				<div class="manual-select-hint">
+					<StateMessage>
+						<p>{t('page.diskSelection.selectDiskManual')}</p>
+					</StateMessage>
+				</div>
 			{/if}
 		{:else}
 			<!-- Automatic mode: disk selection UI -->
