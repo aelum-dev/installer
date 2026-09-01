@@ -96,6 +96,13 @@ func fakeDisks() []DiskInfo {
 			Rotational: false, Readonly: false, Trans: "mmc",
 			IsRemovable: true, Serial: "BXN4S001234567",
 		},
+		{
+			Name: "nvme3n1", Path: "/dev/nvme3n1", Size: "4000787031616",
+			SizeFormatted: "3.6 TB", Type: "disk",
+			Model: "Samsung 990 PRO 4TB", Vendor: "Samsung",
+			Rotational: false, Readonly: false, Trans: "nvme",
+			IsRemovable: false, Serial: "S9YNX0H1234567",
+		},
 	}
 }
 
@@ -150,6 +157,19 @@ func fakePartitions(diskPath string) []PartitionDetail {
 		return []PartitionDetail{{Path: "/dev/sdcard1", Name: "sdcard1", Type: "part", Size: "68719476736", SizeFormatted: "64.0 GB", Fstype: "vfat", UUID: "C1RD-4RD1", Mountpoints: []string{}}}
 	case "/dev/mmcblk1":
 		return []PartitionDetail{{Path: "/dev/mmcblk1p1", Name: "mmcblk1p1", Type: "part", Size: "137438953472", SizeFormatted: "128.0 GB", Fstype: "vfat", UUID: "MXMC1-128", Mountpoints: []string{}}}
+	case "/dev/nvme3n1":
+		return []PartitionDetail{
+			{Path: "/dev/nvme3n1p1", Name: "nvme3n1p1", Type: "part", Size: "536870912", SizeFormatted: "512.0 MB", Fstype: "fat32", UUID: "N3P1-EFI", Mountpoints: []string{"/boot/efi"}},
+			{Path: "/dev/nvme3n1p2", Name: "nvme3n1p2", Type: "part", Size: "10737418240", SizeFormatted: "10.0 GB", Fstype: "ext4", UUID: "N3P2-ROOT", Mountpoints: []string{"/"}},
+			{Path: "/dev/nvme3n1p3", Name: "nvme3n1p3", Type: "part", Size: "21474836480", SizeFormatted: "20.0 GB", Fstype: "ext4", UUID: "N3P3-HOME", Mountpoints: []string{"/home"}},
+			{Path: "/dev/nvme3n1p4", Name: "nvme3n1p4", Type: "part", Size: "5368709120", SizeFormatted: "5.0 GB", Fstype: "ext4", UUID: "N3P4-SRV", Mountpoints: []string{"/srv"}},
+			{Path: "/dev/nvme3n1p5", Name: "nvme3n1p5", Type: "part", Size: "107374182400", SizeFormatted: "100.0 GB", Fstype: "ext4", UUID: "N3P5-DATA", Mountpoints: []string{"/data"}},
+			{Path: "/dev/nvme3n1p6", Name: "nvme3n1p6", Type: "part", Size: "53687091200", SizeFormatted: "50.0 GB", Fstype: "ext4", UUID: "N3P6-VM", Mountpoints: []string{"/var/lib/vm"}},
+			{Path: "/dev/nvme3n1p7", Name: "nvme3n1p7", Type: "part", Size: "107374182400", SizeFormatted: "100.0 GB", Fstype: "xfs", UUID: "N3P7-DB", Mountpoints: []string{"/var/lib/db"}},
+			{Path: "/dev/nvme3n1p8", Name: "nvme3n1p8", Type: "part", Size: "53687091200", SizeFormatted: "50.0 GB", Fstype: "xfs", UUID: "N3P8-BACKUP", Mountpoints: []string{"/backup"}},
+			{Path: "/dev/nvme3n1p9", Name: "nvme3n1p9", Type: "part", Size: "214748364800", SizeFormatted: "200.0 GB", Fstype: "btrfs", UUID: "N3P9-RAID", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p10", Name: "nvme3n1p10", Type: "part", Size: "1073741824000", SizeFormatted: "1.0 TB", Fstype: "zfs", UUID: "N3P10-ZFS", Mountpoints: []string{}},
+		}
 	default:
 		return []PartitionDetail{}
 	}
