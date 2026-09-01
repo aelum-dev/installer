@@ -1,0 +1,27 @@
+.state-message {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--spacing-md);
+	padding: calc(var(--spacing-xl) * 2) 0;
+	color: var(--color-text-muted);
+	font-size: 0.95rem;
+	text-align: center;
+}
+
+.state-message.error {
+	color: var(--color-danger);
+}
+
+.spinner {
+	width: 24px;
+	height: 24px;
+	border: 2.5px solid var(--color-border-light);
+	border-top-color: var(--color-primary);
+	border-radius: 50%;
+	animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}

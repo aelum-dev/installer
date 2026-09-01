@@ -1,0 +1,122 @@
+.top-bar {
+	display: flex;
+	gap: var(--spacing-lg);
+	padding: 0 2px;
+	flex-shrink: 0;
+}
+
+.manual-title {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-md);
+	width: 50%;
+	flex-shrink: 0;
+}
+
+.manual-title h3 {
+	margin: 0;
+	font-size: var(--font-size-lg);
+	font-weight: 700;
+	color: var(--color-text);
+}
+
+.top-bar-controls {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+	width: 50%;
+}
+
+.fs-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--gap-sm);
+	padding: 0 2px;
+	flex-shrink: 0;
+}
+
+.fs-label {
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--color-text-muted);
+	white-space: nowrap;
+}
+
+.fs-pills {
+	display: flex;
+	gap: var(--spacing-xs);
+}
+
+.fs-pill {
+	padding: 6px 18px;
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: var(--font-size-md);
+	font-weight: 600;
+	color: var(--color-text);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.fs-pill:hover {
+	border-color: var(--color-primary);
+	background: var(--color-bg-hover);
+	color: var(--color-text);
+}
+
+.fs-pill.selected {
+	border-color: var(--color-primary);
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}
+
+.mode-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--gap-sm);
+	padding: 0 2px;
+	flex-shrink: 0;
+}
+
+.mode-label {
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--color-text-muted);
+	white-space: nowrap;
+}
+
+.mode-pills {
+	display: flex;
+	gap: var(--spacing-xs);
+}
+
+.mode-pill {
+	padding: 6px 18px;
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	font-family: inherit;
+	font-size: var(--font-size-md);
+	font-weight: 600;
+	color: var(--color-text);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.mode-pill:hover {
+	border-color: var(--color-primary);
+	background: var(--color-bg-hover);
+	color: var(--color-text);
+}
+
+.mode-pill.selected {
+	border-color: var(--color-primary);
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}

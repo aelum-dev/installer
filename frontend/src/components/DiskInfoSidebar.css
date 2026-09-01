@@ -1,0 +1,22 @@
+.page-info {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: var(--spacing-sm);
+	flex: 1;
+	transition: opacity 0.2s ease, max-width 0.2s ease;
+}
+
+.page-info.manual-hidden {
+	opacity: 0;
+	max-width: 0;
+	overflow: hidden;
+	padding: 0;
+	margin: 0;
+}
+
+.page-hint {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+}
