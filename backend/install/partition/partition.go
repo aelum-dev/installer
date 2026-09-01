@@ -406,19 +406,30 @@ func endSectorFor(sectors []partitionSector, num int) int64 {
 }
 
 // parsePartitionNum extracts the partition number from a device path, handling
-// both /dev/sdaN and /dev/nvme0n1pN conventions.
+// both /dev/sdaN and every /dev/nvmeNdNpN convention (nvme0n1p12 -> 12).
 func parsePartitionNum(path string) int {
-	short := strings.TrimPrefix(path, "/dev/")
-	short = strings.TrimPrefix(short, "nvme0n1p")
-	short = strings.TrimPrefix(short, "nvme1n1p")
-	// Fallback: strip everything but trailing digits.
-	digits := regexp.MustCompile(`\d+`).FindAllString(short, -1)
-	if len(digits) == 0 {
+	// NVMe: /dev/nvme<n>n<m>p<part> — the partition is the trailing number after "p".
+	if m := nvmePartitionRe.FindStringSubmatch(path); m != nil {
+		num, _ := strconv.Atoi(m[1])
+		return num
+	}
+	// Everything else (sd, vd, md, ...): the trailing digit run is the number.
+	digits := trailingDigitRe.FindString(path)
+	if digits == "" {
 		return 0
 	}
-	num, _ := strconv.Atoi(digits[len(digits)-1])
+	num, _ := strconv.Atoi(digits)
 	return num
 }
+
+var (
+	// nvmePartitionRe matches the trailing partition number of an NVMe path,
+	// e.g. "/dev/nvme3n1p12" -> "12" (any controller/disk index).
+	nvmePartitionRe = regexp.MustCompile(`nvme\d+n\d+p(\d+)$`)
+	// trailingDigitRe matches the trailing digit run of conventional names,
+	// e.g. "/dev/sda21" -> "21".
+	trailingDigitRe = regexp.MustCompile(`\d+$`)
+)
 
 // alignUp rounds sector up to the nearest multiple of align (1 MiB = 2048).
 func alignUp(sector, align int64) int64 {

@@ -82,9 +82,10 @@
 
 	function setType(part: ManualPartition, type: PartitionType): void {
 		if (!layout) return;
-		// Toggle: clicking the same type deselects it.
-		const newType = part.type === type ? ('' as PartitionType) : type;
-		setPartitionType(layout.partitions, part.index, newType);
+		// Clicking the active type is a no-op — a role can't be cleared by accident.
+		// Use the delete button to remove a designation instead.
+		if (part.type === type) return;
+		setPartitionType(layout.partitions, part.index, type);
 		touch();
 		void persist();
 	}
@@ -95,8 +96,15 @@
 	}
 
 	function canDelete(part: ManualPartition): boolean {
-		// Designated ESP/System partitions must never be deleted.
-		return part.type !== TYPE_ESP && part.type !== TYPE_SYSTEM;
+		// A brand-new partition (no path yet) was never written to disk, so removing
+		// it from the plan is safe. A designated ESP/System partition can be removed
+		// too — validation re-runs before install, so an invalid layout is caught.
+		// An untouched/preserve partition is never referenced by the installer, so
+		// deleting it changes nothing on disk; block it so the delete confirmation
+		// ("returns its space to unallocated") stays honest.
+		if (part.path === '') return true;
+		if (part.type === TYPE_ESP || part.type === TYPE_SYSTEM) return true;
+		return false;
 	}
 
 	function addPartition(): void {

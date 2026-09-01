@@ -33,6 +33,8 @@ func TestParsePartitionNum(t *testing.T) {
 		{"/dev/sda3", 3},
 		{"/dev/nvme0n1p1", 1},
 		{"/dev/nvme0n1p12", 12},
+		{"/dev/nvme3n1p12", 12}, // any controller/disk index
+		{"/dev/sda21", 21},      // conventional trailing number
 	}
 	for _, c := range cases {
 		if got := parsePartitionNum(c.path); got != c.want {
@@ -264,6 +266,70 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 	// Root uses "all remaining": disk - boot - overhead.
 	if root.sizeMB != 100000-128-shared.GPTOverheadMB {
 		t.Errorf("root sizeMB = %d, want %d", root.sizeMB, 100000-128-shared.GPTOverheadMB)
+	}
+}
+
+// TestBuildActions_NoOverlapWithExisting asserts the dualboot-safety property at
+// the geometry level: every newly created partition must start at or after the
+// end of ALL existing partitions (so it never carves into a kept OS/data
+// partition) and must stay within the disk. Preserve (untouched) partitions must
+// still advance the placement frontier even though they are never formatted.
+func TestBuildActions_NoOverlapWithExisting(t *testing.T) {
+	// sda1 (kept ESP) ends at 1050623; sda2 (kept Windows) ends at 8388609.
+	sectors := []partitionSector{
+		{num: 1, start: 2048, end: 1050623},
+		{num: 2, start: 1050624, end: 8388609},
+	}
+	maxEndSector := int64(shared.GPTPartitionStartSector)
+	for _, s := range sectors {
+		if s.end > maxEndSector {
+			maxEndSector = s.end
+		}
+	}
+
+	layout := shared.ManualLayout{
+		Disk:       "/dev/sda",
+		DiskSizeMB: 100000,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP}, // kept ESP
+			{Index: 1, Path: "/dev/sda2", SizeMB: 40000},                     // Windows, preserve (empty type)
+			{Index: 2, Path: "", SizeMB: 20000, Type: shared.TypeSystem},     // NEW Linux root
+		},
+	}
+
+	actions, err := buildActions("/dev/sda", &layout, shared.FileSystemExt4, sectors)
+	if err != nil {
+		t.Fatalf("buildActions: %v", err)
+	}
+
+	var newAction *formatAction
+	for i := range actions {
+		if actions[i].isNew {
+			newAction = &actions[i]
+		}
+	}
+	if newAction == nil {
+		t.Fatal("expected one brand-new partition action")
+	}
+
+	// The new partition must start at or after the end of every existing
+	// partition — otherwise it would overwrite a kept partition.
+	if newAction.startSector < maxEndSector {
+		t.Errorf("new partition starts at sector %d, before existing partitions end at %d — would overlap a kept partition", newAction.startSector, maxEndSector)
+	}
+
+	// And it must stay within the disk (1 MiB = 2048 x 512B sectors).
+	maxAllowedSectors := layout.DiskSizeMB * 1024
+	endSector := newAction.startSector + newAction.sizeMB*1024
+	if endSector > maxAllowedSectors {
+		t.Errorf("new partition ends at sector %d, beyond disk size %d sectors", endSector, maxAllowedSectors)
+	}
+
+	// Preserve partitions must never appear as format actions.
+	for i := range actions {
+		if actions[i].path == "/dev/sda2" {
+			t.Error("preserve partition /dev/sda2 must not be a format action")
+		}
 	}
 }
 
