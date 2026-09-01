@@ -197,7 +197,7 @@
 									<span class="part-new">{t('manual.newPart')}</span>
 								{/if}
 							</td>
-							<td class="text-right monospace">{part.sizeMB} {t('unit.mb')}</td>
+							<td class="part-size">{part.sizeMB} {t('unit.mb')}</td>
 							<td>
 								<div class="type-pills">
 									{#each TYPE_OPTIONS as r (r)}
@@ -211,7 +211,7 @@
 									{/each}
 								</div>
 							</td>
-							<td>
+							<td class="part-type">
 								{#if part.type === ''}
 									<span class="type-fs type-preserve">—</span>
 								{:else if part.type === TYPE_ESP}

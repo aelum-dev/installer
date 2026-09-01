@@ -133,10 +133,15 @@
 	font-weight: 600;
 }
 
-.monospace {
+.part-size {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
 	color: var(--color-text-muted);
+	text-align: left;
+}
+
+.part-type {
+	text-align: left;
 }
 
 .type-pills {
