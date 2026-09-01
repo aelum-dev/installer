@@ -303,6 +303,8 @@
 		flex-direction: column;
 		gap: var(--spacing-md);
 		width: 100%;
+		min-height: 0;
+		flex: 1;
 	}
 
 	.state-message {
@@ -376,6 +378,8 @@
 		border: 1.5px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
+		max-height: 400px;
+		overflow-y: auto;
 	}
 
 	.editor-table {
