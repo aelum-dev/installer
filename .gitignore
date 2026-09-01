@@ -4,6 +4,10 @@ frontend/dist
 frontend/.svelte-kit
 frontend/.vite
 frontend/package.json.md5
+# Playwright E2E output
+playwright-report/
+.playwright-report/
+test-results/
 build-local.sh
 RULES.md
 plan.md

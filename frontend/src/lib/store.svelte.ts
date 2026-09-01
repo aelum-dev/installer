@@ -93,12 +93,23 @@ export function setShowConfirmDialog(value: boolean): void {
 
 // ── Manual partition helpers ───────────────────────────────────────────────
 
+// computeUsedMB sums the space that will actually be committed to disk. An
+// existing partition (path set) always occupies its space. A brand-new
+// partition (path empty) only occupies space once it is designated ESP or
+// System — the backend never creates or formats an undesignated (Preserve) row,
+// so a blank new partition must not shrink the shown free space. This is never
+// stored, so it stays correct after every edit.
+export function computeUsedMB(layout: ManualLayout): number {
+	return layout.partitions.reduce((sum, p) => {
+		const reserved = p.path !== '' || p.type !== '';
+		return sum + (reserved ? Math.max(p.sizeMB, 0) : 0);
+	}, 0);
+}
+
 // computeFreeMB derives the remaining unallocated space (in MB) from the disk
-// total minus the sum of all partition sizes minus ~1 MiB GPT overhead. It is
-// never stored, so it stays correct after every edit.
+// total minus the committed space minus ~1 MiB GPT overhead.
 export function computeFreeMB(layout: ManualLayout): number {
-	const used = layout.partitions.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
-	return Math.max(layout.diskSizeMB - used - GPTOverheadMB, 0);
+	return Math.max(layout.diskSizeMB - computeUsedMB(layout) - GPTOverheadMB, 0);
 }
 
 // typeCount returns how many partitions carry the given type.
