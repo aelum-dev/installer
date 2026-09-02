@@ -85,17 +85,10 @@
 		return layout.partitions.reduce((max, p) => Math.max(max, p.index), -1) + 1;
 	}
 
-	function canDelete(part: ManualPartition): boolean {
-		// A brand-new partition (no path yet) was never written to disk, so removing
-		// it from the plan is safe. A designated ESP/System partition can be removed
-		// too — validation re-runs before install, so an invalid layout is caught.
-		// An untouched/preserve partition is never referenced by the installer, so
-		// deleting it changes nothing on disk; block it so the delete confirmation
-		// ("returns its space to unallocated") stays honest.
-		if (part.path === '') return true;
-		if (part.type === TYPE_ESP || part.type === TYPE_SYSTEM) return true;
-		return false;
-	}
+	// Every partition is deletable: the delete-confirmation dialog is the safety
+	// gate, so there's no need to force the user to assign a role first just to
+	// remove a partition.
+
 
 	function addPartition(): void {
 		if (!layout || !disk) return;
@@ -201,9 +194,8 @@
 							<td class="text-right">
 								<button
 									type="button"
-									class={['delete-btn', { disabled: !canDelete(part) }]}
-									disabled={!canDelete(part)}
-									onclick={() => requestDelete(part.index)}
+									class="delete-btn"
+												onclick={() => requestDelete(part.index)}
 									aria-label={t('manual.delete')}
 								>
 									×
