@@ -14,6 +14,7 @@
 		diskId,
 		partitions,
 		partitionsLoading,
+		persistKey,
 		onSelectDisk,
 		onRetry
 	}: {
@@ -23,6 +24,7 @@
 		diskId: string;
 		partitions: PartitionDetail[];
 		partitionsLoading: boolean;
+		persistKey?: string | number;
 		onSelectDisk: (disk: DiskInfo) => void;
 		onRetry: () => void;
 	} = $props();
@@ -43,7 +45,7 @@
 	</StateMessage>
 {:else}
 	<div class="right-content">
-		<ScrollBox>
+		<ScrollBox {persistKey}>
 			<div class="disk-list">
 				{#each disks as disk (disk.path)}
 					<DiskCard

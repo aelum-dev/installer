@@ -5,6 +5,7 @@
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import { glyph, STEP_ICONS } from '$lib/icons';
+	import { PAGE_IDS } from '$lib/types';
 
 	const pageIcon = glyph(STEP_ICONS.welcome);
 
@@ -63,7 +64,7 @@
 		{#if loading}
 			<span class="loading-text">{t('page.welcome.loading')}</span>
 		{:else}
-			<ScrollBox>
+			<ScrollBox persistKey={PAGE_IDS.WELCOME}>
 				<ul class="language-list">
 					{#each languages as lang (lang.code)}
 						<li>
