@@ -297,8 +297,9 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		if s.num > maxNum {
 			maxNum = s.num
 		}
-		if s.end > maxEnd {
-			maxEnd = s.end
+		// s.end is the inclusive end sector; the next free sector is s.end + 1.
+		if next := s.end + 1; next > maxEnd {
+			maxEnd = next
 		}
 	}
 
@@ -318,8 +319,8 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		if p.Path != "" {
 			// Reuse an existing partition in place.
 			num := parsePartitionNum(p.Path)
-			if end := endSectorFor(sectors, num); end > maxEnd {
-				maxEnd = end
+			if next := endSectorFor(sectors, num) + 1; next > maxEnd {
+				maxEnd = next
 			}
 			if num > maxNum {
 				maxNum = num
@@ -336,8 +337,12 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		}
 
 		// Carve a brand-new partition from free space.
+		// maxEnd is already the next free sector, so align it directly. Adding 1
+		// here would leave a spurious 1 MiB gap whenever the previous partition
+		// ends exactly on a 1 MiB boundary (the common case), so new partitions
+		// sit edge-to-edge instead.
 		num := maxNum + 1
-		start := alignUp(maxEnd+1, 2048)
+		start := alignUp(maxEnd, 2048)
 		sizeMB := p.SizeMB
 		if sizeMB == 0 {
 			// Consume all remaining free space, capped so the partition ends
