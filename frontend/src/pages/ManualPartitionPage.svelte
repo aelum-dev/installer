@@ -5,6 +5,7 @@
 	import { GetManualLayout, SaveManualLayout } from '@wails/go/gui/App.js';
 	import { installState, computeFreeMB, setPartitionType } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
+	import { glyph } from '$lib/icons';
 	import './ManualPartitionPage.css';
 
 	let { disk }: { disk: DiskInfo | null } = $props();
@@ -198,7 +199,7 @@
 												onclick={() => requestDelete(part.index)}
 									aria-label={t('manual.delete')}
 								>
-									×
+									{glyph('ea81')}
 								</button>
 							</td>
 						</tr>

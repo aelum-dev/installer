@@ -147,8 +147,10 @@
 	border: 1.5px solid var(--color-border-light);
 	background: transparent;
 	color: var(--color-text-muted);
+	font-family: "NerdFontsSymbols Nerd Font";
 	font-size: 1.1rem;
 	line-height: 1;
+	vertical-align: -0.12em;
 	cursor: pointer;
 	transition: all 0.15s ease;
 }
