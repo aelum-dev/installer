@@ -39,11 +39,6 @@
 				<h3>{disk.model || disk.name || '—'}</h3>
 				{#if spaceTotalMB > 0}
 					<div class="manual-space">
-						<div class="manual-space-labels">
-							<span>{t('manual.allocated')} {Math.round(spaceUsedMB / 1024)} {t('unit.gb')}</span>
-							<span class="manual-space-of">{t('manual.of')} {Math.round(spaceTotalMB / 1024)} {t('unit.gb')}</span>
-							<span class="manual-space-free">{t('manual.free')} {Math.round(spaceFreeMB / 1024)} {t('unit.gb')}</span>
-						</div>
 						<div
 							class="manual-space-bar"
 							role="progressbar"
@@ -52,6 +47,11 @@
 							aria-valuemax={100}
 						>
 							<div class="manual-space-used" style="--pct: {spaceUsedPct}%"></div>
+						</div>
+						<div class="manual-space-labels">
+							<span>{t('manual.allocated')} {Math.round(spaceUsedMB / 1024)} {t('unit.gb')}</span>
+							<span class="manual-space-of">{t('manual.of')} {Math.round(spaceTotalMB / 1024)} {t('unit.gb')}</span>
+							<span class="manual-space-free">{t('manual.free')} {Math.round(spaceFreeMB / 1024)} {t('unit.gb')}</span>
 						</div>
 					</div>
 				{/if}
