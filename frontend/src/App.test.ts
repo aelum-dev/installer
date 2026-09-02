@@ -78,12 +78,12 @@ describe('App navigation', () => {
 			expect(result).toBeNull();
 		});
 
-		it('should clear disk selection when going back from Confirmation', async () => {
+		it('should preserve disk selection when going back from Confirmation', async () => {
 			installState.diskId = '/dev/sda';
 			installState.disk = { name: 'sda', path: '/dev/sda', size: '1000000000', type: 'disk', model: 'Test', vendor: '', rotational: false, readonly: false, fstype: null, mountpoint: null, serial: '', trans: '', isRemovable: false } as any;
 			await goBack(PAGE_IDS.CONFIRMATION);
-			expect(installState.diskId).toBe('');
-			expect(installState.disk).toBeNull();
+			expect(installState.diskId).toBe('/dev/sda');
+			expect(installState.disk).not.toBeNull();
 		});
 	});
 });

@@ -52,12 +52,6 @@ export async function goNext(currentPage: number): Promise<string | null> {
 }
 
 export async function goBack(currentPage: number): Promise<string | null> {
-	// Reset disk selection when going back from ConfirmationPage
-	if (currentPage === PAGE_IDS.CONFIRMATION) {
-		installState.diskId = '';
-		installState.disk = null;
-	}
-
 	// Update backend
 	const prevPage = currentPage - 1;
 	await SetCurrentPage(new gui.PageID({ Value: prevPage }));
