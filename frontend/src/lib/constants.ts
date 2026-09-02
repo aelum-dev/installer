@@ -32,7 +32,6 @@ export const DefaultHostname = "aelum";
 export const DefaultCLIUsername = "aelum";
 export const EFIPartitionSizeMB = 128;
 export const GPTPartitionStartSector = 2048;
-export const GPTOverheadMB = 1;
 export const PartitionLayoutEFI = "EFI";
 export const PartitionLayoutRoot = "Root";
 export const DefaultMountOptions = "defaults,noatime";

@@ -125,12 +125,19 @@
 
 	function confirmDelete(): void {
 		if (layout === null || deleteTargetIndex === null) return;
-		const before = layout.partitions.length;
-		layout.partitions = layout.partitions.filter((p) => p.index !== deleteTargetIndex);
-		if (layout.partitions.length !== before) {
-			touch();
-			void persist();
+		const idx = layout.partitions.findIndex((p) => p.index === deleteTargetIndex);
+		if (idx === -1) {
+			deleteTargetIndex = null;
+			return;
 		}
+		// Move the row into deletedPartitions (keeping its path/number) rather than
+		// dropping it, so Apply can delete it from the disk at install time. The row
+		// disappears from the table immediately, and its space is freed for new
+		// partitions.
+		const [removed] = layout.partitions.splice(idx, 1);
+		layout.deletedPartitions = (layout.deletedPartitions ?? []).concat([removed]);
+		touch();
+		void persist();
 		deleteTargetIndex = null;
 	}
 

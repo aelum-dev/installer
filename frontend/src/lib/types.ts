@@ -56,6 +56,9 @@ export interface ManualLayout {
 	diskSizeMB: number;
 	partitions: ManualPartition[];
 	freeMB: number;
+	// Partitions the user removed from the layout. Kept (not dropped) so the
+	// backend can delete them from the disk at install time.
+	deletedPartitions?: ManualPartition[];
 }
 
 // DiskInfo represents a block device discovered on the system.

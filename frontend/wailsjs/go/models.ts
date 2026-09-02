@@ -135,6 +135,7 @@ export namespace shared {
 	    diskSizeMB: number;
 	    partitions: ManualPartition[];
 	    freeMB: number;
+	    deletedPartitions?: ManualPartition[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ManualLayout(source);
@@ -146,6 +147,7 @@ export namespace shared {
 	        this.diskSizeMB = source["diskSizeMB"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);
 	        this.freeMB = source["freeMB"];
+	        this.deletedPartitions = this.convertValues(source["deletedPartitions"], ManualPartition);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

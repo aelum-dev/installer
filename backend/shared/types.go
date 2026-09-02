@@ -112,4 +112,8 @@ type ManualLayout struct {
 	DiskSizeMB int64             `json:"diskSizeMB"`
 	Partitions []ManualPartition `json:"partitions"`
 	FreeMB     int64             `json:"freeMB"`
+	// DeletedPartitions holds partitions the user removed from the layout. They
+	// are kept (rather than dropped) so Apply can delete them from the disk with
+	// `sgdisk -d`. The frontend moves a row here when the user clicks delete.
+	DeletedPartitions []ManualPartition `json:"deletedPartitions,omitempty"`
 }

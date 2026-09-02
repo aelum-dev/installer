@@ -6,8 +6,6 @@ import type {
 	PartitionType,
 } from '$lib/types';
 import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
-import { GPTOverheadMB } from '$lib/constants';
-
 // ── Installation State (shared across pages) ──
 
 export const installState = $state({
@@ -107,9 +105,9 @@ export function computeUsedMB(layout: ManualLayout): number {
 }
 
 // computeFreeMB derives the remaining unallocated space (in MB) from the disk
-// total minus the committed space minus ~1 MiB GPT overhead.
+// total minus the committed space.
 export function computeFreeMB(layout: ManualLayout): number {
-	return Math.max(layout.diskSizeMB - computeUsedMB(layout) - GPTOverheadMB, 0);
+	return Math.max(layout.diskSizeMB - computeUsedMB(layout), 0);
 }
 
 // typeCount returns how many partitions carry the given type.

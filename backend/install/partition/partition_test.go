@@ -263,9 +263,58 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 	if root.fstype != shared.FileSystemBtrfs {
 		t.Errorf("root fstype = %q, want %q", root.fstype, shared.FileSystemBtrfs)
 	}
-	// Root uses "all remaining": disk - boot - overhead.
-	if root.sizeMB != 100000-128-shared.GPTOverheadMB {
-		t.Errorf("root sizeMB = %d, want %d", root.sizeMB, 100000-128-shared.GPTOverheadMB)
+	// Root uses "all remaining", capped so it ends within the disk's usable
+	// region (the trailing 256 sectors are reserved for the backup GPT, so
+	// sgdisk won't reject a partition extending past the last usable sector).
+	// That yields 99486 MiB rather than the uncapped 100000-128 = 99872.
+	want := (100000*2048 - gptBackupSectors - 1050624) / 2048
+	if root.sizeMB != want {
+		t.Errorf("root sizeMB = %d, want %d", root.sizeMB, want)
+	}
+	// The partition must fit inside the disk after reserving the backup GPT.
+	rootEndSector := int64(1050624) + root.sizeMB*2048
+	if rootEndSector > 100000*2048-gptBackupSectors {
+		t.Errorf("root partition end sector %d exceeds disk usable space", rootEndSector)
+	}
+}
+
+// TestBuildActions_AllRemainingFitsFullDisk guards the regression where a
+// "use all remaining space" partition on a fully allocated disk was sized as
+// DiskSizeMB - boot, extending past the last usable sector. sgdisk rejects such
+// a partition ("Could not create partition ... past the end of disk"), so the
+// computed partition must end within the disk after reserving the backup GPT.
+func TestBuildActions_AllRemainingFitsFullDisk(t *testing.T) {
+	// Fresh disk: brand-new ESP (512 MiB) + brand-new System (all remaining).
+	layout := shared.ManualLayout{
+		Disk:       "/dev/vda",
+		DiskSizeMB: 40960,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "", SizeMB: 512, Type: shared.TypeESP},
+			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
+		},
+	}
+
+	actions, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, nil)
+	if err != nil {
+		t.Fatalf("buildActions: %v", err)
+	}
+
+	var system *formatAction
+	for i := range actions {
+		if actions[i].pType == shared.TypeSystem {
+			system = &actions[i]
+		}
+	}
+	if system == nil {
+		t.Fatal("no system action")
+	}
+	if system.sizeMB == 0 {
+		t.Fatal("system partition size was not resolved")
+	}
+	systemEndSector := system.startSector + system.sizeMB*2048
+	diskSectors := layout.DiskSizeMB * 2048
+	if systemEndSector > diskSectors-gptBackupSectors {
+		t.Errorf("system partition end sector %d exceeds disk usable space (disk %d sectors)", systemEndSector, diskSectors)
 	}
 }
 
@@ -359,7 +408,7 @@ func TestComputeLayout_FreeSpace(t *testing.T) {
 		sumMB += p.SizeMB
 	}
 
-	wantFree := layout.DiskSizeMB - sumMB - shared.GPTOverheadMB
+	wantFree := layout.DiskSizeMB - sumMB
 	if wantFree < 0 {
 		wantFree = 0
 	}
@@ -368,8 +417,55 @@ func TestComputeLayout_FreeSpace(t *testing.T) {
 	}
 }
 
-func TestGPTOverheadBytes(t *testing.T) {
-	if GPTOverheadBytes != int64(shared.GPTOverheadMB*1024*1024) {
-		t.Errorf("GPTOverheadBytes = %d, want %d", GPTOverheadBytes, shared.GPTOverheadMB*1024*1024)
+// TestDeleteOrder verifies that partitions to delete are returned highest-first
+// so deleting them leaves the numbers of the surviving partitions unchanged,
+// and that rows without a real device path are ignored.
+func TestDeleteOrder(t *testing.T) {
+	tests := []struct {
+		name    string
+		deleted []shared.ManualPartition
+		want    []int
+	}{
+		{
+			name:    "empty",
+			deleted: nil,
+			want:    []int{},
+		},
+		{
+			name:    "single",
+			deleted: []shared.ManualPartition{{Path: "/dev/sda2"}},
+			want:    []int{2},
+		},
+		{
+			name: "multiple sorted highest-first",
+			deleted: []shared.ManualPartition{
+				{Path: "/dev/sda3"},
+				{Path: "/dev/sda1"},
+				{Path: "/dev/sda5"},
+			},
+			want: []int{5, 3, 1},
+		},
+		{
+			name: "ignores rows without a device path",
+			deleted: []shared.ManualPartition{
+				{Path: ""},          // brand-new, never existed
+				{Path: "/dev/vda4"}, // real
+			},
+			want: []int{4},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := deleteOrder(tc.deleted)
+			if len(got) != len(tc.want) {
+				t.Fatalf("deleteOrder(%q) len = %d, want %d", tc.name, len(got), len(tc.want))
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Errorf("deleteOrder(%q) = %v, want %v", tc.name, got, tc.want)
+				}
+			}
+		})
 	}
 }

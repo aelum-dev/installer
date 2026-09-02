@@ -53,16 +53,18 @@ func Run(ctx *shared.InstallContext) error {
 	}
 
 	if rootSubvol != nil {
-		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd)
+		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd).
+		// --mkdir ensures the mount point exists even on a bare live ISO rootfs.
 		mountOpts := primitives.BuildMountOpts(rootSubvol)
-		cmd = primitives.Run("mount", "-o", mountOpts, p.RootPart, shared.MountRoot)
+		cmd = primitives.Run("mount", "--mkdir", "-o", mountOpts, p.RootPart, shared.MountRoot)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
 		}
 	} else {
-		// Standard mount for ext4 and other filesystems
-		cmd = primitives.Run("mount", p.RootPart, shared.MountRoot)
+		// Standard mount for ext4 and other filesystems. --mkdir creates the mount
+		// point (e.g. /mnt) if the live ISO rootfs doesn't already provide it.
+		cmd = primitives.Run("mount", "--mkdir", p.RootPart, shared.MountRoot)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))

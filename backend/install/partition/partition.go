@@ -10,6 +10,7 @@ package partition
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -18,9 +19,11 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-// GPTOverheadBytes is the ~1 MiB of disk reserved for GPT metadata. Exposed for
-// tests that check free-space math.
-const GPTOverheadBytes = int64(shared.GPTOverheadMB * 1024 * 1024)
+// gptBackupSectors is the number of trailing sectors a GPT reserves for its
+// backup partition table at the very end of the disk (256 sectors by default).
+// The "use all remaining space" computation reserves this room so sgdisk does
+// not reject a partition whose end would extend past the last usable sector.
+const gptBackupSectors = int64(256)
 
 // ComputeLayout returns a ManualLayout describing a disk's current partitions
 // (all preset to Preserve) plus the derived free space. It reuses the same
@@ -70,7 +73,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 		})
 	}
 
-	freeBytes := diskSizeBytes - usedBytes - GPTOverheadBytes
+	freeBytes := diskSizeBytes - usedBytes
 	if freeBytes < 0 {
 		freeBytes = 0
 	}
@@ -80,7 +83,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 
 // Validate checks a ManualLayout for the invariants required to install:
 //   - exactly one ESP and exactly one System partition
-//   - the sum of partition sizes plus GPT overhead must fit the disk
+//   - the sum of partition sizes must fit the disk
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
 //   - every type must be a known value
 func Validate(layout shared.ManualLayout) error {
@@ -119,9 +122,9 @@ func Validate(layout shared.ManualLayout) error {
 		sumMB += p.SizeMB
 	}
 
-	// Σsizes + 1 MiB GPT overhead ≤ diskSize, all in MiB.
-	if sumMB+shared.GPTOverheadMB > layout.DiskSizeMB {
-		return fmt.Errorf("partition sizes (%d MB) exceed the disk size (%d MB) minus GPT overhead", sumMB, layout.DiskSizeMB)
+	// Σsizes ≤ diskSize, all in MiB.
+	if sumMB > layout.DiskSizeMB {
+		return fmt.Errorf("partition sizes (%d MB) exceed the disk size (%d MB)", sumMB, layout.DiskSizeMB)
 	}
 
 	return nil
@@ -153,19 +156,25 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}()
 
-	// Locate the ESP and System rows.
-	var esp, sys shared.ManualPartition
+	// Locate the System row (needed only to confirm the layout has a System
+	// partition before the btrfs subvolume step). The ESP path is resolved from
+	// the format actions below.
+	var sys shared.ManualPartition
 	for _, p := range layout.Partitions {
-		switch p.Type {
-		case shared.TypeESP:
-			esp = p
-		case shared.TypeSystem:
+		if p.Type == shared.TypeSystem {
 			sys = p
 		}
 	}
 
 	// Unmount anything left behind by a prior attempt.
 	_ = primitives.CleanupMounts(ctx.Logger)
+
+	// Remove any partitions the user deleted from the layout before reading the
+	// disk geometry or creating new partitions. Deleting first frees their space
+	// for new partitions and keeps the numbers of the surviving partitions valid.
+	if err := deletePartitions(diskID, layout.DeletedPartitions); err != nil {
+		return err
+	}
 
 	// Build the ordered list of format actions for Boot + Root only.
 	sectors, err := partitionSectors(diskID)
@@ -175,6 +184,20 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	actions, err := buildActions(diskID, layout, ctx.FileSystem, sectors)
 	if err != nil {
 		return err
+	}
+
+	// Resolve the actual device paths for the ESP and System partitions. For
+	// brand-new partitions the layout rows carry an empty Path; buildActions
+	// computed the real device path (e.g. /dev/vda1) in each formatAction, and
+	// that is what format/blkid/mount must use downstream.
+	var espPath, sysPath string
+	for _, a := range actions {
+		switch a.pType {
+		case shared.TypeESP:
+			espPath = a.path
+		case shared.TypeSystem:
+			sysPath = a.path
+		}
 	}
 
 	// Create any brand-new partitions first.
@@ -217,26 +240,26 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 	// btrfs root → automatic subvolumes.
 	if sys.Type == shared.TypeSystem && ctx.FileSystem == shared.FileSystemBtrfs {
-		if err := format.SetupBtrfsSubvolumes(ctx, sys.Path, shared.GetBtrfsSubvolumes()); err != nil {
+		if err := format.SetupBtrfsSubvolumes(ctx, sysPath, shared.GetBtrfsSubvolumes()); err != nil {
 			return err
 		}
 	}
 
 	// Discover UUIDs and populate ctx.Partitions, keyed by type.
-	espUUID, err := readUUID(esp.Path)
+	espUUID, err := readUUID(espPath)
 	if err != nil {
-		return fmt.Errorf("blkid %s: %w", esp.Path, err)
+		return fmt.Errorf("blkid %s: %w", espPath, err)
 	}
-	rootUUID, err := readUUID(sys.Path)
+	rootUUID, err := readUUID(sysPath)
 	if err != nil {
-		return fmt.Errorf("blkid %s: %w", sys.Path, err)
+		return fmt.Errorf("blkid %s: %w", sysPath, err)
 	}
 
 	partitions := &shared.PartitionInfo{
 		Disk:        diskID,
-		EFIPart:     esp.Path,
+		EFIPart:     espPath,
 		EFIUUID:     espUUID,
-		RootPart:    sys.Path,
+		RootPart:    sysPath,
 		RootUUID:    rootUUID,
 		MountPoints: make(map[string]string),
 	}
@@ -317,17 +340,17 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		start := alignUp(maxEnd+1, 2048)
 		sizeMB := p.SizeMB
 		if sizeMB == 0 {
-			// Consume all remaining free space.
-			var sumOther int64
-			for _, o := range layout.Partitions {
-				if o.Index != p.Index {
-					sumOther += o.SizeMB
-				}
+			// Consume all remaining free space, capped so the partition ends
+			// within the disk's usable region. DiskSizeMB is in MiB, so the disk
+			// holds DiskSizeMB*2048 sectors; reserve the trailing gptBackupSectors
+			// for the backup GPT. Without this, sgdisk rejects a partition whose
+			// end extends past the last usable sector (the backup GPT needs room
+			// at the very end of the disk).
+			available := layout.DiskSizeMB*2048 - gptBackupSectors - start
+			if available < 2048 {
+				available = 2048 // at least 1 MiB
 			}
-			sizeMB = layout.DiskSizeMB - sumOther - shared.GPTOverheadMB
-			if sizeMB < 1 {
-				sizeMB = 1
-			}
+			sizeMB = available / 2048
 		}
 		end := start + (sizeMB*1024*1024)/512
 		if end > maxEnd {
@@ -350,19 +373,54 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 }
 
 // createPartition creates a new GPT partition with the correct size and type
-// GUID using sgdisk.
+// GUID using sgdisk. The disk path is passed as sgdisk's final argument — it is
+// required: without it sgdisk succeeds silently and creates no partition.
 func createPartition(diskID string, a formatAction) error {
-	args := []string{
+	args := append([]string{"sgdisk"}, []string{
 		"-n", fmt.Sprintf("%d:%d:+%dM", a.num, a.startSector, a.sizeMB),
 		"-t", fmt.Sprintf("%d:%s", a.num, a.guid),
 		"-c", fmt.Sprintf("%d:%s", a.num, roleLabel(a.fstype)),
-	}
-	args = append([]string{"sgdisk"}, args...)
+		diskID,
+	}...)
 	out, err := primitives.Run(args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("sgdisk create partition %d: %w: %s", a.num, err, string(out))
 	}
 	return nil
+}
+
+// deletePartitions removes the given partitions from the disk with `sgdisk -d`,
+// highest partition number first so the numbers of the surviving partitions are
+// left untouched, then refreshes the kernel's view of the partition table.
+func deletePartitions(diskID string, deleted []shared.ManualPartition) error {
+	nums := deleteOrder(deleted)
+	for _, num := range nums {
+		out, err := primitives.Run("sgdisk", "-d", strconv.Itoa(num), diskID).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("sgdisk delete partition %d: %w: %s", num, err, string(out))
+		}
+	}
+
+	probeOut, probeErr := primitives.Run("partprobe", diskID).CombinedOutput()
+	if probeErr != nil {
+		return fmt.Errorf("partprobe: %w: %s", probeErr, string(probeOut))
+	}
+	return nil
+}
+
+// deleteOrder extracts the partition numbers to delete and returns them
+// highest-first. Deleting in that order leaves the numbers of the surviving
+// partitions unchanged (sgdisk does not renumber after a deletion, but going
+// high-to-low is still the safe, deterministic order).
+func deleteOrder(deleted []shared.ManualPartition) []int {
+	nums := make([]int, 0, len(deleted))
+	for _, p := range deleted {
+		if n := parsePartitionNum(p.Path); n > 0 {
+			nums = append(nums, n)
+		}
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(nums)))
+	return nums
 }
 
 // partitionSector is a parsed start/end sector pair for one existing partition.
