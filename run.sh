@@ -5,8 +5,8 @@ cd "$(dirname "$0")"
 
 SHARED_DIR=$HOME"/Projects/shared"
 
-echo "=== Refreshing mirrorlists ==="
-go run ./backend/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
+# echo "=== Refreshing mirrorlists ==="
+# go run ./backend/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
 
 echo ""
 echo "=== Starting Wails Dev Server (Debug Mode) ==="

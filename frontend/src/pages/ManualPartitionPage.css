@@ -88,10 +88,6 @@
 .part-name {
 	font-weight: 600;
 	color: var(--color-text);
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	align-items: start;
 	text-align: left;
 }
 
