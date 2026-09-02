@@ -66,6 +66,8 @@
 	border-radius: var(--radius-pill);
 	background: var(--color-bg-hover);
 	overflow: hidden;
+	box-sizing: border-box;
+	border: 1px solid var(--color-border-light);
 }
 
 .manual-space-used {
