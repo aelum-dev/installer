@@ -274,6 +274,11 @@ const BootLoaderEntriesDir = "loader/entries"
 
 // --- Progress tick ----------------------------------------------------------
 
+// DryRunStepDuration is how long each install step sleeps in dry-run mode.
+// Every step lasts the same fixed duration regardless of its progress weight,
+// so the dry-run wizard finishes quickly and predictably.
+const DryRunStepDurationMs = 1000
+
 // ProgressTickDelayMs is the initial delay before the progress tick starts.
 const ProgressTickDelayMs = 2000
 

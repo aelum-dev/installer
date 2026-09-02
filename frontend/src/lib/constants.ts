@@ -49,6 +49,7 @@ export const BootEntryFileName = "aelum";
 export const BootEntryTitle = "Aelum";
 export const BootOptionDescription = "Aelum";
 export const BootLoaderEntriesDir = "loader/entries";
+export const DryRunStepDurationMs = 1000;
 export const ProgressTickDelayMs = 2000;
 export const ProgressTickIntervalMs = 8000;
 export const ProgressTickMaxPercent = 99;

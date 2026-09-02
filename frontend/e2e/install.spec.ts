@@ -47,7 +47,7 @@ test('full wizard flow reaches the finish screen', async ({ page }) => {
   // (or the dry-run layout validation fails, as it does for the synthetic
   // disks) the page shows an error hint instead. Either way the install path
   // was exercised, so assert we reached one of those terminal states.
-  const finished = page.getByRole('heading', { name: 'Installation Complete' });
+  const finished = page.getByText('Aelum has been installed successfully.');
   const errored = page.locator('.error-hint');
   await Promise.race([
     expect(finished).toBeVisible({ timeout: 60_000 }),

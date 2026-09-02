@@ -138,13 +138,13 @@ func (inst *Installer) Install() error {
 		stopTick := make(chan struct{})
 		var stepDuration time.Duration
 		if inst.dryRun {
-			stepDuration = time.Duration(weights[idx]) * 600 * time.Millisecond
+			stepDuration = time.Duration(shared.DryRunStepDurationMs) * time.Millisecond
 		}
 		go inst.tickProgress(label, startPercent, endPercent, stepDuration, stopTick)
 
 		var err error
 		if inst.dryRun {
-			err = simulateStep(ctx.Cancel, time.Duration(weights[idx])*600*time.Millisecond)
+			err = simulateStep(ctx.Cancel, time.Duration(shared.DryRunStepDurationMs)*time.Millisecond)
 		} else {
 			err = step.Run(ctx)
 		}
@@ -243,7 +243,7 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 	defer inst.RunCleanup()
 
 	allSteps := inst.installationSteps()
-	for idx, s := range allSteps {
+	for _, s := range allSteps {
 		if s.Name() == stepName {
 			label = s.Label()
 			if inst.dryRun {
@@ -254,8 +254,7 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 			ctx := inst.context()
 			var stepErr error
 			if inst.dryRun {
-				weight := stepWeights()[idx]
-				stepErr = simulateStep(ctx.Cancel, time.Duration(weight)*600*time.Millisecond)
+				stepErr = simulateStep(ctx.Cancel, time.Duration(shared.DryRunStepDurationMs)*time.Millisecond)
 			} else {
 				stepErr = s.Run(ctx)
 			}
