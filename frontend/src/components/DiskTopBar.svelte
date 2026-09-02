@@ -29,6 +29,11 @@
 		onSelectFileSystem: (fs: FileSystem) => void;
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
+
+	// Group digits with a space every 3 (e.g. 1500 -> "1 500") for readability.
+	function formatMB(mb: number): string {
+		return String(mb).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+	}
 </script>
 
 <div class="top-bar">
@@ -49,9 +54,9 @@
 							<div class="manual-space-used" style="--pct: {spaceUsedPct}%"></div>
 						</div>
 						<div class="manual-space-labels">
-							<span>{t('manual.allocated')} {Math.round(spaceUsedMB / 1024)} {t('unit.gb')}</span>
-							<span class="manual-space-of">{t('manual.of')} {Math.round(spaceTotalMB / 1024)} {t('unit.gb')}</span>
-							<span class="manual-space-free">{t('manual.free')} {Math.round(spaceFreeMB / 1024)} {t('unit.gb')}</span>
+							<span>{t('manual.allocated')} {formatMB(spaceUsedMB)} {t('unit.mb')}</span>
+							<span class="manual-space-of">{t('manual.of')} {formatMB(spaceTotalMB)} {t('unit.mb')}</span>
+							<span class="manual-space-free">{t('manual.free')} {formatMB(spaceFreeMB)} {t('unit.mb')}</span>
 						</div>
 					</div>
 				{/if}
