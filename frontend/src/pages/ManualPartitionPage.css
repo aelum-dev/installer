@@ -143,28 +143,37 @@
 .delete-btn {
 	width: 28px;
 	height: 28px;
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-xl);
 	border: 1.5px solid var(--color-border-light);
-	background: transparent;
-	color: var(--color-text-muted);
+	background: var(--color-bg-white);
+	color: var(--color-primary);
 	font-family: "NerdFontsSymbols Nerd Font";
 	font-size: 1.1rem;
 	line-height: 1;
-	vertical-align: -0.12em;
+	padding: 0;
 	cursor: pointer;
-	transition: all 0.15s ease;
+	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .delete-btn:hover:not(.disabled) {
-	border-color: var(--color-danger);
-	color: var(--color-danger);
-	background: var(--color-danger-bg);
+	border-color: var(--color-border);
+	background: var(--color-bg-light);
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-sm);
+}
+
+.delete-btn:active:not(.disabled) {
+	transform: translateY(0) scale(0.98);
 }
 
 .delete-btn.disabled {
-	opacity: 0.3;
+	opacity: 0.45;
 	cursor: not-allowed;
-	pointer-events: none;
+	transform: none !important;
+	box-shadow: none !important;
 }
 
 /* Add control */
