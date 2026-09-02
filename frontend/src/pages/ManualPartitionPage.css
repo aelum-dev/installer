@@ -35,43 +35,6 @@
 	to { transform: rotate(360deg); }
 }
 
-/* Free-space track */
-.free-track {
-	background: var(--color-bg-white);
-	border: 1.5px solid var(--color-border-light);
-	border-radius: var(--radius-lg);
-	padding: var(--spacing-md);
-}
-
-.free-label {
-	display: flex;
-	justify-content: space-between;
-	font-size: var(--font-size-sm);
-	color: var(--color-text-muted);
-	margin-bottom: var(--spacing-sm);
-}
-
-.free-free {
-	color: var(--color-progress);
-	font-weight: 600;
-}
-
-.free-bar {
-	width: 100%;
-	height: 14px;
-	border-radius: var(--radius-pill);
-	background: var(--color-bg-hover);
-	overflow: hidden;
-}
-
-.free-used {
-	height: 100%;
-	width: var(--pct, 0%);
-	background: var(--color-primary);
-	border-radius: var(--radius-pill);
-	transition: width 0.2s ease;
-}
-
 /* Partition editor table */
 .partition-editor {
 	background: var(--color-bg-white);
@@ -86,6 +49,10 @@
 .editor-table {
 	width: 100%;
 	border-collapse: collapse;
+}
+
+.editor-table {
+	table-layout: fixed;
 }
 
 .editor-table th {
@@ -109,6 +76,11 @@
 	border-bottom: none;
 }
 
+/* Name, Size and Type share the table equally; the trailing delete column keeps its own width. */
+.editor-table th:last-child {
+	width: 44px;
+}
+
 .editor-row.designated {
 	background: var(--color-primary-lighter);
 }
@@ -119,12 +91,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
-}
-
-.part-existing {
-	font-size: 0.68rem;
-	color: var(--color-text-muted);
-	font-weight: 500;
+	align-items: start;
+	text-align: left;
 }
 
 .part-new {
@@ -137,10 +105,6 @@
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
 	color: var(--color-text-muted);
-	text-align: left;
-}
-
-.part-type {
 	text-align: left;
 }
 
@@ -178,30 +142,6 @@
 	border-color: var(--color-primary);
 	background: var(--color-primary);
 	color: var(--color-on-primary);
-}
-
-.type-fs {
-	font-size: 0.72rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	font-family: var(--font-mono);
-	padding: 1px 6px;
-	border-radius: var(--radius-sm);
-	background: var(--color-bg-hover);
-	color: var(--color-text);
-}
-
-.type-fs.fs-vfat {
-	background: var(--color-warning-bg);
-	color: var(--color-warning-text);
-}
-
-.type-fs.type-preserve {
-	color: var(--color-text-muted);
-	font-style: italic;
-	font-family: inherit;
-	text-transform: none;
-	font-weight: 500;
 }
 
 .delete-btn {

@@ -7,10 +7,20 @@
 
 .manual-title {
 	display: flex;
+	flex-direction: row;
 	align-items: center;
 	gap: var(--spacing-md);
 	width: 50%;
 	flex-shrink: 0;
+}
+
+/* Stacked disk name + free bar, sitting to the right of the icon. */
+.manual-title-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+	min-width: 0;
+	align-items: start;
 }
 
 .manual-title h3 {
@@ -18,6 +28,48 @@
 	font-size: var(--font-size-lg);
 	font-weight: 700;
 	color: var(--color-text);
+	text-align: left;
+}
+
+/* Allocated / free space summary shown under the disk name in manual mode. */
+.manual-space {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.manual-space-labels {
+	display: flex;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0 var(--spacing-sm);
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+}
+
+.manual-space-of {
+	color: var(--color-text-muted);
+}
+
+.manual-space-free {
+	color: var(--color-progress);
+	font-weight: 600;
+}
+
+.manual-space-bar {
+	width: 100%;
+	height: 10px;
+	border-radius: var(--radius-pill);
+	background: var(--color-bg-hover);
+	overflow: hidden;
+}
+
+.manual-space-used {
+	height: 100%;
+	width: var(--pct, 0%);
+	background: var(--color-primary);
+	border-radius: var(--radius-pill);
+	transition: width 0.2s ease;
 }
 
 .top-bar-controls {

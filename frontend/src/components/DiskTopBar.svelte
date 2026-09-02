@@ -11,6 +11,10 @@
 		disk,
 		fileSystem,
 		manualMode,
+		spaceUsedMB = 0,
+		spaceTotalMB = 0,
+		spaceFreeMB = 0,
+		spaceUsedPct = 0,
 		onSelectFileSystem,
 		onToggleMode
 	}: {
@@ -18,6 +22,10 @@
 		disk: DiskInfo | null;
 		fileSystem: FileSystem | '';
 		manualMode: boolean;
+		spaceUsedMB?: number;
+		spaceTotalMB?: number;
+		spaceFreeMB?: number;
+		spaceUsedPct?: number;
 		onSelectFileSystem: (fs: FileSystem) => void;
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
@@ -27,7 +35,27 @@
 	{#if manualMode && disk}
 		<div class="manual-title">
 			<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-			<h3>{disk.model || disk.name || '—'}</h3>
+			<div class="manual-title-content">
+				<h3>{disk.model || disk.name || '—'}</h3>
+				{#if spaceTotalMB > 0}
+					<div class="manual-space">
+						<div class="manual-space-labels">
+							<span>{t('manual.allocated')} {Math.round(spaceUsedMB / 1024)} {t('unit.gb')}</span>
+							<span class="manual-space-of">{t('manual.of')} {Math.round(spaceTotalMB / 1024)} {t('unit.gb')}</span>
+							<span class="manual-space-free">{t('manual.free')} {Math.round(spaceFreeMB / 1024)} {t('unit.gb')}</span>
+						</div>
+						<div
+							class="manual-space-bar"
+							role="progressbar"
+							aria-valuenow={spaceUsedPct}
+							aria-valuemin={0}
+							aria-valuemax={100}
+						>
+							<div class="manual-space-used" style="--pct: {spaceUsedPct}%"></div>
+						</div>
+					</div>
+				{/if}
+			</div>
 		</div>
 	{/if}
 

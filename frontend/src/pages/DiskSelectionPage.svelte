@@ -6,7 +6,7 @@
 	import DiskList from '$components/DiskList.svelte';
 	import StateMessage from '$components/StateMessage.svelte';
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
-	import { installState } from '$lib/store.svelte';
+	import { installState, computeUsedMB, computeFreeMB } from '$lib/store.svelte';
 	import type { DiskInfo, PartitionDetail } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
@@ -30,6 +30,18 @@
 	}
 
 	const pageIcon = glyph(STEP_ICONS.diskSelection);
+
+	// Allocated / free space summary for the manual-mode title bar. Derived from the
+	// shared manual layout, which ManualPartitionPage keeps in sync.
+	const spaceSummary = $derived.by(() => {
+		const layout = installState.manualLayout;
+		if (!layout) return { used: 0, total: 0, free: 0, pct: 0 };
+		const used = computeUsedMB(layout);
+		const total = layout.diskSizeMB;
+		const free = computeFreeMB(layout);
+		return { used, total, free, pct: total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0 };
+	});
+
 	const minDiskSizeFormatted = $derived.by(() => {
 		const n = MinDiskSizeBytes;
 		const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -114,6 +126,10 @@
 			disk={installState.disk}
 			fileSystem={installState.fileSystem}
 			manualMode={installState.manualMode}
+			spaceUsedMB={spaceSummary.used}
+			spaceTotalMB={spaceSummary.total}
+			spaceFreeMB={spaceSummary.free}
+			spaceUsedPct={spaceSummary.pct}
 			onSelectFileSystem={(fs) => { installState.fileSystem = fs; }}
 			onToggleMode={setMode}
 		/>
