@@ -30,6 +30,17 @@
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
 
+	// Show info popup when user tries to switch to manual without a disk selected.
+	let showDiskHint = $state(false);
+
+	function handleModeClick(mode: InstallMode): void {
+		if (mode === 'manual' && !disk) {
+			showDiskHint = true;
+			return;
+		}
+		onToggleMode(mode);
+	}
+
 	// Group digits with a space every 3 (e.g. 1500 -> "1 500") for readability.
 	function formatMB(mb: number): string {
 		return String(mb).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -93,18 +104,51 @@
 				<button
 					type="button"
 					class={['mode-pill', { selected: !manualMode }]}
-					onclick={() => onToggleMode('automatic')}
+					onclick={() => handleModeClick('automatic')}
 				>
 					{t('manual.modeAutomatic')}
 				</button>
 				<button
 					type="button"
 					class={['mode-pill', { selected: manualMode }]}
-					onclick={() => onToggleMode('manual')}
+					disabled={!disk}
+					onclick={() => handleModeClick('manual')}
 				>
 					{t('manual.modeManual')}
 				</button>
 			</div>
 		</div>
 	</div>
+
+	<!-- Info popup: "Select a disk first" -->
+	{#if showDiskHint}
+		<div
+			class="disk-hint-overlay"
+			onclick={() => { showDiskHint = false; }}
+			onkeydown={(e) => { if (e.key === 'Escape') showDiskHint = false; }}
+		>
+			<div
+				class="disk-hint"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+			>
+				<div class="disk-hint-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="12" cy="12" r="10" stroke="var(--color-primary)" stroke-width="1.5"/>
+						<line x1="12" y1="8" x2="12" y2="13" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round"/>
+						<circle cx="12" cy="16.5" r="1" fill="var(--color-primary)"/>
+					</svg>
+				</div>
+				<h3 class="disk-hint-title">{t('page.diskSelection.selectDiskFirst')}</h3>
+				<p class="disk-hint-message">{t('page.diskSelection.selectDiskFirst')}</p>
+				<button
+					type="button"
+					class="disk-hint-close"
+					onclick={() => { showDiskHint = false; }}
+				>
+					{t('dialog.confirm.cancel')}
+				</button>
+			</div>
+		</div>
+	{/if}
 </div>
