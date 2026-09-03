@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Manual-mode disk space summary now displays in GB instead of MB** — the allocated/free bar labels in the disk top bar now convert the underlying MB values to GB (one decimal place, e.g. `1535.5 GB`) instead of showing raw megabytes.
+- **Manual-mode disk space label renamed from "Allocated" to "Used"**.
+
 ### Fixed
 - **Manual partitioning "Use remaining" is now a proper toggle switch instead of a native checkbox** — the bare browser checkbox in the add-partition row looked inconsistent with the rest of the wizard. Replaced it with an accessible styled switch: the native input is visually hidden but still keyboard/click reachable (focus-visible ring), the track takes the primary color and the knob slides across on toggle. No behavior change — it still toggles `addUseRemaining`, disabling the size slider and consuming the full free space.
 - **Manual partitioning "Add" now previews the size in the top-bar space bar** — the manual page's size slider only changed local state, so the allocated/free bar in the disk top bar (driven by the shared layout) never moved while dragging. The pending "add partition" size is now written to a new `installState.pendingAddMB` on every slider change (clamped to available free space; "Use remaining" maps to the full free space), and `DiskSelectionPage` folds it into its used/free/pct summary so the bar live-updates before the partition is committed. The committed layout is unchanged — the preview is frontend-only and resets once the partition is added.

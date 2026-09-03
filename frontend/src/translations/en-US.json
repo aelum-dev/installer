@@ -33,7 +33,7 @@
   "manual.modeManual": "Manual",
   "manual.dualbootHint": "Only your chosen Boot and Root partitions are touched — everything else is left as-is.",
   "manual.noPartitions": "No partitions on this disk yet.",
-  "manual.allocated": "Allocated",
+  "manual.allocated": "Used",
   "manual.of": "of",
   "manual.free": "Free",
   "manual.type": "Type",

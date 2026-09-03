@@ -34,6 +34,12 @@
 	function formatMB(mb: number): string {
 		return String(mb).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 	}
+
+	// Convert MB to GB and format with one decimal (e.g. 1536 MB -> "1.5 GB").
+	function formatGB(mb: number): string {
+		const gb = mb / 1024;
+		return `${Math.round(gb * 10) / 10} GB`;
+	}
 </script>
 
 <div class="top-bar">
@@ -54,9 +60,9 @@
 							<div class="manual-space-used" style="--pct: {spaceUsedPct}%"></div>
 						</div>
 						<div class="manual-space-labels">
-							<span>{t('manual.allocated')} {formatMB(spaceUsedMB)} {t('unit.mb')}</span>
-							<span class="manual-space-of">{t('manual.of')} {formatMB(spaceTotalMB)} {t('unit.mb')}</span>
-							<span class="manual-space-free">{t('manual.free')} {formatMB(spaceFreeMB)} {t('unit.mb')}</span>
+							<span>{t('manual.allocated')} {formatGB(spaceUsedMB)} {t('unit.gb')}</span>
+							<span class="manual-space-of">{t('manual.of')} {formatGB(spaceTotalMB)} {t('unit.gb')}</span>
+							<span class="manual-space-free">{t('manual.free')} {formatGB(spaceFreeMB)} {t('unit.gb')}</span>
 						</div>
 					</div>
 				{/if}
