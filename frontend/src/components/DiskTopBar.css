@@ -27,9 +27,9 @@
 	align-items: start;
 }
 
-.manual-title h3 {
+.manual-title h2 {
 	margin: 0;
-	font-size: var(--font-size-lg);
+	font-size: 1.1rem;
 	font-weight: 700;
 	color: var(--color-text);
 	text-align: left;

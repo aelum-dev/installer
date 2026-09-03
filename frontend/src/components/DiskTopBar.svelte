@@ -47,7 +47,7 @@
 		<div class="manual-title">
 			<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 			<div class="manual-title-content">
-				<h3>{disk.model || disk.name || '—'}</h3>
+				<h2>{disk.model || disk.name || '—'}</h2>
 				{#if spaceTotalMB > 0}
 					<div class="manual-space">
 						<div
