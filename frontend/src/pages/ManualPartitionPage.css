@@ -188,12 +188,6 @@
 	padding: var(--spacing-md);
 }
 
-.add-label {
-	font-size: var(--font-size-sm);
-	font-weight: 600;
-	color: var(--color-text-muted);
-}
-
 .add-check {
 	display: flex;
 	align-items: center;
@@ -281,6 +275,15 @@
 .add-size-input:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+.add-unit {
+	flex-shrink: 0;
+	align-self: center;
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	font-variant-numeric: tabular-nums;
+	color: var(--color-text-muted);
 }
 
 .add-slider {

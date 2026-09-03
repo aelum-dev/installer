@@ -24,11 +24,21 @@
 
 	// "Add new partition" controls. New partitions start blank (Preserve) and are
 	// designated Boot/Root from the row pills afterwards.
-	let addSizeMB = $state<number>(0);
+	let addSizeMB = $state<number>(1);
 	let addUseRemaining = $state(false);
 
 	// Derived free / allocated space (MB).
 	const freeMB = $derived.by(() => (layout ? computeFreeMB(layout) : 0));
+
+	// Whether "Add" stays enabled: free space exists, and either "Use remaining"
+	// is on, or an explicit size falls within (0, freeMB]. Replaces the old inline
+	// too-small error with a disabled button.
+	const canAdd = $derived.by(() => {
+		if (freeMB <= 0) return false;
+		if (addUseRemaining) return true;
+		const size = addSizeMB || 0;
+		return size > 0 && size <= freeMB;
+	});
 
 
 	async function loadLayout(): Promise<void> {
@@ -93,15 +103,10 @@
 
 	function addPartition(): void {
 		if (!layout || !disk) return;
-		const sizeMB = addUseRemaining ? freeMB : addSizeMB;
-		if (sizeMB <= 0) {
-			error = t('manual.addTooSmall');
-			return;
-		}
-		if (addUseRemaining === false && sizeMB > freeMB) {
-			error = t('manual.addTooLarge');
-			return;
-		}
+		const sizeMB = addUseRemaining ? freeMB : (addSizeMB || 0);
+		// Guarded by the disabled Add button (canAdd); kept as a silent safety net so a
+		// stray value can never create a zero- or oversized partition.
+		if (sizeMB <= 0 || sizeMB > freeMB) return;
 		const newPart: ManualPartition = {
 			index: nextIndex(),
 			path: '',
@@ -225,15 +230,6 @@
 
 		<!-- Add new partition control -->
 		<div class="add-control">
-			<span class="add-label">{t('manual.add')}</span>
-			<input
-				type="number"
-				min="1"
-				class="add-size-input"
-				bind:value={addSizeMB}
-				disabled={addUseRemaining}
-				placeholder={t('manual.sizeMB')}
-			/>
 			<input
 				type="range"
 				class="add-slider"
@@ -243,6 +239,16 @@
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
 			/>
+			<input
+				type="number"
+				min="1"
+				class="add-size-input"
+				max={freeMB}
+				bind:value={addSizeMB}
+				disabled={addUseRemaining}
+				placeholder={t('manual.sizeMB')}
+			/>
+			<span class="add-unit">{t('unit.mb')}</span>
 			<label class="add-check">
 				<input type="checkbox" bind:checked={addUseRemaining} />
 				<span class="add-switch" aria-hidden="true"><span class="add-switch-knob"></span></span>
@@ -251,7 +257,7 @@
 			<button
 				type="button"
 				class="add-btn"
-				disabled={freeMB <= 0}
+				disabled={!canAdd}
 				onclick={addPartition}
 			>
 				+ {t('manual.add')}
