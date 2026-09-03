@@ -27,6 +27,14 @@
 	let addSizeMB = $state<number>(1);
 	let addUseRemaining = $state(false);
 
+	// Keep addSizeMB a real number. Clearing the field would otherwise make it
+	// null/undefined, and a range input bound to a non-number defaults to the
+	// midpoint instead of the minimum. Emptying the field now yields 0, which the
+	// range clamps to its minimum and the Add button blocks.
+	$effect(() => {
+		if (!Number.isFinite(addSizeMB)) addSizeMB = 0;
+	});
+
 	// Derived free / allocated space (MB).
 	const freeMB = $derived.by(() => (layout ? computeFreeMB(layout) : 0));
 
@@ -234,7 +242,7 @@
 				type="range"
 				class="add-slider"
 				min="1"
-				max={Math.max(freeMB, addSizeMB)}
+				max={Math.max(freeMB, addSizeMB || 0)}
 				step="1"
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
