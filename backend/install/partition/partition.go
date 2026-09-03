@@ -221,7 +221,13 @@ func Validate(layout shared.ManualLayout) error {
 	if freeSectors < 0 {
 		freeSectors = 0
 	}
-	if newSectors > freeSectors-gptBackupSectors {
+	// Only brand-new partitions can over-allocate free space, so this strict,
+	// truncation-free check is skipped entirely when there are none. On a
+	// fully-partitioned disk (all rows existing) the remaining free space is
+	// often smaller than the trailing GPT backup region, and comparing
+	// `0 > freeSectors-gptBackupSectors` would then be true and reject a valid
+	// untouched layout.
+	if newSectors > 0 && newSectors > freeSectors-gptBackupSectors {
 		shared.GetLogger().Info("ValidateManualLayout: STRICT FAIL newSectors=%d freeSectors=%d gptBackup=%d allowedMB=%d availableAddMB-style",
 			newSectors, freeSectors, gptBackupSectors, (freeSectors-gptBackupSectors)/2048)
 		return fmt.Errorf("new partition sizes (%d MB) exceed the free space (%d MB)",

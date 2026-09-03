@@ -62,6 +62,22 @@ func TestValidate(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			// Regression: a fully-partitioned disk where existing rows leave fewer
+			// free sectors than the trailing GPT backup region must not be rejected
+			// by the strict new-partition guard (newSectors == 0).
+			name: "existing partitions fill disk, free < gpt backup",
+			layout: shared.ManualLayout{
+				Disk:          "/dev/nvme0n1",
+				DiskSizeMB:    488387,
+				DiskSizeBytes: 512110984960,
+				Partitions: []shared.ManualPartition{
+					{Path: "/dev/nvme0n1p1", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/nvme0n1p2", SizeMB: 487875, Type: shared.TypeSystem},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:    "valid dualboot layout",
 			layout:  validLayout(),
 			wantErr: false,
