@@ -435,28 +435,45 @@ type partitionSector struct {
 	end   int64
 }
 
-var partitionSectorRe = regexp.MustCompile(`Partition (\d+) is start sector (\d+) and end sector (\d+)`)
-
 // partitionSectors parses `sgdisk -p` to find the start/end sector of each
 // existing partition on the disk.
+//
+// sgdisk prints a whitespace-aligned table whose first three columns are the
+// partition number, start sector, and end sector:
+//
+//	Number  Start (sector)    End (sector)  Size       Code  Name
+//	   1            2048         2099199   1024.0 MiB  EF00  EFI
+//
+// A row is recognised only when its first three fields are integers, which
+// naturally skips the header line (starts with "Number") and any free-space
+// summary (no leading partition number).
 func partitionSectors(diskID string) ([]partitionSector, error) {
 	out, err := primitives.Run("sgdisk", "-p", diskID).Output()
 	if err != nil {
 		return nil, fmt.Errorf("sgdisk -p: %w", err)
 	}
 
+	return parsePartitionSectors(string(out)), nil
+}
+
+// parsePartitionSectors extracts the start/end sector of every partition from
+// the textual output of `sgdisk -p`.
+func parsePartitionSectors(out string) []partitionSector {
 	var result []partitionSector
-	for _, line := range strings.Split(string(out), "\n") {
-		m := partitionSectorRe.FindStringSubmatch(line)
-		if m == nil {
+	for _, line := range strings.Split(out, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
 			continue
 		}
-		num, _ := strconv.Atoi(m[1])
-		start, _ := strconv.ParseInt(m[2], 10, 64)
-		end, _ := strconv.ParseInt(m[3], 10, 64)
+		num, err1 := strconv.Atoi(fields[0])
+		start, err2 := strconv.ParseInt(fields[1], 10, 64)
+		end, err3 := strconv.ParseInt(fields[2], 10, 64)
+		if err1 != nil || err2 != nil || err3 != nil {
+			continue
+		}
 		result = append(result, partitionSector{num: num, start: start, end: end})
 	}
-	return result, nil
+	return result
 }
 
 func endSectorFor(sectors []partitionSector, num int) int64 {
