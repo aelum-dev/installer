@@ -150,7 +150,7 @@
 	// the slider update this before the partition is committed, so used/free
 	// reflect what the next Add will produce. Clamped to available free space.
 	$effect(() => {
-		const pending = addUseRemaining ? freeMB : addSizeMB;
+		const pending = addUseRemaining ? freeMB : (addSizeMB || 0);
 		installState.pendingAddMB = Math.max(0, Math.min(pending, freeMB));
 	});
 </script>
@@ -226,6 +226,14 @@
 		<!-- Add new partition control -->
 		<div class="add-control">
 			<span class="add-label">{t('manual.add')}</span>
+			<input
+				type="number"
+				min="1"
+				class="add-size-input"
+				bind:value={addSizeMB}
+				disabled={addUseRemaining}
+				placeholder={t('manual.sizeMB')}
+			/>
 			<input
 				type="range"
 				class="add-slider"

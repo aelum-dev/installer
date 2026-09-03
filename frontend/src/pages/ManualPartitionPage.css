@@ -204,7 +204,7 @@
 	user-select: none;
 }
 
-// Hide the native checkbox but keep it keyboard/mouse reachable for a11y.
+/* Hide the native checkbox but keep it keyboard/mouse reachable for a11y. */
 .add-check input {
 	position: absolute;
 	width: 1px;
@@ -215,7 +215,7 @@
 	border: 0;
 }
 
-// Toggle track.
+/* Toggle track. */
 .add-switch {
 	position: relative;
 	display: inline-block;
@@ -227,7 +227,7 @@
 	flex-shrink: 0;
 }
 
-// Toggle knob.
+/* Toggle knob. */
 .add-switch-knob {
 	position: absolute;
 	top: 2px;
@@ -248,7 +248,7 @@
 	transform: translateX(18px);
 }
 
-// Focus ring for keyboard users.
+/* Focus ring for keyboard users. */
 .add-check input:focus-visible + .add-switch {
 	outline: 2px solid var(--color-primary-hover);
 	outline-offset: 2px;
@@ -256,6 +256,30 @@
 
 .add-check input:disabled + .add-switch {
 	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.add-size-input {
+	width: 96px;
+	flex-shrink: 0;
+	padding: 6px 10px;
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-md);
+	background: var(--color-bg-white);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	font-variant-numeric: tabular-nums;
+	color: var(--color-text);
+	transition: border-color 0.15s ease;
+}
+
+.add-size-input:focus {
+	outline: none;
+	border-color: var(--color-primary);
+}
+
+.add-size-input:disabled {
+	opacity: 0.5;
 	cursor: not-allowed;
 }
 
