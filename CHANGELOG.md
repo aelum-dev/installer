@@ -8,8 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Manual-mode disk space summary now displays in GB instead of MB** — the allocated/free bar labels in the disk top bar now convert the underlying MB values to GB (one decimal place, e.g. `1535.5 GB`) instead of showing raw megabytes.
+- **Manual-mode disk space summary now displays in GB instead of MB** — the allocated/free bar labels in the disk top bar now convert the underlying MB values to GB (one decimal place, e.g. `1535.5 GB`) instead of showing raw megabytes. The formatter returns a bare number and the unit is emitted once by the label, so values never render a doubled `GB GB`.
 - **Manual-mode disk space label renamed from "Allocated" to "Used"**.
+- **Manual partitioning now counts an added partition in the space bar immediately** — `computeUsedMB` previously only counted partitions already designated (ESP/System) or existing on disk, so a brand-new row added via "Add" was invisible to the top-bar used/free bar: the drag preview (`pendingAddMB`) reset to 0 on Add and the bar jumped back to its pre-drag value. Now every row in the plan reserves its space, so the bar reflects the addition right away (before designation). The backend still ignores undesignated (Preserve) rows when creating partitions, so install behavior is unchanged.
+- **Manual partitioning leaves 2 MB unallocated at the end of the disk** — "Use remaining" and the size slider now stop 2 MB short of full free space (`availableAddMB = freeMB − 2`), so partitions never carve the final bytes and a small alignment band stays untouched. `canAdd`, the slider/input `max`, the Add handler, and the space-bar preview all use the reduced amount.
+- **Disk selection now shows a border around a disk icon when it isn't selected** — the unselected `disk-icon` gets a `1.5px` border; the selected icon clears its border color so it sits cleanly on the primary background.
 
 ### Fixed
 - **Manual partitioning "Use remaining" is now a proper toggle switch instead of a native checkbox** — the bare browser checkbox in the add-partition row looked inconsistent with the rest of the wizard. Replaced it with an accessible styled switch: the native input is visually hidden but still keyboard/click reachable (focus-visible ring), the track takes the primary color and the knob slides across on toggle. No behavior change — it still toggles `addUseRemaining`, disabling the size slider and consuming the full free space.

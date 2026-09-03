@@ -45,6 +45,7 @@
 	width: 30px;
 	height: 30px;
 	border-radius: var(--radius-md);
+	border: 1.5px solid var(--color-border-light);
 	background: var(--color-bg-hover);
 	color: var(--color-text-muted);
 	flex-shrink: 0;
@@ -59,6 +60,7 @@
 .disk-card.selected .disk-icon {
 	color: var(--color-on-primary);
 	background: var(--color-primary);
+	border-color: transparent;
 }
 
 .card-title {

@@ -36,9 +36,9 @@
 	}
 
 	// Convert MB to GB and format with one decimal (e.g. 1536 MB -> "1.5 GB").
-	function formatGB(mb: number): string {
+	function formatGB(mb: number): number {
 		const gb = mb / 1024;
-		return `${Math.round(gb * 10) / 10} GB`;
+		return Math.round(gb * 10) / 10;
 	}
 </script>
 

@@ -35,17 +35,22 @@
 		if (!Number.isFinite(addSizeMB)) addSizeMB = 0;
 	});
 
-	// Derived free / allocated space (MB).
-	const freeMB = $derived.by(() => (layout ? computeFreeMB(layout) : 0));
+	// Space left unallocated at the end of the disk. New partitions never carve
+	// the final bytes: "Use remaining" and the slider both stop 2 MB short, leaving
+	// a small padding band untouched (keeps end-of-disk alignment headroom).
+	const endOfDiskGuardMB = 2;
+	const availableAddMB = $derived.by(() =>
+		layout ? Math.max(0, computeFreeMB(layout) - endOfDiskGuardMB) : 0,
+	);
 
-	// Whether "Add" stays enabled: free space exists, and either "Use remaining"
-	// is on, or an explicit size falls within (0, freeMB]. Replaces the old inline
-	// too-small error with a disabled button.
+	// Whether "Add" stays enabled: usable space exists, and either "Use remaining"
+	// is on, or an explicit size falls within (0, availableAddMB]. Replaces the old
+	// inline too-small error with a disabled button.
 	const canAdd = $derived.by(() => {
-		if (freeMB <= 0) return false;
+		if (availableAddMB <= 0) return false;
 		if (addUseRemaining) return true;
 		const size = addSizeMB || 0;
-		return size > 0 && size <= freeMB;
+		return size > 0 && size <= availableAddMB;
 	});
 
 
@@ -111,10 +116,10 @@
 
 	function addPartition(): void {
 		if (!layout || !disk) return;
-		const sizeMB = addUseRemaining ? freeMB : (addSizeMB || 0);
+		const sizeMB = addUseRemaining ? availableAddMB : (addSizeMB || 0);
 		// Guarded by the disabled Add button (canAdd); kept as a silent safety net so a
 		// stray value can never create a zero- or oversized partition.
-		if (sizeMB <= 0 || sizeMB > freeMB) return;
+		if (sizeMB <= 0 || sizeMB > availableAddMB) return;
 		const newPart: ManualPartition = {
 			index: nextIndex(),
 			path: '',
@@ -163,8 +168,8 @@
 	// the slider update this before the partition is committed, so used/free
 	// reflect what the next Add will produce. Clamped to available free space.
 	$effect(() => {
-		const pending = addUseRemaining ? freeMB : (addSizeMB || 0);
-		installState.pendingAddMB = Math.max(0, Math.min(pending, freeMB));
+		const pending = addUseRemaining ? availableAddMB : (addSizeMB || 0);
+		installState.pendingAddMB = Math.max(0, Math.min(pending, availableAddMB));
 	});
 </script>
 
@@ -242,7 +247,7 @@
 				type="range"
 				class="add-slider"
 				min="1"
-				max={Math.max(freeMB, addSizeMB || 0)}
+				max={Math.max(availableAddMB, addSizeMB || 0)}
 				step="1"
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
@@ -251,7 +256,7 @@
 				type="number"
 				min="1"
 				class="add-size-input"
-				max={freeMB}
+				max={availableAddMB}
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
 				placeholder={t('manual.sizeMB')}
