@@ -237,6 +237,7 @@
 			/>
 			<label class="add-check">
 				<input type="checkbox" bind:checked={addUseRemaining} />
+				<span class="add-switch" aria-hidden="true"><span class="add-switch-knob"></span></span>
 				<span>{t('manual.useRemaining')}</span>
 			</label>
 			<button
