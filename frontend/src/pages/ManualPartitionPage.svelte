@@ -6,6 +6,7 @@
 	import { installState, computeFreeMB, setPartitionType } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
+	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import './ManualPartitionPage.css';
 
 	let { disk }: { disk: DiskInfo | null } = $props();
@@ -21,6 +22,9 @@
 
 	// Delete confirmation target (partition index), or null when closed.
 	let deleteTargetIndex = $state<number | null>(null);
+
+	// Visibility of the shared delete-confirmation dialog.
+	let showDeleteDialog = $state(false);
 
 	// "Add new partition" controls. New partitions start blank (Preserve) and are
 	// designated Boot/Root from the row pills afterwards.
@@ -164,6 +168,7 @@
 
 	function requestDelete(index: number): void {
 		deleteTargetIndex = index;
+		showDeleteDialog = true;
 	}
 
 	function confirmDelete(): void {
@@ -305,37 +310,15 @@
 
 	{/if}
 
-	<!-- Delete confirmation dialog -->
-	{#if deleteTargetIndex !== null && layout}
-		<div
-			class="dialog-overlay"
-			role="presentation"
-			onclick={() => (deleteTargetIndex = null)}
-			onkeydown={(e) => { if (e.key === 'Escape') deleteTargetIndex = null; }}
-		>
-			<div
-				class="dialog"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="delete-dialog-title"
-				tabindex="-1"
-				onclick={(e) => e.stopPropagation()}
-				onkeydown={(e) => e.stopPropagation()}
-			>
-				<h2 id="delete-dialog-title" class="dialog-title">{t('manual.deleteTitle')}</h2>
-				<p class="dialog-message">
-					{t('manual.deleteMessage')}
-				</p>
-				<div class="dialog-actions">
-					<button type="button" class="btn-cancel" onclick={() => (deleteTargetIndex = null)}>
-						{t('dialog.confirm.cancel')}
-					</button>
-					<button type="button" class="btn-confirm danger" onclick={confirmDelete}>
-						{t('manual.deleteConfirm')}
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
+	<!-- Delete confirmation dialog (shared component, custom text) -->
+	<ConfirmDialog
+		show={showDeleteDialog}
+		title={t('manual.deleteTitle')}
+		message={t('manual.deleteMessage')}
+		cancelLabel={t('dialog.confirm.cancel')}
+		confirmLabel={t('manual.deleteConfirm')}
+		onConfirm={confirmDelete}
+		onCancel={() => { deleteTargetIndex = null; }}
+	/>
 </div>
 

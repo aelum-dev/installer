@@ -4,17 +4,61 @@
 	import { installState } from '$lib/store.svelte';
 	import { confirmInstallation, cancelInstallation } from '$lib/navigation';
 	import { t } from '$lib/i18n';
+
+	let {
+		// Drives visibility. Defaults to (and binds back to) the shared
+		// installation-confirmation flag so the Confirmation page can keep using
+		// `<ConfirmDialog />` unchanged. Pages with their own state pass a bindable
+		// boolean instead, e.g. `show={showDeleteDialog}`.
+		show = $bindable(installState.showConfirmDialog),
+		title = t('dialog.confirm.title'),
+		message = t('dialog.confirm.message', { model: installState.disk?.model || 'Unknown' }),
+		cancelLabel = t('dialog.confirm.cancel'),
+		confirmLabel = t('dialog.confirm.yes'),
+		// Delete dialog historically had no warning glyph; opt out with show-icon={false}.
+		showIcon = true,
+		// When provided, these replace the default installation flow (which
+		// dispatches 'go-next-confirmed' and advances the wizard).
+		onConfirm,
+		onCancel,
+	}: {
+		show?: boolean;
+		title?: string;
+		message?: string;
+		cancelLabel?: string;
+		confirmLabel?: string;
+		showIcon?: boolean;
+		onConfirm?: () => void;
+		onCancel?: () => void;
+	} = $props();
+
+	function handleConfirm(): void {
+		show = false;
+		if (onConfirm) {
+			onConfirm();
+		} else {
+			LogInfo('[ConfirmDialog] User confirmed installation');
+			confirmInstallation();
+			document.dispatchEvent(new CustomEvent('go-next-confirmed'));
+		}
+	}
+
+	function handleCancel(): void {
+		show = false;
+		if (onCancel) {
+			onCancel();
+		} else {
+			cancelInstallation();
+		}
+	}
 </script>
 
-{#if installState.showConfirmDialog}
+{#if show}
 	<div
 		class="dialog-overlay"
 		role="presentation"
-		onclick={() => installState.showConfirmDialog = false}
-		onkeydown={(e) => { if (e.key === 'Escape') {
-				cancelInstallation();
-				installState.showConfirmDialog = false;
-			}}}
+		onclick={handleCancel}
+		onkeydown={(e) => { if (e.key === 'Escape') handleCancel(); }}
 	>
 		<div
 			class="dialog"
@@ -22,38 +66,28 @@
 			aria-modal="true"
 			aria-labelledby="dialog-title"
 			tabindex="-1"
-			onclick={(e) => {
-				e.stopPropagation();
-				cancelInstallation();
-				installState.showConfirmDialog = false;
-			}}
+			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
 		>
-			<div class="dialog-icon">
-				<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path d="M12 2L2 20H22L12 2Z" fill="var(--color-danger)" stroke="var(--color-danger)" stroke-width="1.5" stroke-linejoin="round"/>
-					<line x1="12" y1="8" x2="12" y2="13" stroke="white" stroke-width="2" stroke-linecap="round"/>
-					<circle cx="12" cy="16.5" r="1" fill="white"/>
-				</svg>
-			</div>
-			<h2 id="dialog-title" class="dialog-title">{t('dialog.confirm.title')}</h2>
+			{#if showIcon}
+				<div class="dialog-icon">
+					<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M12 2L2 20H22L12 2Z" fill="var(--color-danger)" stroke="var(--color-danger)" stroke-width="1.5" stroke-linejoin="round"/>
+						<line x1="12" y1="8" x2="12" y2="13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+						<circle cx="12" cy="16.5" r="1" fill="white"/>
+					</svg>
+				</div>
+			{/if}
+			<h2 id="dialog-title" class="dialog-title">{title}</h2>
 			<p class="dialog-message">
-				{@html t('dialog.confirm.message', { model: installState.disk?.model || 'Unknown' })}
+				{@html message}
 			</p>
 			<div class="dialog-actions">
-				<button type="button" class="btn-cancel" onclick={() => {
-					cancelInstallation();
-					installState.showConfirmDialog = false;
-				}}>
-					{t('dialog.confirm.cancel')}
+				<button type="button" class="btn-cancel" onclick={handleCancel}>
+					{cancelLabel}
 				</button>
-				<button type="button" class="btn-confirm" onclick={() => {
-					LogInfo('[ConfirmDialog] User confirmed installation');
-					confirmInstallation();
-					installState.showConfirmDialog = false;
-					document.dispatchEvent(new CustomEvent('go-next-confirmed'));
-				}}>
-					{t('dialog.confirm.yes')}
+				<button type="button" class="btn-confirm" onclick={handleConfirm}>
+					{confirmLabel}
 				</button>
 			</div>
 		</div>
