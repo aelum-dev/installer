@@ -115,6 +115,7 @@ export namespace shared {
 	    path: string;
 	    sizeMB: number;
 	    type: string;
+	    sizeBytes: number;
 	    existingFstype?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -127,14 +128,17 @@ export namespace shared {
 	        this.path = source["path"];
 	        this.sizeMB = source["sizeMB"];
 	        this.type = source["type"];
+	        this.sizeBytes = source["sizeBytes"];
 	        this.existingFstype = source["existingFstype"];
 	    }
 	}
 	export class ManualLayout {
 	    disk: string;
 	    diskSizeMB: number;
+	    diskSizeBytes: number;
 	    partitions: ManualPartition[];
 	    freeMB: number;
+	    freeSectors: number;
 	    deletedPartitions?: ManualPartition[];
 	
 	    static createFrom(source: any = {}) {
@@ -145,8 +149,10 @@ export namespace shared {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.disk = source["disk"];
 	        this.diskSizeMB = source["diskSizeMB"];
+	        this.diskSizeBytes = source["diskSizeBytes"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);
 	        this.freeMB = source["freeMB"];
+	        this.freeSectors = source["freeSectors"];
 	        this.deletedPartitions = this.convertValues(source["deletedPartitions"], ManualPartition);
 	    }
 	

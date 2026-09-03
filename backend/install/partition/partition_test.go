@@ -469,3 +469,169 @@ func TestDeleteOrder(t *testing.T) {
 		})
 	}
 }
+
+func TestValidate_NewPartitionRespectsFreeSectors(t *testing.T) {
+	// Free space is reported exactly (FreeSectors). A brand-new explicit root that
+	// fits the coarse MiB sum but exceeds the true free sectors must be rejected —
+	// this is the truncation bug: counting truncated MB overstates the free space.
+	const mib = 1024 * 1024
+	layout := shared.ManualLayout{
+		Disk:          "/dev/sda",
+		DiskSizeMB:    100000,
+		DiskSizeBytes: 100000 * mib,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/sda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			{Index: 1, Path: "/dev/sda2", SizeMB: 90000, SizeBytes: 90000*mib + 500000, Type: shared.TypeSystem},
+			{Index: 2, Path: "", SizeMB: 9872, Type: shared.TypeSystem},
+		},
+	}
+	usedBytes := 128*mib + (90000*mib + 500000)
+	layout.FreeSectors = int64((100000*mib - usedBytes) / 512)
+
+	// Coarse sum = 128+90000+9872 = 100000 == DiskSizeMB, so it passes that guard.
+	if sum := layout.Partitions[0].SizeMB + layout.Partitions[1].SizeMB + layout.Partitions[2].SizeMB; sum > layout.DiskSizeMB {
+		t.Fatalf("test setup broke its own coarse guard: sum %d > %d", sum, layout.DiskSizeMB)
+	}
+	// But the true free space is under 9872 MiB, so this must fail.
+	if err := Validate(layout); err == nil {
+		t.Errorf("expected overflow error: new partition %d MB exceeds true free space", layout.Partitions[2].SizeMB)
+	}
+}
+
+// TestValidate_MinPartitionSizes checks the enforced floor for designated
+// partitions: an ESP must be at least 128 MiB and the system partition at least
+// 8 GiB (the disk floor). A "use all remaining space" row (sizeMB 0) is exempt
+// because its size is whatever the disk leaves over.
+func TestValidate_MinPartitionSizes(t *testing.T) {
+	const mib = 1024 * 1024
+	minESP := int64(shared.MinESPSizeBytes / mib)          // 128
+	minSys := int64(shared.MinSystemPartitionBytes / mib)  // 8192
+	tooSmallESP := int64(shared.MinESPSizeBytes / mib / 2) // 64
+
+	make := func(esp, sys shared.ManualPartition) shared.ManualLayout {
+		return shared.ManualLayout{
+			Disk:          "/dev/sda",
+			DiskSizeMB:    100000,
+			DiskSizeBytes: 100000 * mib,
+			Partitions:    []shared.ManualPartition{esp, sys},
+		}
+	}
+
+	esp := func(sizeMB int64) shared.ManualPartition {
+		return shared.ManualPartition{Index: 0, Path: "/dev/sda1", SizeMB: sizeMB, SizeBytes: sizeMB * mib, Type: shared.TypeESP}
+	}
+	sys := func(sizeMB int64, brandNew bool) shared.ManualPartition {
+		part := shared.ManualPartition{Index: 1, SizeMB: sizeMB, Type: shared.TypeSystem}
+		if !brandNew {
+			part.Path = "/dev/sda2"
+			part.SizeBytes = sizeMB * mib
+		}
+		return part
+	}
+
+	tests := []struct {
+		name    string
+		esp     shared.ManualPartition
+		sys     shared.ManualPartition
+		wantErr bool
+	}{
+		{"system exactly 8 GiB", esp(minESP), sys(minSys, false), false},
+		{"existing system below 8 GiB", esp(minESP), sys(minSys-1, false), true},
+		{"brand-new system below 8 GiB", esp(minESP), sys(4096, true), true},
+		{"system use-remaining is exempt", esp(minESP), sys(0, true), false},
+		{"esp below 128 MiB", esp(tooSmallESP), sys(minSys, false), true},
+		{"esp exactly 128 MiB", esp(minESP), sys(minSys, false), false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := Validate(make(tc.esp, tc.sys)); (err != nil) != tc.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// TestValidate_NewPartitionFreesSpaceFromDeletedRow reproduces a regression
+// where Validate used layout.FreeSectors (stamped by ComputeLayout at disk-load
+// time and never updated after edits) for its strict new-partition check. When
+// the user deletes an existing partition and adds a brand-new one in its place,
+// the free space is larger than the stale value reflects, so the old code
+// rejected a plan the frontend itself considered valid.
+func TestValidate_NewPartitionFreesSpaceFromDeletedRow(t *testing.T) {
+	const mib = 1024 * 1024
+	diskMB := int64(20480)
+	layout := shared.ManualLayout{
+		Disk:          "/dev/vda",
+		DiskSizeMB:    diskMB,
+		DiskSizeBytes: diskMB * mib,
+		Partitions: []shared.ManualPartition{
+			// Existing ESP kept verbatim.
+			{Index: 0, Path: "/dev/vda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			// Brand-new System replacing a partition the user deleted (deletedPartitions
+			// are excluded from Partitions, so their space is genuinely freed).
+			{Index: 1, Path: "", SizeMB: 20350, Type: shared.TypeSystem},
+		},
+	}
+	// Preserve the stale load-time free space (only ~1 MB really free today) to
+	// prove the check is recomputed from the live plan, not read from FreeSectors.
+	layout.FreeSectors = 2081
+
+	if err := Validate(layout); err != nil {
+		t.Fatalf("expected the replacement partition to fit the freed space, got: %v", err)
+	}
+}
+
+func TestValidate_UseAllOrdering(t *testing.T) {
+	// A brand-new "use all remaining space" partition must not be followed by
+	// another brand-new partition: the first would consume the disk.
+	layout := shared.ManualLayout{
+		Disk:       "/dev/sda",
+		DiskSizeMB: 100000,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
+			{Index: 2, Path: "", SizeMB: 500, Type: shared.TypeSystem},
+		},
+	}
+	if err := Validate(layout); err == nil {
+		t.Error("expected ordering error: a new partition cannot follow a use-all partition")
+	}
+}
+
+func TestBuildActions_ClampsExplicitNewPartition(t *testing.T) {
+	// A brand-new explicit partition whose size outruns the true free space must
+	// be clamped to fit, not sized as requested (which would make sgdisk fail with
+	// "partition extends past the last usable sector of the disk").
+	layout := shared.ManualLayout{
+		Disk:          "/dev/vda",
+		DiskSizeMB:    100000,
+		DiskSizeBytes: 100000 * 1024 * 1024,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/vda1", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 1, Path: "", SizeMB: 99999, Type: shared.TypeSystem},
+		},
+	}
+	// ESP occupies the first 128 MiB of the disk.
+	sectors := []partitionSector{{num: 1, start: 2048, end: 2048 + 128*2048 - 1}}
+	actions, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, sectors)
+	if err != nil {
+		t.Fatalf("buildActions: %v", err)
+	}
+	var system *formatAction
+	for _, a := range actions {
+		if a.pType == shared.TypeSystem {
+			system = &a
+		}
+	}
+	if system == nil {
+		t.Fatal("no system action produced")
+	}
+	lastSector := layout.DiskSizeBytes/512 - gptBackupSectors
+	if system.startSector+system.sizeMB*2048 > lastSector {
+		t.Errorf("clamped system partition ends at sector %d, past last usable %d",
+			system.startSector+system.sizeMB*2048, lastSector)
+	}
+	if system.sizeMB >= 99999 {
+		t.Errorf("system partition size %d was not clamped below the requested 99999 MB", system.sizeMB)
+	}
+}

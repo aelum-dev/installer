@@ -104,6 +104,17 @@ const MinDiskSizeGB = 8
 // packages (~4GB) + overhead (~1GB).
 const MinDiskSizeBytes = MinDiskSizeGB * 1024 * 1024 * 1024
 
+// MinESPSizeBytes is the smallest size an ESP partition may be (128 MiB). This
+// matches the automatic installer's EFI partition and leaves room for firmware,
+// Windows Boot Manager, and multiple entries without squeezing the FAT32
+// allocation bitmap.
+const MinESPSizeBytes = 128 * 1024 * 1024
+
+// MinSystemPartitionBytes is the smallest size the OS partition (Boot/System) may
+// be: the same 8 GiB floor as the disk itself. A smaller root cannot hold the
+// base + desktop packages, so the manual layout rejects it before install.
+const MinSystemPartitionBytes = MinDiskSizeBytes
+
 // --- Filesystem types --------------------------------------------------------
 
 // DefaultFileSystem is the default root filesystem when none is specified.

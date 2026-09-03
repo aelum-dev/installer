@@ -60,6 +60,9 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 	var layout shared.ManualLayout
 	layout.Disk = diskID
 	layout.DiskSizeMB = bytesToMB(diskSizeBytes)
+	// Carry the exact byte/sector geometry so downstream free-space math can stay
+	// truncation-free instead of relying on the rounded-down MiB values below.
+	layout.DiskSizeBytes = diskSizeBytes
 	var usedBytes int64
 	for i, p := range partitions {
 		sizeBytes, _ := parseBytes(p.Size)
@@ -68,6 +71,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 			Index:          i,
 			Path:           p.Path,
 			SizeMB:         bytesToMB(sizeBytes),
+			SizeBytes:      sizeBytes,
 			ExistingFstype: p.Fstype,
 			// Role is empty → untouched (dualboot-safe).
 		})
@@ -78,6 +82,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 		freeBytes = 0
 	}
 	layout.FreeMB = bytesToMB(freeBytes)
+	layout.FreeSectors = freeBytes / 512
 	return layout, nil
 }
 
@@ -87,7 +92,23 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
 //   - every type must be a known value
 func Validate(layout shared.ManualLayout) error {
+	// Debug: record the layout and every number behind the size checks so a
+	// rejection that only happens on real disk geometry can be traced from the
+	// installation log (see navigation.ts Next gate). Read over SSH in the live
+	// ISO at /usr/local/bin/aelum-installer.log.
+	var partsDebug string
+	for _, p := range layout.Partitions {
+		partsDebug += fmt.Sprintf("[path=%q sizeMB=%d type=%q] ", p.Path, p.SizeMB, p.Type)
+	}
+	shared.GetLogger().Info("ValidateManualLayout: diskMB=%d diskBytes=%d freeMB=%d freeSectors=%d parts=%s",
+		layout.DiskSizeMB, layout.DiskSizeBytes, layout.FreeMB, layout.FreeSectors, partsDebug)
+
 	var esp, sys, zeroSize int
+	var newSectors int64
+	// seenRemaining records that a brand-new "use all remaining space" partition
+	// has appeared, so no further brand-new partition may follow it: there would
+	// be nothing left to carve, and buildActions would place it past the disk.
+	seenRemaining := false
 	for _, p := range layout.Partitions {
 		switch p.Type {
 		case shared.TypeESP:
@@ -99,8 +120,46 @@ func Validate(layout shared.ManualLayout) error {
 		default:
 			return fmt.Errorf("invalid partition type %q (want esp or system)", p.Type)
 		}
+		if p.SizeMB < 0 {
+			return fmt.Errorf("partition size cannot be negative")
+		}
+
+		// Designated Boot/System partitions must be large enough to be usable. A
+		// SizeMB of 0 means "use all remaining space", whose resulting size is
+		// whatever is left on the disk, so it is exempt from the floor. Existing
+		// rows carry their exact byte size; brand-new rows are whole MiB.
+		if p.SizeMB != 0 {
+			sizeBytes := p.SizeBytes
+			if sizeBytes == 0 {
+				sizeBytes = p.SizeMB * 1024 * 1024
+			}
+			switch p.Type {
+			case shared.TypeESP:
+				if sizeBytes < shared.MinESPSizeBytes {
+					return fmt.Errorf("ESP partition is too small: %d MB (minimum %d MB required)", p.SizeMB, shared.MinESPSizeBytes/(1024*1024))
+				}
+			case shared.TypeSystem:
+				if sizeBytes < shared.MinSystemPartitionBytes {
+					return fmt.Errorf("system partition is too small: %d MB (minimum %d MB required)", p.SizeMB, shared.MinSystemPartitionBytes/(1024*1024*1024))
+				}
+			}
+		}
+
+		// A SizeMB of 0 requests "use all remaining space"; at most one is allowed.
 		if p.SizeMB == 0 {
 			zeroSize++
+		}
+
+		isNew := p.Path == ""
+		if isNew && seenRemaining {
+			return fmt.Errorf("a partition cannot be added after one that uses all remaining space")
+		}
+		if isNew {
+			if p.SizeMB != 0 {
+				newSectors += p.SizeMB * 2048
+			} else {
+				seenRemaining = true
+			}
 		}
 	}
 
@@ -114,18 +173,63 @@ func Validate(layout shared.ManualLayout) error {
 		return fmt.Errorf("only one partition may use \"use all remaining space\"")
 	}
 
+	// Coarse guard, in MiB: the sum of every declared size must not exceed the
+	// disk. Existing partitions are rounded down here, so this is lenient by
+	// design — the strict, truncation-free check below is what prevents real
+	// over-allocation of brand-new partitions.
 	var sumMB int64
 	for _, p := range layout.Partitions {
-		if p.SizeMB < 0 {
-			return fmt.Errorf("partition size cannot be negative")
-		}
 		sumMB += p.SizeMB
 	}
-
-	// Σsizes ≤ diskSize, all in MiB.
+	// Coarse guard, in MiB: the sum of every declared size must not exceed the
+	// disk. Existing partitions are rounded down here, so this is lenient by
+	// design — the strict, truncation-free check below is what prevents real
+	// over-allocation of brand-new partitions.
 	if sumMB > layout.DiskSizeMB {
 		return fmt.Errorf("partition sizes (%d MB) exceed the disk size (%d MB)", sumMB, layout.DiskSizeMB)
 	}
+
+	// Strict guard, in sectors: brand-new explicit partitions must fit the free
+	// space, with the trailing gptBackupSectors kept for the backup GPT header.
+	//
+	// Free space is recomputed from the live layout rather than taken from
+	// layout.FreeSectors: that value is stamped by ComputeLayout at disk-load time
+	// and is never updated once the user edits the plan. Deleting an existing row
+	// and adding a brand-new one in its place must free real room for the new
+	// partition, so the check has to measure free space against the partitions that
+	// remain in the plan (existing ones kept verbatim). Existing partitions are
+	// read by exact byte size when known so rounding them down to MiB can't
+	// overstate how much room is left; the MiB fallback covers layouts without
+	// byte geometry. Brand-new rows are skipped here because newSectors already
+	// accounts for exactly the space they consume.
+	var reservedSectors int64
+	for _, p := range layout.Partitions {
+		if p.Path == "" {
+			continue
+		}
+		if p.SizeBytes > 0 {
+			reservedSectors += p.SizeBytes / 512
+		} else {
+			reservedSectors += p.SizeMB * 2048
+		}
+	}
+	diskSectors := layout.DiskSizeBytes / 512
+	if diskSectors == 0 {
+		diskSectors = layout.DiskSizeMB * 2048
+	}
+	freeSectors := diskSectors - reservedSectors
+	if freeSectors < 0 {
+		freeSectors = 0
+	}
+	if newSectors > freeSectors-gptBackupSectors {
+		shared.GetLogger().Info("ValidateManualLayout: STRICT FAIL newSectors=%d freeSectors=%d gptBackup=%d allowedMB=%d availableAddMB-style",
+			newSectors, freeSectors, gptBackupSectors, (freeSectors-gptBackupSectors)/2048)
+		return fmt.Errorf("new partition sizes (%d MB) exceed the free space (%d MB)",
+			newSectors/2048, (freeSectors-gptBackupSectors)/2048)
+	}
+
+	shared.GetLogger().Info("ValidateManualLayout: PASS sumMB=%d diskMB=%d newSectors=%d freeSectors=%d",
+		sumMB, layout.DiskSizeMB, newSectors, freeSectors)
 
 	return nil
 }
@@ -343,19 +447,45 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		// sit edge-to-edge instead.
 		num := maxNum + 1
 		start := alignUp(maxEnd, 2048)
+
+		// lastSector is the last sector a partition may occupy: the disk's true
+		// sector count minus the trailing sectors reserved for the backup GPT, so
+		// sgdisk won't reject a partition past the last usable sector. DiskSizeMB
+		// is truncated to MiB, so fall back to it when the layout carries no byte
+		// geometry (e.g. hand-built test layouts).
+		diskSectors := layout.DiskSizeBytes / 512
+		if diskSectors == 0 {
+			diskSectors = layout.DiskSizeMB * 2048
+		}
+		lastSector := diskSectors - gptBackupSectors
+
 		sizeMB := p.SizeMB
+		if sizeMB < 0 {
+			sizeMB = 0
+		}
 		if sizeMB == 0 {
-			// Consume all remaining free space, capped so the partition ends
-			// within the disk's usable region. DiskSizeMB is in MiB, so the disk
-			// holds DiskSizeMB*2048 sectors; reserve the trailing gptBackupSectors
-			// for the backup GPT. Without this, sgdisk rejects a partition whose
-			// end extends past the last usable sector (the backup GPT needs room
-			// at the very end of the disk).
-			available := layout.DiskSizeMB*2048 - gptBackupSectors - start
-			if available < 2048 {
-				available = 2048 // at least 1 MiB
+			// Consume all remaining free space, capped so the partition ends within
+			// the disk's usable region. Reserve the trailing gptBackupSectors for
+			// the backup GPT; without this sgdisk rejects a partition whose end
+			// extends past the last usable sector.
+			available := lastSector - start
+			if available < 0 {
+				available = 0
 			}
 			sizeMB = available / 2048
+		} else {
+			// Defensive clamp: an explicit size must never run past the usable end
+			// of the disk. Free space is measured in sectors (not the MiB shown in
+			// the UI), so rounding existing partitions down to MiB can't let an
+			// explicit partition overflow. Validate already rejects clearly
+			// oversized layouts; this is the backstop at creation time.
+			available := lastSector - start
+			if available < 0 {
+				available = 0
+			}
+			if sectors := sizeMB * 2048; sectors > available {
+				sizeMB = available / 2048
+			}
 		}
 		end := start + (sizeMB*1024*1024)/512
 		if end > maxEnd {

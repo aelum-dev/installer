@@ -97,21 +97,32 @@ const (
 
 // ManualPartition is one row in a manual partition layout plan.
 type ManualPartition struct {
-	Index          int           `json:"index"`
-	Path           string        `json:"path"`   // existing device (e.g. "/dev/sda1"), "" for newly created
-	SizeMB         int64         `json:"sizeMB"` // 0 = consume all remaining free space
-	Type           PartitionType `json:"type"`   // esp | system | empty = untouched
-	ExistingFstype string        `json:"existingFstype,omitempty"`
+	Index  int           `json:"index"`
+	Path   string        `json:"path"`   // existing device (e.g. "/dev/sda1"), "" for newly created
+	SizeMB int64         `json:"sizeMB"` // new-partition size in MiB; 0 = consume all remaining free space
+	Type   PartitionType `json:"type"`   // esp | system | empty = untouched
+	// SizeBytes is the exact byte size of an existing partition (Path set). It is
+	// used for byte-exact free-space accounting so rounding existing partitions
+	// down to MiB can't overstate how much room a brand-new partition may take.
+	// Zero for brand-new partitions, whose size is an exact whole number of MiB.
+	SizeBytes      int64  `json:"sizeBytes"`
+	ExistingFstype string `json:"existingFstype,omitempty"`
 }
 
 // ManualLayout is the user-designed manual partition plan for one disk.
 // FreeMB is always recomputed from the disk total, never stored, so it stays
 // correct after every edit.
 type ManualLayout struct {
-	Disk       string            `json:"disk"`
-	DiskSizeMB int64             `json:"diskSizeMB"`
-	Partitions []ManualPartition `json:"partitions"`
-	FreeMB     int64             `json:"freeMB"`
+	Disk       string `json:"disk"`
+	DiskSizeMB int64  `json:"diskSizeMB"`
+	// DiskSizeBytes is the exact total disk size in bytes. Free-space math that
+	// must survive existing-partitions being rounded down to MiB uses it.
+	DiskSizeBytes int64             `json:"diskSizeBytes"`
+	Partitions    []ManualPartition `json:"partitions"`
+	FreeMB        int64             `json:"freeMB"`
+	// FreeSectors is the exact unallocated space in 512-byte sectors, derived
+	// from the raw byte totals so it never suffers MiB truncation.
+	FreeSectors int64 `json:"freeSectors"`
 	// DeletedPartitions holds partitions the user removed from the layout. They
 	// are kept (rather than dropped) so Apply can delete them from the disk with
 	// `sgdisk -d`. The frontend moves a row here when the user clicks delete.

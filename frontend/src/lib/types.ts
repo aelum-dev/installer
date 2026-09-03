@@ -45,6 +45,9 @@ export interface ManualPartition {
 	index: number;
 	path: string; // existing device (e.g. "/dev/sda1"), "" for newly created
 	sizeMB: number; // 0 = consume all remaining free space
+	// sizeBytes is the exact byte size of an existing partition, used for
+	// byte-exact free-space accounting. 0 for brand-new partitions.
+	sizeBytes?: number;
 	type: PartitionType;
 	existingFstype?: string;
 }
@@ -54,6 +57,10 @@ export interface ManualPartition {
 export interface ManualLayout {
 	disk: string;
 	diskSizeMB: number;
+	// diskSizeBytes is the exact total disk size in bytes.
+	diskSizeBytes?: number;
+	// freeSectors is the exact unallocated space in 512-byte sectors.
+	freeSectors?: number;
 	partitions: ManualPartition[];
 	freeMB: number;
 	// Partitions the user removed from the layout. Kept (not dropped) so the

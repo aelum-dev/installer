@@ -16,5 +16,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Scope unit tests to src/ so the Playwright e2e specs in e2e/ (which use
+    // @playwright/test's test runner, not vitest) aren't picked up here. They
+    // run under `npm run e2e` instead.
+    include: ['src/**/*.{test,spec}.ts'],
   },
 })

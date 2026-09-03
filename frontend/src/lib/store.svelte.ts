@@ -6,6 +6,7 @@ import type {
 	PartitionType,
 } from '$lib/types';
 import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
+import { MinDiskSizeBytes, MinESPSizeBytes } from '$lib/constants';
 // ── Installation State (shared across pages) ──
 
 export const installState = $state({
@@ -66,7 +67,7 @@ export function isPageValid(page: number): boolean {
 			);
 		case 2: // Disk Selection
 			if (installState.manualMode) {
-				return hasRequiredTypes(installState.manualLayout)
+				return isManualLayoutValid(installState.manualLayout)
 			}
 			return !!installState.diskId && !!installState.fileSystem;
 		case 3: // Confirmation
@@ -96,21 +97,41 @@ export function setShowConfirmDialog(value: boolean): void {
 
 // ── Manual partition helpers ───────────────────────────────────────────────
 
-// computeUsedMB sums the space the plan has reserved. Every row in the layout
-// counts — an existing partition (path set) always occupies its space, and a
-// brand-new partition counts as soon as it is added, so the space bar reflects
-// the addition immediately even before the user designates it ESP/System. The
-// backend still ignores undesignated (Preserve) rows when creating partitions;
-// this is a display/derivation helper only (never stored), so it stays correct
-// after every edit.
+// bytesPerMB is one MiB in bytes.
+const bytesPerMB = 1024 * 1024;
+
+// computeUsedMB sums the space the plan has reserved, in MiB. Every row in the
+// layout counts — an existing partition (path set) always occupies its space,
+// and a brand-new partition counts as soon as it is added, so the space bar
+// reflects the addition immediately even before the user designates it
+// ESP/System. The backend still ignores undesignated (Preserve) rows when
+// creating partitions; this is a display/derivation helper only (never stored),
+// so it stays correct after every edit.
 export function computeUsedMB(layout: ManualLayout): number {
 	return layout.partitions.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
 }
 
-// computeFreeMB derives the remaining unallocated space (in MB) from the disk
-// total minus the committed space.
+// computeUsedBytes sums the space the plan has reserved, in exact bytes:
+// existing partitions by their real byte size, brand-new partitions by their
+// whole-MiB size. Deleted rows live in deletedPartitions and are excluded, so
+// removing a row correctly frees its real space.
+export function computeUsedBytes(layout: ManualLayout): number {
+	return layout.partitions.reduce((sum, p) => {
+		const existing = p.path ? (p.sizeBytes ?? 0) : 0;
+		const newly = p.path === "" ? Math.max(p.sizeMB, 0) * bytesPerMB : 0;
+		return sum + existing + newly;
+	}, 0);
+}
+
+// computeFreeMB returns the remaining unallocated space in whole MiB. It is
+// derived from byte-exact totals (disk size minus committed bytes) so that
+// rounding existing partitions down to MiB — which the backend does when it
+// reports them — can't overstate how much room a brand-new partition may take.
+// A layout built without byte geometry falls back to the MiB totals.
 export function computeFreeMB(layout: ManualLayout): number {
-	return Math.max(layout.diskSizeMB - computeUsedMB(layout), 0);
+	const diskBytes = layout.diskSizeBytes ?? layout.diskSizeMB * bytesPerMB;
+	const free = Math.max(diskBytes - computeUsedBytes(layout), 0);
+	return Math.floor(free / bytesPerMB);
 }
 
 // typeCount returns how many partitions carry the given type.
@@ -123,6 +144,36 @@ export function typeCount(layout: ManualLayout | null, type: PartitionType): num
 export function hasRequiredTypes(layout: ManualLayout | null): boolean {
 	if (!layout) return false;
 	return typeCount(layout, TYPE_ESP) === 1 && typeCount(layout, TYPE_SYSTEM) === 1;
+}
+
+// partitionSizeMB returns a designated partition's size in MiB. A sizeMB of 0
+// means "use all remaining space", reported as -1 so callers can exempt it from
+// a fixed floor (its real size is whatever the disk leaves over).
+function partitionSizeMB(p: ManualPartition): number {
+	if (p.sizeMB === 0) return -1;
+	if (p.path && p.sizeBytes) return Math.floor(p.sizeBytes / bytesPerMB);
+	return p.sizeMB;
+}
+
+// isManualLayoutValid is true when the plan has exactly one ESP and one System,
+// and each designated partition meets its minimum size: ESP >= 128 MiB, System
+// >= 8 GiB (the disk floor). A "use all remaining space" row (sizeMB 0) is
+// exempt — its size is whatever the disk leaves, which already respects the
+// disk's own 8 GiB floor. Kept in sync with partition.Validate in the backend.
+export function isManualLayoutValid(layout: ManualLayout | null): boolean {
+	if (!layout) return false;
+	if (!hasRequiredTypes(layout)) return false;
+	for (const p of layout.partitions) {
+		const sizeMB = partitionSizeMB(p);
+		if (sizeMB < 0) continue; // "use all remaining space" — exempt from the floor
+		if (p.type === TYPE_ESP && sizeMB < MinESPSizeBytes / bytesPerMB) {
+			return false;
+		}
+		if (p.type === TYPE_SYSTEM && sizeMB < MinDiskSizeBytes / bytesPerMB) {
+			return false;
+		}
+	}
+	return true;
 }
 
 // setType sets a partition's type.
