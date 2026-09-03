@@ -1,0 +1,151 @@
+/* Custom role selector — fully themed so the dropdown list stays on the light UI
+   instead of the OS/browser native (often dark) <select> popup. */
+
+.role-select {
+	position: relative;
+	display: inline-block;
+}
+
+/* Trigger — matches the partition table's other pill controls. */
+.role-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	/* Fit the content (label + chevron) instead of stretching the cell width, so the
+	   dropdown stays narrow and the menu matches the trigger. max-width is just a cap. */
+	max-width: 168px;
+	/* Right padding trimmed from 30px (was clearance for the native <select> arrow). */
+	padding: 4px 12px 4px 12px;
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-pill);
+	background-color: var(--color-bg-white);
+	font-family: inherit;
+	font-size: var(--font-size-sm);
+	font-weight: 600;
+	color: var(--color-text);
+	cursor: pointer;
+	appearance: none;
+	transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.role-trigger:hover {
+	border-color: var(--color-primary);
+}
+
+.role-trigger:focus-visible {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-hover);
+}
+
+.role-trigger-label {
+	/* No flex: 1 — let the trigger shrink to its label so the dropdown isn't wide. */
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.role-chevron {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+.role-chevron-arrow {
+	display: block;
+	width: 100%;
+	height: 100%;
+	transition: transform 0.15s ease;
+}
+
+.role-chevron-arrow path {
+	stroke: var(--color-text-muted);
+}
+
+.role-trigger .role-chevron-arrow.open {
+	transform: rotate(180deg);
+}
+
+/* Role colouring on the trigger — mirrors the menu rows. */
+.role-trigger.system {
+	border-color: var(--color-primary);
+	background-color: var(--color-primary-lighter);
+	color: var(--color-primary);
+}
+
+.role-trigger.system .role-chevron-arrow path {
+	stroke: var(--color-primary);
+}
+
+.role-trigger.esp {
+	border-color: var(--color-warning);
+	background-color: var(--color-warning-light);
+	color: var(--color-warning);
+}
+
+.role-trigger.esp .role-chevron-arrow path {
+	stroke: var(--color-warning);
+}
+
+/* Menu — light, themed card. */
+.role-menu {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 50;
+	min-width: 100%;
+	padding: 4px;
+	background: var(--color-bg-white);
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-md);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.role-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 6px 10px;
+	border: none;
+	border-radius: 6px;
+	background: transparent;
+	font-family: inherit;
+	font-size: var(--font-size-sm);
+	font-weight: 600;
+	color: var(--color-text);
+	text-align: start;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.role-option:hover {
+	background: var(--color-primary-light);
+}
+
+.role-option[aria-selected="true"] {
+	background: var(--color-primary-lighter);
+}
+
+.role-option-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	background: var(--color-border);
+}
+
+.role-option.system .role-option-dot {
+	background: var(--color-primary);
+}
+
+.role-option.esp .role-option-dot {
+	background: var(--color-warning);
+}

@@ -7,13 +7,10 @@
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
+	import RoleSelect from '$components/RoleSelect.svelte';
 	import './ManualPartitionPage.css';
 
 	let { disk }: { disk: DiskInfo | null } = $props();
-
-	// Typed type option lists so each-block bindings stay PartitionType. Preserve
-	// ('') means untouched — the dualboot-safe default for every partition.
-	const TYPE_OPTIONS: PartitionType[] = ['', TYPE_ESP, TYPE_SYSTEM];
 
 	let layout: ManualLayout | null = $state(null);
 	let loading = $state(false);
@@ -115,11 +112,6 @@
 	// commit step see the latest layout.
 	function touch(): void {
 		installState.manualLayout = layout;
-	}
-
-	function typeLabel(type: PartitionType): string {
-		if (type === '') return t('manual.type.preserve');
-		return t('manual.type.' + type);
 	}
 
 	function setType(part: ManualPartition, type: PartitionType): void {
@@ -242,18 +234,8 @@
 								{/if}
 							</td>
 							<td class="part-size">{part.sizeMB} {t('unit.mb')}</td>
-							<td>
-								<div class="type-pills">
-									{#each TYPE_OPTIONS as r (r)}
-										<button
-											type="button"
-											class={['type-pill', { selected: part.type === r }]}
-											onclick={() => setType(part, r)}
-										>
-											{typeLabel(r)}
-										</button>
-									{/each}
-								</div>
+							<td class="part-type">
+							<RoleSelect value={part.type} onChange={(v: PartitionType) => setType(part, v)} />
 							</td>
 							<td class="text-right">
 								<button
@@ -321,4 +303,3 @@
 		onCancel={() => { deleteTargetIndex = null; }}
 	/>
 </div>
-
