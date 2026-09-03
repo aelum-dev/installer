@@ -27,12 +27,37 @@
 	let addSizeMB = $state<number>(1);
 	let addUseRemaining = $state(false);
 
+	// Live reference to the range input so the value-reassert effect below can keep
+	// it on a valid value when its `max` shifts (e.g. after adding/deleting a row).
+	let sliderEl: HTMLInputElement | null = null;
+
 	// Keep addSizeMB a real number. Clearing the field would otherwise make it
 	// null/undefined, and a range input bound to a non-number defaults to the
 	// midpoint instead of the minimum. Emptying the field now yields 0, which the
 	// range clamps to its minimum and the Add button blocks.
 	$effect(() => {
-		if (!Number.isFinite(addSizeMB)) addSizeMB = 0;
+		if (!Number.isFinite(addSizeMB)) {
+			addSizeMB = 0;
+		}
+	});
+
+	// Re-assert a valid slider value whenever available space changes (adding or
+	// deleting a partition makes `availableAddMB` jump, which moves the range's
+	// `max`). A bound range left with a shifted `max` can stay stuck at its
+	// browser-computed midpoint, and since `addSizeMB` itself doesn't change value
+	// here Svelte's bind:value won't re-write the DOM to unstick it. Writing a
+	// valid number directly fixes it; this never fires an input event, so it
+	// doesn't fight user drags or the shared binding.
+	$effect(() => {
+		void availableAddMB;
+		if (!sliderEl || addUseRemaining) return;
+		// Clamp to the slider's own max (not just availableAddMB) so a large
+		// typed value the slider is allowed to reach isn't pulled back down.
+		const sliderMax = Math.max(availableAddMB, addSizeMB || 0);
+		const next = Math.min(Math.max(addSizeMB || 0, 1), sliderMax);
+		if (sliderEl.value !== String(next)) {
+			sliderEl.value = String(next);
+		}
 	});
 
 	// Space left unallocated at the end of the disk. New partitions never carve
@@ -248,6 +273,7 @@
 				class="add-slider"
 				min="1"
 				max={Math.max(availableAddMB, addSizeMB || 0)}
+				bind:this={sliderEl}
 				step="1"
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
