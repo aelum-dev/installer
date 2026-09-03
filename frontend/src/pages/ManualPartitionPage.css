@@ -194,15 +194,6 @@
 	color: var(--color-text-muted);
 }
 
-.add-input {
-	width: 120px;
-	padding: 6px 10px;
-	border: 1.5px solid var(--color-border-light);
-	border-radius: var(--radius-md);
-	font-family: var(--font-mono);
-	font-size: var(--font-size-sm);
-}
-
 .add-check {
 	display: flex;
 	align-items: center;
@@ -216,32 +207,82 @@
 	accent-color: var(--color-primary);
 }
 
-.add-type {
-	margin-left: auto;
+.add-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	flex: 1;
+	min-width: 120px;
+	padding: 0;
+	height: 6px;
+	border-radius: 3px;
+	background: var(--color-border-light);
+	outline: none;
+	cursor: pointer;
+}
+
+.add-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--color-primary);
+	border: 3px solid var(--color-bg-white);
+	box-shadow: 0 0 0 1.5px var(--color-primary);
+	cursor: pointer;
+	transition: box-shadow 0.15s ease;
+}
+
+.add-slider::-webkit-slider-thumb:hover {
+	box-shadow: 0 0 0 1.5px var(--color-primary-hover);
+}
+
+.add-slider::-moz-range-thumb {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--color-primary);
+	border: 3px solid var(--color-bg-white);
+	box-shadow: 0 0 0 1.5px var(--color-primary);
+	cursor: pointer;
+}
+
+.add-slider:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.add-slider:disabled::-webkit-slider-thumb {
+	cursor: not-allowed;
 }
 
 .add-btn {
-	padding: 6px 16px;
-	border: 1.5px solid var(--color-primary);
+	padding: 8px 18px;
+	border: none;
 	border-radius: var(--radius-pill);
-	background: transparent;
-	color: var(--color-primary);
+	background: var(--color-primary);
+	color: var(--color-on-primary);
 	font-family: inherit;
 	font-size: var(--font-size-sm);
 	font-weight: 600;
 	cursor: pointer;
 	transition: all 0.15s ease;
+	white-space: nowrap;
 }
 
 .add-btn:hover:not(:disabled) {
-	background: var(--color-primary);
-	color: var(--color-on-primary);
+	background: var(--color-primary-hover);
+	color: var(--color-text);
+	box-shadow: var(--shadow-sm);
+}
+
+.add-btn:active:not(:disabled) {
+	transform: translateY(1px);
 }
 
 .add-btn:disabled {
 	opacity: 0.4;
 	cursor: not-allowed;
-	pointer-events: none;
 }
 
 /* Delete confirmation dialog */

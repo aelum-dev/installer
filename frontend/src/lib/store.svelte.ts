@@ -26,6 +26,11 @@ export const installState = $state({
 	manualMode: false as boolean,
 	manualLayout: null as ManualLayout | null,
 
+	// Pending "add partition" size (MB) not yet committed to the layout. Set live
+	// by ManualPartitionPage as the user drags the size slider, so the top-bar
+	// space bar can preview the change before the partition is actually added.
+	pendingAddMB: 0 as number,
+
 	// Confirmation dialog
 	showConfirmDialog: false,
 

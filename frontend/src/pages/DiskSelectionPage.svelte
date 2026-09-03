@@ -38,8 +38,12 @@
 		if (!layout) return { used: 0, total: 0, free: 0, pct: 0 };
 		const used = computeUsedMB(layout);
 		const total = layout.diskSizeMB;
-		const free = computeFreeMB(layout);
-		return { used, total, free, pct: total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0 };
+		// Fold in the pending "add partition" (from the manual page's size slider)
+		// so the bar previews the change before the partition is committed.
+		const pending = Math.max(0, Math.min(installState.pendingAddMB, computeFreeMB(layout)));
+		const usedPreview = used + pending;
+		const freePreview = Math.max(computeFreeMB(layout) - pending, 0);
+		return { used: usedPreview, total, free: freePreview, pct: total > 0 ? Math.min(100, Math.round((usedPreview / total) * 100)) : 0 };
 	});
 
 	const minDiskSizeFormatted = $derived.by(() => {

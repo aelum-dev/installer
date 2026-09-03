@@ -145,6 +145,14 @@
 	$effect(() => {
 		void loadLayout();
 	});
+
+	// Live-preview the pending "add partition" in the top-bar space bar. Drags on
+	// the slider update this before the partition is committed, so used/free
+	// reflect what the next Add will produce. Clamped to available free space.
+	$effect(() => {
+		const pending = addUseRemaining ? freeMB : addSizeMB;
+		installState.pendingAddMB = Math.max(0, Math.min(pending, freeMB));
+	});
 </script>
 
 <div class="manual">
@@ -219,18 +227,18 @@
 		<div class="add-control">
 			<span class="add-label">{t('manual.add')}</span>
 			<input
-				type="number"
+				type="range"
+				class="add-slider"
 				min="1"
-				class="add-input"
+				max={Math.max(freeMB, addSizeMB)}
+				step="1"
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
-				placeholder={t('manual.sizeMB')}
 			/>
 			<label class="add-check">
 				<input type="checkbox" bind:checked={addUseRemaining} />
 				<span>{t('manual.useRemaining')}</span>
 			</label>
-			<p class="add-hint">{t('manual.addHint')}</p>
 			<button
 				type="button"
 				class="add-btn"
