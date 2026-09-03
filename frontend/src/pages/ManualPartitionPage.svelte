@@ -33,7 +33,7 @@
 
 	// Live reference to the range input so the value-reassert effect below can keep
 	// it on a valid value when its `max` shifts (e.g. after adding/deleting a row).
-	let sliderEl: HTMLInputElement | null = null;
+	let sliderEl = $state<HTMLInputElement | null>(null);
 
 	// Keep addSizeMB a real number. Clearing the field would otherwise make it
 	// null/undefined, and a range input bound to a non-number defaults to the
