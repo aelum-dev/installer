@@ -4,7 +4,6 @@
 
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
-	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 
 	import WelcomePage from '$pages/WelcomePage.svelte';
 	import UserAccountPage from '$pages/UserAccountPage.svelte';
@@ -105,7 +104,6 @@
 		{/key}
 	</main>
 
-	<ConfirmDialog bind:show={installState.showConfirmDialog} />
 	<AppFooter currentPage={navState.currentPage} onNext={handleNext} onBack={handleBack} onFinish={handleFinish} />
 </div>
 

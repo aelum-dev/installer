@@ -12,7 +12,10 @@
 		// boolean instead, e.g. `show={showDeleteDialog}`.
 		show = $bindable(installState.showConfirmDialog),
 		title = t('dialog.confirm.title'),
-		message = t('dialog.confirm.message', { model: installState.disk?.model || 'Unknown' }),
+		// No default here: the installation message is mode-aware and computed
+		// reactively below (see installationMessage). Callers with their own copy
+		// (e.g. the delete dialog) still pass an explicit `message`.
+		message,
 		cancelLabel = t('dialog.confirm.cancel'),
 		confirmLabel = t('dialog.confirm.yes'),
 		// Delete dialog historically had no warning glyph; opt out with show-icon={false}.
@@ -31,6 +34,19 @@
 		onConfirm?: () => void;
 		onCancel?: () => void;
 	} = $props();
+
+	// Installation confirmation copy adapts to the install mode. Automatic installs
+	// wipe the whole disk; manual (dualboot-safe) installs only touch the chosen
+	// Boot and Root partitions and leave the rest of the disk intact.
+	const installationMessage = $derived.by(() =>
+		installState.manualMode
+			? t('dialog.confirm.messageManual', { model: installState.disk?.model || 'Unknown' })
+			: t('dialog.confirm.message', { model: installState.disk?.model || 'Unknown' }),
+	);
+
+	// Fall back to the reactive installation message when the caller didn't pass
+	// its own (i.e. the standard installation confirmation dialog).
+	const effectiveMessage = $derived(message ?? installationMessage);
 
 	function handleConfirm(): void {
 		show = false;
@@ -80,7 +96,7 @@
 			{/if}
 			<h2 id="dialog-title" class="dialog-title">{title}</h2>
 			<p class="dialog-message">
-				{@html message}
+				{@html effectiveMessage}
 			</p>
 			<div class="dialog-actions">
 				<button type="button" class="btn-cancel" onclick={handleCancel}>
