@@ -12,6 +12,11 @@
 
 	let { disk }: { disk: DiskInfo | null } = $props();
 
+// Format a MB value with a space as the thousands separator (e.g. 487875 -> "487 875").
+function formatSizeMB(value: number): string {
+	return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 	let layout: ManualLayout | null = $state(null);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -233,7 +238,7 @@
 									<span class="part-new">{t('manual.newPart')}</span>
 								{/if}
 							</td>
-							<td class="part-size">{part.sizeMB}</td>
+							<td class="part-size">{formatSizeMB(part.sizeMB)}</td>
 							<td class="part-type">
 							<RoleSelect value={part.type} onChange={(v: PartitionType) => setType(part, v)} />
 							</td>
