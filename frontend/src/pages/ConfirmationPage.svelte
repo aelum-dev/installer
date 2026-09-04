@@ -55,6 +55,35 @@
 	const hasDesignated = $derived.by(
 		() => !!installState.manualLayout?.partitions.some((p) => p.type === TYPE_ESP || p.type === TYPE_SYSTEM),
 	);
+
+	// References to measure against, so the partition table scrolls internally
+	// (not the page) only when it's taller than the room available.
+	let pageContentEl = $state<HTMLElement | null>(null);
+	let planScrollEl = $state<HTMLElement | null>(null);
+
+	// Bound .plan-scroll's height to the space left over in the column after the
+	// fixed summary content (language, user, disk header). When the table fits,
+	// the summary stays naturally sized and vertically centered; when it doesn't
+	// (many partitions), the table fills the column and scrolls internally.
+	function updatePlanScrollHeight(): void {
+		if (!pageContentEl || !planScrollEl) return;
+		const summary = pageContentEl.querySelector<HTMLElement>('.summary');
+		if (!summary) return;
+		const available = pageContentEl.clientHeight;
+		// summary's natural height includes the table's current height; subtracting
+		// it leaves the height of everything else, which is stable either way.
+		const fixed = summary.clientHeight - planScrollEl.offsetHeight;
+		planScrollEl.style.maxHeight = Math.max(0, available - fixed) + 'px';
+	}
+
+	$effect(() => {
+		// Re-measure whenever the partition list changes (add/remove rows).
+		const partitions = installState.manualLayout?.partitions ?? [];
+		void partitions;
+		updatePlanScrollHeight();
+		window.addEventListener('resize', updatePlanScrollHeight);
+		return () => window.removeEventListener('resize', updatePlanScrollHeight);
+	});
 </script>
 
 <div class="page-layout">
@@ -63,7 +92,7 @@
 		<h2>{t('page.confirmation.title')}</h2>
 		<p>{t('page.confirmation.subtitle')}</p>
 	</div>
-	<div class="page-content">
+	<div class="page-content" bind:this={pageContentEl}>
 		<div class="summary">
 			<div class="summary-section">
 				<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
@@ -103,7 +132,7 @@
 						{#if installState.manualMode}
 							<!-- Manual mode: show the partition plan the user designed -->
 							{#if installState.manualLayout && hasDesignated}
-								<div class="plan-scroll">
+								<div class="plan-scroll" bind:this={planScrollEl}>
 									<table class="plan-table">
 									<thead>
 										<tr>
@@ -182,6 +211,9 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		/* Vertically center the summary; when the table is tall the JS-bound
+		.plan-scroll grows to fill instead, so nothing clips. */
+		justify-content: center;
 		align-items: flex-start;
 		text-align: left;
 		min-height: 0;
@@ -193,25 +225,12 @@
 		flex-direction: column;
 		gap: var(--spacing-md);
 		width: 100%;
-		/* Fill the column height so the partition table can claim the
-		remaining vertical space and scroll internally. */
-		flex: 1;
-		min-height: 0;
 	}
 
 	.summary-section {
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-xs);
-		/* Language and user sections keep their natural height. */
-		flex: 0 0 auto;
-	}
-
-	/* The disk section (last) expands to fill the column, letting the table
-	claim the remaining space. */
-	.summary-section:last-child {
-		flex: 1;
-		min-height: 0;
 	}
 
 	.section-title {
@@ -233,8 +252,6 @@
 		flex-direction: column;
 		gap: var(--spacing-xs);
 		width: 100%;
-		flex: 1;
-		min-height: 0;
 	}
 
 	.disk-name {
@@ -267,14 +284,12 @@
 	}
 
 	/* Manual partition plan — native table keeps every column perfectly aligned */
-	/* Scroll wrapper: fills the column normally, but scrolls horizontally when
-		the table is wider than the available space (narrow window). */
+	/* Scroll wrapper: scrolls internally when the table is taller (many
+		partitions) or wider (narrow window) than its space. Its max-height is
+		set by JS so it fills the remaining column only when needed, keeping the
+		summary centered whenever it fits. */
 	.plan-scroll {
 		width: 100%;
-		/* Fill remaining height, then scroll internally when the table is
-		taller (many partitions) or wider (narrow window) than the space. */
-		flex: 1;
-		min-height: 0;
 		overflow: auto;
 	}
 
