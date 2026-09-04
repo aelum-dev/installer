@@ -299,7 +299,7 @@ function formatSizeMB(value: number): string {
 
 	<!-- Delete confirmation dialog (shared component, custom text) -->
 	<ConfirmDialog
-		show={showDeleteDialog}
+		bind:show={showDeleteDialog}
 		title={t('manual.deleteTitle')}
 		message={t('manual.deleteMessage')}
 		cancelLabel={t('dialog.confirm.cancel')}

@@ -105,7 +105,7 @@
 		{/key}
 	</main>
 
-	<ConfirmDialog />
+	<ConfirmDialog bind:show={installState.showConfirmDialog} />
 	<AppFooter currentPage={navState.currentPage} onNext={handleNext} onBack={handleBack} onFinish={handleFinish} />
 </div>
 
