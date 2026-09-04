@@ -42,14 +42,6 @@
 		return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 	}
 
-	// Mountpoint a partition role maps to. ESP → /boot, System → /, Preserve →
-	// none. Mirrors the backend's mount step (ESP at /mnt/boot, System at /).
-	function partitionMount(type: PartitionType): string {
-		if (type === TYPE_ESP) return '/boot';
-		if (type === TYPE_SYSTEM) return '/';
-		return '';
-	}
-
 	// Filesystem a partition row will be formatted with. ESP is always vfat, the
 	// System row uses the user's chosen root filesystem, and Preserve keeps the
 	// partition's existing filesystem untouched.
@@ -97,46 +89,54 @@
 						<p class="section-value disk-name">
 							{installState.disk.model || '—'} ({installState.disk.sizeFormatted} {t(installState.disk.rotational ? 'disk.hdd' : 'disk.ssd')} {installState.disk.trans?.toUpperCase() || ''})
 						</p>
-						<p class="disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
-						{#if installState.disk.fstype}
-							<p class="disk-extra">{t('page.diskSelection.currentFileSystem')}: <span class="tag fstype-tag">{installState.disk.fstype}</span></p>
+						{#if installState.disk.serial}
+							<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{installState.disk.serial}</span></p>
+						{/if}
+						<!-- Path + current fs are redundant in manual mode: the plan table lists every path, and a disk has no single filesystem. -->
+						{#if !installState.manualMode}
+							<p class="disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
+							{#if installState.disk.fstype}
+								<p class="disk-extra">{t('page.diskSelection.currentFileSystem')}: <span class="tag fstype-tag">{installState.disk.fstype}</span></p>
+							{/if}
 						{/if}
 
 						{#if installState.manualMode}
 							<!-- Manual mode: show the partition plan the user designed -->
 							{#if installState.manualLayout && hasDesignated}
-								<div class="plan-table">
-									<div class="plan-head">
-										<span class="plan-col-name">{t('disk.name')}</span>
-										<span class="plan-col-size">{t('disk.sizeMB')}</span>
-										<span class="plan-col-role">{t('manual.typeCol')}</span>
-										<span class="plan-col-mount">{t('page.confirmation.mount')}</span>
-										<span class="plan-col-fs">{t('page.confirmation.filesystem')}</span>
-									</div>
-									{#each installState.manualLayout.partitions as part (part.index)}
-										<div class="plan-row" class:designated={part.type === TYPE_ESP || part.type === TYPE_SYSTEM}>
-											<span class="plan-col-name">
-												{#if part.path}
-													{part.path}
-												{:else}
-													<span class="part-new">{t('manual.newPart')}</span>
-												{/if}
-											</span>
-											<span class="plan-col-size">{formatSizeMB(part.sizeMB)}</span>
-											<span class="plan-col-role">
-												<span class="tag role-tag {part.type}">{t('manual.type.' + (part.type || 'preserve'))}</span>
-											</span>
-											<span class="plan-col-mount">{partitionMount(part.type) || '—'}</span>
-											<span class="plan-col-fs">
-												{#if partitionFstype(part)}
-													<span class="tag fs-tag">{t('fs.' + partitionFstype(part))}</span>
-												{:else}
-													—
-												{/if}
-											</span>
-										</div>
-									{/each}
-								</div>
+								<table class="plan-table">
+									<thead>
+										<tr>
+											<th scope="col" class="plan-col-name">{t('page.confirmation.colName')}</th>
+											<th scope="col" class="plan-col-size">{t('page.confirmation.colSize')}</th>
+											<th scope="col" class="plan-col-role">{t('page.confirmation.colRole')}</th>
+											<th scope="col" class="plan-col-fs">{t('page.confirmation.filesystem')}</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each installState.manualLayout.partitions as part (part.index)}
+											<tr class:designated={part.type === TYPE_ESP || part.type === TYPE_SYSTEM}>
+												<td class="plan-col-name">
+													{#if part.path}
+														{part.path}
+													{:else}
+														<span class="part-new">{t('manual.newPart')}</span>
+													{/if}
+												</td>
+												<td class="plan-col-size">{formatSizeMB(part.sizeMB)}</td>
+												<td class="plan-col-role">
+													<span class="tag role-tag {part.type}">{t('manual.type.' + (part.type || 'preserve'))}</span>
+												</td>
+												<td class="plan-col-fs">
+													{#if partitionFstype(part)}
+														<span class="tag fs-tag">{t('fs.' + partitionFstype(part))}</span>
+													{:else}
+														—
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
 							{:else}
 								<p class="disk-extra">{t('manual.dualbootHint')}</p>
 							{/if}
@@ -144,9 +144,6 @@
 							<p class="disk-extra">
 								{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{installState.fileSystem || '—'}</span>
 							</p>
-						{/if}
-						{#if installState.disk.serial}
-							<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{installState.disk.serial}</span></p>
 						{/if}
 					</div>
 				{:else}
@@ -188,6 +185,7 @@
 		text-align: left;
 		overflow: hidden;
 		min-height: 0;
+		min-width: 0;
 	}
 
 	.summary {
@@ -253,74 +251,68 @@
 		color: var(--color-danger);
 	}
 
-	/* Manual partition plan */
+	/* Manual partition plan — native table keeps every column perfectly aligned */
 	.plan-table {
-		display: flex;
-		flex-direction: column;
+		border-spacing: 0;
 		width: 100%;
+		min-width: 0;
 		border: 1.5px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
-		overflow: hidden;
 		background: var(--color-bg-white);
+		font-size: var(--font-size-sm);
 	}
 
-	.plan-head,
-	.plan-row {
-		display: grid;
-		grid-template-columns: 1.6fr 1fr 1.1fr 0.9fr 1fr;
-		width: 100%;
+	.plan-table thead tr {
+		border-bottom: 1px solid var(--color-border-light);
 	}
 
-	.plan-head {
-			padding: var(--spacing-sm) var(--spacing-md);
-			font-size: 0.68rem;
-			font-weight: 600;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-			color: var(--color-text-muted);
-			border-bottom: 1px solid var(--color-border-light);
+	.plan-table tbody tr {
+		border-bottom: 1px solid var(--color-border-subtle);
 	}
 
-	.plan-row {
-			padding: var(--spacing-xs) var(--spacing-md);
-			align-items: center;
-			border-bottom: 1px solid var(--color-border-subtle);
-	}
-
-	.plan-row:last-child {
+	.plan-table tbody tr:last-child {
 		border-bottom: none;
 	}
 
-	.plan-row.designated {
+	.plan-table tbody tr.designated {
 		background: var(--color-primary-lighter);
 	}
 
-	.plan-col-name,
-	.plan-col-size,
-	.plan-col-role,
-	.plan-col-mount,
-	.plan-col-fs {
-		font-size: var(--font-size-sm);
+	.plan-table th,
+	.plan-table td {
+		padding: var(--spacing-xs) var(--spacing-md);
 		font-family: var(--font-mono);
 		font-variant-numeric: tabular-nums;
-	}
-
-	.plan-col-name,
-	.plan-col-role,
-	.plan-col-mount,
-	.plan-col-fs {
 		text-align: left;
+		vertical-align: middle;
+		margin: 0;
 	}
 
-	.plan-col-size,
-	.plan-col-mount,
-	.plan-col-fs {
-		text-align: center;
+	.plan-table th {
+		font-size: 0.68rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--color-text-muted);
 	}
 
 	.plan-col-name {
 		font-weight: 600;
 		color: var(--color-text);
+		min-width: 0;
+	}
+
+	.plan-col-size {
+		text-align: right;
+		white-space: nowrap;
+	}
+
+	.plan-col-role {
+		white-space: nowrap;
+	}
+
+	.plan-col-fs {
+		white-space: nowrap;
 	}
 
 	.part-new {
