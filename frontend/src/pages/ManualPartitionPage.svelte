@@ -218,8 +218,8 @@
 				<thead>
 					<tr>
 						<th>{t('disk.name')}</th>
-						<th>{t('disk.size')}</th>
-						<th>{t('manual.type')}</th>
+						<th>{t('disk.sizeMB')}</th>
+						<th>{t('manual.typeCol')}</th>
 						<th class="text-right"></th>
 					</tr>
 				</thead>
@@ -233,7 +233,7 @@
 									<span class="part-new">{t('manual.newPart')}</span>
 								{/if}
 							</td>
-							<td class="part-size">{part.sizeMB} {t('unit.mb')}</td>
+							<td class="part-size">{part.sizeMB}</td>
 							<td class="part-type">
 							<RoleSelect value={part.type} onChange={(v: PartitionType) => setType(part, v)} />
 							</td>
