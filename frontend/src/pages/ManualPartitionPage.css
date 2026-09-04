@@ -309,8 +309,8 @@
 	padding: 8px 18px;
 	border: none;
 	border-radius: var(--radius-pill);
-	background: var(--color-primary);
-	color: var(--color-on-primary);
+	background: #e6d4d6;
+	color: var(--color-text);
 	font-family: inherit;
 	font-size: var(--font-size-sm);
 	font-weight: 600;
@@ -320,8 +320,8 @@
 }
 
 .add-btn:hover:not(:disabled) {
-	background: var(--color-primary-hover);
-	color: var(--color-text);
+	background: var(--color-primary);
+	color: #ffffff;
 	box-shadow: var(--shadow-sm);
 }
 
