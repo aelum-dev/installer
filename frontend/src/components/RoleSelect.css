@@ -4,16 +4,20 @@
 .role-select {
 	position: relative;
 	display: inline-block;
+	/* The role selector takes half of the partition-cell width, so it stays a
+	   constant size regardless of which (shorter/longer) role label is shown. */
+	width: 50%;
 }
 
 /* Trigger — matches the partition table's other pill controls. */
 .role-trigger {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
+	justify-content: space-between;
+	width: 100%;
 	gap: 8px;
-	/* Fit the content (label + chevron) instead of stretching the cell width, so the
-	   dropdown stays narrow and the menu matches the trigger. max-width is just a cap. */
-	max-width: 168px;
+	/* Fill the (half-cell) trigger; the label shrinks/truncates and the chevron is
+	   pinned to the right edge via justify-content: space-between. */
 	/* Right padding trimmed from 30px (was clearance for the native <select> arrow). */
 	padding: 4px 12px 4px 12px;
 	border: 1.5px solid var(--color-border-light);
@@ -39,7 +43,9 @@
 }
 
 .role-trigger-label {
-	/* No flex: 1 — let the trigger shrink to its label so the dropdown isn't wide. */
+	/* Fill the space between the text and the right-pinned chevron, truncating with
+	   an ellipsis when the label is too long for the half-cell width. */
+	flex: 1 1 auto;
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
