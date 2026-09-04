@@ -103,7 +103,8 @@
 						{#if installState.manualMode}
 							<!-- Manual mode: show the partition plan the user designed -->
 							{#if installState.manualLayout && hasDesignated}
-								<table class="plan-table">
+								<div class="plan-scroll">
+									<table class="plan-table">
 									<thead>
 										<tr>
 											<th scope="col" class="plan-col-name">{t('page.confirmation.colName')}</th>
@@ -137,6 +138,7 @@
 										{/each}
 									</tbody>
 								</table>
+								</div>
 							{:else}
 								<p class="disk-extra">{t('manual.dualbootHint')}</p>
 							{/if}
@@ -180,10 +182,8 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
 		align-items: flex-start;
 		text-align: left;
-		overflow: hidden;
 		min-height: 0;
 		min-width: 0;
 	}
@@ -193,12 +193,25 @@
 		flex-direction: column;
 		gap: var(--spacing-md);
 		width: 100%;
+		/* Fill the column height so the partition table can claim the
+		remaining vertical space and scroll internally. */
+		flex: 1;
+		min-height: 0;
 	}
 
 	.summary-section {
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-xs);
+		/* Language and user sections keep their natural height. */
+		flex: 0 0 auto;
+	}
+
+	/* The disk section (last) expands to fill the column, letting the table
+	claim the remaining space. */
+	.summary-section:last-child {
+		flex: 1;
+		min-height: 0;
 	}
 
 	.section-title {
@@ -220,6 +233,8 @@
 		flex-direction: column;
 		gap: var(--spacing-xs);
 		width: 100%;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.disk-name {
@@ -252,10 +267,23 @@
 	}
 
 	/* Manual partition plan — native table keeps every column perfectly aligned */
+	/* Scroll wrapper: fills the column normally, but scrolls horizontally when
+		the table is wider than the available space (narrow window). */
+	.plan-scroll {
+		width: 100%;
+		/* Fill remaining height, then scroll internally when the table is
+		taller (many partitions) or wider (narrow window) than the space. */
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+	}
+
 	.plan-table {
 		border-spacing: 0;
 		width: 100%;
-		min-width: 0;
+		/* Fill the column on normal screens, but grow to its content (and force
+		the wrapper to scroll) when the column is too narrow. */
+		min-width: max-content;
 		border: 1.5px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
 		background: var(--color-bg-white);
