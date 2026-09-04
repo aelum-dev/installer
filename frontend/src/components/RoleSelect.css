@@ -59,7 +59,7 @@
 	display: block;
 	width: 100%;
 	height: 100%;
-	transition: transform 0.15s ease;
+	/* No transition — rotate snaps instantly between states. */
 }
 
 .role-chevron-arrow path {
@@ -82,13 +82,13 @@
 }
 
 .role-trigger.esp {
-	border-color: var(--color-warning);
-	background-color: var(--color-warning-light);
-	color: var(--color-warning);
+	border-color: var(--color-primary);
+	background-color: var(--color-primary-lighter);
+	color: var(--color-primary);
 }
 
 .role-trigger.esp .role-chevron-arrow path {
-	stroke: var(--color-warning);
+	stroke: var(--color-primary);
 }
 
 /* Menu — light, themed card. */
@@ -147,5 +147,5 @@
 }
 
 .role-option.esp .role-option-dot {
-	background: var(--color-warning);
+	background: var(--color-primary);
 }
