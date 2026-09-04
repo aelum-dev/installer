@@ -24,7 +24,7 @@
   "page.diskSelection.currentFileSystem": "Current filesystem",
   "page.diskSelection.selectedFileSystem": "Selected filesystem",
   "page.diskSelection.minDiskSize": "Minimum disk size: {minSize}",
-  "page.diskSelection.mode": "Installation mode",
+  "page.diskSelection.mode": "Mode",
   "page.diskSelection.selectDiskFirst": "Select a disk before switching to manual mode.",
   "page.diskSelection.selectDiskManual": "Select a disk, then switch to manual mode to design your own partition layout.",
   "unit.mb": "MB",
