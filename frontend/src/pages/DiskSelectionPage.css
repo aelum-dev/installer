@@ -5,6 +5,7 @@
 	width: 100%;
 	padding-inline: var(--spacing-xl);
 	box-sizing: border-box;
+	gap: var(--gap-xl);
 }
 
 .page-content {
@@ -14,6 +15,12 @@
 	overflow: hidden;
 	min-height: 0;
 	gap: var(--spacing-md);
+}
+
+/* Manual mode hides the sidebar, so the between-column gap would otherwise
+	show as empty space on the left. Drop it there; the content spans full width. */
+.page-layout--manual {
+	gap: 0;
 }
 
 .manual-select-hint {

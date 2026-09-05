@@ -133,7 +133,7 @@
 	loadDisks();
 </script>
 
-<div class="page-layout">
+<div class={['page-layout', { 'page-layout--manual': installState.manualMode }]}>
 	<DiskInfoSidebar
 		pageIcon={pageIcon}
 		minDiskSizeFormatted={minDiskSizeFormatted}
