@@ -6,24 +6,6 @@
 	position: relative;
 }
 
-/*
- * The top-bar is a two-column layout: a left slot (disk title) and a right slot
- * (fs + mode controls). Both are flex: 1, so they always take equal width and the
- * controls never shift when the title appears/disappears across mode switches.
- */
-.top-bar-side {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-}
-
-/* Controls slot stays pinned to the right edge. */
-.top-bar-side--controls {
-	align-items: flex-end;
-}
-
 .manual-title {
 	flex: 1;
 	min-width: 0;
@@ -33,14 +15,6 @@
 	gap: var(--spacing-md);
 }
 
-/*
- * Empty placeholder rendered in automatic mode so the title slot keeps the same
- * width it has in manual mode — this is what stops the controls from drifting.
- */
-.manual-title--spacer {
-	flex: 1;
-	min-width: 0;
-}
 
 /* Stacked disk name + free bar, sitting to the right of the icon. */
 .manual-title-content {

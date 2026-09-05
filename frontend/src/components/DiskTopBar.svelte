@@ -56,9 +56,7 @@
 </script>
 
 <div class="top-bar">
-	<!-- Left slot: disk title in manual mode, empty spacer otherwise so the
-		right controls never shift position when switching modes. flex: 1 keeps it
-		equal width with the controls on the right. -->
+	<!-- Left slot: disk title in manual mode; nothing in automatic mode. -->
 	{#if manualMode && disk}
 		<div class="manual-title">
 			<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
@@ -84,13 +82,10 @@
 				{/if}
 			</div>
 		</div>
-	{:else}
-		<div class="manual-title manual-title--spacer" aria-hidden="true"></div>
 	{/if}
 
-	<!-- Right slot: fs + mode controls. Same width as the title slot. -->
-	<div class="top-bar-side top-bar-side--controls">
-		<div class="top-bar-controls">
+	<!-- Right slot: fs + mode controls. -->
+	<div class="top-bar-controls">
 		<div class="fs-bar">
 			<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
 			<div class="fs-pills">
@@ -136,5 +131,4 @@
 			</div>
 		</div>
 	</div>
-</div>
 </div>

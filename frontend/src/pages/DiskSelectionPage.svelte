@@ -78,6 +78,12 @@
 	}
 
 	async function selectDisk(disk: DiskInfo): Promise<void> {
+		// Toggle: clicking the already-selected disk deselects it again.
+		if (installState.diskId === disk.path) {
+			deselectDisk();
+			return;
+		}
+
 		installState.diskId = disk.path;
 		installState.disk = disk;
 
@@ -113,6 +119,15 @@
 		} finally {
 			partitionsLoading = false;
 		}
+	}
+
+	function deselectDisk(): void {
+		installState.diskId = "";
+		installState.disk = null;
+		installState.fileSystem = "ext4";
+		installState.manualLayout = null;
+		installState.pendingAddMB = 0;
+		partitions = [];
 	}
 
 	loadDisks();
