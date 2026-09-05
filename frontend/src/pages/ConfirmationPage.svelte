@@ -3,9 +3,8 @@
 	import { GetSelectedLanguage, GetLanguages } from '@wails/go/gui/App.js';
 	import { installState } from '$lib/store.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import type { DiskInfo, ManualPartition, PartitionType } from '$lib/types';
+	import type { DiskInfo, PartitionType } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
-	import { FileSystemVfat } from '$lib/constants';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 
@@ -33,22 +32,9 @@
 
 	loadLanguageInfo();
 
-	// The root filesystem the user chose (ext4 or btrfs). Falls back to the
-	// default so the summary never shows an empty filesystem for the System row.
-	const fileSystem = $derived(installState.fileSystem || 'ext4');
-
 	// Format a MB value with a space as the thousands separator (e.g. 487875 -> "487 875").
 	function formatSizeMB(value: number): string {
 		return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-	}
-
-	// Filesystem a partition row will be formatted with. ESP is always vfat, the
-	// System row uses the user's chosen root filesystem, and Preserve keeps the
-	// partition's existing filesystem untouched.
-	function partitionFstype(part: ManualPartition): string {
-		if (part.type === TYPE_ESP) return FileSystemVfat;
-		if (part.type === TYPE_SYSTEM) return fileSystem;
-		return part.existingFstype || '';
 	}
 
 	// Whether the manual layout has at least one designated (ESP or System) row.
@@ -136,7 +122,6 @@
 											<th scope="col" class="plan-col-name">{t('page.confirmation.colName')}</th>
 											<th scope="col" class="plan-col-size">{t('page.confirmation.colSize')}</th>
 											<th scope="col" class="plan-col-role">{t('page.confirmation.colRole')}</th>
-											<th scope="col" class="plan-col-fs">{t('page.confirmation.filesystem')}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -152,13 +137,6 @@
 												<td class="plan-col-size">{formatSizeMB(part.sizeMB)}</td>
 												<td class="plan-col-role">
 													<span class="tag role-tag {part.type}">{t('manual.type.' + (part.type || 'preserve'))}</span>
-												</td>
-												<td class="plan-col-fs">
-													{#if partitionFstype(part)}
-														<span class="tag fs-tag">{t('fs.' + partitionFstype(part))}</span>
-													{:else}
-														—
-													{/if}
 												</td>
 											</tr>
 										{/each}
@@ -351,11 +329,7 @@
 		white-space: nowrap;
 	}
 
-	.plan-col-fs {
-		white-space: nowrap;
-	}
-
-	.part-new {
+		.part-new {
 		font-size: 0.72rem;
 		color: var(--color-progress);
 		font-weight: 600;
