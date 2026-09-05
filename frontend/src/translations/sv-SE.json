@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Skannar partitioner...",
   "page.diskSelection.noPartitions": "Inga partitioner på denna disk.",
   "page.diskSelection.fileSystem": "Filsystem",
-  "page.diskSelection.currentFileSystem": "Nuvarande filsystem",
   "page.diskSelection.selectedFileSystem": "Valt filsystem",
   "page.confirmation.title": "Installationsöversikt",
   "page.confirmation.subtitle": "Granska dina installationsinställningar innan du fortsätter.",

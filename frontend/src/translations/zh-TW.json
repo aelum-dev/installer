@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "掃描分割區中...",
   "page.diskSelection.noPartitions": "此磁碟上沒有分割區。",
   "page.diskSelection.fileSystem": "檔案系統",
-  "page.diskSelection.currentFileSystem": "目前檔案系統",
   "page.diskSelection.selectedFileSystem": "已選檔案系統",
   "page.confirmation.title": "安裝摘要",
   "page.confirmation.subtitle": "在繼續之前檢查您的安裝設定。",

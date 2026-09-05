@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Đang quét phân vùng...",
   "page.diskSelection.noPartitions": "Không có phân vùng trên đĩa này.",
   "page.diskSelection.fileSystem": "Hệ thống tệp",
-  "page.diskSelection.currentFileSystem": "Hệ thống tệp hiện tại",
   "page.diskSelection.selectedFileSystem": "Hệ thống tệp đã chọn",
   "page.confirmation.title": "Tóm tắt cài đặt",
   "page.confirmation.subtitle": "Xem lại cài đặt của bạn trước khi tiếp tục.",

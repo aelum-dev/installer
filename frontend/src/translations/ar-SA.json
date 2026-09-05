@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "...جاري فحص التقسيمات",
   "page.diskSelection.noPartitions": "لا توجد تقسيمات على هذا القرص.",
   "page.diskSelection.fileSystem": "نظام الملفات",
-  "page.diskSelection.currentFileSystem": "نظام الملفات الحالي",
   "page.diskSelection.selectedFileSystem": "نظام الملفات المحدد",
   "page.confirmation.title": "ملخص التثبيت",
   "page.confirmation.subtitle": "راجع إعدادات التثبيت قبل المتابعة.",

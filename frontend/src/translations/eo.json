@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Skani particiojn...",
   "page.diskSelection.noPartitions": "Neniu particio sur ĉi tiu disko.",
   "page.diskSelection.fileSystem": "Dosiersistemo",
-  "page.diskSelection.currentFileSystem": "Nuna dosiersistemo",
   "page.diskSelection.selectedFileSystem": "Elektita dosiersistemo",
   "page.confirmation.title": "Instala resumo",
   "page.confirmation.subtitle": "Reviziu viajn agordojn de instalado antaŭ ol daŭrigi.",

@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Partities scannen...",
   "page.diskSelection.noPartitions": "Geen partities op deze schijf.",
   "page.diskSelection.fileSystem": "Bestandssysteem",
-  "page.diskSelection.currentFileSystem": "Huidig bestandssysteem",
   "page.diskSelection.selectedFileSystem": "Geselecteerd bestandssysteem",
   "page.confirmation.title": "Installatieoverzicht",
   "page.confirmation.subtitle": "Controleer uw installatie-instellingen voordat u verdergaat.",

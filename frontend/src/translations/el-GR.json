@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Σάρωση διαμερισμάτων...",
   "page.diskSelection.noPartitions": "Δεν υπάρχουν διαμερίσματα σε αυτόν τον δίσκο.",
   "page.diskSelection.fileSystem": "Σύστημα αρχείων",
-  "page.diskSelection.currentFileSystem": "Τρέχον σύστημα αρχείων",
   "page.diskSelection.selectedFileSystem": "Επιλεγμένο σύστημα αρχείων",
   "page.confirmation.title": "Σύνοψη εγκατάστασης",
   "page.confirmation.subtitle": "Ελέγξτε τις ρυθμίσεις εγκατάστασης πριν προχωρήσετε.",

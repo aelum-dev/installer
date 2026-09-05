@@ -21,7 +21,6 @@
   "page.diskSelection.scanPartitions": "Scanning partitions...",
   "page.diskSelection.noPartitions": "No partitions on this disk.",
   "page.diskSelection.fileSystem": "Filesystem",
-  "page.diskSelection.currentFileSystem": "Current filesystem",
   "page.diskSelection.selectedFileSystem": "Selected filesystem",
   "page.diskSelection.minDiskSize": "Minimum disk size: {minSize}",
   "page.diskSelection.mode": "Mode",

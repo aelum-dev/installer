@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Сканування розділів...",
   "page.diskSelection.noPartitions": "На цьому диску немає розділів.",
   "page.diskSelection.fileSystem": "Файлова система",
-  "page.diskSelection.currentFileSystem": "Поточна файлова система",
   "page.diskSelection.selectedFileSystem": "Обрана файлова система",
   "page.confirmation.title": "Огляд встановлення",
   "page.confirmation.subtitle": "Перевірте налаштування встановлення перед продовженням.",

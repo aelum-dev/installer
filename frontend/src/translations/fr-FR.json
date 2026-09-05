@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Analyse des partitions...",
   "page.diskSelection.noPartitions": "Aucune partition sur ce disque.",
   "page.diskSelection.fileSystem": "Système de fichiers",
-  "page.diskSelection.currentFileSystem": "Système de fichiers actuel",
   "page.diskSelection.selectedFileSystem": "Système de fichiers sélectionné",
   "page.confirmation.title": "Résumé de l'installation",
   "page.confirmation.subtitle": "Vérifiez vos paramètres d'installation avant de continuer.",

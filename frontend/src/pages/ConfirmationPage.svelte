@@ -124,9 +124,6 @@
 						<!-- Path + current fs are redundant in manual mode: the plan table lists every path, and a disk has no single filesystem. -->
 						{#if !installState.manualMode}
 							<p class="disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
-							{#if installState.disk.fstype}
-								<p class="disk-extra">{t('page.diskSelection.currentFileSystem')}: <span class="tag fstype-tag">{installState.disk.fstype}</span></p>
-							{/if}
 						{/if}
 
 						{#if installState.manualMode}

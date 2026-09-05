@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "...סורק מחיצות",
   "page.diskSelection.noPartitions": "אין מחיצות בדיסק זה.",
   "page.diskSelection.fileSystem": "מערכת קבצים",
-  "page.diskSelection.currentFileSystem": "מערכת הקבצים הנוכחית",
   "page.diskSelection.selectedFileSystem": "מערכת הקבצים הנבחרת",
   "page.confirmation.title": "סיכום התקנה",
   "page.confirmation.subtitle": "סקור את הגדרות ההתקנה לפני ההמשך.",

@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Сканиране на дялове...",
   "page.diskSelection.noPartitions": "Няма дялове на този диск.",
   "page.diskSelection.fileSystem": "Файлова система",
-  "page.diskSelection.currentFileSystem": "Текуща файлова система",
   "page.diskSelection.selectedFileSystem": "Избрана файлова система",
   "page.confirmation.title": "Обобщение на инсталацията",
   "page.confirmation.subtitle": "Прегледайте настройките за инсталация преди да продължите.",

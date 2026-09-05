@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Partitionen werden durchsucht...",
   "page.diskSelection.noPartitions": "Keine Partitionen auf dieser Festplatte.",
   "page.diskSelection.fileSystem": "Dateisystem",
-  "page.diskSelection.currentFileSystem": "Aktuelles Dateisystem",
   "page.diskSelection.selectedFileSystem": "Ausgewähltes Dateisystem",
   "page.confirmation.title": "Installationsübersicht",
   "page.confirmation.subtitle": "Überprüfen Sie Ihre Installationseinstellungen, bevor Sie fortfahren.",

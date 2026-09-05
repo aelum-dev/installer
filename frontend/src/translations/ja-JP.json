@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "パーティションをスキャン中...",
   "page.diskSelection.noPartitions": "このディスクにはパーティションがありません。",
   "page.diskSelection.fileSystem": "ファイルシステム",
-  "page.diskSelection.currentFileSystem": "現在のファイルシステム",
   "page.diskSelection.selectedFileSystem": "選択されたファイルシステム",
   "page.confirmation.title": "インストールの概要",
   "page.confirmation.subtitle": "続行する前にインストール設定を確認してください。",

@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Memindai partisi...",
   "page.diskSelection.noPartitions": "Tidak ada partisi di disk ini.",
   "page.diskSelection.fileSystem": "Sistem berkas",
-  "page.diskSelection.currentFileSystem": "Sistem berkas saat ini",
   "page.diskSelection.selectedFileSystem": "Sistem berkas yang dipilih",
   "page.confirmation.title": "Ringkasan instalasi",
   "page.confirmation.subtitle": "Tinjau pengaturan instalasi Anda sebelum melanjutkan.",

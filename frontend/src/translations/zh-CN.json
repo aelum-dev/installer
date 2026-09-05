@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "正在扫描分区...",
   "page.diskSelection.noPartitions": "此磁盘上没有分区。",
   "page.diskSelection.fileSystem": "文件系统",
-  "page.diskSelection.currentFileSystem": "当前文件系统",
   "page.diskSelection.selectedFileSystem": "已选文件系统",
   "page.confirmation.title": "安装摘要",
   "page.confirmation.subtitle": "在继续之前检查您的安装设置。",

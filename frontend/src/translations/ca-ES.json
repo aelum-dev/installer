@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "S'estan escanejant particions...",
   "page.diskSelection.noPartitions": "No hi ha particions en aquest disc.",
   "page.diskSelection.fileSystem": "Sistema de fitxers",
-  "page.diskSelection.currentFileSystem": "Sistema de fitxers actual",
   "page.diskSelection.selectedFileSystem": "Sistema de fitxers seleccionat",
   "page.confirmation.title": "Resum de la instal·lació",
   "page.confirmation.subtitle": "Reviseu la configuració d'instal·lació abans de continuar.",

@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "...در حال اسکن پارتیشن‌ها",
   "page.diskSelection.noPartitions": "هیچ پارتیشنی در این دیسک وجود ندارد.",
   "page.diskSelection.fileSystem": "سیستم فایل",
-  "page.diskSelection.currentFileSystem": "سیستم فایل فعلی",
   "page.diskSelection.selectedFileSystem": "سیستم فایل انتخاب شده",
   "page.confirmation.title": "خلاصه نصب",
   "page.confirmation.subtitle": "تنظیمات نصب را قبل از ادامه بررسی کنید.",

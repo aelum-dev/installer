@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Scansione partizioni...",
   "page.diskSelection.noPartitions": "Nessuna partizione su questo disco.",
   "page.diskSelection.fileSystem": "Filesystem",
-  "page.diskSelection.currentFileSystem": "Filesystem attuale",
   "page.diskSelection.selectedFileSystem": "Filesystem selezionato",
   "page.confirmation.title": "Riepilogo installazione",
   "page.confirmation.subtitle": "Rivedi le impostazioni di installazione prima di procedere.",

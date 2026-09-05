@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Verificando partições...",
   "page.diskSelection.noPartitions": "Nenhuma partição neste disco.",
   "page.diskSelection.fileSystem": "Sistema de arquivos",
-  "page.diskSelection.currentFileSystem": "Sistema de arquivos atual",
   "page.diskSelection.selectedFileSystem": "Sistema de arquivos selecionado",
   "page.confirmation.title": "Resumo da instalação",
   "page.confirmation.subtitle": "Revise suas configurações de instalação antes de continuar.",

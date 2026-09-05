@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Skanowanie partycji...",
   "page.diskSelection.noPartitions": "Brak partycji na tym dysku.",
   "page.diskSelection.fileSystem": "System plików",
-  "page.diskSelection.currentFileSystem": "Bieżący system plików",
   "page.diskSelection.selectedFileSystem": "Wybrany system plików",
   "page.confirmation.title": "Podsumowanie instalacji",
   "page.confirmation.subtitle": "Sprawdź ustawienia instalacji przed kontynuacją.",

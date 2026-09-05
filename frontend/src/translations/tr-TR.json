@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Bölümler taranıyor...",
   "page.diskSelection.noPartitions": "Bu diskte bölüm yok.",
   "page.diskSelection.fileSystem": "Dosya sistemi",
-  "page.diskSelection.currentFileSystem": "Geçerli dosya sistemi",
   "page.diskSelection.selectedFileSystem": "Seçili dosya sistemi",
   "page.confirmation.title": "Yükleme Özeti",
   "page.confirmation.subtitle": "Devam etmeden önce kurulum ayarlarınızı gözden geçirin.",

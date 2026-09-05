@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "파티션 스캔 중...",
   "page.diskSelection.noPartitions": "이 디스크에 파티션이 없습니다.",
   "page.diskSelection.fileSystem": "파일 시스템",
-  "page.diskSelection.currentFileSystem": "현재 파일 시스템",
   "page.diskSelection.selectedFileSystem": "선택된 파일 시스템",
   "page.confirmation.title": "설치 요약",
   "page.confirmation.subtitle": "계속하기 전에 설치 설정을 확인하십시오.",

@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Skannataan osioita...",
   "page.diskSelection.noPartitions": "Tällä levyllä ei ole osioita.",
   "page.diskSelection.fileSystem": "Tiedostojärjestelmä",
-  "page.diskSelection.currentFileSystem": "Nykyinen tiedostojärjestelmä",
   "page.diskSelection.selectedFileSystem": "Valittu tiedostojärjestelmä",
   "page.confirmation.title": "Asennuksen yhteenveto",
   "page.confirmation.subtitle": "Tarkista asennusasetuksesi ennen jatkamista.",

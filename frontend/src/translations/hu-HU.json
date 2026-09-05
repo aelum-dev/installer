@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Partíciók szkennelése...",
   "page.diskSelection.noPartitions": "Ezen a lemezen nincsenek partíciók.",
   "page.diskSelection.fileSystem": "Fájlrendszer",
-  "page.diskSelection.currentFileSystem": "Jelenlegi fájlrendszer",
   "page.diskSelection.selectedFileSystem": "Kiválasztott fájlrendszer",
   "page.confirmation.title": "Telepítés összefoglalója",
   "page.confirmation.subtitle": "Tekintse át a telepítési beállításokat a folytatás előtt.",

@@ -19,7 +19,6 @@
   "page.diskSelection.scanPartitions": "Skanner partisjoner...",
   "page.diskSelection.noPartitions": "Ingen partisjoner på denne disken.",
   "page.diskSelection.fileSystem": "Filsystem",
-  "page.diskSelection.currentFileSystem": "Gjeldende filsystem",
   "page.diskSelection.selectedFileSystem": "Valgt filsystem",
   "page.confirmation.title": "Installasjonsoversikt",
   "page.confirmation.subtitle": "Gjennomgå installasjonsinnstillingene før du fortsetter.",
