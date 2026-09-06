@@ -59,6 +59,12 @@
 		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2 class="page-info-title">{t('page.welcome.title')}</h2>
 		<p class="page-info-subtitle">{t('page.welcome.subtitle')}</p>
+		<div class="requirements">
+			<div class="requirement-header">{t('page.welcome.requirements')}</div>
+			<div class="requirement-item">{t('page.welcome.reqUEFI')}</div>
+			<div class="requirement-item">{t('page.welcome.reqGPT')}</div>
+			<div class="requirement-item">{t('page.welcome.reqDisk')}</div>
+		</div>
 	</div>
 	<div class="page-content">
 		{#if loading}
@@ -114,6 +120,40 @@
 		font-size: var(--font-size-md-lg);
 		color: var(--color-text-light);
 		margin-top: 16px;
+	}
+
+	.requirements {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-sm);
+		width: fit-content;
+		margin-inline: auto;
+	}
+
+	.requirement-header {
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-600);
+		color: var(--color-text-muted);
+		letter-spacing: 0.02em;
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.requirement-item {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-sm);
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		line-height: 1.4;
+		margin: 0;
+		text-align: left;
+		white-space: nowrap;
+	}
+
+	.requirement-item::before {
+		content: "•";
+		flex-shrink: 0;
+		color: var(--color-text-muted);
 	}
 
 	.language-list {

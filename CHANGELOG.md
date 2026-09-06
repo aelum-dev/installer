@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Welcome page now lists the system requirements** — the left info column shows a "Requirements" heading with bullet points for UEFI boot, GPT partition scheme, and a minimum 8 GB disk. Strings are fully localized (new `page.welcome.requirements`, `page.welcome.reqUEFI`, `page.welcome.reqGPT`, `page.welcome.reqDisk` keys added to all 28 locale files).
+
 ### Fixed
 - **Cannot get stuck on the disk selection "select a disk first" hint after leaving manual mode** — entering manual mode with a disk, then deselecting the disk (or navigating back to the user page and forward again) left `manualMode` set with no disk selected, so the page showed the dead-end "select a disk, then switch to manual mode…" message with no way to continue. Added a self-healing effect on the Disk Selection page that falls back to automatic mode whenever manual mode is on but no disk is selected, and `deselectDisk` now also clears manual mode. Manual partitioning is only reachable with a disk selected, so a diskless manual state is always stale.
 - **Manual-mode "select a disk first" tooltip no longer gets clipped at the page edge** — the tooltip is absolutely positioned (`right: 0`) relative to the mode pills, which sit at the far right of the top bar, so its edge landed exactly on `.page-content`'s `overflow: hidden` clip and got sliced. Removed `overflow: hidden` from `.page-content` (it was unnecessary; the column is sized via `flex`/`min-height: 0` and its own inner scrollables handle overflow).
