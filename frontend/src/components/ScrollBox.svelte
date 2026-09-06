@@ -91,5 +91,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-md);
+		padding-inline-end: var(--spacing-sm);
 	}
 </style>
