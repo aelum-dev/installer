@@ -156,8 +156,9 @@ function formatSizeMB(value: number): string {
 		layout.partitions.push(newPart);
 		touch();
 		void persist();
-		// Reset add controls.
-		addSizeMB = 0;
+		// Reset add controls back to the default size (1 MB) so the next partition
+		// starts from the same baseline instead of a blank/0 field.
+		addSizeMB = 1;
 		addUseRemaining = false;
 		// Only clear the error once a partition is actually added.
 		if (sizeMB > 0) error = null;
