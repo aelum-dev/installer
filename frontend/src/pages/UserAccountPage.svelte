@@ -43,8 +43,8 @@
 <div class="page-layout">
 	<div class="page-info">
 		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-		<h2>{t('page.userAccount.title')}</h2>
-		<p>{t('page.userAccount.subtitle')}</p>
+		<h2 class="page-info-title">{t('page.userAccount.title')}</h2>
+		<p class="page-info-subtitle">{t('page.userAccount.subtitle')}</p>
 		<div class="requirements">
 			<div class="requirement-item">
 				<span class="check-icon" class:visible={usernameMinLength}>
@@ -132,7 +132,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-sm);
+		gap: var(--spacing-2xl);
 		flex: 1;
 	}
 

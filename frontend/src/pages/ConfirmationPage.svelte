@@ -75,8 +75,8 @@
 <div class="page-layout">
 	<div class="page-info">
 		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-		<h2>{t('page.confirmation.title')}</h2>
-		<p>{t('page.confirmation.subtitle')}</p>
+		<h2 class="page-info-title">{t('page.confirmation.title')}</h2>
+		<p class="page-info-subtitle">{t('page.confirmation.subtitle')}</p>
 	</div>
 	<div class="page-content" bind:this={pageContentEl}>
 		<div class="summary">
@@ -178,7 +178,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-sm);
+		gap: var(--spacing-2xl);
 		flex: 1;
 	}
 

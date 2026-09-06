@@ -11,7 +11,7 @@
 
 <div class={['page-info', { 'manual-hidden': hidden }]}>
 	<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-	<h2>{t('page.diskSelection.title')}</h2>
-	<p>{t('page.diskSelection.subtitle')}</p>
+	<h2 class="page-info-title">{t('page.diskSelection.title')}</h2>
+	<p class="page-info-subtitle">{t('page.diskSelection.subtitle')}</p>
 	<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
 </div>

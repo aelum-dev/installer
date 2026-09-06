@@ -173,6 +173,16 @@ body {
     font-size: calc(var(--font-size-xl) * 2);
 }
 
+/* Page-info heading/subtitle: no default margins so the flex gap on .page-info
+   is the single source of spacing between these elements. */
+.page-info-title {
+    margin: 0;
+}
+
+.page-info-subtitle {
+    margin: 0;
+}
+
 #app {
     height: 100%;
     text-align: center;

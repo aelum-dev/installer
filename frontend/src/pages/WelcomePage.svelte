@@ -57,8 +57,8 @@
 <div class="page-layout">
 	<div class="page-info">
 		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-		<h2>{t('page.welcome.title')}</h2>
-		<p>{t('page.welcome.subtitle')}</p>
+		<h2 class="page-info-title">{t('page.welcome.title')}</h2>
+		<p class="page-info-subtitle">{t('page.welcome.subtitle')}</p>
 	</div>
 	<div class="page-content">
 		{#if loading}
@@ -98,7 +98,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-sm);
+		gap: var(--spacing-2xl);
 		flex: 1;
 	}
 
