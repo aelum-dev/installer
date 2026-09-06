@@ -127,10 +127,23 @@
 		installState.fileSystem = "ext4";
 		installState.manualLayout = null;
 		installState.pendingAddMB = 0;
+		installState.manualMode = false;
 		partitions = [];
 	}
 
 	loadDisks();
+
+	// Never get stuck in manual mode with no disk selected. Manual mode is only
+	// reachable with a disk (the manual pill is disabled otherwise), so a diskless
+	// manual state is stale — e.g. after deselecting the disk, or navigating back
+	// to the user page and forward again. Fall back to automatic mode so the disk
+	// list shows instead of the dead-end "select a disk" hint.
+	$effect(() => {
+		if (installState.manualMode && !installState.disk) {
+			installState.manualMode = false;
+			installState.manualLayout = null;
+		}
+	});
 </script>
 
 <div class={['page-layout', { 'page-layout--manual': installState.manualMode }]}>
