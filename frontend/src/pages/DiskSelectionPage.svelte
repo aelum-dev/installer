@@ -7,7 +7,7 @@
 	import StateMessage from '$components/StateMessage.svelte';
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import { installState, computeUsedMB, computeFreeMB } from '$lib/store.svelte';
-	import { type DiskInfo, type PartitionDetail, PAGE_IDS } from '$lib/types';
+	import { type DiskInfo, type PartitionEntry, PAGE_IDS } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
@@ -56,7 +56,7 @@
 	});
 
 	let disks = $state<DiskInfo[]>([]);
-	let partitions = $state<PartitionDetail[]>([]);
+	let partitions = $state<PartitionEntry[]>([]);
 	let partitionsLoading = $state(false);
 	let loading = $state(true);
 	let error = $state<string | null>(null);

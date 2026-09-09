@@ -175,27 +175,25 @@ export namespace shared {
 		}
 	}
 	
-	export class PartitionDetail {
+	export class PartitionEntry {
 	    path: string;
 	    name: string;
 	    type: string;
 	    size: number;
-	    sizeFormatted: string;
 	    fstype: string;
 	    uuid: string;
 	    mountpoints: string[];
-	
+	    
 	    static createFrom(source: any = {}) {
-	        return new PartitionDetail(source);
+	        return new PartitionEntry(source);
 	    }
-	
+	    
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.path = source["path"];
 	        this.name = source["name"];
 	        this.type = source["type"];
 	        this.size = source["size"];
-	        this.sizeFormatted = source["sizeFormatted"];
 	        this.fstype = source["fstype"];
 	        this.uuid = source["uuid"];
 	        this.mountpoints = source["mountpoints"];

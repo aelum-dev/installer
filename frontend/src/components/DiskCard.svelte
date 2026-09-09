@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { DiskInfo, PartitionDetail } from '$lib/types';
+	import type { DiskInfo, PartitionEntry } from '$lib/types';
 	import { MinDiskSizeBytes } from '$lib/constants';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
@@ -14,7 +14,7 @@
 	}: {
 		disk: DiskInfo;
 		selected: boolean;
-		partitions: PartitionDetail[];
+		partitions: PartitionEntry[];
 		partitionsLoading: boolean;
 		onSelect: (disk: DiskInfo) => void;
 	} = $props();

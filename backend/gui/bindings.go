@@ -11,7 +11,7 @@ func (a *App) GetDisks() ([]shared.DiskInfo, error) {
 }
 
 // GetDiskPartitions returns detailed partition information for a disk. Wails binding.
-func (a *App) GetDiskPartitions(diskPath string) ([]shared.PartitionDetail, error) {
+func (a *App) GetDiskPartitions(diskPath string) ([]shared.PartitionEntry, error) {
 	return shared.GetDiskPartitions(diskPath)
 }
 

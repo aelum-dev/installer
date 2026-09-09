@@ -8,14 +8,16 @@ import (
 	"strings"
 )
 
-// PartitionEntry represents a single partition on a disk, as returned by lsblk.
+// PartitionEntry represents a single partition on a disk.
+// Used both internally (format discovery) and by the frontend (display).
 type PartitionEntry struct {
-	Path   string
-	Type   string
-	Size   int64 // raw byte count
-	Fstype string
-	UUID   string
-	Trans  string
+	Path        string   `json:"path"`
+	Name        string   `json:"name"`
+	Type        string   `json:"type"`
+	Size        int64    `json:"size"` // raw byte count
+	Fstype      string   `json:"fstype"`
+	UUID        string   `json:"uuid"`
+	Mountpoints []string `json:"mountpoints"` // expanded for btrfs, single-element slice otherwise
 }
 
 // GetPartitions returns the partitions of a given disk by querying lsblk.
@@ -48,11 +50,11 @@ func GetPartitions(diskPath string) ([]PartitionEntry, error) {
 		}
 		partitions = append(partitions, PartitionEntry{
 			Path:   "/dev/" + child.Name,
+			Name:   child.Name,
 			Type:   child.Type,
 			Size:   child.Size.Int64(),
 			Fstype: child.Fstype,
 			UUID:   child.UUID,
-			Trans:  child.Trans,
 		})
 	}
 
@@ -268,20 +270,10 @@ func deriveFstypeFromChildren(children []lsblkEntry) string {
 	return ""
 }
 
-// PartitionDetail represents a partition with full information for display.
-type PartitionDetail struct {
-	Path          string   `json:"path"`
-	Name          string   `json:"name"`
-	Type          string   `json:"type"`
-	Size          int64    `json:"size"`          // raw byte count
-	SizeFormatted string   `json:"sizeFormatted"` // human-readable
-	Fstype        string   `json:"fstype"`
-	UUID          string   `json:"uuid"`
-	Mountpoints   []string `json:"mountpoints"`
-}
-
-// GetDiskPartitions returns detailed partition information for a disk using lsblk.
-func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
+// GetDiskPartitions returns partition information for a disk using lsblk.
+// For btrfs partitions, Mountpoints is expanded via findmnt; for others it
+// contains a single element (the direct mountpoint).
+func GetDiskPartitions(diskPath string) ([]PartitionEntry, error) {
 	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
 		return fakePartitions(diskPath), nil
 	}
@@ -311,7 +303,7 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
 	}
 
-	var partitions []PartitionDetail
+	var partitions []PartitionEntry
 	for _, child := range result.Blockdevices[0].Children {
 		if child.Type != "part" {
 			continue
@@ -328,15 +320,14 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 		}
 
 		partSize, _ := child.Size.Int64() //nolint:errcheck // lsblk always produces valid numbers
-		partitions = append(partitions, PartitionDetail{
-			Path:          partPath,
-			Name:          child.Name,
-			Type:          child.Type,
-			Size:          partSize,
-			SizeFormatted: FormatSize(partSize),
-			Fstype:        child.Fstype,
-			UUID:          child.UUID,
-			Mountpoints:   mountpoints,
+		partitions = append(partitions, PartitionEntry{
+			Path:        partPath,
+			Name:        child.Name,
+			Type:        child.Type,
+			Size:        partSize,
+			Fstype:      child.Fstype,
+			UUID:        child.UUID,
+			Mountpoints: mountpoints,
 		})
 	}
 

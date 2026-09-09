@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { DiskInfo, PartitionDetail } from '$lib/types';
+	import type { DiskInfo, PartitionEntry } from '$lib/types';
 	import Button from '$components/Button.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import DiskCard from '$components/DiskCard.svelte';
@@ -22,7 +22,7 @@
 		error: string | null;
 		disks: DiskInfo[];
 		diskId: string;
-		partitions: PartitionDetail[];
+		partitions: PartitionEntry[];
 		partitionsLoading: boolean;
 		persistKey?: string | number;
 		onSelectDisk: (disk: DiskInfo) => void;

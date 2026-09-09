@@ -14,7 +14,7 @@ export function GetCurrentPage():Promise<number>;
 
 export function GetDiskID():Promise<string>;
 
-export function GetDiskPartitions(arg1:string):Promise<Array<shared.PartitionDetail>>;
+export function GetDiskPartitions(arg1:string):Promise<Array<shared.PartitionEntry>>;
 
 export function GetDisks():Promise<Array<shared.DiskInfo>>;
 

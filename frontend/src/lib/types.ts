@@ -86,14 +86,14 @@ export interface DiskInfo {
 	isRemovable: boolean;
 }
 
-// PartitionDetail represents a partition with full information for display.
-export interface PartitionDetail {
+// PartitionEntry represents a partition on a disk.
+// Used by both the backend (format discovery) and frontend (display).
+export interface PartitionEntry {
 	path: string;
 	name: string;
 	type: string;
 	size: number;            // raw byte count
-	sizeFormatted: string;   // human-readable (e.g. "476.9 GiB")
 	fstype: string | null;
 	uuid: string;
-	mountpoints: string[];
+	mountpoints: string[]; // expanded for btrfs, single-element slice otherwise
 }
