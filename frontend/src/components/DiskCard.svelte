@@ -24,7 +24,7 @@
 	type="button"
 	class={['disk-card', { selected }]}
 	onclick={() => onSelect(disk)}
-	disabled={parseInt(disk.size, 10) < MinDiskSizeBytes}
+	disabled={disk.size < MinDiskSizeBytes}
 >
 	<div class="card-header">
 		<div class="disk-icon" aria-hidden="true">

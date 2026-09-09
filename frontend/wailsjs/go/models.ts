@@ -43,7 +43,7 @@ export namespace shared {
 	export class DiskInfo {
 	    name: string;
 	    path: string;
-	    size: string;
+	    size: number;
 	    sizeFormatted: string;
 	    type: string;
 	    model: string;
@@ -80,7 +80,7 @@ export namespace shared {
 	}
 	export class DiskSelectionData {
 	    diskId: string;
-	    size: string;
+	    size: number;
 	    fileSystem: string;
 	
 	    static createFrom(source: any = {}) {
@@ -137,7 +137,7 @@ export namespace shared {
 	    diskSizeMB: number;
 	    diskSizeBytes: number;
 	    partitions: ManualPartition[];
-	    freeMB: number;
+	    FreeMB: number;
 	    freeSectors: number;
 	    deletedPartitions?: ManualPartition[];
 	
@@ -151,7 +151,7 @@ export namespace shared {
 	        this.diskSizeMB = source["diskSizeMB"];
 	        this.diskSizeBytes = source["diskSizeBytes"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);
-	        this.freeMB = source["freeMB"];
+	        this.FreeMB = source["FreeMB"];
 	        this.freeSectors = source["freeSectors"];
 	        this.deletedPartitions = this.convertValues(source["deletedPartitions"], ManualPartition);
 	    }
@@ -179,7 +179,7 @@ export namespace shared {
 	    path: string;
 	    name: string;
 	    type: string;
-	    size: string;
+	    size: number;
 	    sizeFormatted: string;
 	    fstype: string;
 	    uuid: string;

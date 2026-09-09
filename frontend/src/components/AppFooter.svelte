@@ -24,8 +24,7 @@
 
 	const diskSizeOk = $derived.by(() => {
 		if (!installState.disk) return false;
-		const size = parseInt(installState.disk.size, 10);
-		return !isNaN(size) && size >= MinDiskSizeBytes;
+		return installState.disk.size >= MinDiskSizeBytes;
 	});
 
 	const nextDisabled = $derived(

@@ -72,7 +72,7 @@ export interface ManualLayout {
 export interface DiskInfo {
 	name: string;
 	path: string;
-	size: string;            // raw byte count as string
+	size: number;            // raw byte count
 	sizeFormatted: string;   // human-readable (e.g. "476.9 GiB")
 	type: string;
 	model: string;
@@ -91,7 +91,7 @@ export interface PartitionDetail {
 	path: string;
 	name: string;
 	type: string;
-	size: string;            // raw byte count as string
+	size: number;            // raw byte count
 	sizeFormatted: string;   // human-readable (e.g. "476.9 GiB")
 	fstype: string | null;
 	uuid: string;

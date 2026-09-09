@@ -167,6 +167,37 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 	return nil
 }
 
+// BuildPartitionInfo reads UUIDs for the EFI and root partitions and returns
+// a PartitionInfo suitable for the mount/install steps. For btrfs it also
+// populates the subvolume mount points map.
+func BuildPartitionInfo(diskID, efiPath, rootPath, fsType string) (*shared.PartitionInfo, error) {
+	efiUUID, err := readPartitionUUID(efiPath)
+	if err != nil {
+		return nil, fmt.Errorf("blkid %s: %w", efiPath, err)
+	}
+	rootUUID, err := readPartitionUUID(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("blkid %s: %w", rootPath, err)
+	}
+
+	partitions := &shared.PartitionInfo{
+		Disk:        diskID,
+		EFIPart:     efiPath,
+		EFIUUID:     efiUUID,
+		RootPart:    rootPath,
+		RootUUID:    rootUUID,
+		MountPoints: make(map[string]string),
+	}
+	if fsType == shared.FileSystemBtrfs {
+		for _, sv := range shared.GetBtrfsSubvolumes() {
+			if sv.MountPoint != "/" {
+				partitions.MountPoints[sv.MountPoint] = rootPath
+			}
+		}
+	}
+	return partitions, nil
+}
+
 // FormatPartition wipes any existing filesystem signatures on path and formats
 // it with the requested filesystem and volume label. Shared by the automatic
 // format step and the manual partition step.

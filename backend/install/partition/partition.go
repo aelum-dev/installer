@@ -42,7 +42,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 	found := false
 	for _, d := range disks {
 		if d.Path == diskID {
-			diskSizeBytes, _ = parseBytes(d.Size)
+			diskSizeBytes = d.Size
 			found = true
 			break
 		}
@@ -65,7 +65,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 	layout.DiskSizeBytes = diskSizeBytes
 	var usedBytes int64
 	for i, p := range partitions {
-		sizeBytes, _ := parseBytes(p.Size)
+		sizeBytes := p.Size
 		usedBytes += sizeBytes
 		layout.Partitions = append(layout.Partitions, shared.ManualPartition{
 			Index:          i,
@@ -355,30 +355,10 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	// Discover UUIDs and populate ctx.Partitions, keyed by type.
-	espUUID, err := readUUID(espPath)
+	// Build PartitionInfo from the resolved EFI and System paths.
+	partitions, err := format.BuildPartitionInfo(diskID, espPath, sysPath, ctx.FileSystem)
 	if err != nil {
-		return fmt.Errorf("blkid %s: %w", espPath, err)
-	}
-	rootUUID, err := readUUID(sysPath)
-	if err != nil {
-		return fmt.Errorf("blkid %s: %w", sysPath, err)
-	}
-
-	partitions := &shared.PartitionInfo{
-		Disk:        diskID,
-		EFIPart:     espPath,
-		EFIUUID:     espUUID,
-		RootPart:    sysPath,
-		RootUUID:    rootUUID,
-		MountPoints: make(map[string]string),
-	}
-	if ctx.FileSystem == shared.FileSystemBtrfs {
-		for _, sv := range shared.GetBtrfsSubvolumes() {
-			if sv.MountPoint != "/" {
-				partitions.MountPoints[sv.MountPoint] = sys.Path
-			}
-		}
+		return err
 	}
 	ctx.Partitions = partitions
 
@@ -657,19 +637,6 @@ func roleLabel(fstype string) string {
 		return "EFI"
 	}
 	return "aelum"
-}
-
-func readUUID(partition string) (string, error) {
-	cmd := primitives.Run("blkid", "-s", "UUID", "-o", "value", partition)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func parseBytes(s string) (int64, error) {
-	return strconv.ParseInt(strings.TrimSpace(s), 10, 64)
 }
 
 func bytesToMB(bytes int64) int64 {

@@ -12,7 +12,7 @@ import (
 type PartitionEntry struct {
 	Path   string
 	Type   string
-	Size   string
+	Size   int64 // raw byte count
 	Fstype string
 	UUID   string
 	Trans  string
@@ -49,7 +49,7 @@ func GetPartitions(diskPath string) ([]PartitionEntry, error) {
 		partitions = append(partitions, PartitionEntry{
 			Path:   "/dev/" + child.Name,
 			Type:   child.Type,
-			Size:   child.Size.Value,
+			Size:   child.Size.Int64(),
 			Fstype: child.Fstype,
 			UUID:   child.UUID,
 			Trans:  child.Trans,
@@ -68,6 +68,14 @@ func (j *jsonSize) UnmarshalJSON(data []byte) error {
 	}
 	j.Value = string(data)
 	return nil
+}
+
+// Int64 parses the size value as an int64. Returns 0 if the value is empty or
+// cannot be parsed — callers should check Size > 0 before using the result.
+func (j *jsonSize) Int64() int64 {
+	var n int64
+	fmt.Sscanf(j.Value, "%d", &n) //nolint:errcheck // lsblk always produces valid numbers
+	return n
 }
 
 type jsonBool bool
@@ -148,8 +156,8 @@ func GetDisks() ([]DiskInfo, error) {
 		disk := DiskInfo{
 			Name:          bd.Name,
 			Path:          "/dev/" + bd.Name,
-			Size:          bd.Size.Value,
-			SizeFormatted: FormatSize(bd.Size.Value),
+			Size:          bd.Size.Int64(),
+			SizeFormatted: FormatSize(bd.Size.Int64()),
 			Type:          bd.Type,
 			Model:         strings.TrimSpace(bd.Model),
 			Vendor:        strings.TrimSpace(bd.Vendor),
@@ -265,7 +273,7 @@ type PartitionDetail struct {
 	Path          string   `json:"path"`
 	Name          string   `json:"name"`
 	Type          string   `json:"type"`
-	Size          string   `json:"size"`          // raw byte count as string
+	Size          int64    `json:"size"`          // raw byte count
 	SizeFormatted string   `json:"sizeFormatted"` // human-readable
 	Fstype        string   `json:"fstype"`
 	UUID          string   `json:"uuid"`
@@ -319,12 +327,13 @@ func GetDiskPartitions(diskPath string) ([]PartitionDetail, error) {
 			mountpoints = []string{child.Mountpoint}
 		}
 
+		partSize, _ := child.Size.Int64() //nolint:errcheck // lsblk always produces valid numbers
 		partitions = append(partitions, PartitionDetail{
 			Path:          partPath,
 			Name:          child.Name,
 			Type:          child.Type,
-			Size:          child.Size.String(),
-			SizeFormatted: FormatSize(child.Size.String()),
+			Size:          partSize,
+			SizeFormatted: FormatSize(partSize),
 			Fstype:        child.Fstype,
 			UUID:          child.UUID,
 			Mountpoints:   mountpoints,
@@ -360,12 +369,10 @@ func getBtrfsMountpoints(partPath string) []string {
 	return mounts
 }
 
-// FormatSize converts byte size to human-readable format.
-func FormatSize(byteStr string) string {
-	var bytes uint64
-	fmt.Sscanf(byteStr, "%d", &bytes) //nolint:errcheck // format is validated before calling
+// FormatSize converts a byte count to human-readable format.
+func FormatSize(bytes int64) string {
 	if bytes == 0 {
-		return byteStr
+		return "0 B"
 	}
 
 	const (
@@ -391,10 +398,15 @@ func FormatSize(byteStr string) string {
 
 // DerivePartitionPath returns the device path for partition num on diskID.
 // NVMe devices use the spN convention (e.g. /dev/nvme0n1p1), everything else
-// uses dN (e.g. /dev/sda1).
+// uses dN (e.g. /dev/sda1). The last character of the disk name determines the
+// separator: if it's a digit (e.g. nvme0n1), we insert "p" before the partition
+// number; otherwise we append directly (e.g. sda → sda1).
 func DerivePartitionPath(diskID string, num int) string {
-	if strings.HasPrefix(diskID, "/dev/nvme") {
-		return fmt.Sprintf("%sp%d", diskID, num)
+	if len(diskID) > 0 {
+		last := diskID[len(diskID)-1]
+		if last >= '0' && last <= '9' {
+			return fmt.Sprintf("%sp%d", diskID, num)
+		}
 	}
 	return fmt.Sprintf("%s%d", diskID, num)
 }

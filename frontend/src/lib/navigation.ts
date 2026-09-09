@@ -96,7 +96,7 @@ async function validateCurrentPage(page: number): Promise<string | null> {
 		if (page === PAGE_IDS.DISK_SELECTION) {
 			await ValidateDiskSelection({
 				diskId: installState.diskId,
-				size: installState.disk?.size ?? '',
+				size: installState.disk?.size ?? 0,
 				fileSystem: installState.fileSystem,
 			});
 
@@ -139,7 +139,7 @@ async function commitPageData(page: number): Promise<void> {
 	if (page === PAGE_IDS.DISK_SELECTION) {
 		await SaveDiskSelection({
 			diskId: installState.diskId,
-			size: installState.disk?.size ?? '',
+			size: installState.disk?.size ?? 0,
 			fileSystem: installState.fileSystem,
 		});
 

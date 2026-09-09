@@ -49,7 +49,7 @@ type UserAccountData struct {
 // DiskSelectionData holds disk selection info.
 type DiskSelectionData struct {
 	DiskID     string `json:"diskId"`
-	Size       string `json:"size"`       // byte size of selected disk
+	Size       int64  `json:"size"`       // byte size of selected disk
 	FileSystem string `json:"fileSystem"` // root filesystem: "ext4" or "btrfs"
 }
 
@@ -68,7 +68,7 @@ type PartitionInfo struct {
 type DiskInfo struct {
 	Name          string `json:"name"`
 	Path          string `json:"path"`
-	Size          string `json:"size"`          // raw byte count as string
+	Size          int64  `json:"size"`          // raw byte count
 	SizeFormatted string `json:"sizeFormatted"` // human-readable (e.g. "476.9 GiB")
 	Type          string `json:"type"`
 	Model         string `json:"model"`
@@ -110,8 +110,7 @@ type ManualPartition struct {
 }
 
 // ManualLayout is the user-designed manual partition plan for one disk.
-// FreeMB is always recomputed from the disk total, never stored, so it stays
-// correct after every edit.
+// FreeMB is recomputed from disk total on every edit, never serialized.
 type ManualLayout struct {
 	Disk       string `json:"disk"`
 	DiskSizeMB int64  `json:"diskSizeMB"`
@@ -119,7 +118,7 @@ type ManualLayout struct {
 	// must survive existing-partitions being rounded down to MiB uses it.
 	DiskSizeBytes int64             `json:"diskSizeBytes"`
 	Partitions    []ManualPartition `json:"partitions"`
-	FreeMB        int64             `json:"freeMB"`
+	FreeMB        int64             // recomputed from disk total; not serialized
 	// FreeSectors is the exact unallocated space in 512-byte sectors, derived
 	// from the raw byte totals so it never suffers MiB truncation.
 	FreeSectors int64 `json:"freeSectors"`
