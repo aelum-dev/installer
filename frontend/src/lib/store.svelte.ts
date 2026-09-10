@@ -7,6 +7,7 @@ import type {
 } from '$lib/types';
 import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 import { MinDiskSizeBytes, MinESPSizeBytes } from '$lib/constants';
+import { t } from '$lib/i18n';
 // ── Installation State (shared across pages) ──
 
 export const installState = $state({
@@ -184,4 +185,144 @@ export function setPartitionType(
 ): void {
 	const part = partitions.find((p) => p.index === index);
 	if (part) part.type = type;
+}
+
+// ── Validation Reasons for Modal ─────────────────────────────────────────────
+
+/**
+ * Returns an array of human-readable validation reason strings for the given page.
+ * Used by the validation error modal to tell the user why they can't proceed.
+ */
+export function getPageValidationReasons(page: number): string[] {
+	switch (page) {
+		case 0: // Welcome
+			return installState.locale ? [] : [t('validation.modal.selectLanguage')];
+		case 1: // User Account
+			return getUserAccountValidationReasons();
+		case 2: // Disk Selection
+			if (installState.manualMode) {
+				return getManualLayoutValidationReasons();
+			}
+			return getAutoDiskValidationReasons();
+		case 3: // Confirmation
+			return [t('validation.modal.reviewInstallation')];
+		case 4: // Installation
+			return [t('validation.modal.waitInstallation')];
+		default:
+			return [];
+	}
+}
+
+function getUserAccountValidationReasons(): string[] {
+	const reasons: string[] = [];
+	if (!installState.username.trim()) {
+		reasons.push(t('validation.modal.usernameRequired'));
+	} else if (installState.username.length < 3) {
+		reasons.push(t('validation.modal.usernameMinLength'));
+	} else if (installState.username.length > 32) {
+		reasons.push(t('validation.modal.usernameMaxLength'));
+	} else if (installState.username.length > 0 && !/^[a-z_]/.test(installState.username)) {
+		reasons.push(t('validation.modal.usernameInvalidFirstChar'));
+	} else if (installState.username.length > 0 && !/^[a-z0-9_-]+$/.test(installState.username)) {
+		reasons.push(t('validation.modal.usernameInvalidChars'));
+	}
+	if (!installState.password) {
+		reasons.push(t('validation.modal.passwordRequired'));
+	} else if (installState.password.length < 6) {
+		reasons.push(t('validation.modal.passwordMinLength'));
+	}
+	if (installState.password && installState.confirmPassword !== installState.password) {
+		reasons.push(t('validation.modal.passwordsNoMatch'));
+	}
+	return reasons;
+}
+
+function getAutoDiskValidationReasons(): string[] {
+	const reasons: string[] = [];
+	if (!installState.diskId) {
+		reasons.push(t('validation.modal.selectDisk'));
+	}
+	if (!installState.fileSystem) {
+		reasons.push(t('validation.modal.selectFileSystem'));
+	}
+	if (installState.disk && installState.disk.size < MinDiskSizeBytes) {
+		reasons.push(t('validation.modal.diskTooSmall'));
+	}
+	return reasons;
+}
+
+function getManualLayoutValidationReasons(): string[] {
+	const reasons: string[] = [];
+	if (!installState.diskId) {
+		reasons.push(t('validation.modal.selectDisk'));
+		return reasons;
+	}
+	if (!installState.fileSystem) {
+		reasons.push(t('validation.modal.selectFileSystem'));
+		return reasons;
+	}
+	if (!installState.manualLayout) {
+		return reasons;
+	}
+
+	const layout = installState.manualLayout;
+	const espCount = layout.partitions.filter((p) => p.type === TYPE_ESP).length;
+	const sysCount = layout.partitions.filter((p) => p.type === TYPE_SYSTEM).length;
+
+	if (espCount !== 1) {
+		reasons.push(t('validation.modal.espRequired', { n: espCount }));
+	}
+	if (sysCount !== 1) {
+		reasons.push(t('validation.modal.systemRequired', { n: sysCount }));
+	}
+
+	for (const p of layout.partitions) {
+		const sizeMB = partitionSizeMB(p);
+		if (sizeMB < 0) continue; // "use all remaining space" — exempt
+		if (p.type === TYPE_ESP && sizeMB < MinESPSizeBytes / bytesPerMB) {
+			reasons.push(
+				t('validation.modal.espTooSmall', { size: sizeMB }),
+			);
+		}
+		if (p.type === TYPE_SYSTEM && sizeMB < MinDiskSizeBytes / bytesPerMB) {
+			reasons.push(
+				t('validation.modal.systemTooSmall', { size: sizeMB }),
+			);
+		}
+		if (p.type && p.type !== TYPE_ESP && p.type !== TYPE_SYSTEM && p.type !== 'preserve') {
+			reasons.push(t('validation.modal.invalidType', { type: p.type }));
+		}
+	}
+
+	// Check for multiple "use remaining space" partitions
+	const remainingCount = layout.partitions.filter((p) => p.sizeMB === 0 && p.type).length;
+	if (remainingCount > 1) {
+		reasons.push(t('validation.modal.multipleRemaining'));
+	}
+
+	// Check for partition after remaining space
+	const remainingIndex = layout.partitions.findIndex((p) => p.sizeMB === 0);
+	if (remainingIndex >= 0 && remainingIndex < layout.partitions.length - 1) {
+		reasons.push(t('validation.modal.partitionAfterRemaining'));
+	}
+
+	// Check new partition sizes against free space
+	const usedMB = computeUsedMB(layout);
+	const freeMB = computeFreeMB(layout);
+	const newParts = layout.partitions.filter((p) => !p.path);
+	const newPartsSize = newParts.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
+	if (newPartsSize > freeMB) {
+		reasons.push(
+			t('validation.modal.exceedsFreeSpace', { size: newPartsSize, free: freeMB }),
+		);
+	}
+
+	// Check partition sizes against disk size
+	if (usedMB > layout.diskSizeMB) {
+		reasons.push(
+			t('validation.modal.exceedsDisk', { size: usedMB, disk: layout.diskSizeMB }),
+		);
+	}
+
+	return reasons;
 }

@@ -183,11 +183,11 @@ export namespace shared {
 	    fstype: string;
 	    uuid: string;
 	    mountpoints: string[];
-	    
+	
 	    static createFrom(source: any = {}) {
 	        return new PartitionEntry(source);
 	    }
-	    
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.path = source["path"];

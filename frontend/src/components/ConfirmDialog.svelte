@@ -20,6 +20,8 @@
 		confirmLabel = t('dialog.confirm.yes'),
 		// Delete dialog historically had no warning glyph; opt out with show-icon={false}.
 		showIcon = true,
+		// Validation modal uses OK-only (no cancel).
+		showCancel = true,
 		// When provided, these replace the default installation flow (which
 		// dispatches 'go-next-confirmed' and advances the wizard).
 		onConfirm,
@@ -31,6 +33,7 @@
 		cancelLabel?: string;
 		confirmLabel?: string;
 		showIcon?: boolean;
+		showCancel?: boolean;
 		onConfirm?: () => void;
 		onCancel?: () => void;
 	} = $props();
@@ -99,9 +102,11 @@
 				{@html effectiveMessage}
 			</p>
 			<div class="dialog-actions">
-				<button type="button" class="btn-cancel" onclick={handleCancel}>
-					{cancelLabel}
-				</button>
+				{#if showCancel}
+					<button type="button" class="btn-cancel" onclick={handleCancel}>
+						{cancelLabel}
+					</button>
+				{/if}
 				<button type="button" class="btn-confirm" onclick={handleConfirm}>
 					{confirmLabel}
 				</button>

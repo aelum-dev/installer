@@ -33,7 +33,8 @@ describe('App navigation', () => {
 		it('should advance from Welcome to UserAccount', async () => {
 			installState.locale = 'en-US';
 			const result = await goNext(PAGE_IDS.WELCOME);
-			expect(result).toBeNull();
+			expect(result.error).toBeNull();
+			expect(result.backendError).toBeNull();
 		});
 
 		it('should validate UserAccount page before advancing', async () => {
@@ -42,7 +43,8 @@ describe('App navigation', () => {
 			vi.mocked(ValidateUserAccount).mockRejectedValueOnce(new Error('invalid'));
 			installState.locale = 'en-US';
 			const result = await goNext(PAGE_IDS.USER_ACCOUNT);
-			expect(result).toBe('Please complete all required fields to continue.');
+			expect(result.error).toBeNull();
+			expect(result.backendError).toBe('Please complete all required fields to continue.');
 		});
 
 		it('should validate DiskSelection page before advancing', async () => {
@@ -51,7 +53,8 @@ describe('App navigation', () => {
 			vi.mocked(ValidateDiskSelection).mockRejectedValueOnce(new Error('invalid'));
 			installState.locale = 'en-US';
 			const result = await goNext(PAGE_IDS.DISK_SELECTION);
-			expect(result).toBe('Please select a disk to continue.');
+			expect(result.error).toBeNull();
+			expect(result.backendError).toBe('Please select a disk to continue.');
 		});
 
 		it('should save user account data when advancing from UserAccount', async () => {
@@ -66,7 +69,8 @@ describe('App navigation', () => {
 		it('should show confirmation dialog on Confirmation page', async () => {
 			installState.locale = 'en-US';
 			const result = await goNext(PAGE_IDS.CONFIRMATION);
-			expect(result).toBeNull();
+			expect(result.error).toBeNull();
+			expect(result.backendError).toBeNull();
 			expect(installState.showConfirmDialog).toBe(true);
 		});
 	});

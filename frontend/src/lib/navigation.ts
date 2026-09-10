@@ -26,18 +26,18 @@ const PAGE_ERROR_MESSAGES: Record<PageID, string> = {
 	[PAGE_IDS.FINISH]: t('validation.installationComplete'),
 };
 
-export async function goNext(currentPage: number): Promise<string | null> {
+export async function goNext(currentPage: number): Promise<{ error: string | null; backendError: string | null }> {
 	// Show confirmation dialog on Confirmation page (only once)
 	if (currentPage === PAGE_IDS.CONFIRMATION && !_installationConfirmed) {
 		installState.showConfirmDialog = true;
-		return null; // Don't advance yet
+		return { error: null, backendError: null }; // Don't advance yet
 	}
 	_installationConfirmed = false; // Reset for next time
 
 	// Validate current page if needed
 	if (PAGES_NEEDING_VALIDATION.has(currentPage as PageID)) {
 		const validationError = await validateCurrentPage(currentPage);
-		if (validationError) return validationError;
+		if (validationError) return { error: null, backendError: validationError };
 	}
 
 	// Commit (save) page data after validation passes
@@ -50,7 +50,7 @@ export async function goNext(currentPage: number): Promise<string | null> {
 	navState.direction = 'forward';
 	navState.currentPage = nextPage;
 
-	return null; // Success
+	return { error: null, backendError: null }; // Success
 }
 
 export async function goBack(currentPage: number): Promise<string | null> {
@@ -64,6 +64,15 @@ export async function goBack(currentPage: number): Promise<string | null> {
 	return null; // Success
 }
 
+/**
+ * Result from goNext — structured to separate frontend validation errors
+ * (handled by getPageValidationReasons) from backend validation errors.
+ */
+export interface GoNextResult {
+	error: string | null;
+	backendError: string | null;
+}
+
 // Called when user clicks "Yes" in confirmation dialog
 export function confirmInstallation(): void {
 	_installationConfirmed = true;
@@ -74,12 +83,12 @@ export function cancelInstallation(): void {
 	_installationConfirmed = false;
 }
 
-export async function finish(): Promise<string | null> {
+export async function finish(): Promise<{ error: string | null }> {
 	try {
 		await RebootAndClose();
-		return null;
+		return { error: null };
 	} catch (err) {
-		return err instanceof Error ? err.message : 'Failed to reboot';
+		return { error: err instanceof Error ? err.message : 'Failed to reboot' };
 	}
 }
 
