@@ -131,6 +131,14 @@
 	/>
 
 	<!-- Validation error modal -->
+	<!--
+		onCancel must dismiss at the parent level (clear validationError), not just
+		flip the child's `show` flag. The modal is MOUNTED by `{#if validationError}`
+		and only VISIBLY shown via the child's `show`. Clicking the backdrop toggles
+		only `show`, leaving validationError set, so the instance stays mounted but
+		hidden and never re-appears on the next Next. Dismissing via onCancel tears
+		the whole block down so the following Next recreates it fresh.
+	-->
 	{#if validationError}
 		<ConfirmDialog
 			show={validationError !== null}
@@ -138,6 +146,7 @@
 			message={validationError}
 			confirmLabel={t('dialog.confirm.ok')}
 			onConfirm={dismissValidationError}
+			onCancel={dismissValidationError}
 			showIcon={true}
 			showCancel={false}
 		/>
