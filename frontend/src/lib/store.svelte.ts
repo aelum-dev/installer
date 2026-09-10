@@ -306,14 +306,29 @@ function getManualLayoutValidationReasons(): string[] {
 		reasons.push(t('validation.modal.partitionAfterRemaining'));
 	}
 
-	// Check new partition sizes against free space
+	// Total plan size (existing + new rows) must fit the disk.
 	const usedMB = computeUsedMB(layout);
-	const freeMB = computeFreeMB(layout);
+
+	// Check new partition sizes against the free space available to them.
+	//
+	// Headroom is the disk minus the partitions already on the disk (existing
+	// rows with a path). New rows must NOT be subtracted from that headroom: they
+	// are what we are fitting, so counting them twice — once inside the headroom
+	// and once as the amount being placed — rejects any plan whose new partitions
+	// make up a large share of the disk. (computeFreeMB includes new rows, so it
+	// can't be reused here; fall back to MiB totals only when byte geometry is
+	// absent, matching computeFreeMB.)
+	const usedExistingBytes = layout.partitions.reduce(
+		(sum, p) => sum + (p.path ? (p.sizeBytes ?? 0) : 0),
+		0,
+	);
+	const diskBytes = layout.diskSizeBytes ?? layout.diskSizeMB * bytesPerMB;
+	const freeForNewMB = Math.max(Math.floor((diskBytes - usedExistingBytes) / bytesPerMB), 0);
 	const newParts = layout.partitions.filter((p) => !p.path);
 	const newPartsSize = newParts.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
-	if (newPartsSize > freeMB) {
+	if (newPartsSize > freeForNewMB) {
 		reasons.push(
-			t('validation.modal.exceedsFreeSpace', { size: newPartsSize, free: freeMB }),
+			t('validation.modal.exceedsFreeSpace', { size: newPartsSize, free: freeForNewMB }),
 		);
 	}
 
