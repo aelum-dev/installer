@@ -153,7 +153,7 @@
 						{/if}
 					</div>
 				{:else}
-					<p class="section-value error">No disk selected</p>
+					<p class="section-value error">{t('validation.noDiskSelected')}</p>
 				{/if}
 			</div>
 		</div>

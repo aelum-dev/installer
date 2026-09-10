@@ -30,8 +30,8 @@ import idID from '../../translations/id-ID.json';
 import viVN from '../../translations/vi-VN.json';
 import eoLang from '../../translations/eo.json';
 
-// Build translations record
-const translations: Record<string, Record<string, string>> = {
+// Build translations record (flat keys only)
+const translations: Record<string, Record<string, unknown>> = {
   'en-US': enUS,
   'de-DE': deDE,
   'el-GR': elGR,
@@ -66,14 +66,18 @@ const translations: Record<string, Record<string, string>> = {
 let _locale = $state('en-US');
 
 export const t = (key: string, args?: Record<string, unknown>): string => {
-  // Get the message using current locale
-  const msg = translations[_locale]?.[key] ?? translations['en-US']?.[key] ?? key;
+  // Flat key lookup only (e.g. 'app.brand', 'validation.selectDisk', 'validation.modal.title')
+  const msg = (translations[_locale]?.[key] as string | undefined) ??
+    (translations['en-US']?.[key] as string | undefined) ??
+    key;
 
-  // Simple interpolation for ICU-style messages
-  if (!args) return msg;
-
-  return msg.replace(/\{(\w+)\}/g, (_, k) => String(args[k] ?? ''));
+  return interpolate(msg, args);
 };
+
+function interpolate(msg: string, args: Record<string, unknown> | undefined): string {
+  if (!args) return msg;
+  return msg.replace(/\{(\w+)\}/g, (_, k) => String(args[k] ?? ''));
+}
 
 export const setLocale = (l: string) => {
   _locale = l;

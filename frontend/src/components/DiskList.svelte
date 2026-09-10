@@ -37,7 +37,7 @@
 {:else if error}
 	<StateMessage error>
 		<p>{error}</p>
-		<Button variant="secondary" onclick={onRetry}>Retry</Button>
+		<Button variant="secondary" onclick={onRetry}>{t('action.retry')}</Button>
 	</StateMessage>
 {:else if disks.length === 0}
 	<StateMessage>
