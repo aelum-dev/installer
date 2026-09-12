@@ -43,8 +43,20 @@ npm run e2e:report     # open the HTML report (after a run)
 
 - `wizard.spec.ts` — Welcome → User account (validation) → Disk selection →
   Confirmation → Back navigation.
+- `manual.spec.ts` — manual (dualboot) partition mode: the role menu, adding/
+  deleting rows, and the delete-confirmation dialog.
 - `install.spec.ts` — the full wizard flow through to the Installation step and
   its terminal state.
+
+## Note on validation
+
+The **Next button is always enabled**; invalid input no longer blocks navigation.
+Clicking Next with invalid input instead shows a "Cannot proceed" validation
+modal (an OK-only `ConfirmDialog`). Tests assert this modal appears on bad input
+and that the wizard advances once the input is valid. In manual mode, the Manual
+mode pill stays disabled until a disk is selected, and the Add control stays
+disabled when the disk has no free space — those are the states the tests still
+assert as `toBeDisabled()`.
 
 ## Note on the install step
 

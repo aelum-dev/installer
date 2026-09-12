@@ -7,8 +7,8 @@ import { test, expect } from '@playwright/test';
 // Manual mode is reached from the Disk Selection page: pick a disk while in
 // automatic mode, then toggle to Manual. The partition editor then lets you
 // designate one partition as Boot (ESP) and one as Root (System), add new
-// partitions, and delete rows. A valid layout (exactly one ESP + one System) is
-// what enables "Next".
+// partitions, and delete rows. Next is always enabled; an invalid layout shows
+// a "Cannot proceed" validation modal instead of blocking navigation.
 //
 // Run with: npm run e2e
 
@@ -43,19 +43,20 @@ async function gotoDiskSelection(page: import('@playwright/test').Page): Promise
 }
 
 test.describe('Manual partitioning', () => {
-  test('manual mode without a disk shows a selection hint', async ({ page }) => {
+  test('manual mode is disabled until a disk is selected', async ({ page }) => {
     await gotoDiskSelection(page);
 
-    // Switch to manual before choosing a disk.
-    await page.getByRole('button', { name: 'Manual' }).click();
+    // No disk selected yet: the Manual mode pill is disabled, and hovering it
+    // shows a "select a disk first" hint instead of switching modes.
+    const manual = page.getByRole('button', { name: 'Manual' });
+    await expect(manual).toBeDisabled();
+    await manual.hover();
     await expect(
-      page.getByText('Select a disk, then switch to manual mode', { exact: false }),
+      page.getByText('Select a disk before switching to manual mode.', { exact: true }),
     ).toBeVisible();
-    // Nothing to validate yet.
-    await expect(next(page)).toBeDisabled();
   });
 
-  test('shows existing partitions as Preserve and keeps Next disabled', async ({ page }) => {
+  test('shows existing partitions as Preserve', async ({ page }) => {
     await selectFirstDisk(page);
 
     // Switch to manual mode.
@@ -65,33 +66,25 @@ test.describe('Manual partitioning', () => {
     await expect(page.getByText('/dev/nvme0n1p1')).toBeVisible();
     await expect(page.getByText('/dev/nvme0n1p2')).toBeVisible();
 
-    // Each row exposes Preserve / ESP / System pills → 6 pills total.
-    await expect(page.locator('.type-pill')).toHaveCount(6);
-
-    // All partitions are Preserve (untouched) → no ESP/System → Next disabled.
-    await expect(page.locator('.type-pill.selected', { hasText: 'Preserve' })).toHaveCount(2);
-    await expect(next(page)).toBeDisabled();
+    // Each row exposes a role selector (Preserve by default) → 2 controls.
+    await expect(page.locator('.role-trigger')).toHaveCount(2);
+    await expect(page.locator('.role-trigger').filter({ hasText: 'Preserve' })).toHaveCount(2);
   });
 
-  test('designating ESP + System enables Next', async ({ page }) => {
+  test('designating ESP + System is reflected on the rows', async ({ page }) => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
     const rows = page.locator('.editor-row');
-    // First partition → Boot (ESP), second → Root (System).
-    await rows.first().getByRole('button', { name: 'ESP' }).click();
-    await rows.nth(1).getByRole('button', { name: 'System' }).click();
+    // First partition → Boot (ESP), second → Root (System), via the role menus.
+    await rows.first().locator('.role-trigger').click();
+    await page.getByRole('option', { name: 'ESP' }).click();
+    await rows.nth(1).locator('.role-trigger').click();
+    await page.getByRole('option', { name: 'System' }).click();
 
-    // The chosen roles are reflected as selected pills.
-    await expect(rows.first().getByRole('button', { name: 'ESP', exact: true })).toHaveClass(
-      /selected/,
-    );
-    await expect(rows.nth(1).getByRole('button', { name: 'System', exact: true })).toHaveClass(
-      /selected/,
-    );
-
-    // Exactly one ESP + one System → valid → Next enabled.
-    await expect(next(page)).toBeEnabled();
+    // The chosen roles are reflected on the row triggers.
+    await expect(rows.first().locator('.role-trigger')).toHaveText('ESP');
+    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
   });
 
   test('adding a partition then deleting it changes the row count', async ({ page }) => {
@@ -103,7 +96,7 @@ test.describe('Manual partitioning', () => {
     await expect(rows).toHaveCount(2);
 
     // Add a new 1000 MB partition.
-    await page.locator('.add-input').fill('1000');
+    await page.locator('.add-size-input').fill('1000');
     await page.locator('.add-btn').click();
 
     // A new blank row appears, labelled "New partition".
@@ -117,8 +110,8 @@ test.describe('Manual partitioning', () => {
       .getByRole('button', { name: 'Delete partition' })
       .click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Delete partition?' })).toBeVisible();
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByRole('heading', { name: 'Remove from install plan?' })).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
 
     await expect(page.getByRole('dialog')).not.toBeVisible();
     await expect(page.locator('.editor-row')).toHaveCount(2);
@@ -151,17 +144,22 @@ test.describe('Manual partitioning', () => {
     await expect(page.locator('.editor-row')).toHaveCount(2);
   });
 
-  test('Next disables again when a required type is cleared', async ({ page }) => {
+  test('clearing a required role reverts the row to Preserve', async ({ page }) => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
     const rows = page.locator('.editor-row');
-    await rows.first().getByRole('button', { name: 'ESP' }).click();
-    await rows.nth(1).getByRole('button', { name: 'System' }).click();
-    await expect(next(page)).toBeEnabled();
+    await rows.first().locator('.role-trigger').click();
+    await page.getByRole('option', { name: 'ESP' }).click();
+    await rows.nth(1).locator('.role-trigger').click();
+    await page.getByRole('option', { name: 'System' }).click();
+    await expect(rows.first().locator('.role-trigger')).toHaveText('ESP');
+    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
 
-    // Clicking the active "System" pill clears it back to Preserve → invalid.
-    await rows.nth(1).getByRole('button', { name: 'System' }).click();
-    await expect(next(page)).toBeDisabled();
+    // Selecting the active "System" role again in the menu clears it back to
+    // Preserve (the trigger only toggles the menu; the option does the clearing).
+    await rows.nth(1).locator('.role-trigger').click();
+    await page.getByRole('option', { name: 'Preserve' }).click();
+    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('Preserve');
   });
 });

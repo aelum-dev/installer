@@ -13,6 +13,14 @@ async function fillUserAccount(page: import('@playwright/test').Page): Promise<v
   await page.getByLabel('Confirm Password').fill('secret1');
 }
 
+// Dismiss the "Cannot proceed" validation modal (OK-only). Next is always
+// enabled, so invalid input surfaces this modal instead of blocking navigation.
+async function dismissValidationModal(page: import('@playwright/test').Page): Promise<void> {
+  // `exact` so the language buttons (e.g. "Norsk bokmål") don't also match "OK".
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+}
+
 test.describe('Installer wizard', () => {
   test('Welcome page loads languages and enables Next', async ({ page }) => {
     await page.goto('/');
@@ -26,25 +34,29 @@ test.describe('Installer wizard', () => {
     await expect(next(page)).toBeEnabled();
   });
 
-  test('User account: blocks invalid input, enables Next when valid', async ({ page }) => {
+  test('User account: shows the validation modal on bad input, advances when valid', async ({ page }) => {
     await page.goto('/');
     await next(page).click();
 
     await expect(page.getByRole('heading', { name: 'Create user account' })).toBeVisible();
 
-    // Nothing entered -> Next disabled.
-    await expect(next(page)).toBeDisabled();
+    // Next is always enabled; with nothing entered it shows the validation
+    // modal instead of advancing.
+    await next(page).click();
+    await expect(page.getByRole('heading', { name: 'Cannot proceed' })).toBeVisible();
+    await dismissValidationModal(page);
 
-    // Too-short username shows a validation error.
+    // Too-short username shows an inline validation error.
     await page.getByLabel('Username').fill('ab');
     await page.getByLabel('Username').blur();
     await expect(page.locator('.error.visible')).toContainText(/username/i);
 
-    // Valid + matching passwords enable Next.
+    // Valid + matching passwords -> Next advances to disk selection.
     await page.getByLabel('Username').fill('alice');
     await page.getByLabel('Password', { exact: true }).fill('secret1');
     await page.getByLabel('Confirm Password').fill('secret1');
-    await expect(next(page)).toBeEnabled();
+    await next(page).click();
+    await expect(page.getByRole('heading', { name: 'Select Installation Disk' })).toBeVisible();
   });
 
   test('User account: flags mismatched passwords', async ({ page }) => {
@@ -57,7 +69,11 @@ test.describe('Installer wizard', () => {
     await page.getByLabel('Confirm Password').blur();
 
     await expect(page.locator('.error.visible')).toContainText(/match/i);
-    await expect(next(page)).toBeDisabled();
+
+    // Next is always enabled; clicking it surfaces the mismatch via the modal.
+    await next(page).click();
+    await expect(page.getByRole('heading', { name: 'Cannot proceed' })).toBeVisible();
+    await dismissValidationModal(page);
   });
 
   test('Disk selection: select a disk and filesystem, then enable Next', async ({ page }) => {
