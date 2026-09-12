@@ -63,6 +63,21 @@ sudo ./build/bin/aelum-installer-cli --install /dev/vda
 sudo ./build/bin/aelum-installer-cli --install /dev/vda --filesystem btrfs
 ```
 
+## Testing
+
+The frontend has Playwright **end-to-end tests** that drive the real Wails app (Go backend + Svelte UI together) — not a mock. They run the wizard, manual partitioning, and the full install flow against `wails dev` in dry-run mode with synthetic disks, so no real disk is touched.
+
+```bash
+cd frontend
+npm install
+npm run e2e:install      # one-time: downloads Playwright's Chromium
+npm run e2e              # run the suite (headless)
+npm run e2e:headed       # visible browser, handy for debugging
+npm run e2e:report       # open the HTML report after a run
+```
+
+On headless CI, wrap the run in `xvfb-run` and install the browser system deps (`npx playwright install-deps chromium` needs sudo). The [`playwright.config.ts`](./frontend/playwright.config.ts) auto-starts `wails dev` for you, so you don't need to launch it manually. See [frontend/e2e/README.md](./frontend/e2e/README.md) for the full details (what's covered, dry-run env vars, CI setup).
+
 ## Want to build or contribute?
 
 Head over to [AGENTS.md](./AGENTS.md) for architecture details and conventions,
