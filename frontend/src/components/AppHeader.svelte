@@ -2,12 +2,16 @@
 	import { PAGE_NAMES } from '$lib/types';
 	import { getIsDryRun } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
+	import logoUrl from '../assets/images/logo.svg';
 
 	let { currentPage }: { currentPage: number } = $props();
 </script>
 
 <header class="header">
-	<span class="brand">{t('app.brand')}</span>
+	<span class="brand">
+		<img class="brand-logo" src={logoUrl} alt="Aelum logo" />
+		<span class="brand-name">{t('app.brand')}</span>
+	</span>
 	{#if getIsDryRun()}
 		<span class="dry-run-badge">{t('app.dryRun')}</span>
 	{/if}
@@ -26,6 +30,18 @@
 	}
 
 	.brand {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-sm);
+	}
+
+	.brand-logo {
+		width: 28px;
+		height: 28px;
+		object-fit: contain;
+	}
+
+	.brand-name {
 		font-size: var(--font-size-md-lg);
 		font-weight: var(--font-weight-700);
 		color: var(--color-text);
