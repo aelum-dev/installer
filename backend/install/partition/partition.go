@@ -378,24 +378,11 @@ type formatAction struct {
 }
 
 // buildActions turns the layout into the ordered Boot/Root format actions.
-// Existing partitions keep their current number; brand-new partitions are
-// assigned the next available numbers and carved into the disk's free space.
-//
-// Free space is the set of gaps between partitions (before the first, between
-// neighbours, and after the last), capped before the trailing GPT backup. A
-// brand-new partition is placed in the first gap that fits (or the largest gap
-// for "use all remaining space") rather than always appended after the last
-// partition. That matters when the last existing partition already reaches the
-// end of the disk but a deleted earlier partition left room behind: appending
-// at the end would run past the disk and sgdisk would reject the plan, even
-// though the freed space could hold the new partition.
-//
-// Partition numbers stay independent of physical position: the kernel exposes
-// GPT entry N as /dev/<disk>N, so a new partition placed in an early gap keeps
-// the next available number and still resolves to the right device path.
+// Existing partitions keep their number; brand-new partitions are carved into
+// the disk's free gaps (see allocateFree) and numbered after the last existing
+// partition.
 func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string, sectors []partitionSector) ([]formatAction, error) {
-	// Highest existing partition number: brand-new partitions are numbered
-	// immediately after it.
+	// Brand-new partitions are numbered immediately after the highest existing one.
 	maxNum := 0
 	for _, s := range sectors {
 		if s.num > maxNum {
@@ -403,11 +390,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		}
 	}
 
-	// lastSector is the last sector a partition may occupy: the disk's true
-	// sector count minus the trailing sectors reserved for the backup GPT, so
-	// sgdisk won't reject a partition past the last usable sector. DiskSizeMB is
-	// truncated to MiB, so fall back to it when the layout carries no byte
-	// geometry (e.g. hand-built test layouts).
+	// lastSector caps placement before the trailing GPT backup.
 	diskSectors := layout.DiskSizeBytes / 512
 	if diskSectors == 0 {
 		diskSectors = layout.DiskSizeMB * 2048
@@ -446,9 +429,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 			continue
 		}
 
-		// Carve a brand-new partition from free space. The number is the next
-		// available one; placement is handled by allocateFree, which may sit in an
-		// early gap rather than after the last partition.
+		// Brand-new partition: next available number, placed in a free gap.
 		num := maxNum + 1
 		start, sizeMB, rest, ok := allocateFree(free, p.SizeMB)
 		if !ok {
@@ -477,11 +458,8 @@ type freeRegion struct {
 	end   int64
 }
 
-// freeRegions returns the gaps on the disk as inclusive sector ranges: before
-// the first partition, between consecutive partitions, and after the last one,
-// all capped at lastSector so the trailing GPT backup region is never claimed.
-// Partitions are considered in start-sector order so the gaps are reported in
-// order regardless of how sgdisk -p listed them.
+// freeRegions returns the disk's gaps as inclusive sector ranges (before the
+// first partition, between neighbours, after the last), capped at lastSector.
 func freeRegions(sectors []partitionSector, lastSector int64) []freeRegion {
 	sorted := make([]partitionSector, len(sectors))
 	copy(sorted, sectors)
@@ -503,9 +481,8 @@ func freeRegions(sectors []partitionSector, lastSector int64) []freeRegion {
 	return regions
 }
 
-// removeSpan returns regions with the inclusive sector span [start, end] cut
-// out, keeping any surviving prefix before start and suffix after end of a
-// consumed region.
+// removeSpan cuts the inclusive sector span [start, end] out of the regions,
+// keeping any surviving prefix/suffix of a consumed region.
 func removeSpan(regions []freeRegion, start, end int64) []freeRegion {
 	out := make([]freeRegion, 0, len(regions))
 	for _, r := range regions {
@@ -523,19 +500,13 @@ func removeSpan(regions []freeRegion, start, end int64) []freeRegion {
 	return out
 }
 
-// allocateFree carves a brand-new partition of sizeMB MiB (0 = fill one region
-// entirely) out of the free regions. It returns the aligned start sector, the
-// resolved size in MiB (clamped to fit when the request outruns every region),
-// the leftover regions, and ok. The alignment is 1 MiB = 2048 sectors.
-//
-// An explicit size is placed in the first region that fits; if none fits it is
-// clamped to the largest region, so sgdisk never creates a partition past the
-// last usable sector (the same backstop the old end-of-disk clamp enforced).
-// "Use all remaining space" fills the largest region.
+// allocateFree carves a brand-new partition of sizeMB MiB (0 = fill one region)
+// from the free regions, returning the aligned start sector, the resolved size
+// in MiB (clamped to fit) and the leftover regions. Alignment is 1 MiB = 2048.
 func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest []freeRegion, ok bool) {
 	const align = int64(2048)
 
-	// Candidate per region: the aligned start and how many whole MiB it holds.
+	// Per-region candidate: aligned start and whole-MiB capacity.
 	type cand struct {
 		start int64
 		avail int64
@@ -556,10 +527,8 @@ func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest [
 	choose := func(best int) (int64, int64, bool) {
 		c := cands[best]
 		if sizeMB != 0 && sizeMB*align <= c.avail {
-			// Exact request fits inside this region.
 			return c.start, sizeMB, true
 		}
-		// Clamp to this region's size so the partition stays within the disk.
 		sz := c.avail / align
 		if sz == 0 {
 			return 0, 0, false
@@ -585,7 +554,7 @@ func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest [
 		return s, sz, removeSpan(regions, s, s+sz*align-1), true
 	}
 
-	// First region that fits the exact request...
+	// First region that fits the exact request, else clamp to the largest.
 	placed := -1
 	for i, c := range cands {
 		if c.avail >= sizeMB*align {
@@ -593,7 +562,6 @@ func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest [
 			break
 		}
 	}
-	// ...otherwise clamp to the largest region.
 	if placed < 0 {
 		best := -1
 		for i, c := range cands {

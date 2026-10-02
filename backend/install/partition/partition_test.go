@@ -652,13 +652,10 @@ func TestBuildActions_ClampsExplicitNewPartition(t *testing.T) {
 	}
 }
 
-// TestBuildActions_NewPartitionFillsEarlyGap is a regression for a plan where
-// the last existing partition already reaches the end of the disk but a
-// previously deleted partition left free space at the front. Appending the new
-// partition after the last one runs past the disk and sgdisk rejects it
-// ("Could not create partition N from <near-end> to <past-the-end>"), even
-// though the freed front space fits. The new partition must be carved into the
-// early gap instead.
+// TestBuildActions_NewPartitionFillsEarlyGap: a plan whose last existing
+// partition reaches the disk end but whose deleted predecessor freed space at
+// the front. The new partition must be carved into that front gap, not appended
+// past the disk end.
 func TestBuildActions_NewPartitionFillsEarlyGap(t *testing.T) {
 	// 20 GiB disk. vda2 (system) sits at the very end, leaving a ~2 GiB gap at
 	// the front (where a deleted EFI used to be) and only a sliver after it.
