@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Ít nhất 8 GB dung lượng đĩa",
   "page.welcome.reqGPT": "Sơ đồ phân vùng GPT",
   "page.welcome.reqUEFI": "Khởi động UEFI",
-  "page.welcome.requirements": "Yêu cầu",
+  "page.welcome.requirements": "Yêu cầu hệ thống",
   "page.welcome.subtitle": "Trình cài đặt này sẽ hướng dẫn bạn qua quá trình thiết lập hệ thống.",
   "page.welcome.title": "Chào mừng đến với Aelum",
   "step.clearingCache": "Đang xóa bộ nhớ đệm gói...",

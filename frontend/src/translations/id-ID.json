@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Setidaknya 8 GB ruang disk",
   "page.welcome.reqGPT": "Skema partisi GPT",
   "page.welcome.reqUEFI": "Peluncuran UEFI",
-  "page.welcome.requirements": "Persyaratan",
+  "page.welcome.requirements": "Persyaratan sistem",
   "page.welcome.subtitle": "Pemasang ini akan memandu Anda melalui pengaturan sistem Anda.",
   "page.welcome.title": "Selamat datang di Aelum",
   "step.clearingCache": "Membersihkan cache paket...",

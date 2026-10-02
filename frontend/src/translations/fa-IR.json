@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "حداقل 8 گیگابایت فضای دیسک",
   "page.welcome.reqGPT": "طرح‌بندی پارتیشن GPT",
   "page.welcome.reqUEFI": "راه‌اندازی UEFI",
-  "page.welcome.requirements": "الزام‌ها",
+  "page.welcome.requirements": "الزام‌های سیستم",
   "page.welcome.subtitle": "این نصب‌کننده شما را در تنظیم سیستم راهنمایی می‌کند.",
   "page.welcome.title": "به Aelum خوش آمدید",
   "step.clearingCache": "...در حال پاک کردن حافظه پنهان بسته‌ها",

@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "En az 8 GB disk alanı",
   "page.welcome.reqGPT": "GPT bölüm şeması",
   "page.welcome.reqUEFI": "UEFI başlatma",
-  "page.welcome.requirements": "Gereklilikler",
+  "page.welcome.requirements": "Sistem gereklilikleri",
   "page.welcome.subtitle": "Bu yükleyici, sisteminizi kurmanız için size rehberlik edecektir.",
   "page.welcome.title": "Aelum'a Hoş Geldiniz",
   "step.clearingCache": "Paket önbelleği temizleniyor...",

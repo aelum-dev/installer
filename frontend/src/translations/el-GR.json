@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Τλάχιστον 8 GB χώρος δίσκου",
   "page.welcome.reqGPT": "Σχέδιο διαμερισμάτων GPT",
   "page.welcome.reqUEFI": "UEFI εκκίνηση",
-  "page.welcome.requirements": "Απαιτήσεις",
+  "page.welcome.requirements": "Απαιτήσεις συστήματος",
   "page.welcome.subtitle": "Αυτός ο εγκαταστάτης θα σας καθοδηγήσει μέσω της ρύθμισης του συστήματός σας.",
   "page.welcome.title": "Καλώς ήρθατε στο Aelum",
   "step.clearingCache": "Καθαρισμός προσωρινής μνήμας πακέτων...",

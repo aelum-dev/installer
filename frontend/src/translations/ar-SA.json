@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "مساحة قرص بحد أدنى 8 GB",
   "page.welcome.reqGPT": "مخطط قسمات GPT",
   "page.welcome.reqUEFI": "تمهيد UEFI",
-  "page.welcome.requirements": "المتطلبات",
+  "page.welcome.requirements": "المتطلبات النظامية",
   "page.welcome.subtitle": "سيوجهك هذا المثبّت خلال إعداد نظامك.",
   "page.welcome.title": "مرحبًا بك في Aelum",
   "step.clearingCache": "...جاري مسح ذاكرة التخزين المؤقت للحزم",

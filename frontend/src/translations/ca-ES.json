@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Com a mínim 8 GB d'espai de disc",
   "page.welcome.reqGPT": "Esquema de particions GPT",
   "page.welcome.reqUEFI": "Arrencada UEFI",
-  "page.welcome.requirements": "Requisits",
+  "page.welcome.requirements": "Requisits del sistema",
   "page.welcome.subtitle": "Aquest instal·lador us guiarà per configurar el vostre sistema.",
   "page.welcome.title": "Benvinguts a Aelum",
   "step.clearingCache": "S'està netejant la memòria cau dels paquets...",

@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "At least 8GB of disk space",
   "page.welcome.reqGPT": "GPT partition scheme",
   "page.welcome.reqUEFI": "UEFI boot",
-  "page.welcome.requirements": "Requirements",
+  "page.welcome.requirements": "System Requirements",
   "page.welcome.subtitle": "This installer will guide you through setting up your system.",
   "page.welcome.title": "Welcome to Aelum",
   "step.clearingCache": "Clearing package cache...",

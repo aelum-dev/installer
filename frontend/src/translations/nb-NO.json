@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Minst 8 GB diskplass",
   "page.welcome.reqGPT": "GPT-partisjonsskjema",
   "page.welcome.reqUEFI": "UEFI-opstart",
-  "page.welcome.requirements": "Krav",
+  "page.welcome.requirements": "Systemkrav",
   "page.welcome.subtitle": "Denne installasjonsprogrammet vil veilede deg gjennom oppsettet av systemet ditt.",
   "page.welcome.title": "Velkommen til Aelum",
   "step.clearingCache": "Tømmer pakkebuffer...",

@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "至少 8GB 磁碟空間",
   "page.welcome.reqGPT": "GPT 分割方案",
   "page.welcome.reqUEFI": "UEFI 啟動",
-  "page.welcome.requirements": "要求",
+  "page.welcome.requirements": "系統需求",
   "page.welcome.subtitle": "安裝程式將引導您完成系統設定。",
   "page.welcome.title": "歡迎使用 Aelum",
   "step.clearingCache": "正在清除套件快取...",

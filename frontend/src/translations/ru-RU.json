@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Не менее 8 ГБ места на диске",
   "page.welcome.reqGPT": "Таблица разделов GPT",
   "page.welcome.reqUEFI": "Загрузка UEFI",
-  "page.welcome.requirements": "Требования",
+  "page.welcome.requirements": "Системные требования",
   "page.welcome.subtitle": "Этот установщик проведёт вас через настройку системы.",
   "page.welcome.title": "Добро пожаловать в Aelum",
   "step.clearingCache": "Очистка кеша пакетов...",

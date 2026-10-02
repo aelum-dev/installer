@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "최소 8GB 디스크 공간",
   "page.welcome.reqGPT": "GPT 파티션 스키마",
   "page.welcome.reqUEFI": "UEFI 부팅",
-  "page.welcome.requirements": "요구사항",
+  "page.welcome.requirements": "システム要求事項",
   "page.welcome.subtitle": "이 설치 프로그램이 시스템 설정을 안내합니다.",
   "page.welcome.title": "Aelum에 오신 것을 환영합니다",
   "step.clearingCache": "패키지 캐시 정리 중...",

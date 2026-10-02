@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "לפחות 8 GB מקום דיסק",
   "page.welcome.reqGPT": "תסדיר פילוח GPT",
   "page.welcome.reqUEFI": "אתחול UEFI",
-  "page.welcome.requirements": "דרישות",
+  "page.welcome.requirements": "דרישות המערכת",
   "page.welcome.subtitle": "מתקין זה ינחה אותך דרך הגדרת המערכת שלך.",
   "page.welcome.title": "ברוכים הבאים ל-Aelum",
   "step.clearingCache": "...מנקה מטמון חבילות",

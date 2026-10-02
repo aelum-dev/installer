@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Ten minste 8 GB diskruimte",
   "page.welcome.reqGPT": "GPT-partitieschema",
   "page.welcome.reqUEFI": "UEFI-opstart",
-  "page.welcome.requirements": "Vereisten",
+  "page.welcome.requirements": "Systeemvereisten",
   "page.welcome.subtitle": "Deze installatiewizard leidt je door het instellen van je systeem.",
   "page.welcome.title": "Welkom bij Aelum",
   "step.clearingCache": "Pakketcache wissen...",

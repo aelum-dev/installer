@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Vähintään 8 GB levytilaa",
   "page.welcome.reqGPT": "GPT-ositusjärjestelmä",
   "page.welcome.reqUEFI": "UEFI-käynnistys",
-  "page.welcome.requirements": "Vaatukset",
+  "page.welcome.requirements": "Järjestelmävaatukset",
   "page.welcome.subtitle": "Tämä asennusohjelma opastaa sinua järjestelmän asetuksissa.",
   "page.welcome.title": "Tervetuloa Aelum:iin",
   "step.clearingCache": "Tyhjennetään pakettivälimuistia...",

@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Almeno 8 GB di spazio su disco",
   "page.welcome.reqGPT": "Schema di partizioni GPT",
   "page.welcome.reqUEFI": "Avvio UEFI",
-  "page.welcome.requirements": "Requisiti",
+  "page.welcome.requirements": "Requisiti del sistema",
   "page.welcome.subtitle": "Questo installatore ti guiderà attraverso la configurazione del sistema.",
   "page.welcome.title": "Benvenuto in Aelum",
   "step.clearingCache": "Pulizia della cache dei pacchetti...",

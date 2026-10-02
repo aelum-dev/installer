@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "Minst 8 GB lagringsutrymme",
   "page.welcome.reqGPT": "GPT-partitionsschema",
   "page.welcome.reqUEFI": "UEFI-start",
-  "page.welcome.requirements": "Krav",
+  "page.welcome.requirements": "Systemkrav",
   "page.welcome.subtitle": "Den här installationsguiden guidar dig genom att ställa in ditt system.",
   "page.welcome.title": "Välkommen till Aelum",
   "step.clearingCache": "Rensar paketcache...",

@@ -100,7 +100,7 @@
   "page.welcome.reqDisk": "ディスク容量8GB以上",
   "page.welcome.reqGPT": "GPT パーティションスキーマ",
   "page.welcome.reqUEFI": "UEFIブート",
-  "page.welcome.requirements": "要件",
+  "page.welcome.requirements": "システム要件",
   "page.welcome.subtitle": "このインストーラーがシステムのセットアップをガイドします。",
   "page.welcome.title": "Aelum へようこそ",
   "step.clearingCache": "パッケージキャッシュをクリア中...",
