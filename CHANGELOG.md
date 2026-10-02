@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Updated dark and light desktop wallpapers** — replaced the shipped `wallpaper-dark.png` / `wallpaper-light.png` in `live-iso/airootfs/usr/share/DankMaterialShell/` with new JPEG sources (`wallpaper-dark.jpg`, `wallpaper-light.jpg`, 3840×2160). Kept as JPEG to keep the ISO lean. Updated all path references accordingly: the skel `session.json` (`wallpaperPath`, `wallpaperPathLight`, `wallpaperPathDark`), the installer `WallpaperSourceDark`/`WallpaperSourceLight` constants in `backend/shared/config.go`, and the auto-generated `frontend/src/lib/constants.ts` (regenerated via `gen-ts-constants.go`).
+
 ### Refactored
 - **Disk/partition size fields are now `int64` instead of `string`** — `DiskInfo.Size`, `PartitionDetail.Size`, `PartitionEntry.Size`, and `DiskSelectionData.Size` are all `int64` (raw byte count). `FormatSize()` now takes `int64` directly. This eliminates repeated `fmt.Sscanf`/`strconv.ParseInt` calls scattered across consumers, removes a class of silent-garbage bugs from string parsing, and simplifies both backend and frontend code (`parseInt()` calls removed from `DiskCard.svelte`, `AppFooter.svelte`, and `navigation.ts`).
 - **`DerivePartitionPath` uses last-character check instead of `/dev/nvme` prefix** — the old `strings.HasPrefix(diskID, "/dev/nvme")` was fragile. The new version checks whether the last character of the disk name is a digit: if so, inserts `p` (NVMe convention: `nvme0n1p1`); otherwise appends directly (`sda1`). Handles all device types uniformly.

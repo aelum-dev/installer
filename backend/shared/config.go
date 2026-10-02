@@ -326,10 +326,10 @@ const WeightVerifySystem = 1
 // --- Wallpapers -------------------------------------------------------------
 
 // WallpaperSourceDark is the dark wallpaper file path on the live ISO.
-const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.png"
+const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.jpg"
 
 // WallpaperSourceLight is the light wallpaper file path on the live ISO.
-const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.png"
+const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.jpg"
 
 // --- Chroot ------------------------------------------------------------------
 
