@@ -651,3 +651,68 @@ func TestBuildActions_ClampsExplicitNewPartition(t *testing.T) {
 		t.Errorf("system partition size %d was not clamped below the requested 99999 MB", system.sizeMB)
 	}
 }
+
+// TestBuildActions_NewPartitionFillsEarlyGap is a regression for a plan where
+// the last existing partition already reaches the end of the disk but a
+// previously deleted partition left free space at the front. Appending the new
+// partition after the last one runs past the disk and sgdisk rejects it
+// ("Could not create partition N from <near-end> to <past-the-end>"), even
+// though the freed front space fits. The new partition must be carved into the
+// early gap instead.
+func TestBuildActions_NewPartitionFillsEarlyGap(t *testing.T) {
+	// 20 GiB disk. vda2 (system) sits at the very end, leaving a ~2 GiB gap at
+	// the front (where a deleted EFI used to be) and only a sliver after it.
+	const (
+		diskSectors = int64(41943040) // 20 GiB / 512
+		lastSector  = diskSectors - gptBackupSectors
+	)
+	sectors := []partitionSector{
+		{num: 2, start: 4237056, end: 41940991}, // system, ends near the disk end
+	}
+	layout := shared.ManualLayout{
+		Disk:          "/dev/vda",
+		DiskSizeMB:    20480,
+		DiskSizeBytes: 20480 * 1024 * 1024,
+		Partitions: []shared.ManualPartition{
+			{Index: 1, Path: "/dev/vda2", SizeMB: 18398, Type: shared.TypeSystem},
+			{Index: 2, Path: "", SizeMB: 2048, Type: shared.TypeESP}, // new EFI
+		},
+	}
+
+	actions, err := buildActions("/dev/vda", &layout, shared.FileSystemVfat, sectors)
+	if err != nil {
+		t.Fatalf("buildActions: %v", err)
+	}
+
+	var esp *formatAction
+	for i := range actions {
+		if actions[i].isNew && actions[i].pType == shared.TypeESP {
+			esp = &actions[i]
+		}
+	}
+	if esp == nil {
+		t.Fatal("no new ESP action produced")
+	}
+
+	// It must land in the front gap, not after vda2 where there is no room.
+	wantStart := int64(2048)
+	if esp.startSector != wantStart {
+		t.Errorf("ESP start sector = %d, want %d (the freed front gap)", esp.startSector, wantStart)
+	}
+	if esp.startSector >= sectors[0].start {
+		t.Errorf("ESP starts at %d, after the last partition at %d — would run past the disk", esp.startSector, sectors[0].start)
+	}
+
+	// It must not overlap the kept system partition, and must stay usable.
+	if esp.startSector+esp.sizeMB*2048 > sectors[0].start {
+		t.Errorf("ESP end sector %d overlaps system partition starting at %d", esp.startSector+esp.sizeMB*2048, sectors[0].start)
+	}
+	if esp.startSector+esp.sizeMB*2048-1 > lastSector {
+		t.Errorf("ESP end sector %d exceeds last usable sector %d", esp.startSector+esp.sizeMB*2048-1, lastSector)
+	}
+	// And it keeps the next available GPT number (3), which the kernel exposes
+	// as /dev/vda3 regardless of its physical position.
+	if esp.num != 3 {
+		t.Errorf("ESP num = %d, want 3", esp.num)
+	}
+}
