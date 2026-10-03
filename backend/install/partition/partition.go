@@ -181,10 +181,6 @@ func Validate(layout shared.ManualLayout) error {
 	for _, p := range layout.Partitions {
 		sumMB += p.SizeMB
 	}
-	// Coarse guard, in MiB: the sum of every declared size must not exceed the
-	// disk. Existing partitions are rounded down here, so this is lenient by
-	// design — the strict, truncation-free check below is what prevents real
-	// over-allocation of brand-new partitions.
 	if sumMB > layout.DiskSizeMB {
 		return fmt.Errorf("partition sizes (%d MB) exceed the disk size (%d MB)", sumMB, layout.DiskSizeMB)
 	}
@@ -434,6 +430,17 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		start, sizeMB, rest, ok := allocateFree(free, p.SizeMB)
 		if !ok {
 			return nil, fmt.Errorf("no free space to create a %s partition (%d MB)", p.Type, p.SizeMB)
+		}
+		// Brand-new explicit partitions are clamped to fit the largest contiguous
+		// free gap, which can be smaller than the requested size when the free
+		// space is fragmented across several gaps. Validate checks the *requested*
+		// size against the role minimum and cannot see that fragmentation, so a
+		// clamp can silently produce a partition below the enforced minimum
+		// (e.g. an 8 GiB root carved down to a 6 GiB gap). Fail loudly here instead
+		// of formatting an unusably small partition. A "use all remaining space"
+		// row (sizeMB == 0) is exempt — its floor is the disk itself.
+		if p.SizeMB != 0 && sizeMB < minPartitionSizeMB(p.Type) {
+			return nil, fmt.Errorf("%s partition has only %d MB of contiguous free space, below the %d MB minimum", p.Type, sizeMB, minPartitionSizeMB(p.Type))
 		}
 		free = rest
 		actions = append(actions, formatAction{
@@ -729,6 +736,22 @@ func roleLabel(fstype string) string {
 		return "EFI"
 	}
 	return "aelum"
+}
+
+// minPartitionSizeMB returns the enforced minimum size in MiB for a role: the
+// ESP floor (128 MiB) and the system/root floor (8 GiB). Other roles are not
+// designated partitions and have no floor (0). Mirrors the size checks in
+// Validate, but here it guards the *resolved* (possibly clamped) size of a
+// brand-new partition so fragmentation can't slip a too-small partition through.
+func minPartitionSizeMB(pt shared.PartitionType) int64 {
+	switch pt {
+	case shared.TypeESP:
+		return shared.MinESPSizeBytes / (1024 * 1024)
+	case shared.TypeSystem:
+		return shared.MinSystemPartitionBytes / (1024 * 1024)
+	default:
+		return 0
+	}
 }
 
 func bytesToMB(bytes int64) int64 {
