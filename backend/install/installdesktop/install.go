@@ -20,7 +20,7 @@ var DesktopPackages = []string{
 
 	// Desktop environment
 	"hyprland",
-	"dms-shell-hyprland",
+	"dms-shell",
 	"cava",
 	"dgop",
 	"matugen",

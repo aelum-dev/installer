@@ -280,7 +280,7 @@ const BootLoaderEntriesDir = "loader/entries"
 
 // BootLoaderTimeout is the systemd-boot selection timeout (in seconds) written
 // to loader.conf, giving the user a window to choose a boot entry at startup.
-const BootLoaderTimeout = 3
+const BootLoaderTimeout = 0
 
 // --- Progress tick ----------------------------------------------------------
 
