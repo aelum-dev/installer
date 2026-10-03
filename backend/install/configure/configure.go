@@ -485,6 +485,13 @@ UseFirmwareBackground=true
 		return err
 	}
 
+	// Replace the stock Arch boot logo with Aelum's branded one (copied from the
+	// live ISO). Must happen before the -R regen below so the new initramfs
+	// embeds the branded logo.
+	if err := applyBrandedBootLogo(ctx); err != nil {
+		return err
+	}
+
 	output, err := primitives.RunChroot("plymouth-set-default-theme", "-R", "bgrt")
 	if err != nil {
 		return fmt.Errorf("failed to set Plymouth BGRT theme: %w: %s", err, string(output))
@@ -510,6 +517,33 @@ func createHushlogin(username string) error {
 	_, err = primitives.RunChroot("chown", username+":"+username, filepath.Join("/home", username, ".hushlogin"))
 	if err != nil {
 		return fmt.Errorf("failed to set .hushlogin ownership: %w", err)
+	}
+	return nil
+}
+
+// applyBrandedBootLogo copies Aelum's branded plymouth boot logo from the live
+// ISO over the stock Arch logo in the installed system. It is non-fatal: a
+// missing ISO asset just leaves the default plymouth watermark untouched.
+func applyBrandedBootLogo(ctx *shared.InstallContext) error {
+	isoLogo := "/usr/share/aelum/boot/watermark.png"
+	dst := shared.MountRoot + "/usr/share/plymouth/themes/spinner/watermark.png"
+
+	if err := primitives.Run("test", "-f", isoLogo).Run(); err != nil {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Branded boot logo not found on ISO (%s); keeping stock plymouth watermark", isoLogo)
+		}
+		return nil
+	}
+
+	if err := primitives.Run("mkdir", "-p", filepath.Dir(dst)).Run(); err != nil {
+		return fmt.Errorf("failed to create plymouth theme dir: %w", err)
+	}
+	out, err := primitives.Run("cp", isoLogo, dst).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy branded boot logo %s -> %s: %w: %s", isoLogo, dst, err, strings.TrimSpace(string(out)))
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Installed Aelum branded boot logo")
 	}
 	return nil
 }
