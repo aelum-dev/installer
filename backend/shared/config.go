@@ -278,6 +278,10 @@ const BootOptionDescription = "Aelum"
 // BootLoaderEntriesDir is the subdirectory under the ESP for boot entries.
 const BootLoaderEntriesDir = "loader/entries"
 
+// BootLoaderTimeout is the systemd-boot selection timeout (in seconds) written
+// to loader.conf, giving the user a window to choose a boot entry at startup.
+const BootLoaderTimeout = 3
+
 // --- Progress tick ----------------------------------------------------------
 
 // DryRunStepDuration is how long each install step sleeps in dry-run mode.

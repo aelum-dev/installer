@@ -284,6 +284,15 @@ func setDefaultBootEntry(esp, entryID string) error {
 	} else {
 		content += "default " + entryID + "\n"
 	}
+	// Ensure a boot-selection timeout so the user can pick an entry at boot.
+	// systemd-boot defaults to 0 (no menu) when timeout is unset, so set it
+	// explicitly. Uses the shared BootLoaderTimeout constant.
+	timeRe := regexp.MustCompile(`(?m)^timeout .*$`)
+	if timeRe.MatchString(content) {
+		content = timeRe.ReplaceAllString(content, "timeout "+strconv.Itoa(shared.BootLoaderTimeout))
+	} else {
+		content += "timeout " + strconv.Itoa(shared.BootLoaderTimeout) + "\n"
+	}
 	if err := primitives.WriteFile(confPath, content); err != nil {
 		return fmt.Errorf("failed to write default entry to loader.conf: %w", err)
 	}
