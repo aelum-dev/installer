@@ -4,6 +4,8 @@ A graphical installer for [Aelum](https://gitlab.com/aelum/Aelum), an Arch Linux
 
 Just boot the ISO and run the installer — a few clicks in the GUI, no terminal or network needed to install.
 
+![Aelum installer](./images/installer-screenshot.png)
+
 ## How this fits into Aelum
 
 This repo is the **installer** half of the Aelum project. The [Aelum](https://gitlab.com/aelum/Aelum) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
@@ -16,8 +18,6 @@ In short: **Aelum = the ISO**, **this repo = the software that installs Aelum on
 - **ext4 or btrfs** — btrfs comes with a sensible automatic subvolume layout.
 - **Configured desktop** — Hyprland + DankMaterialShell, greetd login, Alacritty terminal, Firefox, and PipeWire audio, all set up for you.
 - **Fast, quiet boot** — Plymouth boot splash
-
-![Aelum installer](./images/installer-screenshot.png)
 
 ## Language selection
 
