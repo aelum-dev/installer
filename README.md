@@ -1,6 +1,8 @@
 # Aelum Installer
 
-A graphical installer for [Aelum](https://gitlab.com/aelum/live-iso), an Arch-based distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
+A graphical installer for [Aelum](https://gitlab.com/aelum/live-iso), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
+
+Just boot the ISO and run the installer — a few clicks in the GUI, no terminal or network needed to install.
 
 ![Aelum installer](./images/installer-screenshot.png)
 
