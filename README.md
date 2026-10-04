@@ -1,16 +1,14 @@
 # Aelum Installer
 
-A graphical installer for [Aelum](https://gitlab.com/aelum/Aelum), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
-
-Just boot the ISO and run the installer — a few clicks in the GUI, no terminal or network needed to install.
+A graphical installer for [Aelum](https://gitlab.com/aelum/Aelum), an Arch-based distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
 
 ![Aelum installer](./images/installer-screenshot.png)
 
 ## How this fits into Aelum
 
-This repo is the **installer** half of the Aelum project. The [Aelum](https://gitlab.com/aelum/Aelum) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
+This repo is the **installer** part of the Aelum project. The [Aelum](https://gitlab.com/aelum/docker) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
 
-In short: **Aelum = the ISO**, **this repo = the software that installs Aelum onto your disk.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
+In short: **Aelum docker = the ISO**, **this repo = the software that installs Aelum onto your disk.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
 
 ## What you get
 
