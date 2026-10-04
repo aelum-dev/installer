@@ -4,13 +4,8 @@ A graphical installer for [Aelum](https://gitlab.com/aelum/live-iso), an Arch-ba
 
 ![Aelum installer](./images/installer-screenshot.png)
 
-## How this fits into Aelum
 
-This repo is the **installer** part of the Aelum project. The [docker](https://gitlab.com/aelum/docker) repo builds the live ISO; that ISO is intentionally barebones — its only job on boot is to launch *this* installer.
-
-In short: **Aelum docker = the ISO**, **this repo = the software that installs Aelum onto your disk.** Everything the installer needs is served from the ISO's embedded offline mirror, so the install works with no internet. (Once installed, it's a normal Arch system.)
-
-## What you get
+## Features
 
 - **6 step wizard** — pick a language, create your user, choose a disk, confirm, and watch it install.
 - **ext4 or btrfs** — btrfs comes with a sensible automatic subvolume layout.
@@ -21,9 +16,37 @@ In short: **Aelum docker = the ISO**, **this repo = the software that installs A
 
 The first thing you'll pick is your language — there are 28 to choose from. This sets the installer's own UI language, and it also chooses your system locale and the mirror country. The mirror country just configures your installed system's pacman mirror list for future online updates — the install itself pulls packages from the ISO's embedded offline repo, not from that mirror. Note that not all 28 languages are fully translated in the DMS desktop yet — you can always change the desktop language later in DMS settings.
 
-## Getting started
+## Choosing a disk and partition mode
 
-1. Clone this repo and the [Aelum](https://gitlab.com/aelum/Aelum) live-ISO repo (side by side, e.g. `~/Projects/Aelum-Installer` and `~/Projects/Aelum`).
+On the *Disk Selection* step you pick **which disk** to install onto and **how** to lay out its partitions. There are two modes:
+
+- **Automatic** (recommended) — the installer uses the whole disk and sets up the partitions for you. It creates a small boot partition and a root partition, then formats them as either **ext4** or **btrfs** (choose your filesystem with the toggle at the top). This is what most people want: pick a disk, pick a filesystem, and go. Everything else is handled automatically.
+- **Manual** — you decide exactly which partitions exist and what each one is for. Use this if you're **dual-booting** (keeping another operating system and its files intact) or want a custom layout. See the plain-language guide below.
+
+You can switch between the two modes with the **Automatic / Manual** toggle at the top of the page. Automatic mode works on any empty or whole disk; Manual mode needs a disk that already has partitions (or that you create on this screen).
+
+### Manual partition mode
+
+Automatic mode erases the whole disk. Manual mode is gentler — it only touches the partitions you point it at, so everything else on the disk (your other operating system, documents, photos) is left alone. Think of it as *labeling* existing partitions instead of wiping the disk.
+
+Here's how to use it, step by step:
+
+1. **Pick a disk.** In manual mode the screen first asks you to select a disk — click the one you want to install into. (You can't use manual mode until a disk is chosen.)
+2. **Look at the list of partitions.** The disk already comes with some partitions (from a previous install, or another operating system). You'll see each one's name, its size, and a **Type** dropdown.
+3. **Label two of them.** Use the **Type** dropdown on each partition to give it a role:
+   - **ESP** — mark exactly **one** partition as this. It's the small boot partition the system needs to start up.
+   - **System** — mark exactly **one** partition as this. It becomes your main Arch Linux install (your home files and programs live here).
+   - **Preserve** — this is the default. It means "leave this one alone." Keep every other partition on this setting so your other operating system and personal files stay untouched.
+   - Tip: assign **Boot (ESP)** first, then **Root (System)**. You never have to type in mount points — the installer assigns them for you.
+4. **Add partitions (optional).** If the disk has free space and you want a new partition, drag the slider (or type a size) to pick how big it should be, tick **Use remaining** to fill all the free space, then press **+ Add**. A brand-new partition starts as *Preserve* — set its Type like any other.
+5. **Delete partitions (optional).** If there's a partition you no longer need, use the delete (🗑) button on its row. This only stages the removal — it takes effect at install time, so you can cancel beforehand with no changes.
+6. **Finish.** Once exactly one **ESP** and one **System** are marked, **Next** becomes available. The installer installs onto those two, and leaves every *Preserve* partition exactly as it found it.
+
+> If you're not sure — or this disk holds nothing you need to keep — just stay in **Automatic** mode. It's faster and safer for a fresh install.
+
+## Getting started with building
+
+1. Clone this repo and the [Aelum](https://gitlab.com/aelum/live-iso) live-ISO repo (side by side, e.g. `~/Projects/Aelum-Installer` and `~/Projects/Aelum`).
 2. Build the installer (outputs `build/bin/aelum-installer` and `build/bin/aelum-installer-cli`):
 
    ```bash
