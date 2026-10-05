@@ -24,7 +24,7 @@ var DesktopPackages = []string{
 	"cava",
 	"dgop",
 	"matugen",
-	"qt6ct-kde",
+	"qtengine",
 	"nautilus",
 	"firefox",
 	"mpv",
