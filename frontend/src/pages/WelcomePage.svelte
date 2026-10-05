@@ -173,7 +173,15 @@
 		border-radius: var(--radius-xl);
 		background: transparent;
 		font-size: var(--font-size-base);
-		font-family: inherit;
+		/* Pin the compact Arabic font so WebKit's per-glyph fallback can't
+		   select a taller Noto variant (Naskh/Nastaliq) on the ISO, which was
+		   making RTL rows wrap to two lines. Latin country names render the
+		   same since Noto variants share one Latin core. */
+		font-family: "Noto Sans Arabic", "Noto Sans", "Nunito", sans-serif;
+		line-height: 1.3;
+		min-height: 2.35em;
+		display: flex;
+		align-items: center;
 		color: var(--color-text);
 		text-align: left;
 		cursor: pointer;
