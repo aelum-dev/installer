@@ -11,7 +11,7 @@ func TestDesktopPackages_NotEmpty(t *testing.T) {
 }
 
 func TestDesktopPackages_ContainsEssential(t *testing.T) {
-	expected := []string{"hyprland", "greetd", "alacritty", "firefox"}
+	expected := []string{"hyprland", "greetd", "kitty", "firefox"}
 	for _, pkg := range expected {
 		found := false
 		for _, p := range DesktopPackages {

@@ -33,6 +33,7 @@ var DesktopPackages = []string{
 
 	// Terminal & UI
 	"kitty",
+	"nautilus-open-any-terminal",
 	"adwaita-cursors",
 	"webkit2gtk-4.1",
 	"adw-gtk-theme",

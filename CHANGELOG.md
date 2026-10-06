@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **nautilus-open-any-terminal context menu extension** — added `nautilus-open-any-terminal` (AUR) to the desktop packages list, which installs a Nautilus extension that adds a context-menu entry for opening the default terminal emulator in the current directory. The extension supports 30+ terminal emulators; the default is configured to `kitty` via a system-wide dconf setting (`/etc/dconf/db/local.d/02-nautilus-terminal`). The setting is baked into the live ISO's compiled dconf database and copied to the installed system during installation.
+
 ### Changed
 - **Updated dark and light desktop wallpapers** — replaced the shipped `wallpaper-dark.png` / `wallpaper-light.png` in `live-iso/airootfs/usr/share/DankMaterialShell/` with new JPEG sources (`wallpaper-dark.jpg`, `wallpaper-light.jpg`, 3840×2160). Kept as JPEG to keep the ISO lean. Updated all path references accordingly: the skel `session.json` (`wallpaperPath`, `wallpaperPathLight`, `wallpaperPathDark`), the installer `WallpaperSourceDark`/`WallpaperSourceLight` constants in `backend/shared/config.go`, and the auto-generated `frontend/src/lib/constants.ts` (regenerated via `gen-ts-constants.go`).
 

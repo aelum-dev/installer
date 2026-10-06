@@ -27,6 +27,7 @@ var ISOCopyJobs = []CopyJob{
 	{Source: "/etc/skel/.", Dest: "/mnt/etc/skel/", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}},
+	{Source: "/etc/dconf/db/local.d/02-nautilus-terminal", Dest: "/mnt/etc/dconf/db/local.d/02-nautilus-terminal", Flags: []string{"-a"}}, // nautilus-open-any-terminal: default terminal=kitty
 	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}},
 	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
 	{Source: "/usr/lib/firefox/distribution/policies.json", Dest: "/mnt/usr/lib/firefox/distribution/policies.json", Flags: []string{}},
