@@ -50,6 +50,7 @@ var DesktopPackages = []string{
 	"noto-fonts-cjk",
 	"noto-fonts-emoji",
 	"terminus-font",
+	"ttf-jetbrains-mono",
 	"ttf-jetbrains-mono-nerd",
 
 	// GPU drivers
