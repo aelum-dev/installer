@@ -69,7 +69,14 @@
     --color-white-glow-strong: rgba(255, 247, 246, 0.20);
 
     /* ═══ Typography ═══ */
-    --font-family: "Nunito", "Noto Sans", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    /* Base text stack. Script fonts (Arabic/Hebrew) are listed on purpose so RTL
+       glyphs resolve per-glyph to the compact Noto variants instead of falling
+       back through fontconfig to a taller Naskh/Nastaliq variant — which made
+       Arabic render ~2x taller than Latin and balloon rows to two lines. Noto
+       shares one Latin core, so country names and other scripts render identically.
+       Applied to the base stack (not per-page) so every page — not just the
+       welcome language list — gets consistent Arabic rendering. */
+    --font-family: "Nunito", "Noto Sans", "Noto Sans Arabic", "Noto Sans Hebrew", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
         "Helvetica Neue", sans-serif;
     --font-size-xs: 0.75rem;
     --font-size-xs-lg: 0.78rem;
