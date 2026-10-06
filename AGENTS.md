@@ -155,7 +155,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, line-count progress, `install/installbase/`)
-4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
+4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
@@ -214,7 +214,7 @@ All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales l
 - Installation log at `~/.local/share/aelum-installer/installation.log` is not encrypted.
 
 ## Desktop Environment
-Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Alacritty + Firefox + PipeWire. Boot splash: Plymouth BGRT.
+Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Plymouth BGRT.
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, imv, gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd.
 

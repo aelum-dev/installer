@@ -109,7 +109,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 128MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
 | 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, ESP to `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
-| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, alacritty, firefox, pipewire, etc. |
+| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
 | 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → bootloader → system config → greetd → Plymouth → zram → services |
 
@@ -343,7 +343,7 @@ The installed system includes:
 - **Window Manager**: Hyprland (Wayland compositor)
 - **Shell**: DankMaterialShell (based on Quickshell) + dms-shell-hyprland
 - **Login Manager**: greetd + DMS greeter
-- **Terminal**: Alacritty
+- **Terminal**: Kitty
 - **File Manager**: Nautilus
 - **Browser**: Firefox
 - **Audio**: PipeWire + WirePlumber

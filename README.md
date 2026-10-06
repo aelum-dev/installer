@@ -11,7 +11,7 @@ Just boot the ISO and run the installer — a few clicks in the GUI, no terminal
 
 - **6 step wizard** — pick a language, create your user, choose a disk, confirm, and watch it install.
 - **ext4 or btrfs** — btrfs comes with a sensible automatic subvolume layout.
-- **Configured desktop** — Hyprland + DankMaterialShell, greetd login, Alacritty terminal, Firefox, and PipeWire audio, all set up for you.
+- **Configured desktop** — Hyprland + DankMaterialShell, greetd login, Kitty terminal, Firefox, and PipeWire audio, all set up for you.
 - **Fast, quiet boot** — Plymouth boot splash
 
 ## Language selection
