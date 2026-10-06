@@ -15,7 +15,7 @@ var DesktopPackages = []string{
 	// Login manager
 	"greetd",
 	"greetd-agreety",
-	"greetd-dms-greeter-git",
+	"greetd-dms-greeter-bin",
 	"uwsm",
 
 	// Desktop environment
@@ -32,11 +32,11 @@ var DesktopPackages = []string{
 	"gnome-text-editor",
 
 	// Terminal & UI
-	"alacritty",
+	"kitty",
 	"adwaita-cursors",
 	"webkit2gtk-4.1",
 	"adw-gtk-theme",
-	"fluent-icon-theme-git",
+	"fluent-icon-theme",
 	"breeze",
 
 	// Utilities
