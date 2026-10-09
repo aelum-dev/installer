@@ -28,7 +28,7 @@ export const PAGES_NO_NAV = new Set<PageID>();
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
 
 // Filesystem type options for root partition.
-export const FILESYSTEMS = ['ext4', 'btrfs'] as const;
+export const FILESYSTEMS = ['btrfs', 'ext4'] as const;
 export type FileSystem = (typeof FILESYSTEMS)[number];
 
 // Manual-partitioning types (dualboot-safe). Mirrors backend shared.PartitionType.

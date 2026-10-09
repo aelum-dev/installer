@@ -124,7 +124,7 @@
 	function deselectDisk(): void {
 		installState.diskId = "";
 		installState.disk = null;
-		installState.fileSystem = "ext4";
+		installState.fileSystem = "btrfs";
 		installState.manualLayout = null;
 		installState.pendingAddMB = 0;
 		installState.manualMode = false;

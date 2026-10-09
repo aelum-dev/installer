@@ -118,7 +118,7 @@ const MinSystemPartitionBytes = MinDiskSizeBytes
 // --- Filesystem types --------------------------------------------------------
 
 // DefaultFileSystem is the default root filesystem when none is specified.
-const DefaultFileSystem = "ext4"
+const DefaultFileSystem = "btrfs"
 
 // Supported root filesystem types.
 const (

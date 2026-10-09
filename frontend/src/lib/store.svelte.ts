@@ -22,7 +22,7 @@ export const installState = $state({
 	// Disk selection
 	diskId: '',
 	disk: null as DiskInfo | null,
-	fileSystem: 'ext4' as FileSystem | '',
+	fileSystem: 'btrfs' as FileSystem | '',
 
 	// Manual (dualboot-safe) partitioning mode
 	manualMode: false as boolean,
