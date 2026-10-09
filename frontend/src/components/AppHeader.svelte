@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { PAGE_NAMES } from '$lib/types';
-	import { getIsDryRun } from '$lib/store.svelte';
+	import { PAGE_IDS, PAGE_NAMES } from '$lib/types';
+	import { getIsDryRun, navState } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import logoUrl from '../assets/images/logo.svg';
 	import ThemeToggle from '$components/ThemeToggle.svelte';
@@ -17,7 +17,12 @@
 		{#if getIsDryRun()}
 			<span class="dry-run-badge">{t('app.dryRun')}</span>
 		{/if}
-		<ThemeToggle />
+		{#if
+			navState.currentPage !== PAGE_IDS.INSTALLATION &&
+			navState.currentPage !== PAGE_IDS.FINISH
+		}
+			<ThemeToggle />
+		{/if}
 	</span>
 </header>
 
