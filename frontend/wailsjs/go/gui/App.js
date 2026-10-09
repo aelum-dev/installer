@@ -106,6 +106,10 @@ export function SetUILocale(arg1) {
   return window['go']['gui']['App']['SetUILocale'](arg1);
 }
 
+export function SetWallpaper(arg1) {
+  return window['go']['gui']['App']['SetWallpaper'](arg1);
+}
+
 export function StartInstallation() {
   return window['go']['gui']['App']['StartInstallation']();
 }

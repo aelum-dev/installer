@@ -329,11 +329,24 @@ const WeightVerifySystem = 1
 
 // --- Wallpapers -------------------------------------------------------------
 
-// WallpaperSourceDark is the dark wallpaper file path on the live ISO.
+// WallpaperSourceDark is the dark wallpaper file path shipped to the installed
+// system (used by DMS after install).
 const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.jpg"
 
-// WallpaperSourceLight is the light wallpaper file path on the live ISO.
+// WallpaperSourceLight is the light wallpaper file path shipped to the installed
+// system (used by DMS after install).
 const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.jpg"
+
+// --- Live-ISO backgrounds (hyprpaper) ---------------------------------------
+// These are the live-ISO-only backgrounds the installer toggle switches between
+// at runtime. They are NOT copied to the installed system — that uses the DMS
+// wallpapers above.
+
+// LiveIsoBgLight is the light live-ISO background.
+const LiveIsoBgLight = "/usr/share/DankMaterialShell/bg-light.png"
+
+// LiveIsoBgDark is the dark live-ISO background.
+const LiveIsoBgDark = "/usr/share/DankMaterialShell/bg-dark.png"
 
 // --- Chroot ------------------------------------------------------------------
 

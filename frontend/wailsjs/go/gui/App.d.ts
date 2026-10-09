@@ -56,6 +56,8 @@ export function SetStartPage(arg1:gui.PageID):Promise<void>;
 
 export function SetUILocale(arg1:string):Promise<void>;
 
+export function SetWallpaper(arg1:string):Promise<void>;
+
 export function StartInstallation():Promise<void>;
 
 export function ValidateDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;

@@ -1,6 +1,10 @@
 package gui
 
 import (
+	"fmt"
+	"os/exec"
+	"strings"
+
 	"aelum-installer/backend/install/partition"
 	"aelum-installer/backend/shared"
 )
@@ -59,4 +63,31 @@ func (a *App) ValidateManualLayout(layout shared.ManualLayout) error {
 func (a *App) SaveManualLayout(layout shared.ManualLayout) {
 	a.manualLayout = layout
 	a.manualMode = true
+}
+
+// SetWallpaper switches the running hyprpaper wallpaper to match the given
+// theme ('light' or 'dark'). It calls hyprctl IPC directly — no wrapper script —
+// so it works with current hyprland 0.56+, where the old preload/reload/unload
+// requests have been removed.
+//
+// An empty monitor target is used so the wallpaper applies to every output
+// (the same fallback the live ISO's hyprpaper.conf relies on).
+//
+// It must run as the Hyprland session user (the GUI already does), never as
+// root: hyprctl talks to the user's compositor over its wayland socket.
+func (a *App) SetWallpaper(theme string) error {
+	path := shared.LiveIsoBgLight
+	if theme == "dark" {
+		path = shared.LiveIsoBgDark
+	}
+
+	// hyprctl hyprpaper wallpaper '<monitor>,<path>,<fit_mode>' — monitor may be
+	// empty to target all outputs; fit_mode optional (cover here).
+	arg := fmt.Sprintf(",%s,cover", path)
+	cmd := exec.Command("hyprctl", "hyprpaper", "wallpaper", arg)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to switch wallpaper to %s mode: %w: %s", theme, err, strings.TrimSpace(string(output)))
+	}
+	return nil
 }

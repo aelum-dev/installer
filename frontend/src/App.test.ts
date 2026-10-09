@@ -6,6 +6,7 @@ import { PAGE_IDS } from '$lib/types';
 // Mock Wails Go bindings
 vi.mock('@wails/go/gui/App.js', () => ({
 	SetCurrentPage: vi.fn(() => Promise.resolve()),
+	SetWallpaper: vi.fn(() => Promise.resolve()),
 	ValidateUserAccount: vi.fn(() => Promise.resolve()),
 	SaveUserAccount: vi.fn(() => Promise.resolve()),
 	ValidateDiskSelection: vi.fn(() => Promise.resolve()),
