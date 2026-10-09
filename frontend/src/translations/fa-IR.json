@@ -2,6 +2,8 @@
   "action.retry": "تلاش مجدد",
   "app.brand": "آلوم",
   "app.dryRun": "اجرای آزمایشی",
+  "app.themeToDark": "رفتن به حالت تاریک",
+  "app.themeToLight": "رفتن به حالت روشن",
   "dialog.confirm.cancel": "لغو",
   "dialog.confirm.message": "آیا مطمئن هستید که می‌خواهید Aelum را روی <strong>{model}</strong> نصب کنید؟ تمام داده‌های این دیسک برای همیشه پاک خواهد شد.",
   "dialog.confirm.messageManual": "آیا مطمئن هستید که می‌خواهید Aelum را روی <strong>{model}</strong> نصب کنید؟ فقط پارتیشن‌های Boot و Root انتخاب شده تغییر می‌کنند — پارتیشن‌ها و داده‌های دیگر شما بدون تغییر باقی می‌مانند.",

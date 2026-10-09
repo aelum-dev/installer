@@ -2,6 +2,8 @@
   "action.retry": "Yeniden dene",
   "app.brand": "Aelum",
   "app.dryRun": "Deneme Çalıştırması",
+  "app.themeToDark": "Karanlık moduna geç",
+  "app.themeToLight": "Açık moduna geç",
   "dialog.confirm.cancel": "İptal",
   "dialog.confirm.message": "<strong>{model}</strong> üzerine Aelum yüklemek istediğinizden emin misiniz? Bu diskteki tüm veriler kalıcı olarak silinecektir.",
   "dialog.confirm.messageManual": "<strong>{model}</strong> üzerine Aelum yüklemek istediğinizden emin misiniz? Sadece seçilen Boot ve Root bölümleri değiştirilir — diğer bölümleriniz ve verileriniz dokunulmaz bırakılır.",

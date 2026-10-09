@@ -2,6 +2,8 @@
   "action.retry": "Ponów próbę",
   "app.brand": "Aelum",
   "app.dryRun": "Uruchomienie próbne",
+  "app.themeToDark": "Przełącz na tryb ciemny",
+  "app.themeToLight": "Przełącz na tryb jasny",
   "dialog.confirm.cancel": "Anuluj",
   "dialog.confirm.message": "Czy na pewno chcesz zainstalować Aelum na <strong>{model}</strong>? Wszystkie dane na tym dysku zostaną trwale usunięte.",
   "dialog.confirm.messageManual": "Czy na pewno chcesz zainstalować Aelum na <strong>{model}</strong>? Tylko wybrane partycje Boot i Root zostaną zmienione — Twoje inne partycje i dane pozostaną nienaruszone.",

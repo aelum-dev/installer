@@ -2,6 +2,8 @@
   "action.retry": "Reprovi",
   "app.brand": "Aelum",
   "app.dryRun": "PROVA KURADO",
+  "app.themeToDark": "Ŝalti al malhela reĝimo",
+  "app.themeToLight": "Šalti al hela reĝimo",
   "dialog.confirm.cancel": "Nuligi",
   "dialog.confirm.message": "Ĉu vi certas, ke vi volas instali Aelum sur <strong>{model}</strong>? Ĉiuj datumoj sur ĉi tiu disko estos permanente forigitaj.",
   "dialog.confirm.messageManual": "Ĉu vi certas, ke vi volas instali Aelum sur <strong>{model}</strong>? Nur viaj elektitaj Boot kaj Root particioj estas tuŝitaj — viaj aliaj particioj kaj datumoj restas senŝanĝaj.",

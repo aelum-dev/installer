@@ -2,6 +2,8 @@
   "action.retry": "Erneut versuchen",
   "app.brand": "Aelum",
   "app.dryRun": "TROCKENLAUF",
+  "app.themeToDark": "Zu dunklem Design wechseln",
+  "app.themeToLight": "Zu hellem Design wechseln",
   "dialog.confirm.cancel": "Abbrechen",
   "dialog.confirm.message": "Sind Sie sicher, dass Sie Aelum auf <strong>{model}</strong> installieren möchten? Alle Daten auf dieser Festplatte werden unwiderruflich gelöscht.",
   "dialog.confirm.messageManual": "Sind Sie sicher, dass Sie Aelum auf <strong>{model}</strong> installieren möchten? Nur die ausgewählten Boot- und Root-Partitionen werden verändert — Ihre anderen Partitionen und Daten bleiben unberührt.",

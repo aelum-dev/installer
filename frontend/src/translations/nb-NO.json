@@ -2,6 +2,8 @@
   "action.retry": "Prøv igjen",
   "app.brand": "Aelum",
   "app.dryRun": "PRØVEKJØRING",
+  "app.themeToDark": "Byt til mørk modus",
+  "app.themeToLight": "Byt til lys modus",
   "dialog.confirm.cancel": "Avbryt",
   "dialog.confirm.message": "Er du sikker på at du vil installere Aelum på <strong>{model}</strong>? All data på denne disken vil bli slettet permanent.",
   "dialog.confirm.messageManual": "Er du sikker på at du vil installere Aelum på <strong>{model}</strong>? Bare de valgte Boot- og Root-partisjonene blir endret — andre partisjoner og data forblir urørte.",

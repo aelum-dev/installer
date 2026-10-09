@@ -2,6 +2,8 @@
   "action.retry": "Coba lagi",
   "app.brand": "Aelum",
   "app.dryRun": "Mode Uji",
+  "app.themeToDark": "Ganti ke mode gelap",
+  "app.themeToLight": "Ganti ke mode terang",
   "dialog.confirm.cancel": "Batal",
   "dialog.confirm.message": "Apakah Anda yakin ingin menginstal Aelum di <strong>{model}</strong>? Semua data di disk ini akan dihapus secara permanen.",
   "dialog.confirm.messageManual": "Apakah Anda yakin ingin menginstal Aelum di <strong>{model}</strong>? Hanya partisi Boot dan Root yang dipilih yang diubah — partisi dan data Anda lainnya dibiarkan tidak tersentuh.",

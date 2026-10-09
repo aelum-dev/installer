@@ -2,6 +2,8 @@
   "action.retry": "Réessayer",
   "app.brand": "Aelum",
   "app.dryRun": "Exécution de test",
+  "app.themeToDark": "Basculer en mode sombre",
+  "app.themeToLight": "Basculer en mode clair",
   "dialog.confirm.cancel": "Annuler",
   "dialog.confirm.message": "Êtes-vous sûr de vouloir installer Aelum sur <strong>{model}</strong> ? Toutes les données de ce disque seront définitivement effacées.",
   "dialog.confirm.messageManual": "Êtes-vous sûr de vouloir installer Aelum sur <strong>{model}</strong> ? Seules les partitions Boot et Root sélectionnées sont modifiées — vos autres partitions et données restent intactes.",

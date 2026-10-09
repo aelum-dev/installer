@@ -2,6 +2,8 @@
   "action.retry": "Opnieuw proberen",
   "app.brand": "Aelum",
   "app.dryRun": "Proefdraai",
+  "app.themeToDark": "Omschaken naar donkere modus",
+  "app.themeToLight": "Omschaken naar lichte modus",
   "dialog.confirm.cancel": "Annuleren",
   "dialog.confirm.message": "Weet je zeker dat je Aelum wilt installeren op <strong>{model}</strong>? Alle gegevens op deze schijf worden permanent gewist.",
   "dialog.confirm.messageManual": "Weet je zeker dat je Aelum wilt installeren op <strong>{model}</strong>? Alleen de gekozen Boot- en Root-partities worden gewijzigd — je andere partities en gegevens blijven onaangetast.",

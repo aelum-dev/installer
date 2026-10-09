@@ -2,6 +2,8 @@
   "action.retry": "Yritä uudelleen",
   "app.brand": "Aelum",
   "app.dryRun": "Testiajo",
+  "app.themeToDark": "Vaihda tummaan teemaan",
+  "app.themeToLight": "Vaihda vaaleaan teemaan",
   "dialog.confirm.cancel": "Peruuta",
   "dialog.confirm.message": "Haluatko varmasti asentaa Aelum:n levyyn <strong>{model}</strong>? Kaikki tiedot tällä levyllä poistetaan pysyvästi.",
   "dialog.confirm.messageManual": "Haluatko varmasti asentaa Aelum:n levyyn <strong>{model}</strong>? Vain valitut Boot- ja Root-osiot muutetaan — muut osiosi ja tietosi jäävät koskemattomiksi.",

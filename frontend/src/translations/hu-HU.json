@@ -2,6 +2,8 @@
   "action.retry": "Újrapróbálkozás",
   "app.brand": "Aelum",
   "app.dryRun": "SZIMULÁCIÓS FUTTATÁS",
+  "app.themeToDark": "Váltás sötét módra",
+  "app.themeToLight": "Váltás világos módra",
   "dialog.confirm.cancel": "Mégse",
   "dialog.confirm.message": "Biztosan telepíteni szeretné az Aelum-t a(z) <strong>{model}</strong> lemezre? Az összes adat a lemezen véglegesen törlődik.",
   "dialog.confirm.messageManual": "Biztosan telepíteni szeretné az Aelum-t a(z) <strong>{model}</strong> lemezre? Csak a kiválasztott Boot és Root partíciók változnak — a többi partíció és adat érintetlen marad.",

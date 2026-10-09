@@ -2,6 +2,8 @@
   "action.retry": "再試行",
   "app.brand": "Aelum",
   "app.dryRun": "テスト実行",
+  "app.themeToDark": "ダークモードに切り替え",
+  "app.themeToLight": "ライトモードに切り替え",
   "dialog.confirm.cancel": "キャンセル",
   "dialog.confirm.message": "<strong>{model}</strong> に Aelum をインストールしてもよろしいですか？このディスク上のすべてのデータが永久に削除されます。",
   "dialog.confirm.messageManual": "<strong>{model}</strong> に Aelum をインストールしてもよろしいですか？選択したBootとRootパーティションのみが変更されます—他のパーティションとデータはそのまま保持されます。",

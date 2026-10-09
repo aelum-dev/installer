@@ -2,6 +2,8 @@
   "action.retry": "Thử lại",
   "app.brand": "Aelum",
   "app.dryRun": "CHẠY THỬ",
+  "app.themeToDark": "Chuyển sang chế độ tối",
+  "app.themeToLight": "Chuyển sang chế độ sáng",
   "dialog.confirm.cancel": "Hủy",
   "dialog.confirm.message": "Bạn có chắc chắn muốn cài đặt Aelum trên <strong>{model}</strong> không? Tất cả dữ liệu trên đĩa này sẽ bị xóa vĩnh viễn.",
   "dialog.confirm.messageManual": "Bạn có chắc chắn muốn cài đặt Aelum trên <strong>{model}</strong> không? Chỉ các phân vùng Boot và Root đã chọn bị thay đổi — các phân vùng và dữ liệu khác của bạn được giữ nguyên.",

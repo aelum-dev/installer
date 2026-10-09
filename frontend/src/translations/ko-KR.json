@@ -2,6 +2,8 @@
   "action.retry": "다시 시도",
   "app.brand": "Aelum",
   "app.dryRun": "테스트 실행",
+  "app.themeToDark": "다크 모드로 전환",
+  "app.themeToLight": "라이트 모드로 전환",
   "dialog.confirm.cancel": "취소",
   "dialog.confirm.message": "<strong>{model}</strong>에 Aelum를 설치하시겠습니까? 이 디스크의 모든 데이터가 영구적으로 삭제됩니다.",
   "dialog.confirm.messageManual": "<strong>{model}</strong>에 Aelum를 설치하시겠습니까? 선택한 부트 및 루트 파티션만 변경됩니다 — 다른 파티션과 데이터는 그대로 유지됩니다.",

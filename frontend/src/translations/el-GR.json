@@ -2,6 +2,8 @@
   "action.retry": "Επανάληψη",
   "app.brand": "Aelum",
   "app.dryRun": "ΔΟΚΙΜΑΣΤΙΚΗ ΕΚΤΕΛΕΣΗ",
+  "app.themeToDark": "Εναλλαγή σε σκούρο περιβάλλον",
+  "app.themeToLight": "Εναλλαγή σε ανοιχτό περιβάλλον",
   "dialog.confirm.cancel": "Ακύρωση",
   "dialog.confirm.message": "Είστε σίγουροι ότι θέλετε να εγκαταστήσετε το Aelum στο <strong>{model}</strong>; Όλα τα δεδομένα σε αυτόν τον δίσκο θα διαγραφούν οριστικά.",
   "dialog.confirm.messageManual": "Είστε σίγουροι ότι θέλετε να εγκαταστήσετε το Aelum στο <strong>{model}</strong>; Μόνο οι επιλεγμένες Boot και Root διαμερίσματα αγγίζονται — τα υπόλοιπα διαμερίσματα και δεδομένα παραμένουν αμετάβλητα.",

@@ -2,6 +2,8 @@
   "action.retry": "Torna-ho a provar",
   "app.brand": "Aelum",
   "app.dryRun": "Assaig",
+  "app.themeToDark": "Canviar al mode fosc",
+  "app.themeToLight": "Canviar al mode clar",
   "dialog.confirm.cancel": "Cancel·la",
   "dialog.confirm.message": "Esteu segur que voleu instal·lar Aelum a <strong>{model}</strong>? Totes les dades d'aquest disc s'esborraran permanentment.",
   "dialog.confirm.messageManual": "Estàs segur que vols instal·lar Aelum a <strong>{model}</strong>? Només es toquen les particions Boot i Root seleccionades — les teves altres particions i dades es deixen intactes.",

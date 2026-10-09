@@ -2,6 +2,8 @@
   "action.retry": "إعادة المحاولة",
   "app.brand": "أيلوم",
   "app.dryRun": "تشغيل تجريبي",
+  "app.themeToDark": "التبديل إلى الوضع الداكن",
+  "app.themeToLight": "التبديل إلى الوضع الفاتح",
   "dialog.confirm.cancel": "إلغاء",
   "dialog.confirm.message": "هل أنت متأكد أنك تريد تثبيت Aelum على <strong>{model}</strong>؟ سيتم مسح جميع البيانات على هذا القرص نهائيًا.",
   "dialog.confirm.messageManual": "هل أنت متأكد أنك تريد تثبيت Aelum على <strong>{model}</strong>؟ لم يتم لمس سوى تقسيمات التشغيل والجذر المختارة — يتم ترك تقسيماتك وبياناتك الأخرى دون تغيير.",

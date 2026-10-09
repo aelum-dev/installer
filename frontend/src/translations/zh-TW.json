@@ -2,6 +2,8 @@
   "action.retry": "重試",
   "app.brand": "Aelum",
   "app.dryRun": "測試模式",
+  "app.themeToDark": "切換至深色模式",
+  "app.themeToLight": "切換至淺色模式",
   "dialog.confirm.cancel": "取消",
   "dialog.confirm.message": "您確定要在 <strong>{model}</strong> 上安裝 Aelum 嗎？此磁碟上的所有資料將被永久刪除。",
   "dialog.confirm.messageManual": "您確定要在 <strong>{model}</strong> 上安裝 Aelum 嗎？僅修改所選的 Boot 和 Root 分割區——您的其他分割區和資料保持不變。",

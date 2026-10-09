@@ -2,6 +2,8 @@
   "action.retry": "Повторити",
   "app.brand": "Aelum",
   "app.dryRun": "Пробний запуск",
+  "app.themeToDark": "Перемкнутися на темну тему",
+  "app.themeToLight": "Перемкнутися на світлу тему",
   "dialog.confirm.cancel": "Скасувати",
   "dialog.confirm.message": "Ви впевнені, що хочете встановити Aelum на <strong>{model}</strong>? Усі дані на цьому диску буде безповоротно видалено.",
   "dialog.confirm.messageManual": "Ви впевнені, що хочете встановити Aelum на <strong>{model}</strong>? Змінюються лише обрані розділи Boot та Root — ваші інші розділи та дані залишаються без змін.",

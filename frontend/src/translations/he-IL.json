@@ -2,6 +2,8 @@
   "action.retry": "נסה שוב",
   "app.brand": "איליום",
   "app.dryRun": "הפעלה יבשה",
+  "app.themeToDark": "החלפה למצב כהה",
+  "app.themeToLight": "החלפה למצב בהיר",
   "dialog.confirm.cancel": "ביטול",
   "dialog.confirm.message": "האם אתה בטוח שברצונך להתקין את Aelum על <strong>{model}</strong>? כל הנתונים בדיסק זה יימחקו לצמיתות.",
   "dialog.confirm.messageManual": "האם אתה בטוח שברצונך להתקין את Aelum על <strong>{model}</strong>? רק המחיצות שנבחרו ל-Boot ול-Root משתנות — המחיצות והנתונים האחרים שלך נשארים ללא שינוי.",
