@@ -3,6 +3,7 @@
 	import { getIsDryRun } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import logoUrl from '../assets/images/logo.svg';
+	import ThemeToggle from '$components/ThemeToggle.svelte';
 
 	let { currentPage }: { currentPage: number } = $props();
 </script>
@@ -12,9 +13,12 @@
 		<img class="brand-logo" src={logoUrl} alt="Aelum logo" />
 		<span class="brand-name">{t('app.brand')}</span>
 	</span>
-	{#if getIsDryRun()}
-		<span class="dry-run-badge">{t('app.dryRun')}</span>
-	{/if}
+	<span class="header-actions">
+		{#if getIsDryRun()}
+			<span class="dry-run-badge">{t('app.dryRun')}</span>
+		{/if}
+		<ThemeToggle />
+	</span>
 </header>
 
 <style>
@@ -48,6 +52,12 @@
 		text-transform: uppercase;
 		letter-spacing: 1px;
 		font-family: "Nunito", var(--font-family);
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-sm);
 	}
 
 	.dry-run-badge {

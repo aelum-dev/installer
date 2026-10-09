@@ -122,6 +122,89 @@
 
     /* ═══ Padding tokens ── */
     --pad-btn: 10px 24px;
+
+    /* ═══ Theme transition timing ═══ */
+    /* Intentionally unused: theme switching is instant (see note in style.css).
+       Kept only in case a surface-only morph is added later without re-introducing
+       a text-color fade, which reads as a janky delay on a desktop app. */
+    --theme-duration: 300ms;
+    --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark palette — same mauve / rose / tan accents on inverted dark surfaces.
+   Overrides every --color-* token above so the whole wizard (scoped component
+   styles included) flips to dark when <html data-theme="dark">. */
+[data-theme="dark"] {
+    /* —— Surface & Background —— */
+    --color-surface: #1e1720;
+    --color-bg: #151114;
+    --color-bg-white: #1e1720;
+    --color-bg-light: #1a1518;
+    --color-bg-hover: rgba(255, 255, 255, 0.03);
+    --color-bg-neutral-hover: #241d26;
+
+    /* —— Text —— */
+    --color-text: #ece2e3;
+    --color-text-muted: #a59496;
+    --color-text-light: #c8b6b8;
+
+    /* —— Primary —— */
+    --color-primary: #cfa3ae;
+    --color-primary-hover: #b58490;
+    --color-on-primary: #211a1e;
+    --color-primary-light: rgba(207, 163, 174, 0.12);
+    --color-primary-lighter: rgba(207, 163, 174, 0.06);
+    --color-primary-shadow: rgba(207, 163, 174, 0.25);
+    --color-progress: #cfa3ae;
+
+    /* —— Secondary —— */
+    --color-secondary: #b48ea4;
+    --color-secondary-hover: #9c748c;
+
+    /* —— Tertiary —— */
+    --color-tertiary: #c3ab82;
+    --color-tertiary-hover: #a8936f;
+
+    /* —— Focus —— */
+    --color-focus: #cfa3ae;
+    --color-focus-strong: #e0b7bf;
+
+    /* —— Error —— */
+    --color-danger: #e08585;
+    --color-danger-hover: #8a4a4a;
+    --color-danger-shadow: rgba(224, 133, 133, 0.25);
+    --color-danger-bg: rgba(224, 133, 133, 0.12);
+    --color-danger-text: #1a1514;
+    --color-danger-focus: rgba(224, 133, 133, 0.30);
+    --color-danger-error-bg: rgba(224, 133, 133, 0.10);
+    --color-danger-error-hover: rgba(224, 133, 133, 0.16);
+
+    /* —— Warning —— */
+    --color-warning: #c3ab82;
+    --color-warning-light: rgba(195, 171, 130, 0.12);
+    --color-warning-bg: rgba(195, 171, 130, 0.10);
+    --color-warning-text: #c3ab82;
+
+    /* —— Info —— */
+    --color-info-bg: rgba(195, 171, 130, 0.12);
+    --color-mauve-light: rgba(195, 171, 130, 0.12);
+
+    /* —— Borders —— */
+    --color-border: #3a2d3a;
+    --color-border-light: #2c2330;
+    --color-border-dark: #4a3d4a;
+    --color-border-subtle: rgba(255, 255, 255, 0.03);
+
+    /* —— Overlay —— */
+    --color-overlay: rgba(0, 0, 0, 0.65);
+    --color-overlay-shadow: rgba(0, 0, 0, 0.40);
+    --color-white-glow: rgba(255, 247, 246, 0.08);
+    --color-white-glow-strong: rgba(255, 247, 246, 0.14);
+
+    /* —— Shadows —— */
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-primary: 0 4px 12px rgba(207, 163, 174, 0.20);
 }
 
 html, body {
@@ -139,6 +222,17 @@ body {
     color: var(--color-text);
     font-family: var(--font-family);
 }
+
+/* Theme switching is INSTANT on purpose.
+
+   A global `color` transition (the obvious way to "smooth" a light/dark switch)
+   makes every text element fade over --theme-duration whenever the active scheme
+   changes. On a desktop app with no full-screen morph — unlike the website — that
+   fade reads as a janky "color with a delay": big headings (which declare no own
+   transition) visibly lag while rows that set their own `transition` snap.
+
+   So we do not transition text color. Elements that want a smooth surface/hover
+   effect keep their own scoped `transition` (e.g. `.lang-item` backgrounds). */
 
 @font-face {
     font-family: "Nunito";

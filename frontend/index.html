@@ -4,6 +4,23 @@
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>aelum-installer</title>
+    <!-- Apply the persisted / system-derived theme before first paint so the
+         installer never flashes the wrong scheme. A classic inline script runs
+         during parsing, before the deferred module (main.ts) below. -->
+    <script type="text/javascript">
+      (function () {
+        var ROOT = document.documentElement;
+        var KEY = 'aelum-theme';
+        var theme;
+        try {
+          theme = window.localStorage.getItem(KEY);
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        ROOT.setAttribute('data-theme', theme);
+      })();
+    </script>
 </head>
 <body>
 <div id="app"></div>
