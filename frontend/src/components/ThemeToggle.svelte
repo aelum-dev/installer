@@ -48,8 +48,8 @@
 		height: 36px;
 		padding: 0;
 		border-radius: var(--radius-pill);
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
+		border: 1px solid var(--color-border-subtle);
+		background: var(--color-bg-hover);
 		color: var(--color-text-muted);
 		cursor: pointer;
 		transition:
@@ -61,7 +61,7 @@
 
 	.theme-toggle:hover {
 		transform: translateY(-2px);
-		background: var(--color-bg-neutral-hover);
+		background: var(--color-surface);
 		color: var(--color-text);
 	}
 
