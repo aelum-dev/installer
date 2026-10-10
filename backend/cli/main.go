@@ -95,7 +95,7 @@ func run(args []string) int {
 	dryRun := fs.Bool("dry-run", false, "Simulate installation without making changes")
 	rollbackFlag := fs.String("rollback", "", "Disk to roll back (clean up partial install and wipe partitions)")
 	cleanupFlag := fs.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
-	fileSystemFlag := fs.String("filesystem", "ext4", "Root filesystem type: ext4 or btrfs")
+	fileSystemFlag := fs.String("filesystem", shared.DefaultFileSystem, "Root filesystem type: ext4 or btrfs")
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
