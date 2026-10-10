@@ -28,6 +28,7 @@ var ISOCopyJobs = []CopyJob{
 	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/db/local.d/02-nautilus-terminal", Dest: "/mnt/etc/dconf/db/local.d/02-nautilus-terminal", Flags: []string{"-a"}}, // nautilus-open-any-terminal: default terminal=kitty
+	{Source: "/etc/os-release", Dest: "/mnt/etc/os-release", Flags: []string{}},                                                           // Aelum branding, overwrites the archlinux-release default
 	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}},
 	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
 	{Source: "/usr/lib/firefox/distribution/policies.json", Dest: "/mnt/usr/lib/firefox/distribution/policies.json", Flags: []string{}},
