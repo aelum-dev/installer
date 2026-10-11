@@ -84,26 +84,30 @@
 }
 
 .top-bar-controls {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-md);
-}
-
-.fs-bar {
-	display: flex;
+	/* Two-column grid: labels in column 1 (left-aligned), controls in column 2.
+       Grid synchronises the column widths across rows, so every label shares one
+       left edge and every pill/toggle shares one vertical edge. */
+	display: grid;
+	grid-template-columns: max-content 1fr;
 	align-items: center;
-	justify-content: space-between;
-	gap: var(--gap-sm);
-	padding: 0 2px;
+	gap: var(--spacing-md) var(--spacing-lg);
 }
 
-.fs-label {
+/* Automatic mode has no disk title, so the controls span the full bar width.
+   In manual mode the title takes the remaining space and pushes the controls
+   to the right at their natural (content) width. */
+.top-bar--auto .top-bar-controls {
+	width: 100%;
+}
+
+.control-row-label {
 	font-size: var(--font-size-xs);
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--color-text-muted);
 	white-space: nowrap;
+	justify-self: start;
 }
 
 .fs-pills {
@@ -134,24 +138,6 @@
 	border-color: var(--color-primary);
 	background: var(--color-primary);
 	color: var(--color-on-primary);
-}
-
-.mode-bar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--gap-sm);
-	padding: 0 2px;
-	flex-shrink: 0;
-}
-
-.mode-label {
-	font-size: var(--font-size-xs);
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--color-text-muted);
-	white-space: nowrap;
 }
 
 .mode-pills {
@@ -220,24 +206,6 @@
 }
 
 /* LUKS2 encryption toggle — compact on/off switch next to the FS/mode controls. */
-.luks-bar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--gap-sm);
-	padding: 0 2px;
-	flex-shrink: 0;
-}
-
-.luks-label {
-	font-size: var(--font-size-xs);
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--color-text-muted);
-	white-space: nowrap;
-}
-
 .luks-switch {
 	position: relative;
 	width: 44px;

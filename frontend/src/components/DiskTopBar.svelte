@@ -61,7 +61,7 @@
 	}
 </script>
 
-<div class="top-bar">
+<div class={['top-bar', { 'top-bar--auto': !manualMode }]}>
 	<!-- Left slot: disk title in manual mode; nothing in automatic mode. -->
 	{#if manualMode && disk}
 		<div class="manual-title">
@@ -90,76 +90,73 @@
 		</div>
 	{/if}
 
-	<!-- Right slot: fs + mode controls. -->
+	<!-- Right slot: mode + fs + encryption controls.
+		Laid out as a two-column grid so every label lines up on the left and every
+		pill/toggle lines up on one vertical column (grid synchronises the column
+		widths across rows). -->
 	<div class="top-bar-controls">
-		<div class="fs-bar">
-			<span class="fs-label">{t('page.diskSelection.fileSystem')}</span>
-			<div class="fs-pills">
-				{#each FILESYSTEMS as fs (fs)}
-					<button
-						type="button"
-						class={['fs-pill', { selected: fileSystem === fs }]}
-						onclick={() => onSelectFileSystem(fs)}
-					>
-						{t('fs.' + fs)}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<!-- LUKS2 root encryption toggle. Off → opens the passphrase popup; on →
-			opens the disable confirm. Reflects luksEnabled only. -->
-		{#if onEnableLuks || onDisableLuks}
-			<div class="luks-bar">
-				<span class="luks-label">{t('disk.encryptLabel')}</span>
-				<button
-					type="button"
-					class={['luks-switch', { on: luksEnabled }]}
-					role="switch"
-					aria-checked={luksEnabled}
-					aria-label={t('disk.encryptLabel')}
-					title={t('disk.encryptHint')}
-					onclick={() => {
-						if (luksEnabled) {
-							onDisableLuks?.();
-						} else {
-							onEnableLuks?.();
-						}
-					}}
-				>
-					<span class="luks-slider"></span>
-				</button>
+		<!-- Installation mode: automatic vs manual (dualboot) -->
+		<span class="control-row-label">{t('page.diskSelection.mode')}</span>
+		<div class="mode-pills">
+			<button
+				type="button"
+				class={['mode-pill', { selected: !manualMode }]}
+				onclick={() => handleModeClick('automatic')}
+			>
+				{t('manual.modeAutomatic')}
+			</button>
+			<button
+				type="button"
+				class={['mode-pill', { selected: manualMode }]}
+				disabled={!disk}
+				onmouseenter={() => handleModeHover(true, true)}
+				onmouseleave={() => handleModeHover(true, false)}
+				onclick={() => handleModeClick('manual')}
+			>
+				{t('manual.modeManual')}
+			</button>
+		<!-- Tooltip: "Select a disk first" -->
+		{#if showDiskHint}
+			<div class="disk-hint-tooltip">
+				<span class="disk-hint-tooltip-text">{t('page.diskSelection.selectDiskFirst')}</span>
 			</div>
 		{/if}
-
-		<!-- Installation mode: automatic vs manual (dualboot) -->
-		<div class="mode-bar">
-			<span class="mode-label">{t('page.diskSelection.mode')}</span>
-			<div class="mode-pills">
-				<button
-					type="button"
-					class={['mode-pill', { selected: !manualMode }]}
-					onclick={() => handleModeClick('automatic')}
-				>
-					{t('manual.modeAutomatic')}
-				</button>
-				<button
-					type="button"
-					class={['mode-pill', { selected: manualMode }]}
-					disabled={!disk}
-					onmouseenter={() => handleModeHover(true, true)}
-					onmouseleave={() => handleModeHover(true, false)}
-					onclick={() => handleModeClick('manual')}
-				>
-					{t('manual.modeManual')}
-				</button>
-			<!-- Tooltip: "Select a disk first" -->
-			{#if showDiskHint}
-				<div class="disk-hint-tooltip">
-					<span class="disk-hint-tooltip-text">{t('page.diskSelection.selectDiskFirst')}</span>
-				</div>
-			{/if}
-			</div>
-		</div>
 	</div>
+
+	<span class="control-row-label">{t('page.diskSelection.fileSystem')}</span>
+	<div class="fs-pills">
+		{#each FILESYSTEMS as fs (fs)}
+			<button
+				type="button"
+				class={['fs-pill', { selected: fileSystem === fs }]}
+				onclick={() => onSelectFileSystem(fs)}
+			>
+				{t('fs.' + fs)}
+			</button>
+		{/each}
+	</div>
+
+	<!-- LUKS2 root encryption toggle. Off → opens the passphrase popup; on →
+		opens the disable confirm. Reflects luksEnabled only. -->
+	{#if onEnableLuks || onDisableLuks}
+		<span class="control-row-label">{t('disk.encryptLabel')}</span>
+		<button
+			type="button"
+			class={['luks-switch', { on: luksEnabled }]}
+			role="switch"
+			aria-checked={luksEnabled}
+			aria-label={t('disk.encryptLabel')}
+			title={t('disk.encryptHint')}
+			onclick={() => {
+				if (luksEnabled) {
+					onDisableLuks?.();
+				} else {
+					onEnableLuks?.();
+				}
+			}}
+		>
+			<span class="luks-slider"></span>
+		</button>
+	{/if}
+</div>
 </div>
