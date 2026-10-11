@@ -300,8 +300,9 @@ function formatSizeMB(value: number): string {
 		</table>
 		</div>
 
-		<!-- Add new partition control (only after clicking unallocated space) -->
-		{#if showAddControl}
+		<!-- Add new partition control: only after clicking unallocated space, and
+			only while there is still space left to add from. -->
+		{#if showAddControl && unallocatedMB > 0}
 		<div class="add-control">
 			<input
 				type="range"
