@@ -42,6 +42,11 @@ function formatSizeMB(value: number): string {
 	// it on a valid value when its `max` shifts (e.g. after adding/deleting a row).
 	let sliderEl = $state<HTMLInputElement | null>(null);
 
+	// Live reference to the scrollable partition-editor so the reveal effect can
+	// scroll it to the bottom when the add-control opens (keeping the FREE row in
+	// view instead of letting it scroll out behind the newly shown control).
+	let editorEl = $state<HTMLElement | null>(null);
+
 	// Keep addSizeMB a real number. Clearing the field would otherwise make it
 	// null/undefined, and a range input bound to a non-number defaults to the
 	// midpoint instead of the minimum. Emptying the field now yields 0, which the
@@ -195,6 +200,16 @@ function formatSizeMB(value: number): string {
 		void loadLayout();
 	});
 
+	// When the add-control is revealed, scroll the partition editor to its bottom
+	// so the FREE row the user clicked stays visible at the base of the scrollable
+	// area instead of being pushed out of view by the newly shown control.
+	$effect(() => {
+		void showAddControl;
+		if (showAddControl && editorEl) {
+			editorEl.scrollTop = editorEl.scrollHeight;
+		}
+	});
+
 	// Live-preview the pending "add partition" in the top-bar space bar. Drags on
 	// the slider update this before the partition is committed, so used/free
 	// reflect what the next Add will produce. Clamped to available free space.
@@ -222,7 +237,7 @@ function formatSizeMB(value: number): string {
 		</div>
 	{:else}
 		<!-- Partition table -->
-		<div class="partition-editor">
+		<div class="partition-editor" bind:this={editorEl}>
 			<table class="editor-table">
 				<thead>
 					<tr>
