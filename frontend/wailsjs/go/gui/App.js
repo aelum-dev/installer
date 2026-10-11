@@ -94,6 +94,14 @@ export function SetHostname(arg1) {
   return window['go']['gui']['App']['SetHostname'](arg1);
 }
 
+export function SetLuks(arg1) {
+  return window['go']['gui']['App']['SetLuks'](arg1);
+}
+
+export function SetLuksPassphrase(arg1) {
+  return window['go']['gui']['App']['SetLuksPassphrase'](arg1);
+}
+
 export function SetSelectedLanguage(arg1) {
   return window['go']['gui']['App']['SetSelectedLanguage'](arg1);
 }

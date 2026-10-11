@@ -150,6 +150,11 @@
 							<p class="disk-extra">
 								{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{installState.fileSystem || '—'}</span>
 							</p>
+							{#if installState.luksEnabled}
+								<p class="disk-extra">
+									<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
+								</p>
+							{/if}
 						{/if}
 					</div>
 				{:else}
@@ -344,6 +349,11 @@
 		font-family: var(--font-sans);
 		font-size: 0.75rem;
 		font-weight: 600;
+	}
+
+	.luks-tag {
+		background: var(--color-danger-bg);
+		color: var(--color-danger);
 	}
 
 	.role-tag.esp {

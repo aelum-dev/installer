@@ -37,6 +37,14 @@ func Run(ctx *shared.InstallContext) error {
 	if err := ConfigureSystemBase(ctx); err != nil {
 		return err
 	}
+	// LUKS: the initramfs must unlock the root before switching to it, so the
+	// dm-crypt hook has to be present. This runs before greetd/plymouth so the
+	// later plymouth regen preserves the hook.
+	if ctx.Luks {
+		if err := configureInitramfs(ctx); err != nil {
+			return err
+		}
+	}
 	if err := ConfigureGreetd(ctx); err != nil {
 		return err
 	}
@@ -181,7 +189,7 @@ func ConfigureBootloader(ctx *shared.InstallContext) error {
 	if err != nil {
 		return err
 	}
-	if err := writeBootEntry(esp, ctx.Partitions.RootUUID, kernel, initrd, ctx.FileSystem); err != nil {
+	if err := writeBootEntry(esp, ctx.Partitions.RootUUID, ctx.Partitions.LuksUUID, kernel, initrd, ctx.FileSystem); err != nil {
 		return err
 	}
 	if err := setDefaultBootEntry(esp, shared.BootEntryFileName+".conf"); err != nil {
@@ -232,8 +240,17 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 	return kernel, initrd, nil
 }
 
-func writeBootEntry(esp, rootUUID, kernel, initrd, fsType string) error {
-	options := "root=UUID=" + rootUUID + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
+func writeBootEntry(esp, rootUUID, luksUUID, kernel, initrd, fsType string) error {
+	var options string
+	if luksUUID != "" {
+		// LUKS: tell the initramfs which header UUID maps to the "aelum"
+		// mapper device (systemd-cryptsetup-generator syntax), then root from
+		// the decrypted mapper. The legacy cryptdevice= form is for the busybox
+		// "encrypt" hook only.
+		options = fmt.Sprintf("rd.luks.name=%s=%s root=%s", luksUUID, shared.LuksMapperName, shared.LuksMapperPath)
+	} else {
+		options = "root=UUID=" + rootUUID + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
+	}
 	if fsType == shared.FileSystemBtrfs {
 		options += " rootflags=subvol=@"
 	}
@@ -424,6 +441,115 @@ func copyMirrorList(regionCode string) error {
 	}
 	content := uncommentMirrors(string(rawContent))
 	return primitives.WriteFile("/etc/pacman.d/mirrorlist", content)
+}
+
+// configureInitramfs ensures the dm-crypt hook is present in the installed
+// system's mkinitcpio HOOKS line (so the LUKS passphrase prompt appears at boot)
+// and regenerates all initramfs images. It detects the initramfs base:
+//
+//   - systemd-based (HOOKS contains "systemd"): add "sd-encrypt" after "block",
+//     before "filesystems". sd-vconsole already precedes it, so the user's
+//     keymap is loaded at the prompt.
+//   - busybox/udev-based (HOOKS contains "udev", not systemd): add the legacy
+//     "encrypt" hook, ensuring a keymap hook precedes it.
+func configureInitramfs(ctx *shared.InstallContext) error {
+	confPath := "/etc/mkinitcpio.conf"
+	data, err := os.ReadFile(confPath)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", confPath, err)
+	}
+	content := string(data)
+
+	if !strings.Contains(content, "HOOKS=") {
+		return fmt.Errorf("HOOKS not found in %s", confPath)
+	}
+
+	hook := "sd-encrypt"
+	if !strings.Contains(content, "systemd") {
+		hook = "encrypt"
+	}
+
+	// Match the whole HOOKS assignment, allowing backslash-newline continuations.
+	hookRe := regexp.MustCompile(`(?s)^HOOKS=\(.*?\)`)
+	loc := hookRe.FindStringIndex(content)
+	if loc == nil {
+		return fmt.Errorf("HOOKS array not found in %s", confPath)
+	}
+	block := content[loc[0]:loc[1]]
+
+	// Normalize continuations so the hook list is a single parseable line.
+	normalized := regexp.MustCompile(`\\\s*\n`).ReplaceAllString(block, " ")
+	if strings.Contains(" "+normalized+" ", " "+hook+" ") {
+		// Hook already present — only regeneration is needed below.
+	} else {
+		inner := strings.TrimPrefix(normalized, "HOOKS=(")
+		inner = strings.TrimSuffix(inner, ")")
+		hooks := strings.Fields(inner)
+
+		var out []string
+		inserted := false
+		for _, h := range hooks {
+			out = append(out, h)
+			if !inserted && h == "block" {
+				out = append(out, hook)
+				inserted = true
+			}
+		}
+		if !inserted {
+			// No "block" hook: insert before "filesystems", else append.
+			for i, h := range hooks {
+				if h == "filesystems" {
+					out = append(out[:i], append([]string{hook}, out[i:]...)...)
+					inserted = true
+					break
+				}
+			}
+		}
+		if !inserted {
+			out = append(out, hook)
+		}
+
+		// For the busybox "encrypt" hook a keymap must precede it so the user can
+		// type the passphrase in the right layout.
+		if hook == "encrypt" {
+			hasKeymap := false
+			for _, h := range out {
+				if h == "keymap" || h == "vconsole" {
+					hasKeymap = true
+					break
+				}
+			}
+			if !hasKeymap {
+				// Insert "keymap" just before "encrypt".
+				for i, h := range out {
+					if h == "encrypt" {
+						out = append(out[:i], append([]string{"keymap"}, out[i:]...)...)
+						break
+					}
+				}
+			}
+		}
+
+		newBlock := "HOOKS=(" + strings.Join(out, " ") + ")"
+		content = content[:loc[0]] + newBlock + content[loc[1]:]
+
+		if err := primitives.WriteFile(confPath, content); err != nil {
+			return err
+		}
+		if ctx.Logger != nil {
+			ctx.Logger.Info("initramfs hook %s configured", hook)
+		}
+	}
+
+	// Regenerate initramfs images so the hook takes effect.
+	output, err := primitives.RunChroot("mkinitcpio", "-P")
+	if err != nil {
+		return fmt.Errorf("failed to regenerate initramfs: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
+	return nil
 }
 
 func uncommentMirrors(content string) string {

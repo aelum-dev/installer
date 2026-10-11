@@ -62,6 +62,9 @@ func (a *App) StartInstallation() error {
 	}
 
 	args := []string{"--install", diskID, "--username", a.userAccount.Username, "--filesystem", a.fileSystem, "--language", a.selectedLanguage}
+	if a.luks {
+		args = append(args, "--luks")
+	}
 	if a.dryRun {
 		args = append(args, "--dry-run")
 	}
@@ -110,12 +113,25 @@ func (a *App) StartInstallation() error {
 	a.installDone = make(chan struct{})
 	a.installationRunning.Store(true)
 
-	// Write password to stdin.
+	// Write password to stdin, then (when encrypting) the LUKS passphrase. The
+	// order matches the CLI's sequential stdin reads: username flag → account pw
+	// → LUKS pw.
 	go func() {
 		if len(a.userAccount.Password) > 0 {
 			if _, err := stdin.Write([]byte(a.userAccount.Password + "\n")); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to write password to CLI: %v\n", err)
 			}
+		}
+		if a.luks && !a.dryRun && len(a.luksPassphrase) > 0 {
+			if _, err := stdin.Write(append(a.luksPassphrase, '\n')); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to write LUKS passphrase to CLI: %v\n", err)
+			}
+			// Zero the passphrase once handed to the CLI.
+			for k := range a.luksPassphrase {
+				a.luksPassphrase[k] = 0
+			}
+
+			a.luksPassphrase = nil
 		}
 		if err := stdin.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to close CLI stdin: %v\n", err)

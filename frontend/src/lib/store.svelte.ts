@@ -24,6 +24,15 @@ export const installState = $state({
 	disk: null as DiskInfo | null,
 	fileSystem: 'btrfs' as FileSystem | '',
 
+	// LUKS2 root encryption. luksEnabled is the committed/active flag that
+	// drives the toggle look; luksPassphrase is the passphrase held in memory
+	// ('' = none held) until the CLI consumes it; luksDialogOpen shows the
+	// passphrase entry popup; luksError is the inline popup validation error.
+	luksEnabled: false as boolean,
+	luksPassphrase: '' as string,
+	luksDialogOpen: false as boolean,
+	luksError: '' as string,
+
 	// Manual (dualboot-safe) partitioning mode
 	manualMode: false as boolean,
 	manualLayout: null as ManualLayout | null,
@@ -94,6 +103,43 @@ export function getIsDryRun(): boolean {
 
 export function setShowConfirmDialog(value: boolean): void {
 	installState.showConfirmDialog = value;
+}
+
+// ── LUKS encryption helpers ────────────────────────────────────────────────
+
+// requestEnableLuks opens the passphrase entry popup. It does NOT set
+// luksEnabled — the toggle only flips on once a valid passphrase is committed.
+export function requestEnableLuks(): void {
+	installState.luksDialogOpen = true;
+	installState.luksError = '';
+}
+
+// commitLuksPassphrase validates (non-empty, matches confirm) and, on success,
+// stores the passphrase and enables encryption. On failure it keeps the popup
+// open and sets luksError.
+export function commitLuksPassphrase(pass: string, confirm: string): void {
+	if (pass === '' ) {
+		installState.luksError = t('luks.dialog.errorEmpty');
+		installState.luksDialogOpen = true;
+		return;
+	}
+	if (pass !== confirm) {
+		installState.luksError = t('luks.dialog.errorMatch');
+		installState.luksDialogOpen = true;
+		return;
+	}
+	installState.luksPassphrase = pass;
+	installState.luksEnabled = true;
+	installState.luksDialogOpen = false;
+	installState.luksError = '';
+}
+
+// disableLuks erases the held passphrase and disables encryption. Callers guard
+// it with a confirm dialog because it discards encryption.
+export function disableLuks(): void {
+	installState.luksPassphrase = '';
+	installState.luksEnabled = false;
+	installState.luksError = '';
 }
 
 // ── Manual partition helpers ───────────────────────────────────────────────

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -99,6 +100,7 @@ func run(args []string) int {
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
+	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
@@ -157,7 +159,7 @@ func run(args []string) int {
 	}
 
 	// Run the installation
-	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag)
+	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag, *luksFlag)
 }
 
 // resolveUsername resolves the username from flag or stdin.
@@ -177,7 +179,7 @@ func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
 }
 
 // runInstallation performs validation and runs the installation.
-func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string) int {
+func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string, luks bool) int {
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
@@ -217,6 +219,22 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 		log.Info("[DRY RUN MODE] Installation steps will be simulated.")
 	}
 
+	// LUKS passphrase: read after the account password, matching the CLI's
+	// sequential stdin reads (username flag → account pw → LUKS pw). Skipped in
+	// dry-run and for the read-only verify step.
+	var luksPassphrase string
+	if luks && !dryRun && stepName != "verify_system" {
+		luksPassphrase, pwErr = readPasswordFunc()
+		if pwErr != nil {
+			log.Error("failed to read LUKS passphrase: %v", pwErr)
+			return 1
+		}
+		if luksPassphrase == "" {
+			log.Error("LUKS passphrase cannot be empty")
+			return 1
+		}
+	}
+
 	lang := language
 	if lang == "" {
 		lang = shared.DefaultLanguageCode
@@ -228,6 +246,8 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 		shared.DefaultHostname, // hostname
 		shared.GetRegion(lang), // region (from --language or default)
 		fileSystem,
+		luks,           // encrypt root with LUKS2
+		luksPassphrase, // LUKS passphrase (read from stdin)
 		dryRun,
 	)
 
@@ -337,7 +357,7 @@ func handleRollback(disk string, dryRun *bool) int {
 	}
 	installer := install.NewInstaller(
 		disk, shared.DefaultCLIUsername, "", shared.DefaultHostname,
-		shared.GetRegion(shared.DefaultLanguageCode), "ext4", false,
+		shared.GetRegion(shared.DefaultLanguageCode), "ext4", false, "", false,
 	)
 	installer.Logger = log
 	if err := rollbackFunc(installer.Logger, disk); err != nil {
@@ -379,7 +399,7 @@ func resolveDiskAndStep(args ...string) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--luks] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
@@ -392,6 +412,9 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Username: passed via --username flag or read interactively from the terminal.\n")
 	fmt.Fprintf(os.Stderr, "Password: entered interactively from the terminal (never passed as a flag).\n")
 	fmt.Fprintf(os.Stderr, "         Pipe a password via stdin for non-interactive use: echo 'pass' | %s --install /dev/vda\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "When --luks is set, a second passphrase is read (same rules) and used to\n")
+	fmt.Fprintf(os.Stderr, "encrypt the root partition with LUKS2. The passphrase is never a flag.\n")
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])
@@ -416,15 +439,9 @@ func readUsername() (string, error) {
 		}
 		return "", fmt.Errorf("empty input")
 	}
-	// Non-interactive: read from stdin (piped or redirected)
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		return strings.TrimSpace(scanner.Text()), nil
-	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return "", nil
+	// Non-interactive: read from stdin (piped or redirected). Use the shared
+	// buffered reader so this line does not drain input meant for later reads.
+	return readStdinLine()
 }
 
 // parseManualLayout decodes a manual partition layout from JSON. It is used by
@@ -447,13 +464,33 @@ func readPassword() (string, error) {
 		}
 		return strings.TrimSpace(string(bytes)), nil
 	}
-	// Non-interactive: read from stdin (piped or redirected)
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		return strings.TrimSpace(scanner.Text()), nil
+	// Non-interactive: read from stdin (piped or redirected). Use the shared
+	// buffered reader so this line does not drain input meant for later reads
+	// (username → account password → LUKS passphrase).
+	return readStdinLine()
+}
+
+// stdinReader is a single buffered reader shared by every non-interactive stdin
+// read (username, account password, LUKS passphrase). Each bufio.Scanner/
+// Reader issues its own read() syscall; the first one to touch a piped stdin
+// drains the whole buffered chunk into its own buffer, leaving later reads at
+// EOF. Reusing one reader lets each sequential read get its own line.
+var stdinReader *bufio.Reader
+
+func sharedStdin() *bufio.Reader {
+	if stdinReader == nil {
+		stdinReader = bufio.NewReader(os.Stdin)
 	}
-	if err := scanner.Err(); err != nil {
+	return stdinReader
+}
+
+// readStdinLine returns the next line from the shared stdin buffer, trimmed of
+// surrounding whitespace (and the trailing newline). A final line without a
+// trailing newline is still returned; clean EOF with no data returns "", nil.
+func readStdinLine() (string, error) {
+	line, err := sharedStdin().ReadString('\n')
+	if err != nil && err != io.EOF {
 		return "", err
 	}
-	return "", nil
+	return strings.TrimSpace(line), nil
 }

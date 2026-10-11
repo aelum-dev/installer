@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"aelum-installer/backend/install/luks"
 	"aelum-installer/backend/shared"
 )
 
@@ -20,14 +21,16 @@ type InstallationProgress struct {
 // Installer orchestrates the full installation process.
 // Single source of truth — used by both CLI and GUI.
 type Installer struct {
-	diskID     string
-	username   string
-	password   []byte // zeroed after being copied to InstallContext
-	hostname   string
-	region     shared.Region
-	fileSystem string // root filesystem: "ext4" or "btrfs"
-	dryRun     bool
-	esp        string // ESP mount point (default: /mnt/boot)
+	diskID         string
+	username       string
+	password       []byte // zeroed after being copied to InstallContext
+	hostname       string
+	region         shared.Region
+	fileSystem     string // root filesystem: "ext4" or "btrfs"
+	luks           bool
+	luksPassphrase []byte // zeroed after being copied to InstallContext
+	dryRun         bool
+	esp            string // ESP mount point (default: /mnt/boot)
 
 	// manualMode enables dualboot-safe manual partitioning. When set, the
 	// format step runs partition.Apply with manualLayout instead of the
@@ -59,17 +62,19 @@ type Installer struct {
 }
 
 // NewInstaller creates a new Installer instance.
-func NewInstaller(diskID, username, password, hostname string, region shared.Region, fileSystem string, dryRun bool) *Installer {
+func NewInstaller(diskID, username, password, hostname string, region shared.Region, fileSystem string, luks bool, luksPassphrase string, dryRun bool) *Installer {
 	return &Installer{
-		diskID:     diskID,
-		username:   username,
-		password:   []byte(password),
-		hostname:   hostname,
-		region:     region,
-		fileSystem: fileSystem,
-		dryRun:     dryRun,
-		esp:        shared.BootMountPoint,
-		Logger:     NewConsoleLogger(),
+		diskID:         diskID,
+		username:       username,
+		password:       []byte(password),
+		hostname:       hostname,
+		region:         region,
+		fileSystem:     fileSystem,
+		luks:           luks,
+		luksPassphrase: []byte(luksPassphrase),
+		dryRun:         dryRun,
+		esp:            shared.BootMountPoint,
+		Logger:         NewConsoleLogger(),
 	}
 }
 
@@ -280,18 +285,31 @@ func (inst *Installer) context() *InstallContext {
 	for k := range inst.password {
 		inst.password[k] = 0
 	}
+
+	var luksPassphrase []byte
+	if inst.luks {
+		luksPassphrase = make([]byte, len(inst.luksPassphrase))
+		copy(luksPassphrase, inst.luksPassphrase)
+		// Zero our copy immediately — the context now owns the only copy.
+		for k := range inst.luksPassphrase {
+			inst.luksPassphrase[k] = 0
+		}
+	}
+
 	// Create a fresh cancel channel for this installation run.
 	inst.cancel = make(chan struct{})
 	ctx := &InstallContext{
-		DiskID:     inst.diskID,
-		ESP:        inst.esp,
-		Username:   inst.username,
-		Password:   password,
-		Hostname:   inst.hostname,
-		Region:     inst.region,
-		FileSystem: inst.fileSystem,
-		Logger:     inst.Logger,
-		Cancel:     inst.cancel,
+		DiskID:         inst.diskID,
+		ESP:            inst.esp,
+		Username:       inst.username,
+		Password:       password,
+		Hostname:       inst.hostname,
+		Region:         inst.region,
+		FileSystem:     inst.fileSystem,
+		Luks:           inst.luks,
+		LuksPassphrase: luksPassphrase,
+		Logger:         inst.Logger,
+		Cancel:         inst.cancel,
 	}
 	ctx.ManualMode = inst.manualMode
 	ctx.ManualLayout = inst.manualLayout
@@ -378,6 +396,13 @@ func (inst *Installer) Rollback() error {
 func (inst *Installer) RunCleanup() {
 	inst.cleanupOnce.Do(func() {
 		inst.logInfo("Cleanup: started")
+		// Close the LUKS mapper (if any) so a failed install can be retried
+		// without a leaked dm device. Best-effort — a closed mapper errors.
+		if inst.luks {
+			if err := luks.LuksClose(shared.LuksMapperName); err != nil && inst.Logger != nil {
+				inst.logInfo("Cleanup: LUKS mapper close (non-fatal): %v", err)
+			}
+		}
 		if err := CleanupMounts(inst.Logger); err != nil {
 			inst.logError("Cleanup: %v", err)
 		} else {

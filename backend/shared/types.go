@@ -16,10 +16,19 @@ type InstallContext struct {
 	ManualMode   bool
 	ManualLayout *ManualLayout
 	Password     []byte // zeroed after use; never logged or returned
-	Hostname     string
-	Region       Region
-	FileSystem   string // root filesystem: "ext4" or "btrfs"
-	Logger       Logger // injected by Installer; nil if not set
+
+	// Luks reports whether the root partition is encrypted with LUKS2. When set,
+	// the format step creates a decrypted mapper device that the mount/install/
+	// configure steps operate on instead of the raw partition.
+	Luks bool
+	// LuksPassphrase is the LUKS passphrase, fed to cryptsetup via stdin. Zeroed
+	// after use; never logged or returned.
+	LuksPassphrase []byte
+
+	Hostname   string
+	Region     Region
+	FileSystem string // root filesystem: "ext4" or "btrfs"
+	Logger     Logger // injected by Installer; nil if not set
 
 	// ProgressCallback reports intermediate progress during a step.
 	// Called by the installer's tick goroutine to animate long-running steps.
@@ -56,11 +65,17 @@ type DiskSelectionData struct {
 // PartitionInfo holds the partition layout computed after formatting.
 // Populated by FormatDisk and consumed by MountFilesystem, ConfigureBootloader, etc.
 type PartitionInfo struct {
-	Disk        string            // e.g. "/dev/sda"
-	EFIPart     string            // e.g. "/dev/sda1"
-	EFIUUID     string            // UUID of the EFI partition
-	RootPart    string            // e.g. "/dev/sda2"
-	RootUUID    string            // UUID of the root partition
+	Disk     string // e.g. "/dev/sda"
+	EFIPart  string // e.g. "/dev/sda1"
+	EFIUUID  string // UUID of the EFI partition
+	RootPart string // e.g. "/dev/sda2" (raw partition, before LUKS)
+	RootUUID string // UUID of the root filesystem (mapper FS UUID when LUKS)
+	// RootMapper is the decrypted dm-crypt device path (e.g. /dev/mapper/aelum).
+	// Empty when encryption is disabled; otherwise the device mounted as root.
+	RootMapper string
+	// LuksUUID is the LUKS header UUID of the raw root partition. Used for the
+	// boot cmdline rd.luks.name= argument — NOT the filesystem UUID.
+	LuksUUID    string
 	MountPoints map[string]string // Additional mount points (e.g., "/home" → "/dev/sda2")
 }
 

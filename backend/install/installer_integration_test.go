@@ -33,7 +33,7 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 		"testuser", "testpass",
 		"testhost",
 		shared.GetRegion("en_US"),
-		"ext4", true, // dryRun
+		"ext4", false, "", true, // dryRun
 	)
 
 	var progressEvents []string
@@ -72,7 +72,7 @@ func TestInstall_DryRun_Btrfs(t *testing.T) {
 		"testuser", "testpass",
 		"testhost",
 		shared.GetRegion("en_US"),
-		"btrfs", true,
+		"btrfs", false, "", true,
 	)
 
 	var stepLabels []string
@@ -101,7 +101,7 @@ func TestInstall_EmptyDiskID(t *testing.T) {
 		"user", "pass",
 		"host",
 		shared.GetRegion("en_US"),
-		"ext4", false,
+		"ext4", false, "", false,
 	)
 
 	err := inst.Install()
@@ -120,7 +120,7 @@ func TestInstall_EmptyRegion(t *testing.T) {
 		"user", "pass",
 		"host",
 		shared.GetRegion(""),
-		"ext4", false,
+		"ext4", false, "", false,
 	)
 
 	err := inst.Install()
@@ -142,7 +142,7 @@ func TestInstall_ProgressPercentages(t *testing.T) {
 		"user", "pass",
 		"host",
 		shared.GetRegion("en_US"),
-		"ext4", true,
+		"ext4", false, "", true,
 	)
 
 	var percentages []int
@@ -180,7 +180,7 @@ func TestInstall_ErrorCleanup(t *testing.T) {
 		"user", "pass",
 		"host",
 		shared.GetRegion("en_US"),
-		"ext4", false,
+		"ext4", false, "", false,
 	)
 
 	// Remove any existing log so we can verify it gets written.
@@ -206,7 +206,7 @@ func TestRollback_ValidDisk(t *testing.T) {
 		"/dev/vda",
 		"", "", "",
 		shared.GetRegion("en_US"),
-		"ext4", false,
+		"ext4", false, "", false,
 	)
 
 	// Rollback should not return an error for an empty disk ID check.
@@ -226,7 +226,7 @@ func TestRollback_EmptyDiskID(t *testing.T) {
 		"",
 		"", "", "",
 		shared.GetRegion("en_US"),
-		"ext4", false,
+		"ext4", false, "", false,
 	)
 
 	err := inst.Rollback()
@@ -245,7 +245,7 @@ func TestRunStep_UnknownStep(t *testing.T) {
 		"user", "pass",
 		"host",
 		shared.GetRegion("en_US"),
-		"ext4", false,
+		"ext4", false, "", false,
 	)
 
 	_, _, err := inst.RunStep("nonexistent_step")
@@ -264,7 +264,7 @@ func TestRunStep_DryRun(t *testing.T) {
 		"user", "pass",
 		"host",
 		shared.GetRegion("en_US"),
-		"ext4", true,
+		"ext4", false, "", true,
 	)
 
 	label, percent, err := inst.RunStep("format_disk")

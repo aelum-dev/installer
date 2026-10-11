@@ -50,6 +50,10 @@ export function SetCurrentPage(arg1:gui.PageID):Promise<void>;
 
 export function SetHostname(arg1:string):Promise<void>;
 
+export function SetLuks(arg1:boolean):Promise<void>;
+
+export function SetLuksPassphrase(arg1:string):Promise<void>;
+
 export function SetSelectedLanguage(arg1:string):Promise<void>;
 
 export function SetStartPage(arg1:gui.PageID):Promise<void>;

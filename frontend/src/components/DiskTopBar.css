@@ -218,3 +218,62 @@
 	border: 5px solid transparent;
 	border-top-color: var(--color-bg-white);
 }
+
+/* LUKS2 encryption toggle — compact on/off switch next to the FS/mode controls. */
+.luks-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--gap-sm);
+	padding: 0 2px;
+	flex-shrink: 0;
+}
+
+.luks-label {
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--color-text-muted);
+	white-space: nowrap;
+}
+
+.luks-switch {
+	position: relative;
+	width: 44px;
+	height: 24px;
+	border-radius: var(--radius-pill);
+	background: var(--color-bg-hover);
+	border: 1.5px solid var(--color-border-light);
+	cursor: pointer;
+	padding: 0;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+}
+
+.luks-switch:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+.luks-switch.on {
+	background: var(--color-primary);
+	border-color: var(--color-primary);
+}
+
+.luks-slider {
+	position: absolute;
+	top: 50%;
+	left: 3px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: var(--color-text);
+	transform: translate(0, -50%);
+	transition: all 0.15s ease;
+}
+
+.luks-switch.on .luks-slider {
+	left: calc(100% - 19px);
+	background: var(--color-on-primary);
+}

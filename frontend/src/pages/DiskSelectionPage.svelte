@@ -6,7 +6,9 @@
 	import DiskList from '$components/DiskList.svelte';
 	import StateMessage from '$components/StateMessage.svelte';
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
-	import { installState, computeUsedMB, computeFreeMB } from '$lib/store.svelte';
+	import LuksPassphraseDialog from '$components/LuksPassphraseDialog.svelte';
+	import ConfirmDialog from '$components/ConfirmDialog.svelte';
+	import { installState, computeUsedMB, computeFreeMB, requestEnableLuks, disableLuks } from '$lib/store.svelte';
 	import { type DiskInfo, type PartitionEntry, PAGE_IDS } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
@@ -60,6 +62,9 @@
 	let partitionsLoading = $state(false);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+
+	// Disabling encryption discards the passphrase, so confirm first.
+	let showDisableConfirm = $state(false);
 
 	async function loadDisks(): Promise<void> {
 		try {
@@ -164,6 +169,9 @@
 			spaceUsedPct={spaceSummary.pct}
 			onSelectFileSystem={(fs) => { installState.fileSystem = fs; }}
 			onToggleMode={setMode}
+			luksEnabled={installState.luksEnabled}
+			onEnableLuks={requestEnableLuks}
+			onDisableLuks={() => { showDisableConfirm = true; }}
 		/>
 
 		{#if installState.manualMode}
@@ -193,3 +201,16 @@
 		{/if}
 	</div>
 </div>
+
+	<!-- LUKS passphrase entry popup (shown in both automatic and manual mode) -->
+	<LuksPassphraseDialog bind:show={installState.luksDialogOpen} />
+
+	<!-- Confirm before discarding encryption -->
+	<ConfirmDialog
+		bind:show={showDisableConfirm}
+		title={t('luks.disable.title')}
+		message={t('luks.disable.message')}
+		confirmLabel={t('dialog.confirm.yes')}
+		cancelLabel={t('dialog.confirm.cancel')}
+		onConfirm={disableLuks}
+	/>

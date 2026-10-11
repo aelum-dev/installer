@@ -41,6 +41,12 @@ type App struct {
 	manualLayout        shared.ManualLayout
 	installationRunning atomic.Bool
 
+	// luks enables optional LUKS2 encryption of the root partition. luksPassphrase
+	// is the passphrase held in memory (zeroed buffer) from entry until the CLI
+	// consumes it — mirroring the account-password handling. Never logged.
+	luks           bool
+	luksPassphrase []byte
+
 	// installCmd is the currently running CLI subprocess, or nil.
 	installCmd *exec.Cmd
 	// installCancel cancels the context for the current CLI subprocess.
@@ -81,4 +87,29 @@ func (a *App) GetUILocale() string {
 // SetUILocale sets the UI locale.
 func (a *App) SetUILocale(locale string) {
 	a.uiLocale = locale
+}
+
+// SetLuks enables or disables LUKS2 root encryption. Disabling clears the
+// held passphrase so the install proceeds unencrypted.
+func (a *App) SetLuks(enabled bool) {
+	a.luks = enabled
+	if !enabled {
+		a.clearLuksPassphrase()
+	}
+}
+
+// SetLuksPassphrase stores the LUKS passphrase in memory (zeroed buffer) for
+// the CLI to consume on stdin. It is never logged or passed as a flag.
+func (a *App) SetLuksPassphrase(passphrase string) {
+	a.clearLuksPassphrase()
+	a.luksPassphrase = make([]byte, len(passphrase))
+	copy(a.luksPassphrase, []byte(passphrase))
+}
+
+// clearLuksPassphrase zeroes and releases the held passphrase.
+func (a *App) clearLuksPassphrase() {
+	for k := range a.luksPassphrase {
+		a.luksPassphrase[k] = 0
+	}
+	a.luksPassphrase = nil
 }

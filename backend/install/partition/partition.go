@@ -333,8 +333,13 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		return fmt.Errorf("partprobe: %w: %s", probeErr, string(probeOut))
 	}
 
-	// Format each Boot/Root partition.
+	// Format each Boot/Root partition. When LUKS is enabled the System
+	// partition is encrypted (handled below via EncryptRoot), so only the ESP
+	// is formatted here.
 	for _, a := range actions {
+		if a.pType == shared.TypeSystem && ctx.Luks {
+			continue
+		}
 		label := "aelum"
 		if a.fstype == shared.FileSystemVfat {
 			label = "EFI"
@@ -344,8 +349,18 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	// btrfs root → automatic subvolumes.
-	if sys.Type == shared.TypeSystem && ctx.FileSystem == shared.FileSystemBtrfs {
+	var mapperPath, mapperUUID, luksUUID string
+	if ctx.Luks {
+		if len(ctx.LuksPassphrase) == 0 {
+			return fmt.Errorf("LUKS enabled but no passphrase set")
+		}
+		var err error
+		mapperPath, mapperUUID, luksUUID, err = format.EncryptRoot(ctx, sysPath, string(ctx.LuksPassphrase), ctx.FileSystem)
+		if err != nil {
+			return err
+		}
+	} else if sys.Type == shared.TypeSystem && ctx.FileSystem == shared.FileSystemBtrfs {
+		// btrfs root → automatic subvolumes.
 		if err := format.SetupBtrfsSubvolumes(ctx, sysPath, shared.GetBtrfsSubvolumes()); err != nil {
 			return err
 		}
@@ -355,6 +370,17 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	partitions, err := format.BuildPartitionInfo(diskID, espPath, sysPath, ctx.FileSystem)
 	if err != nil {
 		return err
+	}
+	if ctx.Luks {
+		// The root filesystem lives on the decrypted mapper, so fstab/bootloader
+		// must reference the mapper path, its filesystem UUID, and the LUKS
+		// header UUID.
+		partitions.RootMapper = mapperPath
+		partitions.LuksUUID = luksUUID
+		partitions.RootUUID = mapperUUID
+		for mp := range partitions.MountPoints {
+			partitions.MountPoints[mp] = mapperPath
+		}
 	}
 	ctx.Partitions = partitions
 

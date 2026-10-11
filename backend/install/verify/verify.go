@@ -39,6 +39,9 @@ func Run(ctx *shared.InstallContext) error {
 	var info []string
 
 	checkFstab(ctx, &issues, &info)
+	if ctx.Luks {
+		checkLuks(ctx, &issues, &info)
+	}
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
@@ -102,6 +105,45 @@ func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 		if ctx.Partitions.EFIUUID != "" && !strings.Contains(content, ctx.Partitions.EFIUUID) {
 			*issues = append(*issues, "fstab missing EFI UUID "+ctx.Partitions.EFIUUID)
 		}
+	}
+}
+
+// checkLuks verifies LUKS-related configuration in the installed system when
+// encryption is enabled: the boot entry references the mapper device, the
+// mapper UUID is in fstab, and the dm-crypt hook is present in mkinitcpio.
+func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
+	// Boot entry references the decrypted mapper.
+	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
+	if data, err := os.ReadFile(entryPath); err == nil {
+		content := string(data)
+		if !strings.Contains(content, shared.LuksMapperPath) {
+			*issues = append(*issues, "boot entry does not reference the LUKS mapper "+shared.LuksMapperPath)
+		}
+		if !strings.Contains(content, "rd.luks.name=") {
+			*issues = append(*issues, "boot entry missing rd.luks.name= for LUKS")
+		}
+		*info = append(*info, "boot entry references LUKS mapper ✓")
+	} else {
+		*issues = append(*issues, "failed to read boot entry "+entryPath)
+	}
+
+	// Mapper UUID present in fstab (RootUUID is the mapper filesystem UUID).
+	// checkFstab already verifies this; surface it for visibility.
+	if ctx.Partitions != nil && ctx.Partitions.RootUUID != "" {
+		*info = append(*info, "mapper UUID in fstab ✓")
+	}
+
+	// dm-crypt hook present in mkinitcpio.conf.
+	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
+	if data, err := os.ReadFile(confPath); err == nil {
+		content := string(data)
+		if !strings.Contains(content, "sd-encrypt") && !strings.Contains(content, " encrypt ") && !strings.HasSuffix(strings.TrimSpace(content), "encrypt") {
+			*issues = append(*issues, "dm-crypt hook (sd-encrypt/encrypt) not found in mkinitcpio.conf")
+		} else {
+			*info = append(*info, "initramfs dm-crypt hook present ✓")
+		}
+	} else {
+		*issues = append(*issues, "failed to read "+confPath)
 	}
 }
 

@@ -337,6 +337,35 @@ const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.jpg"
 // system (used by DMS after install).
 const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.jpg"
 
+// --- LUKS disk encryption --------------------------------------------------
+
+// LuksMapperName is the dm-crypt mapper device name created for the encrypted
+// root partition. The decrypted device appears at /dev/mapper/<LuksMapperName>
+// and is what gets formatted, mounted, and referenced by fstab/bootloader.
+const LuksMapperName = "aelum"
+
+// LuksMapperPath is the full device path of the decrypted root mapper.
+const LuksMapperPath = "/dev/mapper/" + LuksMapperName
+
+// LUKS crypto parameters pinned to current (2026) best practices. See
+// luks.md §11 for the verified rationale. These match cryptsetup 2.4.0+
+// defaults and the systemd-based initramfs expectations.
+const (
+	// LuksType selects the LUKS version (luks2 is the current default).
+	LuksType = "luks2"
+	// LuksCipher is the block cipher/mode for the volume key.
+	LuksCipher = "aes-xts-plain64"
+	// LuksKeySizeBits is the total LUKS key size. XTS splits it into two AES
+	// keys, so 512 = AES-256 (256 would be AES-128).
+	LuksKeySizeBits = 512
+	// LuksHash is the KDF/workfactor hash.
+	LuksHash = "sha256"
+	// LuksPBKDF is the password-based key derivation function.
+	LuksPBKDF = "argon2id"
+	// LuksIterTimeMs is the memory-hard KDF time cost in milliseconds.
+	LuksIterTimeMs = 2000
+)
+
 // --- Live-ISO backgrounds (hyprpaper) ---------------------------------------
 // These are the live-ISO-only backgrounds the installer toggle switches between
 // at runtime. They are NOT copied to the installed system — that uses the DMS

@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"aelum-installer/backend/install/luks"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -44,6 +45,22 @@ func Run(ctx *shared.InstallContext) error {
 	var output []byte
 	var err error
 
+	// When LUKS is enabled the root filesystem lives on the decrypted mapper
+	// device; every mount references it instead of the raw partition.
+	rootDevice := p.RootPart
+	if ctx.Luks {
+		if p.RootMapper == "" {
+			return fmt.Errorf("LUKS enabled but root mapper path not set (format step failed)")
+		}
+		if ctx.Logger != nil {
+			ctx.Logger.Info("LUKS root enabled; mounting decrypted mapper %s", p.RootMapper)
+		}
+		if err := ensureLuksOpen(ctx, p.RootPart); err != nil {
+			return err
+		}
+		rootDevice = p.RootMapper
+	}
+
 	// ── Mount root partition ──
 
 	// Find the subvolume with MountPoint "/" for btrfs, otherwise mount raw.
@@ -56,7 +73,7 @@ func Run(ctx *shared.InstallContext) error {
 		// Mount btrfs subvolume with its properties (e.g. subvol=@,compress=zstd).
 		// --mkdir ensures the mount point exists even on a bare live ISO rootfs.
 		mountOpts := primitives.BuildMountOpts(rootSubvol)
-		cmd = primitives.Run("mount", "--mkdir", "-o", mountOpts, p.RootPart, shared.MountRoot)
+		cmd = primitives.Run("mount", "--mkdir", "-o", mountOpts, rootDevice, shared.MountRoot)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount btrfs %s subvolume failed: %w: %s", rootSubvol.Name, err, string(output))
@@ -64,7 +81,7 @@ func Run(ctx *shared.InstallContext) error {
 	} else {
 		// Standard mount for ext4 and other filesystems. --mkdir creates the mount
 		// point (e.g. /mnt) if the live ISO rootfs doesn't already provide it.
-		cmd = primitives.Run("mount", "--mkdir", p.RootPart, shared.MountRoot)
+		cmd = primitives.Run("mount", "--mkdir", rootDevice, shared.MountRoot)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mount root failed: %w: %s", err, string(output))
@@ -72,7 +89,7 @@ func Run(ctx *shared.InstallContext) error {
 	}
 
 	// Verify root mount
-	if err := verifyMount(shared.MountRoot, p.RootPart); err != nil {
+	if err := verifyMount(shared.MountRoot, rootDevice); err != nil {
 		return err
 	}
 
@@ -105,7 +122,7 @@ func Run(ctx *shared.InstallContext) error {
 
 			// Mount subvolume with its properties
 			mountOpts := primitives.BuildMountOpts(sv)
-			cmd = primitives.Run("mount", "-o", mountOpts, p.RootPart, fullPath)
+			cmd = primitives.Run("mount", "-o", mountOpts, rootDevice, fullPath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(output))
@@ -141,6 +158,43 @@ func Run(ctx *shared.InstallContext) error {
 	}
 
 	return nil
+}
+
+// ensureLuksOpen opens the LUKS root mapper if it isn't already open. The
+// format step closes the mapper after creating the filesystem, so mount must
+// reopen it. Idempotent: if the mapper device already exists, skip.
+func ensureLuksOpen(ctx *shared.InstallContext, rootPart string) error {
+	if len(ctx.LuksPassphrase) == 0 {
+		return fmt.Errorf("LUKS enabled but no passphrase set")
+	}
+	// The /dev/mapper/<name> node can linger after cryptsetup close removed the
+	// underlying dm-crypt device (udev removes the node asynchronously while
+	// cryptsetup close removes the device synchronously). A stale node makes
+	// os.Stat succeed even though the device is gone, which would make the
+	// subsequent mount fail with "fsconfig() failed: No such file or directory".
+	// Verify the dm device is really open before skipping the reopen.
+	if isLuksMapperOpen(shared.LuksMapperName) {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("LUKS root mapper already open (%s)", shared.LuksMapperPath)
+		}
+		return nil
+	}
+	if err := luks.LuksOpen(rootPart, shared.LuksMapperName, string(ctx.LuksPassphrase)); err != nil {
+		return fmt.Errorf("opening LUKS root for mount: %w", err)
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Opened LUKS root mapper %s", shared.LuksMapperPath)
+	}
+	return nil
+}
+
+// isLuksMapperOpen reports whether the dm-crypt mapper is actually open, i.e.
+// backed by a live device-mapper node. cryptsetup status returns 0 only when
+// the mapper exists and is open; a stale /dev/mapper node (device already
+// removed) makes it return non-zero, so the caller reopens.
+func isLuksMapperOpen(mapperName string) bool {
+	_, err := primitives.Run("cryptsetup", "status", mapperName).Output()
+	return err == nil
 }
 
 // BuildMountOpts is an alias for primitives.BuildMountOpts.

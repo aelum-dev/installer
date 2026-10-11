@@ -15,6 +15,9 @@
 		spaceTotalMB = 0,
 		spaceFreeMB = 0,
 		spaceUsedPct = 0,
+		luksEnabled = false,
+		onEnableLuks,
+		onDisableLuks,
 		onSelectFileSystem,
 		onToggleMode
 	}: {
@@ -26,6 +29,9 @@
 		spaceTotalMB?: number;
 		spaceFreeMB?: number;
 		spaceUsedPct?: number;
+		luksEnabled?: boolean;
+		onEnableLuks?: () => void;
+		onDisableLuks?: () => void;
 		onSelectFileSystem: (fs: FileSystem) => void;
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
@@ -100,6 +106,31 @@
 				{/each}
 			</div>
 		</div>
+
+		<!-- LUKS2 root encryption toggle. Off → opens the passphrase popup; on →
+			opens the disable confirm. Reflects luksEnabled only. -->
+		{#if onEnableLuks || onDisableLuks}
+			<div class="luks-bar">
+				<span class="luks-label">{t('disk.encryptLabel')}</span>
+				<button
+					type="button"
+					class={['luks-switch', { on: luksEnabled }]}
+					role="switch"
+					aria-checked={luksEnabled}
+					aria-label={t('disk.encryptLabel')}
+					title={t('disk.encryptHint')}
+					onclick={() => {
+						if (luksEnabled) {
+							onDisableLuks?.();
+						} else {
+							onEnableLuks?.();
+						}
+					}}
+				>
+					<span class="luks-slider"></span>
+				</button>
+			</div>
+		{/if}
 
 		<!-- Installation mode: automatic vs manual (dualboot) -->
 		<div class="mode-bar">
