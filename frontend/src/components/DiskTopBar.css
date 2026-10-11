@@ -9,19 +9,35 @@
 .manual-title {
 	flex: 1;
 	min-width: 0;
-	display: flex;
-	flex-direction: row;
-	align-items: center;
+	/* Grid: icon in its own column, text beside it. Rows let the hint span the
+	   full width below so its left edge lines up with the icon's left edge. */
+	display: grid;
+	grid-template-columns: auto 1fr;
+	/* Top-align instead of center so the icon and text move together; with
+	   center the taller text column shifted up while the icon stayed put. */
+	align-items: start;
 	gap: var(--spacing-md);
+}
+
+/* Icon occupies the first column; the content the second. */
+.manual-title > .nf-icon {
+	grid-row: 1;
+	grid-column: 1;
+}
+
+.manual-title-content {
+	grid-row: 1;
+	grid-column: 2;
 }
 
 
 /* Stacked disk name + free bar, sitting to the right of the icon. */
 .manual-title-content {
+	/* Grid placement is set on .manual-title-content above; keep the internal
+	   stacked layout for h2 / space bar / hint. */
 	display: flex;
 	flex-direction: column;
 	gap: var(--spacing-xs);
-	flex: 1;
 	min-width: 0;
 	align-items: start;
 }
@@ -81,6 +97,19 @@
 	background: var(--color-primary);
 	border-radius: var(--radius-pill);
 	transition: width 0.2s ease;
+}
+
+/* Instruction shown under the disk info in manual mode. Spans both grid
+   columns, so its left edge aligns with the icon's left edge (the far-left
+   edge) rather than with the disk name. */
+.manual-title-hint {
+	margin: 0;
+	font-size: var(--font-size-md);
+	line-height: 1.4;
+	color: var(--color-text-muted);
+	text-align: left;
+	grid-row: 2;
+	grid-column: 1 / -1;
 }
 
 .top-bar-controls {

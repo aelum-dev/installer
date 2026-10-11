@@ -87,6 +87,7 @@
 					</div>
 				{/if}
 			</div>
+			<p class="manual-title-hint">{t('manual.continueHint')}</p>
 		</div>
 	{/if}
 
