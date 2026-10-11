@@ -286,10 +286,11 @@ function formatSizeMB(value: number): string {
 							}
 						}}
 					>
-						<td class="part-name" colspan="2">
+						<td class="part-name">
 							<span class="unallocated-label">{t('manual.free')}</span>
 						</td>
 						<td class="part-size">{formatSizeMB(unallocatedMB)} {t('unit.mb')}</td>
+						<td></td>
 						<td class="text-right">
 							<span class="unallocated-indicator" aria-hidden="true"></span>
 						</td>
