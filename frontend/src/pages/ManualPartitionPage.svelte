@@ -164,6 +164,9 @@ function formatSizeMB(value: number): string {
 		layout.partitions.push(newPart);
 		touch();
 		void persist();
+		// Hide the control once there's no space left to add from, so it doesn't
+		// linger with nothing to do after a full ("Use remaining") add.
+		if (availableAddMB <= 0) showAddControl = false;
 		// Reset add controls back to the default size (1 MB) so the next partition
 		// starts from the same baseline instead of a blank/0 field.
 		addSizeMB = 1;
@@ -300,9 +303,11 @@ function formatSizeMB(value: number): string {
 		</table>
 		</div>
 
-		<!-- Add new partition control: only after clicking unallocated space, and
-			only while there is still space left to add from. -->
-		{#if showAddControl && unallocatedMB > 0}
+		<!-- Add new partition control: shown only after the user clicks the FREE
+			row (showAddControl). The FREE row itself is gated on unallocatedMB > 0,
+			so the control can only ever be turned on while space exists; the Add
+			button stays disabled when none is left. -->
+		{#if showAddControl}
 		<div class="add-control">
 			<input
 				type="range"
