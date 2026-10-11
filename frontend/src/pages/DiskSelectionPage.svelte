@@ -210,7 +210,5 @@
 		bind:show={showDisableConfirm}
 		title={t('luks.disable.title')}
 		message={t('luks.disable.message')}
-		confirmLabel={t('dialog.confirm.yes')}
-		cancelLabel={t('dialog.confirm.cancel')}
 		onConfirm={disableLuks}
 	/>

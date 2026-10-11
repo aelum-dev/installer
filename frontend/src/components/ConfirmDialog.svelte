@@ -17,7 +17,7 @@
 		// (e.g. the delete dialog) still pass an explicit `message`.
 		message,
 		cancelLabel = t('dialog.confirm.cancel'),
-		confirmLabel = t('dialog.confirm.yes'),
+		confirmLabel = t('dialog.confirm.confirm'),
 		// Delete dialog historically had no warning glyph; opt out with show-icon={false}.
 		showIcon = true,
 		// Validation modal uses OK-only (no cancel).

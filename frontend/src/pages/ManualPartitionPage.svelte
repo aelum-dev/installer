@@ -346,8 +346,6 @@ function formatSizeMB(value: number): string {
 		bind:show={showDeleteDialog}
 		title={t('manual.deleteTitle')}
 		message={t('manual.deleteMessage')}
-		cancelLabel={t('dialog.confirm.cancel')}
-		confirmLabel={t('manual.deleteConfirm')}
 		onConfirm={confirmDelete}
 		onCancel={() => { deleteTargetIndex = null; }}
 	/>

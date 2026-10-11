@@ -196,7 +196,6 @@ All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales l
 
 ## Rules
 - Do not auto-commit. Always ask before committing.
-- Update CHANGELOG.md under `[Unreleased]` with every meaningful change.
 - Do not guess tool behavior — check man pages or ask.
 - Follow existing code patterns before introducing new ones.
 - Single responsibility: validate functions don't save, navigation doesn't mutate state.
