@@ -33,6 +33,11 @@ function formatSizeMB(value: number): string {
 	let addSizeMB = $state<number>(1);
 	let addUseRemaining = $state(false);
 
+	// Whether the add-new-partition control is shown. It only appears once the
+	// user clicks the "unallocated space" row in the partition editor, and
+	// disappears again on a second click (toggling off).
+	let showAddControl = $state(false);
+
 	// Live reference to the range input so the value-reassert effect below can keep
 	// it on a valid value when its `max` shifts (e.g. after adding/deleting a row).
 	let sliderEl = $state<HTMLInputElement | null>(null);
@@ -70,8 +75,11 @@ function formatSizeMB(value: number): string {
 	// the final bytes: "Use remaining" and the slider both stop 2 MB short, leaving
 	// a small padding band untouched (keeps end-of-disk alignment headroom).
 	const endOfDiskGuardMB = 2;
+	// Raw unallocated space shown in the editor's unallocated-space row (before
+	// the end-of-disk guard), so the row reflects the true free space.
+	const unallocatedMB = $derived.by(() => (layout ? computeFreeMB(layout) : 0));
 	const availableAddMB = $derived.by(() =>
-		layout ? Math.max(0, computeFreeMB(layout) - endOfDiskGuardMB) : 0,
+		layout ? Math.max(0, unallocatedMB - endOfDiskGuardMB) : 0,
 	);
 
 	// Whether "Add" stays enabled: usable space exists, and either "Use remaining"
@@ -255,11 +263,34 @@ function formatSizeMB(value: number): string {
 							</td>
 						</tr>
 					{/each}
-				</tbody>
-			</table>
+				{#if unallocatedMB > 0}
+					<tr
+						class={['unallocated-row', { 'is-active': showAddControl }]}
+						onclick={() => (showAddControl = !showAddControl)}
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								showAddControl = !showAddControl;
+							}
+						}}
+					>
+						<td class="part-name" colspan="2">
+							<span class="unallocated-label">{t('manual.free')}</span>
+						</td>
+						<td class="part-size">{formatSizeMB(unallocatedMB)} {t('unit.mb')}</td>
+						<td class="text-right">
+							<span class="unallocated-indicator" aria-hidden="true"></span>
+						</td>
+					</tr>
+				{/if}
+			</tbody>
+		</table>
 		</div>
 
-		<!-- Add new partition control -->
+		<!-- Add new partition control (only after clicking unallocated space) -->
+		{#if showAddControl}
 		<div class="add-control">
 			<input
 				type="range"
@@ -295,7 +326,7 @@ function formatSizeMB(value: number): string {
 				+ {t('manual.add')}
 			</button>
 		</div>
-
+		{/if}
 	{/if}
 
 	<!-- Delete confirmation dialog (shared component, custom text) -->
