@@ -11,6 +11,12 @@
 #   build/bin/aelum-installer-cli      CLI installer
 set -e
 
+# Disable WebKit's DMABUF/GPU renderer so the Wails window (and detached
+# devtools) don't render black on this host. See Wails issue #2977.
+# (Only takes effect when the built binary is actually launched, not during
+#  this build step.)
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
+
 cd "$(dirname "$0")"
 
 # ── Smart dependency checks ───────────────────────────────────────────
