@@ -137,8 +137,8 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
 	if data, err := os.ReadFile(confPath); err == nil {
 		content := string(data)
-		if !strings.Contains(content, "sd-encrypt") && !strings.Contains(content, " encrypt ") && !strings.HasSuffix(strings.TrimSpace(content), "encrypt") {
-			*issues = append(*issues, "dm-crypt hook (sd-encrypt/encrypt) not found in mkinitcpio.conf")
+		if !strings.Contains(content, "sd-encrypt") {
+			*issues = append(*issues, "dm-crypt hook (sd-encrypt) not found in mkinitcpio.conf")
 		} else {
 			*info = append(*info, "initramfs dm-crypt hook present ✓")
 		}
