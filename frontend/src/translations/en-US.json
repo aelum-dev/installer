@@ -38,6 +38,7 @@
   "luks.dialog.errorMatch": "Passphrases do not match.",
   "luks.dialog.hide": "Hide",
   "luks.dialog.passphrase": "Passphrase",
+  "luks.dialog.passphrasePlaceholder": "Enter your passphrase",
   "luks.dialog.show": "Show",
   "luks.dialog.title": "Set encryption passphrase",
   "luks.disable.message": "Disabling encryption discards the passphrase. The install will proceed <strong>without</strong> encryption. Continue?",

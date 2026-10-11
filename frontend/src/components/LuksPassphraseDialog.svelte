@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { installState, commitLuksPassphrase } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
+	import { glyph } from '$lib/icons';
 
 	let {
 		// Drives visibility; binds back to the shared luks dialog flag.
@@ -84,7 +85,7 @@
 						bind:this={focusRef}
 						bind:value={passphrase}
 						type={showPass ? 'text' : 'password'}
-						placeholder={t('luks.dialog.confirmPlaceholder')}
+						placeholder={t('luks.dialog.passphrasePlaceholder')}
 						autocomplete="off"
 						spellcheck="false"
 						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
@@ -95,7 +96,7 @@
 						aria-label={showPass ? t('luks.dialog.hide') : t('luks.dialog.show')}
 						onclick={() => (showPass = !showPass)}
 					>
-						{showPass ? t('luks.dialog.show') : t('luks.dialog.hide')}
+						<span class="nf-icon" aria-hidden="true">{showPass ? glyph('f070') : glyph('f06e')}</span>
 					</button>
 				</div>
 			</div>
@@ -114,10 +115,10 @@
 					<button
 						type="button"
 						class="toggle-visibility"
-						aria-label={showConfirm ? t('luks.dialog.show') : t('luks.dialog.hide')}
+						aria-label={showConfirm ? t('luks.dialog.hide') : t('luks.dialog.show')}
 						onclick={() => (showConfirm = !showConfirm)}
 					>
-						{showConfirm ? t('luks.dialog.show') : t('luks.dialog.hide')}
+						<span class="nf-icon" aria-hidden="true">{showConfirm ? glyph('f070') : glyph('f06e')}</span>
 					</button>
 				</div>
 				{#if error}
@@ -129,7 +130,7 @@
 					{t('dialog.confirm.cancel')}
 				</button>
 				<button type="button" class="btn-confirm" onclick={handleConfirm} disabled={!valid}>
-					{t('dialog.confirm.yes')}
+					{t('dialog.confirm.confirm')}
 				</button>
 			</div>
 		</div>
@@ -184,7 +185,7 @@
 		display: flex;
 		align-items: center;
 		border: 1.5px solid var(--color-border);
-		border-radius: var(--radius-lg);
+		border-radius: var(--radius-xl);
 		background: var(--color-bg-light);
 		overflow: hidden;
 	}
@@ -208,13 +209,19 @@
 	.toggle-visibility {
 		background: transparent;
 		border: none;
-		border-left: 1px solid var(--color-border-light);
 		padding: var(--pad-btn) var(--spacing-md);
 		font-family: inherit;
 		font-size: var(--font-size-sm);
 		font-weight: 600;
 		color: var(--color-primary);
 		cursor: pointer;
+	}
+
+	/* Keep the show/hide eye small and aligned with the button text; the global
+	.nf-icon is --font-size-xl (2rem), far too large for this inline control. */
+	.toggle-visibility .nf-icon {
+		font-size: 1rem;
+		vertical-align: -0.1em;
 	}
 
 	.field-error {
