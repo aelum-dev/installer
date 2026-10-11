@@ -46,7 +46,7 @@
   "manual.addTooSmall": "Partition size must be at least 1 MB.",
   "manual.allocated": "Used",
   "manual.assignHint": "Tip: assign Boot first, then Root. Mountpoints are assigned automatically — you never set them.",
-  "manual.continueHint": "To continue installation select one boot (esp) and one system (root) partition.",
+  "manual.continueHint": "To continue installation select one ESP (boot) and one System (root) partition.",
   "manual.delete": "Delete partition",
   "manual.deleteConfirm": "Remove",
   "manual.deleteMessage": "This removes the partition from your install plan and frees its space for other partitions. The partition stays on your disk until you run the install — cancel before then and nothing changes.",
