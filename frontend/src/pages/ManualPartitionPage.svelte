@@ -71,16 +71,11 @@ function formatSizeMB(value: number): string {
 		}
 	});
 
-	// Space left unallocated at the end of the disk. New partitions never carve
-	// the final bytes: "Use remaining" and the slider both stop 2 MB short, leaving
-	// a small padding band untouched (keeps end-of-disk alignment headroom).
-	const endOfDiskGuardMB = 2;
-	// Raw unallocated space shown in the editor's unallocated-space row (before
-	// the end-of-disk guard), so the row reflects the true free space.
+	// Raw unallocated space shown in the editor's unallocated-space row and fully
+	// available for new partitions. "Use remaining" and the slider both consume it
+	// in full — nothing is held back at the end of the disk.
 	const unallocatedMB = $derived.by(() => (layout ? computeFreeMB(layout) : 0));
-	const availableAddMB = $derived.by(() =>
-		layout ? Math.max(0, unallocatedMB - endOfDiskGuardMB) : 0,
-	);
+	const availableAddMB = $derived.by(() => (layout ? Math.max(0, unallocatedMB) : 0));
 
 	// Whether "Add" stays enabled: usable space exists, and either "Use remaining"
 	// is on, or an explicit size falls within (0, availableAddMB]. Replaces the old
