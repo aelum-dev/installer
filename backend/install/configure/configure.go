@@ -24,7 +24,7 @@ import (
 //  2. Configure bootloader
 //  3. System configuration (hostname, timezone, locale, keymap, NTP, mirrors)
 //  4. greetd + DMS greeter setup
-//  5. Plymouth BGRT silent boot
+//  5. Aelum LUKS unlock Plymouth theme (matches the live ISO)
 //  6. zram swap configuration
 //  7. Enable systemd services
 func Run(ctx *shared.InstallContext) error {
@@ -242,10 +242,13 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 func writeBootEntry(esp, rootUUID, luksUUID, kernel, initrd, fsType string) error {
 	var options string
 	if luksUUID != "" {
-		// LUKS: tell the initramfs which header UUID maps to the "aelum"
-		// mapper device (systemd-cryptsetup-generator syntax, consumed by sd-encrypt),
-		// then root from the decrypted mapper.
-		options = fmt.Sprintf("rd.luks.name=%s=%s root=%s", luksUUID, shared.LuksMapperName, shared.LuksMapperPath)
+		// rd.luks.name maps the header to the "aelum" mapper device (consumed by
+		// sd-encrypt), root from the decrypted mapper. The trailing flags mirror the
+		// unencrypted entry: `splash` is required for Plymouth to take over the
+		// console and show the LUKS unlock theme (without it Plymouth logs to
+		// /var/log/boot.log and you get the raw cryptsetup text prompt). `quiet`
+		// + lowered log levels keep boot silent behind the splash.
+		options = fmt.Sprintf("rd.luks.name=%s=%s root=%s rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0", luksUUID, shared.LuksMapperName, shared.LuksMapperPath)
 	} else {
 		options = "root=UUID=" + rootUUID + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
 	}
@@ -531,31 +534,54 @@ func (e *greetdExecutor) Logger() greetd.Logger {
 // Plymouth configuration
 // ============================================================================
 
-// ConfigurePlymouth sets up Plymouth BGRT theme for silent boot.
+// aelumThemeISOPath is the Aelum LUKS unlock Plymouth theme as shipped on the
+// live ISO. The installer copies it verbatim into the installed system so the
+// early-boot (dm-crypt unlock) splash matches the live ISO exactly.
+const aelumThemeISOPath = "/usr/share/plymouth/themes/aelum"
+
+// ConfigurePlymouth sets up the Aelum LUKS unlock Plymouth theme for the
+// installed system, matching the live ISO. It copies the branded theme files
+// from the live ISO, points plymouthd.conf at the aelum theme, creates the
+// default->aelum symlink, and regenerates the initramfs so the theme is baked
+// in for early-boot unlock.
 func ConfigurePlymouth(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 
+	// 1. Copy the Aelum LUKS unlock theme from the live ISO into the target.
+	if err := installAelumTheme(ctx); err != nil {
+		return err
+	}
+
+	// 2. Point plymouthd.conf at the aelum theme. This mirrors the live ISO;
+	//    UseFirmwareBackground=false keeps the dark boot background.
 	plymouthdConf := `[Daemon]
-Theme=bgrt
+Theme=aelum
 ShowDelay=0
-UseFirmwareBackground=true
+UseFirmwareBackground=false
+# DeviceScale=1  # Uncomment and adjust for HiDPI
 `
 	if err := primitives.WriteFile("/etc/plymouth/plymouthd.conf", plymouthdConf); err != nil {
 		return err
 	}
 
-	// Replace the stock Arch boot logo with Aelum's branded one (copied from the
-	// live ISO). Must happen before the -R regen below so the new initramfs
-	// embeds the branded logo.
-	if err := applyBrandedBootLogo(ctx); err != nil {
-		return err
+	// 3. Create the default->aelum symlink. plymouth-set-default-theme does not
+	//    manage the no-extension symlink the live ISO ships, so create it here.
+	dstLink := shared.MountRoot + "/usr/share/plymouth/themes/default"
+	if err := primitives.Run("rm", "-f", dstLink).Run(); err != nil {
+		return fmt.Errorf("failed to clear existing plymouth default symlink: %w", err)
+	}
+	if err := primitives.Run("ln", "-s", "aelum", dstLink).Run(); err != nil {
+		return fmt.Errorf("failed to create plymouth default symlink: %w", err)
 	}
 
-	output, err := primitives.RunChroot("plymouth-set-default-theme", "-R", "bgrt")
+	// 4. Regenerate the initramfs so plymouth bakes the aelum theme in for
+	//    early-boot. plymouth-set-default-theme only rewrites the Theme line in
+	//    place, so the keys written in step 2 are preserved.
+	output, err := primitives.RunChroot("plymouth-set-default-theme", "-R", "aelum")
 	if err != nil {
-		return fmt.Errorf("failed to set Plymouth BGRT theme: %w: %s", err, string(output))
+		return fmt.Errorf("failed to set Plymouth aelum theme: %w: %s", err, string(output))
 	}
 
 	if ctx.Username != "" {
@@ -568,6 +594,32 @@ UseFirmwareBackground=true
 	return nil
 }
 
+// installAelumTheme copies the Aelum LUKS unlock Plymouth theme from the live
+// ISO into the installed system. It fails loudly if the theme is missing from
+// the ISO: the early-boot unlock splash depends on these files.
+func installAelumTheme(ctx *shared.InstallContext) error {
+	dstDir := shared.MountRoot + "/usr/share/plymouth/themes/aelum"
+
+	if err := primitives.Run("test", "-d", aelumThemeISOPath).Run(); err != nil {
+		return fmt.Errorf("cannot configure early-boot unlock splash: Aelum plymouth theme not found on ISO at %s (rebuild the ISO with the theme)", aelumThemeISOPath)
+	}
+
+	if err := primitives.Run("mkdir", "-p", dstDir).Run(); err != nil {
+		return fmt.Errorf("failed to create plymouth theme dir: %w", err)
+	}
+	// Copy the theme contents (the .plymouth/.script and PNG assets).
+	out, err := primitives.Run("cp", "-a", aelumThemeISOPath+"/.", dstDir+"/").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy Aelum plymouth theme from ISO: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Installed Aelum LUKS unlock Plymouth theme")
+	}
+	return nil
+}
+
+// createHushlogin creates the user's .hushlogin so the first login shell
+// stays quiet (no motd/banner) after the unlock splash.
 func createHushlogin(username string) error {
 	home := shared.MountRoot + filepath.Join("/home", username)
 	cmd := primitives.Run("touch", filepath.Join(home, ".hushlogin"))
@@ -578,33 +630,6 @@ func createHushlogin(username string) error {
 	_, err = primitives.RunChroot("chown", username+":"+username, filepath.Join("/home", username, ".hushlogin"))
 	if err != nil {
 		return fmt.Errorf("failed to set .hushlogin ownership: %w", err)
-	}
-	return nil
-}
-
-// applyBrandedBootLogo copies Aelum's branded plymouth boot logo from the live
-// ISO over the stock Arch logo in the installed system. It is non-fatal: a
-// missing ISO asset just leaves the default plymouth watermark untouched.
-func applyBrandedBootLogo(ctx *shared.InstallContext) error {
-	isoLogo := "/usr/share/aelum/boot/watermark.png"
-	dst := shared.MountRoot + "/usr/share/plymouth/themes/spinner/watermark.png"
-
-	if err := primitives.Run("test", "-f", isoLogo).Run(); err != nil {
-		if ctx.Logger != nil {
-			ctx.Logger.Info("Branded boot logo not found on ISO (%s); keeping stock plymouth watermark", isoLogo)
-		}
-		return nil
-	}
-
-	if err := primitives.Run("mkdir", "-p", filepath.Dir(dst)).Run(); err != nil {
-		return fmt.Errorf("failed to create plymouth theme dir: %w", err)
-	}
-	out, err := primitives.Run("cp", isoLogo, dst).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to copy branded boot logo %s -> %s: %w: %s", isoLogo, dst, err, strings.TrimSpace(string(out)))
-	}
-	if ctx.Logger != nil {
-		ctx.Logger.Info("Installed Aelum branded boot logo")
 	}
 	return nil
 }

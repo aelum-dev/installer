@@ -213,7 +213,7 @@ All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales l
 - Installation log at `~/.local/share/aelum-installer/installation.log` is not encrypted.
 
 ## Desktop Environment
-Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Plymouth BGRT.
+Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, imv, gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd.
 
