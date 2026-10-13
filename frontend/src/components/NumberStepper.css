@@ -1,7 +1,7 @@
 .number-stepper {
 	display: inline-flex;
 	align-items: stretch;
-	width: 130px;
+	width: 160px;
 	flex-shrink: 0;
 	border: 1.5px solid var(--color-border-light);
 	border-radius: var(--radius-md);
