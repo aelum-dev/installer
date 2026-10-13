@@ -146,6 +146,18 @@ export function disableLuks(): void {
 
 // bytesPerMB is one MiB in bytes.
 const bytesPerMB = 1024 * 1024;
+// gptBackupBytes is the trailing region a GPT keeps for its backup header:
+// 256 sectors * 512 bytes (const gptBackupSectors in partition.go). The backend
+// strict free-space check reserves it before it lets a new partition grow, so
+// the frontend must reserve the same sectors here or it overstates the usable
+// space by 0.125 MiB and rejects a plan that fills the disk by exactly 1 MB.
+const gptBackupBytes = 256 * 512;
+// gptPrefixBytes is the leading region a GPT keeps for its header + protective
+// MBR: the first GPTPartitionStartSector (2048) sectors, never usable for a
+// partition (const GPTPartitionStartSector in partition.go). The backend's free
+// regions start at that sector, so the frontend must exclude it too — otherwise
+// "use remaining" proposes one MiB more than the backend can actually place.
+const gptPrefixBytes = 2048 * 512;
 
 // computeUsedMB sums the space the plan has reserved, in MiB. Every row in the
 // layout counts — an existing partition (path set) always occupies its space,
@@ -178,7 +190,12 @@ export function computeUsedBytes(layout: ManualLayout): number {
 export function computeFreeMB(layout: ManualLayout): number {
 	const diskBytes = layout.diskSizeBytes ?? layout.diskSizeMB * bytesPerMB;
 	const free = Math.max(diskBytes - computeUsedBytes(layout), 0);
-	return Math.floor(free / bytesPerMB);
+	// Exclude the two regions the backend never allocates: the leading GPT header
+	// prefix and the trailing backup header. Flooring to whole MiB then matches the
+	// backend's 1-MiB-aligned gap, so "use remaining" proposes exactly what a
+	// brand-new partition can be placed at (20350 MiB on a 20 GiB disk, not 20351).
+	const usable = Math.max(free - gptPrefixBytes - gptBackupBytes, 0);
+	return Math.floor(usable / bytesPerMB);
 }
 
 // typeCount returns how many partitions carry the given type.
@@ -369,7 +386,13 @@ function getManualLayoutValidationReasons(): string[] {
 		0,
 	);
 	const diskBytes = layout.diskSizeBytes ?? layout.diskSizeMB * bytesPerMB;
-	const freeForNewMB = Math.max(Math.floor((diskBytes - usedExistingBytes) / bytesPerMB), 0);
+	// Reserve the trailing GPT backup region too, so this stays in sync with the
+	// backend strict check (and with computeFreeMB) — otherwise a plan that fills
+	// the disk is rejected as exceeding the free space by exactly 1 MB.
+	const freeForNewMB = Math.max(
+		Math.floor((diskBytes - usedExistingBytes - gptPrefixBytes - gptBackupBytes) / bytesPerMB),
+		0,
+	);
 	const newParts = layout.partitions.filter((p) => !p.path);
 	const newPartsSize = newParts.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
 	if (newPartsSize > freeForNewMB) {
