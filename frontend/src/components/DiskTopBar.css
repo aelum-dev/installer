@@ -234,43 +234,43 @@
 	border-top-color: var(--color-bg-white);
 }
 
-/* LUKS2 encryption toggle — compact on/off switch next to the FS/mode controls. */
+/* LUKS2 encryption toggle — compact on/off switch next to the FS/mode controls.
+	Styled to match the "Use remaining" toggle (add-switch / add-switch-knob). */
 .luks-switch {
 	position: relative;
-	width: 44px;
-	height: 24px;
-	border-radius: var(--radius-pill);
-	background: var(--color-bg-hover);
-	border: 1.5px solid var(--color-border-light);
+	display: inline-block;
+	width: 38px;
+	height: 20px;
+	border-radius: 999px;
+	background: var(--color-border-light);
+	border: 0;
 	cursor: pointer;
 	padding: 0;
-	transition: all 0.15s ease;
+	transition: background 0.2s ease;
 	flex-shrink: 0;
 }
 
 .luks-switch:focus-visible {
-	outline: 2px solid var(--color-primary);
+	outline: 2px solid var(--color-primary-hover);
 	outline-offset: 2px;
 }
 
 .luks-switch.on {
 	background: var(--color-primary);
-	border-color: var(--color-primary);
 }
 
 .luks-slider {
 	position: absolute;
-	top: 50%;
-	left: 3px;
+	top: 2px;
+	left: 2px;
 	width: 16px;
 	height: 16px;
 	border-radius: 50%;
-	background: var(--color-text);
-	transform: translate(0, -50%);
-	transition: all 0.15s ease;
+	background: #fff;
+	transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 1px 2px rgba(61, 50, 52, 0.3);
 }
 
 .luks-switch.on .luks-slider {
-	left: calc(100% - 19px);
-	background: var(--color-on-primary);
+	transform: translateX(18px);
 }
