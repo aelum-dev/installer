@@ -48,16 +48,6 @@ function formatSizeMB(value: number): string {
 	// view instead of letting it scroll out behind the newly shown control).
 	let editorEl = $state<HTMLElement | null>(null);
 
-	// Keep addSizeMB a real number. Clearing the field would otherwise make it
-	// null/undefined, and a range input bound to a non-number defaults to the
-	// midpoint instead of the minimum. Emptying the field now yields 0, which the
-	// range clamps to its minimum and the Add button blocks.
-	$effect(() => {
-		if (!Number.isFinite(addSizeMB)) {
-			addSizeMB = 0;
-		}
-	});
-
 	// Re-assert a valid slider value whenever available space changes (adding or
 	// deleting a partition makes `availableAddMB` jump, which moves the range's
 	// `max`). A bound range left with a shifted `max` can stay stuck at its

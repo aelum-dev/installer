@@ -19,10 +19,12 @@
 	} = $props();
 
 	// Step the value by `delta`, clamping to [min, max] when max is finite. A
-	// cleared field binds as null, so treat it as 0 before stepping.
+	// cleared field binds as NaN (empty number input), so start from the minimum
+	// in that case rather than letting NaN poison the result.
 	function stepBy(delta: number): void {
 		if (disabled) return;
-		let next = (value ?? 0) + delta;
+		const base = Number.isFinite(value) ? value : (min ?? 1);
+		let next = base + delta;
 		if (max != null) next = Math.min(next, max);
 		value = Math.max(next, min ?? 1);
 	}
