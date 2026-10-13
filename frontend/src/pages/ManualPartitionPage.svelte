@@ -8,6 +8,7 @@
 	import { glyph } from '$lib/icons';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import RoleSelect from '$components/RoleSelect.svelte';
+	import NumberStepper from '$components/NumberStepper.svelte';
 	import './ManualPartitionPage.css';
 
 	let { disk }: { disk: DiskInfo | null } = $props();
@@ -295,7 +296,9 @@ function formatSizeMB(value: number): string {
 						<td class="part-size">{formatSizeMB(unallocatedMB)} {t('unit.mb')}</td>
 						<td></td>
 						<td class="text-right">
-							<span class="unallocated-indicator" aria-hidden="true"></span>
+							<span class="unallocated-indicator" aria-hidden="true">
+							{#if showAddControl}{glyph('eab7')}{:else}{glyph('eab4')}{/if}
+						</span>
 						</td>
 					</tr>
 				{/if}
@@ -319,12 +322,10 @@ function formatSizeMB(value: number): string {
 				bind:value={addSizeMB}
 				disabled={addUseRemaining}
 			/>
-			<input
-				type="number"
-				min="1"
-				class="add-size-input"
-				max={availableAddMB}
+			<NumberStepper
 				bind:value={addSizeMB}
+				min={1}
+				max={availableAddMB}
 				disabled={addUseRemaining}
 				placeholder={t('manual.sizeMB')}
 			/>

@@ -1,0 +1,82 @@
+.number-stepper {
+	display: inline-flex;
+	align-items: stretch;
+	width: 130px;
+	flex-shrink: 0;
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-md);
+	background: var(--color-bg-white);
+	overflow: hidden;
+	transition: border-color 0.15s ease;
+}
+
+.number-stepper:focus-within {
+	border-color: var(--color-primary);
+}
+
+.number-stepper-input {
+	flex: 1;
+	min-width: 0;
+	width: 100%;
+	border: 0;
+	padding: 6px 8px 6px 12px;
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	font-variant-numeric: tabular-nums;
+	color: var(--color-text);
+}
+
+/* Hide the native number spinners — they'd otherwise render over the steppers. */
+.number-stepper-input::-webkit-outer-spin-button,
+.number-stepper-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.number-stepper-input {
+	-appearance: none;
+	-moz-appearance: textfield;
+}
+
+.number-stepper-input:focus {
+	outline: none;
+}
+
+/* Stepper buttons. */
+.stepper-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	flex-shrink: 0;
+	border: 0;
+	border-left: 1.5px solid var(--color-border-light);
+	background: var(--color-bg-white);
+	color: var(--color-text-muted);
+	font-family: "NerdFontsSymbols Nerd Font";
+	font-size: 1rem;
+	line-height: 1;
+	cursor: pointer;
+	transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.stepper-btn:hover:not(:disabled) {
+	color: var(--color-primary);
+	background: var(--color-bg-hover);
+}
+
+.stepper-btn:disabled {
+	cursor: not-allowed;
+}
+
+.stepper-down {
+	border-left: 0;
+}
+
+/* Dim the whole field when disabled (input also carries :disabled). */
+.number-stepper.disabled,
+.number-stepper-input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}

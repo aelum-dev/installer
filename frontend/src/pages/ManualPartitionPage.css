@@ -122,20 +122,18 @@
 	font-weight: 600;
 }
 
-/* Rotating chevron indicator (CSS-only; no extra font glyph needed). */
+/* Chevron indicator: down when collapsed (click to expand), up when active. */
 .unallocated-indicator {
 	display: inline-block;
-	width: 8px;
-	height: 8px;
-	border-right: 2px solid var(--color-text-muted);
-	border-bottom: 2px solid var(--color-text-muted);
-	transform: rotate(45deg);
-	transition: transform 0.2s ease, border-color 0.2s ease;
+	font-family: "NerdFontsSymbols Nerd Font";
+	font-size: 1.05rem;
+	line-height: 1;
+	color: var(--color-text-muted);
+	transition: color 0.2s ease;
 }
 
 .unallocated-row.is-active .unallocated-indicator {
-	transform: rotate(-135deg);
-	border-color: var(--color-primary);
+	color: var(--color-primary);
 }
 
 .part-name {
@@ -270,30 +268,6 @@
 	cursor: not-allowed;
 }
 
-.add-size-input {
-	width: 96px;
-	flex-shrink: 0;
-	padding: 6px 10px;
-	border: 1.5px solid var(--color-border-light);
-	border-radius: var(--radius-md);
-	background: var(--color-bg-white);
-	font-family: var(--font-mono);
-	font-size: var(--font-size-sm);
-	font-variant-numeric: tabular-nums;
-	color: var(--color-text);
-	transition: border-color 0.15s ease;
-}
-
-.add-size-input:focus {
-	outline: none;
-	border-color: var(--color-primary);
-}
-
-.add-size-input:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .add-unit {
 	flex-shrink: 0;
 	align-self: center;
@@ -307,7 +281,7 @@
 	-webkit-appearance: none;
 	appearance: none;
 	flex: 1;
-	min-width: 120px;
+	min-width: 90px;
 	padding: 0;
 	height: 6px;
 	border-radius: 3px;
