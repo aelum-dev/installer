@@ -415,6 +415,14 @@ func (inst *Installer) Rollback() error {
 func (inst *Installer) RunCleanup() {
 	inst.cleanupOnce.Do(func() {
 		inst.logInfo("Cleanup: started")
+		// Unmount everything under /mnt first. The root filesystem may live on
+		// an LVM logical volume or a LUKS mapper, and both `vgchange -an` and
+		// `cryptsetup close` refuse to tear down a device that is still mounted
+		// (or otherwise busy). Unmounting first is what actually lets the VG and
+		// mapper be released, so a failed install can be retried cleanly.
+		if err := CleanupMounts(inst.Logger); err != nil {
+			inst.logError("Cleanup: unmount: %v", err)
+		}
 		// Deactivate the LVM volume group (if any) before closing the LUKS
 		// mapper it may sit on, so a failed install can be retried without a
 		// leaked VG. Best-effort — a missing VG errors.
@@ -430,11 +438,7 @@ func (inst *Installer) RunCleanup() {
 				inst.logInfo("Cleanup: LUKS mapper close (non-fatal): %v", err)
 			}
 		}
-		if err := CleanupMounts(inst.Logger); err != nil {
-			inst.logError("Cleanup: %v", err)
-		} else {
-			inst.logInfo("Cleanup: done")
-		}
+		inst.logInfo("Cleanup: done")
 	})
 }
 
