@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "نعم، امسح وثبت",
   "disk.encryptHint": "تشفير قسم الجذر بـ LUKS2. سيُطلب منك عبارة المرور عند التشغيل.",
   "disk.encryptLabel": "تشفير",
-  "disk.lvmHint": "ضع root و home على وحدات LVM المنطقية (دائمًا btrfs).",
+  "disk.lvmHint": "ضع root و home على وحدات LVM المنطقية.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "موجود",
   "disk.hdd": "HDD",

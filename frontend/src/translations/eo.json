@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Jes, forigi & instali",
   "disk.encryptHint": "Ĉifru la radikan partion kun LUKS2. Vi estos petita pri la pasfrazo dum booto.",
   "disk.encryptLabel": "Ĉifru",
-  "disk.lvmHint": "Metu root kaj home sur LVM-logikaj volumoj (ĉiam btrfs).",
+  "disk.lvmHint": "Metu root kaj home sur LVM-logikaj volumoj.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Ekzistanta",
   "disk.hdd": "HDD",

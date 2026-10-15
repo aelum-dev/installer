@@ -12,11 +12,11 @@ describe('toggleLvm', () => {
 		expect(installState.lvmEnabled).toBe(false);
 	});
 
-	it('flips enabled on and forces btrfs', () => {
+	it('flips enabled on without changing the filesystem', () => {
 		installState.fileSystem = 'ext4';
 		toggleLvm();
 		expect(installState.lvmEnabled).toBe(true);
-		expect(installState.fileSystem).toBe('btrfs');
+		expect(installState.fileSystem).toBe('ext4');
 	});
 
 	it('flips enabled back off', () => {
@@ -34,10 +34,10 @@ describe('setFileSystem', () => {
 		expect(installState.lvmEnabled).toBe(true);
 	});
 
-	it('turns LVM off when a non-btrfs filesystem is selected', () => {
+	it('keeps LVM on when ext4 is selected (ext4 is supported on LVM)', () => {
 		installState.lvmEnabled = true;
 		setFileSystem('ext4');
 		expect(installState.fileSystem).toBe('ext4');
-		expect(installState.lvmEnabled).toBe(false);
+		expect(installState.lvmEnabled).toBe(true);
 	});
 });

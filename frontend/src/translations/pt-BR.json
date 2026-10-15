@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Sim, apagar e instalar",
   "disk.encryptHint": "Criptografe a partição raiz com LUKS2. Você será solicitado a frase-secreta na inicialização.",
   "disk.encryptLabel": "Criptografar",
-  "disk.lvmHint": "Colocar a raiz e a home em volumes lógicos LVM (sempre btrfs).",
+  "disk.lvmHint": "Colocar a raiz e a home em volumes lógicos LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existente",
   "disk.hdd": "HDD",

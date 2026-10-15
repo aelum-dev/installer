@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Да, изтрий и инсталирай",
   "disk.encryptHint": "Шифрирайте системния раздел с LUKS2. При стартиране ще ви се поиска паролата.",
   "disk.encryptLabel": "Шифриране",
-  "disk.lvmHint": "Поставете root и home на логически томове LVM (винаги btrfs).",
+  "disk.lvmHint": "Поставете root и home на логически томове LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Съществуващ",
   "disk.hdd": "HDD",

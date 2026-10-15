@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Kyllä, poista & asenna",
   "disk.encryptHint": "Salaa juuriositus LUKS2:lla. Salasanaa kysytään käynnistyksen yhteydessä.",
   "disk.encryptLabel": "Salaa",
-  "disk.lvmHint": "Sijoita root ja home LVM-loogisiin taltioihin (aina btrfs).",
+  "disk.lvmHint": "Sijoita root ja home LVM-loogisiin taltioihin.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Olemassa oleva",
   "disk.hdd": "HDD",

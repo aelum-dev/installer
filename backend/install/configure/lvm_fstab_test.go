@@ -121,3 +121,56 @@ func TestBootEntryOptions_PlainBtrfs(t *testing.T) {
 		t.Errorf("expected root=UUID=root-uuid, got: %s", opts)
 	}
 }
+
+// lvmFstabLineForUUID returns the whitespace-split fstab fields of the entry
+// whose first column is "UUID=<uuid>", or nil when absent.
+func lvmFstabLineForUUID(content, uuid string) []string {
+	for _, line := range strings.Split(content, "\n") {
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) >= 3 && fields[0] == "UUID="+uuid {
+			return fields
+		}
+	}
+	return nil
+}
+
+// TestGenerateLvmExt4Fstab verifies the ext4 LVM fstab mounts the root LV at /
+// and the home LV at /home, with no btrfs subvolume entries.
+func TestGenerateLvmExt4Fstab(t *testing.T) {
+	ctx := lvmContext()
+	ctx.FileSystem = shared.FileSystemExt4
+	content := generateLvmFstab(ctx)
+
+	root := lvmFstabLineForUUID(content, "root-lv-uuid")
+	if root == nil || root[1] != "/" || root[2] != "ext4" {
+		t.Errorf("expected root LV mounted at / as ext4, got %v:\n%s", root, content)
+	}
+	home := lvmFstabLineForUUID(content, "home-lv-uuid")
+	if home == nil || home[1] != "/home" || home[2] != "ext4" {
+		t.Errorf("expected home LV mounted at /home as ext4, got %v:\n%s", home, content)
+	}
+	efi := lvmFstabLineForUUID(content, "efi-uuid-456")
+	if efi == nil || efi[1] != "/boot" || efi[2] != "vfat" {
+		t.Errorf("expected EFI entry, got %v:\n%s", efi, content)
+	}
+	if strings.Contains(content, "btrfs") {
+		t.Errorf("ext4 LVM fstab must not contain btrfs entries:\n%s", content)
+	}
+}
+
+// TestBootEntryOptions_LvmExt4 verifies the ext4 LVM boot entry roots at the
+// root LV and omits the btrfs rootflags.
+func TestBootEntryOptions_LvmExt4(t *testing.T) {
+	ctx := lvmContext()
+	ctx.FileSystem = shared.FileSystemExt4
+	opts := bootEntryOptions(ctx)
+	if !strings.Contains(opts, "root="+shared.LvmRootLvPath) {
+		t.Errorf("expected root=%s, got: %s", shared.LvmRootLvPath, opts)
+	}
+	if strings.Contains(opts, "rootflags=subvol=@") {
+		t.Errorf("ext4 must not carry btrfs rootflags: %s", opts)
+	}
+}

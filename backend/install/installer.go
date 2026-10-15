@@ -302,12 +302,12 @@ func (inst *Installer) context() *InstallContext {
 	// Create a fresh cancel channel for this installation run.
 	inst.cancel = make(chan struct{})
 
-	// LVM always installs btrfs: the root LV carries the btrfs subvolume scheme
-	// (@ @srv @cache @tmp @log) and the home LV carries @home. Normalize the
-	// filesystem here so every downstream step (format/fstab/bootloader) agrees.
+	// LVM installs the selected filesystem on both logical volumes: btrfs (the
+	// root LV carries the subvolume scheme, the home LV carries @home) or ext4.
+	// Default an unset filesystem so the LVM steps have a concrete type.
 	fileSystem := inst.fileSystem
-	if inst.lvm {
-		fileSystem = shared.FileSystemBtrfs
+	if fileSystem == "" {
+		fileSystem = shared.DefaultFileSystem
 	}
 
 	ctx := &InstallContext{
@@ -326,8 +326,8 @@ func (inst *Installer) context() *InstallContext {
 	}
 	if inst.lvm {
 		ctx.LvmVolumes = []shared.LvmVolume{
-			{Name: shared.LvmRootVolume, Percent: shared.LvmRootPercent, FileSystem: shared.FileSystemBtrfs, MountPoint: "/"},
-			{Name: shared.LvmHomeVolume, Rest: true, FileSystem: shared.FileSystemBtrfs, MountPoint: "/home"},
+			{Name: shared.LvmRootVolume, Percent: shared.LvmRootPercent, FileSystem: fileSystem, MountPoint: "/"},
+			{Name: shared.LvmHomeVolume, Rest: true, FileSystem: fileSystem, MountPoint: "/home"},
 		}
 	}
 	ctx.ManualMode = inst.manualMode

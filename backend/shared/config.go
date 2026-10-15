@@ -374,11 +374,12 @@ const (
 )
 
 // --- LVM (logical volume management) ---------------------------------------
-// LVM is an opt-in alternative to putting the btrfs filesystem directly on the
-// root partition: the root partition becomes a physical volume (PV) in a volume
-// group (VG), which holds two logical volumes — a root LV and a home LV. Both
-// are btrfs; the root LV carries every subvolume except @home, which lives on
-// its own LV so /home gets its own checksums/compression/snapshots.
+// LVM is an opt-in alternative to putting the filesystem directly on the root
+// partition: the root partition becomes a physical volume (PV) in a volume group
+// (VG), which holds two logical volumes — a root LV and a home LV. Both use the
+// selected filesystem. For btrfs the root LV carries every subvolume except
+// @home, which lives on its own LV so /home gets its own checksums/compression/
+// snapshots; for ext4 the home LV is simply a separate filesystem at /home.
 
 // LvmVolumeGroup is the name of the volume group the installer creates.
 const LvmVolumeGroup = "aelum"

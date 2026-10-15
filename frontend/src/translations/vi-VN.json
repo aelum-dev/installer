@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Có, xóa & cài đặt",
   "disk.encryptHint": "Mã hóa phân vùng gốc bằng LUKS2. Bạn sẽ được hỏi cụm mật khẩu khi khởi động.",
   "disk.encryptLabel": "Mã hóa",
-  "disk.lvmHint": "Đặt root và home trên các phân vùng logic LVM (luôn là btrfs).",
+  "disk.lvmHint": "Đặt root và home trên các phân vùng logic LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Đã tồn tại",
   "disk.hdd": "HDD",

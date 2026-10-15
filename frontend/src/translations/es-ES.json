@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Sí, borrar e instalar",
   "disk.encryptHint": "Cifra la partición raíz con LUKS2. Se te pedirá la contraseña al iniciar.",
   "disk.encryptLabel": "Cifrar",
-  "disk.lvmHint": "Colocar la raíz y /home en volúmenes lógicos LVM (siempre btrfs).",
+  "disk.lvmHint": "Colocar la raíz y /home en volúmenes lógicos LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existente",
   "disk.hdd": "HDD",

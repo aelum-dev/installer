@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Ja, radera & installera",
   "disk.encryptHint": "Kryptera rotpartitionen med LUKS2. Du ombeds ange lösenfrasen vid start.",
   "disk.encryptLabel": "Kryptera",
-  "disk.lvmHint": "Placera root och home på logiska LVM-volymer (alltid btrfs).",
+  "disk.lvmHint": "Placera root och home på logiska LVM-volymer.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existerande",
   "disk.hdd": "HDD",

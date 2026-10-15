@@ -103,7 +103,7 @@ type LvmVolume struct {
 	Name       string // "root" | "home"
 	Percent    int    // root: percentage of the VG (ignored when Rest is true)
 	Rest       bool   // home: consume 100% of the remaining space
-	FileSystem string // "btrfs"
+	FileSystem string // "btrfs" | "ext4"
 	MountPoint string // "/" | "/home"
 }
 

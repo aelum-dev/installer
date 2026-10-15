@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Да, удалить и установить",
   "disk.encryptHint": "Шифрование системного раздела с LUKS2. Пароль будет запрошен при загрузке.",
   "disk.encryptLabel": "Шифрование",
-  "disk.lvmHint": "Разместить root и home на логических томах LVM (всегда btrfs).",
+  "disk.lvmHint": "Разместить root и home на логических томах LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Существующий",
   "disk.hdd": "HDD",

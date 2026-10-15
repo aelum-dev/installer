@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "是，删除并安装",
   "disk.encryptHint": "使用 LUKS2 加密根分区。启动时将提示输入口令。",
   "disk.encryptLabel": "加密",
-  "disk.lvmHint": "将 root 和 home 放在 LVM 逻辑卷上（始终为 btrfs）。",
+  "disk.lvmHint": "将 root 和 home 放在 LVM 逻辑卷上。",
   "disk.lvmLabel": "LVM",
   "disk.existing": "现有",
   "disk.hdd": "HDD",

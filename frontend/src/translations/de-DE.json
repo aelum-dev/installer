@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Ja, löschen & installieren",
   "disk.encryptHint": "Verschlüssele die Wurzelpartition mit LUKS2. Beim Booten wirst du zur Passphrase gefragt.",
   "disk.encryptLabel": "Verschlüsseln",
-  "disk.lvmHint": "Root und Home auf logische LVM-Volumes legen (immer btrfs).",
+  "disk.lvmHint": "Root und Home auf logische LVM-Volumes legen.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Vorhanden",
   "disk.hdd": "HDD",

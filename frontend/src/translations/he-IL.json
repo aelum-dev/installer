@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "כן, מחק והתקן",
   "disk.encryptHint": "הצפנת מחלקת השורש עם LUKS2. יתבקש מילת מעבר בעת ההפעלה.",
   "disk.encryptLabel": "הצפנה",
-  "disk.lvmHint": "מקם את root ו-home על כרכים לוגיים של LVM (תמיד btrfs).",
+  "disk.lvmHint": "מקם את root ו-home על כרכים לוגיים של LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "קיים",
   "disk.hdd": "HDD",

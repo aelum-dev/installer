@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "はい、削除してインストール",
   "disk.encryptHint": "ルートパーティションを LUKS2 で暗号化します。起動時にパスフレーズを求められます。",
   "disk.encryptLabel": "暗号化",
-  "disk.lvmHint": "root と home を LVM 論理ボリュームに配置します（常に btrfs）。",
+  "disk.lvmHint": "root と home を LVM 論理ボリュームに配置します。",
   "disk.lvmLabel": "LVM",
   "disk.existing": "既存",
   "disk.hdd": "HDD",

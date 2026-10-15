@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Sì, elimina e installa",
   "disk.encryptHint": "Crittografa la partizione root con LUKS2. Ti verrà richiesta la passphrase all'avvio.",
   "disk.encryptLabel": "Crittografa",
-  "disk.lvmHint": "Posiziona root e home su volumi logici LVM (sempre btrfs).",
+  "disk.lvmHint": "Posiziona root e home su volumi logici LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Esistente",
   "disk.hdd": "HDD",

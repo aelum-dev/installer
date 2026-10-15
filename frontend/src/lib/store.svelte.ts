@@ -150,22 +150,16 @@ export function disableLuks(): void {
 
 // toggleLvm flips LVM on/off. LVM has no passphrase (unlike LUKS), so the toggle
 // commits immediately: the installer places root and home on logical volumes in
-// the `aelum` volume group (always btrfs). Enabling LVM forces btrfs, since the
-// root LV carries the btrfs subvolume scheme.
+// the `aelum` volume group. Both LVs use the selected filesystem (btrfs with the
+// subvolume scheme, or ext4).
 export function toggleLvm(): void {
-	if (!installState.lvmEnabled) {
-		installState.fileSystem = 'btrfs';
-	}
 	installState.lvmEnabled = !installState.lvmEnabled;
 }
 
-// setFileSystem selects the root filesystem. LVM requires btrfs, so choosing
-// anything else turns LVM back off (keeping the UI and the install consistent).
+// setFileSystem selects the root filesystem. LVM supports both ext4 and btrfs,
+// so it stays enabled across filesystem changes.
 export function setFileSystem(fs: FileSystem): void {
 	installState.fileSystem = fs;
-	if (fs !== 'btrfs') {
-		installState.lvmEnabled = false;
-	}
 }
 
 // ── Manual partition helpers ───────────────────────────────────────────────

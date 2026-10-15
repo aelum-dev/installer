@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Ναι, διαγραφή & εγκατάσταση",
   "disk.encryptHint": "Κρυπτογράψτε την τομέα root με LUKS2. Θα σας ζητηθεί ο κωδικός κατά την εκκίνηση.",
   "disk.encryptLabel": "Κρυπτογράφηση",
-  "disk.lvmHint": "Τοποθετήστε το root και το home σε λογικούς τόμους LVM (πάντα btrfs).",
+  "disk.lvmHint": "Τοποθετήστε το root και το home σε λογικούς τόμους LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Υπάρχων",
   "disk.hdd": "HDD",

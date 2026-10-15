@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Ya, hapus & instal",
   "disk.encryptHint": "Enkripsi partisi root dengan LUKS2. Anda akan diminta frase sandi saat boot.",
   "disk.encryptLabel": "Enkripsi",
-  "disk.lvmHint": "Letakkan root dan home pada volume logis LVM (selalu btrfs).",
+  "disk.lvmHint": "Letakkan root dan home pada volume logis LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Sudah Ada",
   "disk.hdd": "HDD",

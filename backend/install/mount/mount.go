@@ -22,6 +22,11 @@ import (
 //   - /mnt/<mountPoint>: each additional subvolume, with properties from layout
 //   - /mnt/boot: EFI partition (ESP)
 //
+// For ext4 LVM layouts:
+//   - /mnt: root logical volume
+//   - /mnt/home: home logical volume
+//   - /mnt/boot: EFI partition (ESP)
+//
 // If ctx.Partitions is nil (standalone invocation), it derives partition paths
 // from the disk ID. This matches the layout created by format.Run.
 func Run(ctx *shared.InstallContext) error {
@@ -111,48 +116,9 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 
-	// ── Mount additional subvolumes ──
-
-	if ctx.FileSystem == shared.FileSystemBtrfs {
-		// Use MountPoints map (populated by FormatDisk) to mount additional subvolumes.
-		// Each entry maps a mount point (e.g., "/home") to the device that holds it:
-		// with LVM, /home lives on the home LV while the rest share the root LV.
-		for mountPath, device := range p.MountPoints {
-			// Skip root mount point — already mounted above
-			if mountPath == "/" {
-				continue
-			}
-			if device == "" {
-				device = rootDevice
-			}
-
-			// Find the subvolume definition for this mount point to get its options
-			var sv *shared.BtrfsSubvolume
-			for _, candidate := range shared.GetBtrfsSubvolumes() {
-				if candidate.MountPoint == mountPath {
-					sv = &candidate
-					break
-				}
-			}
-			if sv == nil {
-				continue
-			}
-
-			// Create mount point directory
-			fullPath := shared.MountRoot + mountPath
-			_ = primitives.Run("mkdir", "-p", fullPath).Run()
-
-			// Mount subvolume with its properties
-			mountOpts := primitives.BuildMountOpts(sv)
-			cmd = primitives.Run("mount", "-o", mountOpts, device, fullPath)
-			output, err := cmd.CombinedOutput()
-			if err != nil {
-				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(output))
-			}
-			if ctx.Logger != nil && len(output) > 0 {
-				ctx.Logger.Command(string(output))
-			}
-		}
+	// ── Mount additional filesystems (btrfs subvolumes / non-btrfs LVM home) ──
+	if err := mountAdditionalMounts(ctx, p, rootDevice); err != nil {
+		return err
 	}
 
 	// ── Mount EFI partition at /mnt/boot ──
@@ -180,6 +146,72 @@ func Run(ctx *shared.InstallContext) error {
 	}
 
 	return nil
+}
+
+// mountAdditionalMounts mounts every filesystem beyond root that the layout
+// defines: the btrfs subvolumes and, for a non-btrfs LVM layout, the home
+// logical volume at /home.
+func mountAdditionalMounts(ctx *shared.InstallContext, p *shared.PartitionInfo, rootDevice string) error {
+	if ctx.FileSystem == shared.FileSystemBtrfs {
+		return mountBtrfsSubvolumes(ctx, p, rootDevice)
+	}
+	if ctx.Lvm {
+		return mountLvmHome(p)
+	}
+	return nil
+}
+
+// mountBtrfsSubvolumes mounts each extra btrfs subvolume recorded in the
+// layout's MountPoints map. Each entry maps a mount point (e.g. "/home") to the
+// device that holds it: with LVM, /home lives on the home LV while the rest
+// share the root LV.
+func mountBtrfsSubvolumes(ctx *shared.InstallContext, p *shared.PartitionInfo, rootDevice string) error {
+	for mountPath, device := range p.MountPoints {
+		// Skip the root mount point — already mounted by Run.
+		if mountPath == "/" {
+			continue
+		}
+		if device == "" {
+			device = rootDevice
+		}
+
+		// Find the subvolume definition for this mount point to get its options.
+		sv := shared.FindSubvolumeByMountPoint(shared.GetBtrfsSubvolumes(), mountPath)
+		if sv == nil {
+			continue
+		}
+
+		// Create the mount point directory.
+		fullPath := shared.MountRoot + mountPath
+		_ = primitives.Run("mkdir", "-p", fullPath).Run()
+
+		// Mount the subvolume with its properties.
+		mountOpts := primitives.BuildMountOpts(sv)
+		out, err := primitives.Run("mount", "-o", mountOpts, device, fullPath).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(out))
+		}
+		if ctx.Logger != nil && len(out) > 0 {
+			ctx.Logger.Command(string(out))
+		}
+	}
+	return nil
+}
+
+// mountLvmHome mounts the LVM home logical volume at /home for a non-btrfs
+// (ext4) LVM layout, where /home is a separate filesystem rather than a btrfs
+// subvolume on the home LV.
+func mountLvmHome(p *shared.PartitionInfo) error {
+	if p.HomeLV == "" {
+		return fmt.Errorf("LVM enabled but home LV path not set (format step failed)")
+	}
+	homePath := shared.MountRoot + "/home"
+	_ = primitives.Run("mkdir", "-p", homePath).Run()
+	out, err := primitives.Run("mount", p.HomeLV, homePath).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("mount home LV (%s) failed: %w: %s", homePath, err, string(out))
+	}
+	return verifyMount(homePath, p.HomeLV)
 }
 
 // ensureLuksOpen opens the LUKS root mapper if it isn't already open. The

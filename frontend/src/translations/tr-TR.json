@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Evet, sil ve yükle",
   "disk.encryptHint": "Kök bölüme LUKS2 ile şifrele. Başlatmada parola sorulacak.",
   "disk.encryptLabel": "Şifrele",
-  "disk.lvmHint": "Root ve home'u LVM mantıksal birimlerine yerleştir (her zaman btrfs).",
+  "disk.lvmHint": "Root ve home'u LVM mantıksal birimlerine yerleştir.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Mevcut",
   "disk.hdd": "HDD",

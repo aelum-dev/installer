@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "بله، پاک کنید و نصب کنید",
   "disk.encryptHint": "پارتیشن ریشه را با LUKS2 رمزگذاری کنید. هنگام بوت از شما عبارت عبور خواسته می‌شود.",
   "disk.encryptLabel": "رمزگذاری",
-  "disk.lvmHint": "قرار دادن root و home روی حجم‌های منطقی LVM (همیشه btrfs).",
+  "disk.lvmHint": "قرار دادن root و home روی حجم‌های منطقی LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "موجود",
   "disk.hdd": "HDD",

@@ -1,6 +1,7 @@
 // Package lvm implements the LVM operations the installer needs: create the
-// `aelum` volume group with a root and a home logical volume, format them as
-// btrfs, activate the group for mounting, and tear it down again.
+// `aelum` volume group with a root and a home logical volume, format them with
+// the selected filesystem (btrfs with subvolumes, or ext4), activate the group
+// for mounting, and tear it down again.
 //
 // The root partition becomes the physical volume (PV). When LUKS is enabled the
 // PV is the decrypted mapper device (/dev/mapper/aelum) instead of the raw
@@ -21,12 +22,13 @@ import (
 type LV struct {
 	Name       string // "root" | "home"
 	Path       string // /dev/mapper/aelum-root
-	FileSystem string // "btrfs"
+	FileSystem string // "btrfs" | "ext4"
 	MountPoint string // "/" | "/home"
 }
 
-// Params configures the volume group Apply creates. Both LVs are always btrfs;
-// the root LV carries every subvolume except @home, which the home LV carries.
+// Params configures the volume group Apply creates. Both LVs use the same
+// filesystem: btrfs (the root LV carries every subvolume except @home, which
+// the home LV carries) or ext4.
 type Params struct {
 	// FileSystem is the filesystem for both LVs (defaults to btrfs).
 	FileSystem string
@@ -39,9 +41,9 @@ type Params struct {
 type Formatter func(device, fsType string, subvolumes []shared.BtrfsSubvolume) error
 
 // Apply tears down any existing `aelum` volume group, creates the PV/VG, creates
-// the root and home logical volumes, and formats each one via format (btrfs,
-// with the LVM subvolume schemes). It returns the created logical volumes in
-// creation order (root, then home).
+// the root and home logical volumes, and formats each one via format (btrfs with
+// the LVM subvolume schemes, or ext4 with none). It returns the created logical
+// volumes in creation order (root, then home).
 //
 // device is the raw root partition (LUKS off) or the decrypted LUKS mapper
 // (/dev/mapper/aelum, LUKS on).

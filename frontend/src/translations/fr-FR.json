@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Oui, effacer et installer",
   "disk.encryptHint": "Chifrez la partition racine avec LUKS2. Une phrase de passe vous sera demandée au démarrage.",
   "disk.encryptLabel": "Chiffrer",
-  "disk.lvmHint": "Placer la racine et /home sur des volumes logiques LVM (toujours btrfs).",
+  "disk.lvmHint": "Placer la racine et /home sur des volumes logiques LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existant",
   "disk.hdd": "HDD",

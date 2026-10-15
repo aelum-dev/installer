@@ -101,7 +101,7 @@ func run(args []string) int {
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
-	lvmFlag := fs.Bool("lvm", false, "Place root and home on LVM logical volumes (aelum VG; btrfs)")
+	lvmFlag := fs.Bool("lvm", false, "Place root and home on LVM logical volumes (aelum VG)")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)

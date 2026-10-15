@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "예, 삭제하고 설치",
   "disk.encryptHint": "루트 파티션을 LUKS2로 암호화합니다. 부팅 시 암호문을 입력합니다.",
   "disk.encryptLabel": "암호화",
-  "disk.lvmHint": "root와 home을 LVM 논리 볼륨에 배치합니다(항상 btrfs).",
+  "disk.lvmHint": "root와 home을 LVM 논리 볼륨에 배치합니다.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "기존",
   "disk.hdd": "HDD",

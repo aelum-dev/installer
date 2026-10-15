@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Yes, Erase & Install",
   "disk.encryptHint": "Encrypt the root partition with LUKS2. You will be prompted for the passphrase at boot.",
   "disk.encryptLabel": "Encrypt",
-  "disk.lvmHint": "Place root and home on LVM logical volumes (always btrfs).",
+  "disk.lvmHint": "Place root and home on LVM logical volumes.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existing",
   "disk.hdd": "HDD",

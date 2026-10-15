@@ -232,14 +232,14 @@ func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string)
 // SetupRootFilesystem formats device as the root filesystem and returns the
 // RootSetup the mount/install/configure steps consume. When LVM is enabled it
 // creates the `aelum` volume group on device with root + home LVs; otherwise it
-// formats device in place. Both btrfs paths create the appropriate subvolume
-// scheme (the LVM root LV carries every subvolume except @home, which the home
-// LV carries).
+// formats device in place. The btrfs paths create the appropriate subvolume
+// scheme (for LVM, the root LV carries every subvolume except @home, which the
+// home LV carries).
 func SetupRootFilesystem(ctx *shared.InstallContext, device, fsType string) (RootSetup, error) {
 	if ctx.Lvm {
-		// LVM always installs btrfs: the root LV carries the btrfs subvolume
-		// scheme and the home LV carries @home.
-		return applyLvm(ctx, device, shared.FileSystemBtrfs)
+		// The root and home LVs use the selected filesystem: btrfs (the root LV
+		// carries the subvolume scheme and the home LV carries @home) or ext4.
+		return applyLvm(ctx, device, fsType)
 	}
 	if err := FormatPartition(device, fsType, "aelum"); err != nil {
 		return RootSetup{}, err
@@ -304,17 +304,21 @@ func applyRootSetup(info *shared.PartitionInfo, ctx *shared.InstallContext, setu
 	if ctx.Lvm {
 		// Root LV carries every subvolume except @home; the home LV carries
 		// @home. The mount step reads the per-mount-point device from this map.
+		// An ext4 LVM layout has no subvolumes: root is the root LV and /home is
+		// the home LV, both mounted directly by the mount step (no map entries).
 		info.RootLV = setup.RootDevice
 		info.HomeLV = setup.HomeLV
 		info.HomeUUID = setup.HomeUUID
-		for _, sv := range shared.GetLvmBtrfsSubvolumes() {
-			if sv.MountPoint != "/" {
-				info.MountPoints[sv.MountPoint] = setup.RootDevice
+		if fsType == shared.FileSystemBtrfs {
+			for _, sv := range shared.GetLvmBtrfsSubvolumes() {
+				if sv.MountPoint != "/" {
+					info.MountPoints[sv.MountPoint] = setup.RootDevice
+				}
 			}
-		}
-		for _, sv := range shared.GetLvmHomeSubvolumes() {
-			if sv.MountPoint != "/" {
-				info.MountPoints[sv.MountPoint] = setup.HomeLV
+			for _, sv := range shared.GetLvmHomeSubvolumes() {
+				if sv.MountPoint != "/" {
+					info.MountPoints[sv.MountPoint] = setup.HomeLV
+				}
 			}
 		}
 		return

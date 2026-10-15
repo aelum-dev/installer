@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Sí, esborra i instal·la",
   "disk.encryptHint": "Xifra la partició arrel amb LUKS2. Se us demanarà la contrasenya en arrencar.",
   "disk.encryptLabel": "Xifra",
-  "disk.lvmHint": "Col·loca l'arrel i /home en volums lògics LVM (sempre btrfs).",
+  "disk.lvmHint": "Col·loca l'arrel i /home en volums lògics LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existent",
   "disk.hdd": "HDD",

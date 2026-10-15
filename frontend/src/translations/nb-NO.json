@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Ja, slett & installer",
   "disk.encryptHint": "Krypter rotpartitten med LUKS2. Du blir spurt om passfrasen ved oppstart.",
   "disk.encryptLabel": "Krypter",
-  "disk.lvmHint": "Plasser root og home på logiske LVM-volumer (alltid btrfs).",
+  "disk.lvmHint": "Plasser root og home på logiske LVM-volumer.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Eksisterende",
   "disk.hdd": "HDD",

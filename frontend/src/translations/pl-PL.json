@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Tak, usuń i zainstaluj",
   "disk.encryptHint": "Zaszyfruj partycję roota z LUKS2. Przy uruchamianiu zostaniesz poproszony o hasło.",
   "disk.encryptLabel": "Zaszyfruj",
-  "disk.lvmHint": "Umieść root i home na woluminach logicznych LVM (zawsze btrfs).",
+  "disk.lvmHint": "Umieść root i home na woluminach logicznych LVM.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Istniejący",
   "disk.hdd": "HDD",

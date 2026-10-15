@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "是，刪除並安裝",
   "disk.encryptHint": "使用 LUKS2 加密根分割區。啟動時會提示輸入口令。",
   "disk.encryptLabel": "加密",
-  "disk.lvmHint": "將 root 和 home 放在 LVM 邏輯磁碟區上（一律為 btrfs）。",
+  "disk.lvmHint": "將 root 和 home 放在 LVM 邏輯磁碟區上。",
   "disk.lvmLabel": "LVM",
   "disk.existing": "已存在",
   "disk.hdd": "HDD",

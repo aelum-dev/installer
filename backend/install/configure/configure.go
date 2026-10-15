@@ -130,10 +130,16 @@ func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID)
 }
 
-// generateLvmFstab builds the fstab for an LVM layout. It is the btrfs layout
-// with /home split off onto the home logical volume: every subvolume except
-// @home lives on the root LV (RootUUID), @home lives on the home LV (HomeUUID).
+// generateLvmFstab builds the fstab for an LVM layout. For btrfs it is the
+// subvolume layout with /home split off onto the home logical volume: every
+// subvolume except @home lives on the root LV (RootUUID), @home lives on the
+// home LV (HomeUUID). For ext4 the root and home LVs are mounted directly at /
+// and /home.
 func generateLvmFstab(ctx *shared.InstallContext) string {
+	if ctx.FileSystem != shared.FileSystemBtrfs {
+		return generateLvmExt4Fstab(ctx)
+	}
+
 	p := ctx.Partitions
 
 	var lines []string
@@ -150,6 +156,17 @@ func generateLvmFstab(ctx *shared.InstallContext) string {
 	}
 
 	return strings.Join(lines, "\n") + "\n"
+}
+
+// generateLvmExt4Fstab builds the fstab for an ext4 LVM layout: the root LV is
+// mounted at / and the home LV at /home, both ext4.
+func generateLvmExt4Fstab(ctx *shared.InstallContext) string {
+	p := ctx.Partitions
+	return fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
+UUID=%s  /              ext4    %s        0  1
+UUID=%s  /home          ext4    %s        0  2
+UUID=%s  /boot          vfat    %s 0 2
+`, p.RootUUID, shared.DefaultMountOptions, p.HomeUUID, shared.DefaultMountOptions, p.EFIUUID, shared.EfiPartitionUmask)
 }
 
 func writeLvmFstab(ctx *shared.InstallContext) error {

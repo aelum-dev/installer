@@ -13,7 +13,7 @@
   "dialog.confirm.yes": "Igen, törlés és telepítés",
   "disk.encryptHint": "A gyökérpartíció titkosítása LUKS2-vel. Indításkor jelszót kérünk.",
   "disk.encryptLabel": "Titkosítás",
-  "disk.lvmHint": "A root és a home LVM logikai kötetekre helyezése (mindig btrfs).",
+  "disk.lvmHint": "A root és a home LVM logikai kötetekre helyezése.",
   "disk.lvmLabel": "LVM",
   "disk.existing": "Meglévő",
   "disk.hdd": "HDD",
