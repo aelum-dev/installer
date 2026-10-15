@@ -135,6 +135,7 @@ export namespace shared {
 	export class ManualLayout {
 	    disk: string;
 	    diskSizeMB: number;
+	    lvm?: boolean;
 	    diskSizeBytes: number;
 	    sectorSizeBytes?: number;
 	    partitions: ManualPartition[];
@@ -150,6 +151,7 @@ export namespace shared {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.disk = source["disk"];
 	        this.diskSizeMB = source["diskSizeMB"];
+	        this.lvm = source["lvm"];
 	        this.diskSizeBytes = source["diskSizeBytes"];
 	        this.sectorSizeBytes = source["sectorSizeBytes"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);

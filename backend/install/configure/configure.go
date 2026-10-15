@@ -80,6 +80,9 @@ func GenerateFstab(ctx *shared.InstallContext) error {
 
 	p := ctx.Partitions
 
+	if ctx.Lvm {
+		return writeLvmFstab(ctx)
+	}
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		return writeBtrfsFstab(ctx)
 	}
@@ -121,6 +124,36 @@ UUID=%s  /boot          vfat    %s 0 2
 
 func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	fstabContent := generateBtrfsFstab(ctx)
+	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
+		return err
+	}
+	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID)
+}
+
+// generateLvmFstab builds the fstab for an LVM layout. It is the btrfs layout
+// with /home split off onto the home logical volume: every subvolume except
+// @home lives on the root LV (RootUUID), @home lives on the home LV (HomeUUID).
+func generateLvmFstab(ctx *shared.InstallContext) string {
+	p := ctx.Partitions
+
+	var lines []string
+	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
+	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, shared.EfiPartitionUmask))
+
+	for _, sv := range shared.GetLvmBtrfsSubvolumes() {
+		opts := primitives.BuildMountOpts(&sv)
+		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
+	}
+	for _, sv := range shared.GetLvmHomeSubvolumes() {
+		opts := primitives.BuildMountOpts(&sv)
+		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.HomeUUID, sv.MountPoint, opts))
+	}
+
+	return strings.Join(lines, "\n") + "\n"
+}
+
+func writeLvmFstab(ctx *shared.InstallContext) error {
+	fstabContent := generateLvmFstab(ctx)
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
@@ -188,7 +221,7 @@ func ConfigureBootloader(ctx *shared.InstallContext) error {
 	if err != nil {
 		return err
 	}
-	if err := writeBootEntry(esp, ctx.Partitions.RootUUID, ctx.Partitions.LuksUUID, kernel, initrd, ctx.FileSystem); err != nil {
+	if err := writeBootEntry(esp, ctx, kernel, initrd); err != nil {
 		return err
 	}
 	if err := setDefaultBootEntry(esp, shared.BootEntryFileName+".conf"); err != nil {
@@ -239,22 +272,12 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 	return kernel, initrd, nil
 }
 
-func writeBootEntry(esp, rootUUID, luksUUID, kernel, initrd, fsType string) error {
-	var options string
-	if luksUUID != "" {
-		// rd.luks.name maps the header to the "aelum" mapper device (consumed by
-		// sd-encrypt), root from the decrypted mapper. The trailing flags mirror the
-		// unencrypted entry: `splash` is required for Plymouth to take over the
-		// console and show the LUKS unlock theme (without it Plymouth logs to
-		// /var/log/boot.log and you get the raw cryptsetup text prompt). `quiet`
-		// + lowered log levels keep boot silent behind the splash.
-		options = fmt.Sprintf("rd.luks.name=%s=%s root=%s rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0", luksUUID, shared.LuksMapperName, shared.LuksMapperPath)
-	} else {
-		options = "root=UUID=" + rootUUID + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
-	}
-	if fsType == shared.FileSystemBtrfs {
-		options += " rootflags=subvol=@"
-	}
+// writeBootEntry writes the systemd-boot entry. The root device depends on the
+// layout: the root LV when LVM is enabled, otherwise the LUKS mapper (encrypted)
+// or the root partition UUID. When LUKS is enabled the rd.luks.name= argument
+// maps the header to the "aelum" mapper (consumed by sd-encrypt).
+func writeBootEntry(esp string, ctx *shared.InstallContext, kernel, initrd string) error {
+	options := bootEntryOptions(ctx)
 	entryContent := fmt.Sprintf("title   %s\nlinux   /%s\ninitrd  /%s\noptions %s\n", shared.BootEntryTitle, kernel, initrd, options)
 	entryPath := esp + "/" + shared.BootLoaderEntriesDir + "/" + shared.BootEntryFileName + ".conf"
 	cmd := primitives.Run("mkdir", "-p", esp+"/"+shared.BootLoaderEntriesDir)
@@ -265,6 +288,32 @@ func writeBootEntry(esp, rootUUID, luksUUID, kernel, initrd, fsType string) erro
 		return fmt.Errorf("failed to write boot entry to %s: %w", entryPath, err)
 	}
 	return nil
+}
+
+// bootEntryOptions builds the kernel command line for the systemd-boot entry.
+// The root device is the root LV (LVM), the decrypted LUKS mapper (encrypted),
+// or the root filesystem UUID. LUKS entries carry rd.luks.name= so sd-encrypt
+// maps the header to the "aelum" mapper before the root is mounted.
+func bootEntryOptions(ctx *shared.InstallContext) string {
+	root := "UUID=" + ctx.Partitions.RootUUID
+	if ctx.Lvm {
+		root = shared.LvmRootLvPath
+	}
+
+	var options string
+	if ctx.Luks {
+		// `splash` is required for Plymouth to take over the console and show the
+		// LUKS unlock theme (without it Plymouth logs to /var/log/boot.log and you
+		// get the raw cryptsetup text prompt). `quiet` + lowered log levels keep
+		// boot silent behind the splash.
+		options = fmt.Sprintf("rd.luks.name=%s=%s root=%s rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0", ctx.Partitions.LuksUUID, shared.LuksMapperName, root)
+	} else {
+		options = "root=" + root + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
+	}
+	if ctx.FileSystem == shared.FileSystemBtrfs {
+		options += " rootflags=subvol=@"
+	}
+	return options
 }
 
 func cleanupEsp(esp string) error {
@@ -445,9 +494,10 @@ func copyMirrorList(regionCode string) error {
 }
 
 // configureInitramfs writes the installed system's mkinitcpio HOOKS line so the
-// boot splash (plymouth) shows and, when LUKS is enabled, the initramfs unlocks
-// the root before mounting it. Aelum supports a systemd-based initramfs only, so
-// the order is: systemd ... plymouth ... [sd-encrypt] ... filesystems.
+// boot splash (plymouth) shows and, when LUKS/LVM is enabled, the initramfs
+// unlocks the root / activates the volume group before mounting it. Aelum
+// supports a systemd-based initramfs only, so the order is:
+// systemd ... plymouth ... [sd-encrypt] ... [lvm2] ... filesystems.
 func configureInitramfs(ctx *shared.InstallContext) error {
 	// Edit the target system's config, not the live ISO's.
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
@@ -461,6 +511,12 @@ func configureInitramfs(ctx *shared.InstallContext) error {
 	hooks := []string{"base", "systemd", "plymouth", "autodetect", "microcode", "modconf", "kms", "keyboard", "sd-vconsole", "block"}
 	if ctx.Luks {
 		hooks = append(hooks, "sd-encrypt")
+	}
+	if ctx.Lvm {
+		// Activate the volume group in the initramfs before the root filesystem
+		// is mounted. Order is sd-encrypt (unlock, when enabled) → lvm2 →
+		// filesystems. The hook is `lvm2`, not `sd-lvm2`.
+		hooks = append(hooks, shared.LvmInitramfsHook)
 	}
 	hooks = append(hooks, "filesystems", "fsck")
 

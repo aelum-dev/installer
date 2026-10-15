@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"aelum-installer/backend/install/luks"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -81,7 +82,13 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		case shared.FileSystemVfat:
 			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.ESP))
 		case shared.FileSystemExt4, shared.FileSystemBtrfs:
-			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxRootX86_64))
+			// The root partition hosts a filesystem directly, or an LVM physical
+			// volume when LVM is enabled (its type GUID is Linux LVM).
+			guid := shared.GPTTypeGUIDs.LinuxRootX86_64
+			if p.Name == shared.PartitionLayoutRoot && ctx.Lvm {
+				guid = shared.GPTTypeGUIDs.LinuxLVM
+			}
+			args = append(args, "-t", fmt.Sprintf("%d:%s", num, guid))
 		default:
 			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxFilesystemGeneric))
 		}
@@ -113,46 +120,32 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 
 	part2 := shared.DerivePartitionPath(diskID, 2)
 
-	// Format the root partition. When LUKS is enabled the root is encrypted: a
-	// LUKS2 header is written, the mapper device is opened, the filesystem (and
-	// btrfs subvolumes) are created on the mapper, then the mapper is closed
-	// again (mount reopens it). The EFI partition is always plaintext.
-	var mapperPath, mapperUUID, luksUUID string
+	// Create the root filesystem. When LUKS is enabled a LUKS2 header is written
+	// and the filesystem (and btrfs subvolumes) is created on the decrypted
+	// mapper, then the mapper is closed again (mount reopens it). When LVM is
+	// enabled the filesystem lives on logical volumes in the `aelum` volume
+	// group instead of directly on the partition/mapper. The EFI partition is
+	// always plaintext. SetupRootFilesystem/EncryptRoot return the device that
+	// will be mounted as root (the root LV when LVM, else the mapper/partition).
+	var setup RootSetup
 	if ctx.Luks {
 		if len(ctx.LuksPassphrase) == 0 {
 			return fmt.Errorf("LUKS enabled but no passphrase set")
 		}
-		mapperPath, mapperUUID, luksUUID, err = EncryptRoot(ctx, part2, string(ctx.LuksPassphrase), fsType)
-		if err != nil {
-			return err
-		}
+		setup, err = EncryptRoot(ctx, part2, string(ctx.LuksPassphrase), fsType)
 	} else {
-		// Unencrypted root: the filesystem lives directly on the partition, so the
-		// partition path and its filesystem UUID are the "mapper" values the mount,
-		// install, and configure steps consume (btrfs subvolumes included).
-		mapperPath, mapperUUID, err = formatUnencryptedRoot(ctx, part2, fsType)
-		if err != nil {
-			return err
-		}
+		setup, err = SetupRootFilesystem(ctx, part2, fsType)
+	}
+	if err != nil {
+		return err
 	}
 
-	// Discover the EFI UUID (plaintext) and build the partition info.
+	// Find the EFI partition and build the partition info. The root device, its
+	// UUID, and the subvolume mount points come from the setup above.
 	diskPartitions, err := shared.GetPartitions(diskID)
 	if err != nil {
 		return fmt.Errorf("get partitions: %w", err)
 	}
-	for i := range diskPartitions {
-		uuid, err := readPartitionUUID(diskPartitions[i].Path)
-		if err != nil {
-			// A LUKS-encrypted root reports its header UUID, not a filesystem
-			// UUID — that is expected and harmless here.
-			if !ctx.Luks || diskPartitions[i].Path != part2 {
-				return fmt.Errorf("blkid %s: %w", diskPartitions[i].Path, err)
-			}
-		}
-		diskPartitions[i].UUID = uuid
-	}
-
 	efi, _ := findPartitionsByFstype(diskPartitions)
 	if efi == nil {
 		efi, _ = findPartitionsByIndex(diskPartitions)
@@ -162,50 +155,51 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		return fmt.Errorf("EFI (vfat) partition not found — found partitions: %s", types)
 	}
 
-	info := &shared.PartitionInfo{
-		Disk:        diskID,
-		EFIPart:     efi.Path,
-		EFIUUID:     efi.UUID,
-		RootPart:    part2,
-		RootUUID:    mapperUUID,
-		MountPoints: make(map[string]string),
-	}
-	if ctx.Luks {
-		info.RootMapper = mapperPath
-		info.LuksUUID = luksUUID
-	}
-	if fsType == "btrfs" {
-		for _, sv := range shared.GetBtrfsSubvolumes() {
-			if sv.MountPoint != "/" {
-				// Subvolumes live on the mapper device when LUKS is enabled.
-				info.MountPoints[sv.MountPoint] = mapperPath
-			}
-		}
+	info, err := NewPartitionInfo(ctx, diskID, efi.Path, part2, setup, fsType)
+	if err != nil {
+		return err
 	}
 	ctx.Partitions = info
 
 	return nil
 }
 
-// EncryptRoot runs the full LUKS sequence on the raw root partition:
+// RootSetup describes the root filesystem produced by the format step.
+type RootSetup struct {
+	// RootDevice is the device mounted as root: the root LV when LVM is on,
+	// otherwise the decrypted LUKS mapper or the raw partition.
+	RootDevice string
+	// RootUUID is the filesystem UUID of RootDevice (used by fstab).
+	RootUUID string
+	// HomeLV / HomeUUID are the LVM home logical volume and its filesystem
+	// UUID. Empty when LVM is disabled.
+	HomeLV   string
+	HomeUUID string
+	// LuksUUID is the LUKS header UUID of the raw partition. Empty when LUKS is
+	// disabled.
+	LuksUUID string
+}
+
+// EncryptRoot runs the full LUKS (and, when enabled, LVM) sequence on the raw
+// root partition:
 //
 //  1. luksFormat writes a LUKS2 header (keyed by passphrase).
 //  2. luksOpen creates the decrypted mapper device.
-//  3. mkfs (ext4/btrfs) is created on the mapper device.
-//  4. btrfs subvolumes are created on the mapper.
-//  5. The mapper's filesystem UUID and the LUKS header UUID are read.
-//  6. The mapper is closed again; mount reopens it during install.
+//  3. The filesystem (and, when LVM is enabled, the volume group with root +
+//     home LVs) is created on the mapper.
+//  4. The mapper's filesystem UUID and the LUKS header UUID are read.
+//  5. The mapper is closed again; mount reopens it during install.
 //
-// It returns the mapper path, the mapper filesystem UUID, and the LUKS header
-// UUID (used for the boot cmdline).
-func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string) (mapperPath, mapperUUID, luksUUID string, err error) {
-	mapperPath = shared.LuksMapperPath
+// It returns the RootSetup describing the mounted root device, its UUID, the
+// LVM home LV (when enabled), and the LUKS header UUID (for the boot cmdline).
+func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string) (setup RootSetup, err error) {
+	mapperPath := shared.LuksMapperPath
 
 	if err := luks.LuksFormat(ctx.Logger, rawPart, passphrase); err != nil {
-		return "", "", "", err
+		return RootSetup{}, err
 	}
 	if err := luks.LuksOpen(rawPart, shared.LuksMapperName, passphrase); err != nil {
-		return "", "", "", fmt.Errorf("opening LUKS device (validates passphrase): %w", err)
+		return RootSetup{}, fmt.Errorf("opening LUKS device (validates passphrase): %w", err)
 	}
 	// Ensure the mapper is closed even if a later step fails, so the device
 	// doesn't leak between install retries.
@@ -215,84 +209,144 @@ func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string)
 		}
 	}()
 
-	// Create the filesystem on the decrypted mapper, not the raw partition.
-	if err := FormatPartition(mapperPath, fsType, "aelum"); err != nil {
-		return "", "", "", err
-	}
-
-	// btrfs subvolumes are created on the mapper too.
-	if fsType == shared.FileSystemBtrfs {
-		if err := SetupBtrfsSubvolumes(ctx, mapperPath, shared.GetBtrfsSubvolumes()); err != nil {
-			return "", "", "", err
-		}
-	}
-
-	// Read the mapper's filesystem UUID while it is still open.
-	mapperUUID, err = readPartitionUUID(mapperPath)
+	// Create the filesystem (and LVM volume group) on the decrypted mapper, not
+	// the raw partition.
+	setup, err = SetupRootFilesystem(ctx, mapperPath, fsType)
 	if err != nil {
-		return "", "", "", fmt.Errorf("blkid %s: %w", mapperPath, err)
+		return RootSetup{}, err
 	}
+
 	// Read the LUKS header UUID (from the raw partition) for the boot cmdline.
-	luksUUID, err = luks.LuksUUID(rawPart)
+	luksUUID, err := luks.LuksUUID(rawPart)
 	if err != nil {
-		return "", "", "", err
+		return RootSetup{}, err
 	}
+	setup.LuksUUID = luksUUID
 
 	if ctx.Logger != nil {
-		ctx.Logger.Info("Encrypted root: mapper=%s fsUUID=%s luksUUID=%s", mapperPath, mapperUUID, luksUUID)
+		ctx.Logger.Info("Encrypted root: device=%s fsUUID=%s luksUUID=%s", setup.RootDevice, setup.RootUUID, setup.LuksUUID)
 	}
-	return mapperPath, mapperUUID, luksUUID, nil
+	return setup, nil
 }
 
-// formatUnencryptedRoot formats the raw root partition in place (no LUKS) and
-// returns the device path and filesystem UUID the mount, install, and configure
-// steps consume. For btrfs it also creates the standard subvolume layout, so the
-// plain path mirrors what EncryptRoot sets up on the decrypted mapper.
-func formatUnencryptedRoot(ctx *shared.InstallContext, part2, fsType string) (mapperPath, mapperUUID string, err error) {
-	if err := FormatPartition(part2, fsType, "aelum"); err != nil {
-		return "", "", err
+// SetupRootFilesystem formats device as the root filesystem and returns the
+// RootSetup the mount/install/configure steps consume. When LVM is enabled it
+// creates the `aelum` volume group on device with root + home LVs; otherwise it
+// formats device in place. Both btrfs paths create the appropriate subvolume
+// scheme (the LVM root LV carries every subvolume except @home, which the home
+// LV carries).
+func SetupRootFilesystem(ctx *shared.InstallContext, device, fsType string) (RootSetup, error) {
+	if ctx.Lvm {
+		// LVM always installs btrfs: the root LV carries the btrfs subvolume
+		// scheme and the home LV carries @home.
+		return applyLvm(ctx, device, shared.FileSystemBtrfs)
 	}
-	uuid, err := readPartitionUUID(part2)
+	if err := FormatPartition(device, fsType, "aelum"); err != nil {
+		return RootSetup{}, err
+	}
+	uuid, err := ReadPartitionUUID(device)
 	if err != nil {
-		return "", "", fmt.Errorf("blkid %s: %w", part2, err)
+		return RootSetup{}, fmt.Errorf("blkid %s: %w", device, err)
 	}
 	if fsType == shared.FileSystemBtrfs {
-		if err := SetupBtrfsSubvolumes(ctx, part2, shared.GetBtrfsSubvolumes()); err != nil {
-			return "", "", err
+		if err := SetupBtrfsSubvolumes(ctx, device, shared.GetBtrfsSubvolumes()); err != nil {
+			return RootSetup{}, err
 		}
 	}
-	return part2, uuid, nil
+	return RootSetup{RootDevice: device, RootUUID: uuid}, nil
 }
 
-// BuildPartitionInfo reads UUIDs for the EFI and root partitions and returns
-// a PartitionInfo suitable for the mount/install steps. For btrfs it also
-// populates the subvolume mount points map.
-func BuildPartitionInfo(diskID, efiPath, rootPath, fsType string) (*shared.PartitionInfo, error) {
-	efiUUID, err := readPartitionUUID(efiPath)
-	if err != nil {
-		return nil, fmt.Errorf("blkid %s: %w", efiPath, err)
+// applyLvm creates the LVM volume group on device and formats the root and home
+// logical volumes. The formatter closes over the format helpers so lvm never
+// imports format (format imports lvm — a direct call would be an import cycle).
+func applyLvm(ctx *shared.InstallContext, device, fsType string) (RootSetup, error) {
+	formatter := func(dev, fs string, subvols []shared.BtrfsSubvolume) error {
+		if err := FormatPartition(dev, fs, "aelum"); err != nil {
+			return err
+		}
+		if fs == shared.FileSystemBtrfs && len(subvols) > 0 {
+			return SetupBtrfsSubvolumes(ctx, dev, subvols)
+		}
+		return nil
 	}
-	rootUUID, err := readPartitionUUID(rootPath)
+	lvs, err := lvm.Apply(device, lvm.Params{FileSystem: fsType}, formatter)
 	if err != nil {
-		return nil, fmt.Errorf("blkid %s: %w", rootPath, err)
+		return RootSetup{}, err
 	}
+	if len(lvs) < 2 {
+		return RootSetup{}, fmt.Errorf("lvm: expected root and home LVs, got %d", len(lvs))
+	}
+	rootLV, homeLV := lvs[0].Path, lvs[1].Path
 
-	partitions := &shared.PartitionInfo{
-		Disk:        diskID,
-		EFIPart:     efiPath,
-		EFIUUID:     efiUUID,
-		RootPart:    rootPath,
-		RootUUID:    rootUUID,
-		MountPoints: make(map[string]string),
+	rootUUID, err := ReadPartitionUUID(rootLV)
+	if err != nil {
+		return RootSetup{}, fmt.Errorf("blkid %s: %w", rootLV, err)
+	}
+	homeUUID, err := ReadPartitionUUID(homeLV)
+	if err != nil {
+		return RootSetup{}, fmt.Errorf("blkid %s: %w", homeLV, err)
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("LVM root: rootLV=%s homeLV=%s", rootLV, homeLV)
+	}
+	return RootSetup{RootDevice: rootLV, RootUUID: rootUUID, HomeLV: homeLV, HomeUUID: homeUUID}, nil
+}
+
+// applyRootSetup writes the root device mapping (LUKS/LVM/plain) and the
+// subvolume mount-point map into info, given the RootSetup produced by
+// SetupRootFilesystem or EncryptRoot. Shared by the automatic and manual paths.
+func applyRootSetup(info *shared.PartitionInfo, ctx *shared.InstallContext, setup RootSetup, fsType string) {
+	info.RootUUID = setup.RootUUID
+	if ctx.Luks {
+		info.RootMapper = shared.LuksMapperPath
+		info.LuksUUID = setup.LuksUUID
+	}
+	if ctx.Lvm {
+		// Root LV carries every subvolume except @home; the home LV carries
+		// @home. The mount step reads the per-mount-point device from this map.
+		info.RootLV = setup.RootDevice
+		info.HomeLV = setup.HomeLV
+		info.HomeUUID = setup.HomeUUID
+		for _, sv := range shared.GetLvmBtrfsSubvolumes() {
+			if sv.MountPoint != "/" {
+				info.MountPoints[sv.MountPoint] = setup.RootDevice
+			}
+		}
+		for _, sv := range shared.GetLvmHomeSubvolumes() {
+			if sv.MountPoint != "/" {
+				info.MountPoints[sv.MountPoint] = setup.HomeLV
+			}
+		}
+		return
 	}
 	if fsType == shared.FileSystemBtrfs {
 		for _, sv := range shared.GetBtrfsSubvolumes() {
 			if sv.MountPoint != "/" {
-				partitions.MountPoints[sv.MountPoint] = rootPath
+				// Subvolumes live on the mapper device when LUKS is enabled.
+				info.MountPoints[sv.MountPoint] = setup.RootDevice
 			}
 		}
 	}
-	return partitions, nil
+}
+
+// NewPartitionInfo assembles the installed system's PartitionInfo from the
+// discovered EFI partition, the raw root partition, and the RootSetup produced
+// by SetupRootFilesystem or EncryptRoot. It reads the ESP UUID and applies the
+// LUKS/LVM/plain root mapping plus the subvolume mount-point map.
+func NewPartitionInfo(ctx *shared.InstallContext, diskID, efiPath, rootPart string, setup RootSetup, fsType string) (*shared.PartitionInfo, error) {
+	efiUUID, err := ReadPartitionUUID(efiPath)
+	if err != nil {
+		return nil, fmt.Errorf("blkid %s: %w", efiPath, err)
+	}
+	info := &shared.PartitionInfo{
+		Disk:        diskID,
+		EFIPart:     efiPath,
+		EFIUUID:     efiUUID,
+		RootPart:    rootPart,
+		MountPoints: make(map[string]string),
+	}
+	applyRootSetup(info, ctx, setup, fsType)
+	return info, nil
 }
 
 // FormatPartition wipes any existing filesystem signatures on path and formats
@@ -350,11 +404,25 @@ func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolume
 	if err != nil {
 		return fmt.Errorf("list subvolumes: %w", err)
 	}
+	// Prefer the subvolume mounted at "/" (usually @) as the default; fall back
+	// to the first one for sets without a root subvolume (e.g. the LVM home LV,
+	// which only carries @home).
+	defaultName := ""
+	for _, sv := range subvolumes {
+		if sv.MountPoint == "/" {
+			defaultName = sv.Name
+			break
+		}
+	}
+	if defaultName == "" && len(subvolumes) > 0 {
+		defaultName = subvolumes[0].Name
+	}
 	var targetID string
 	for _, line := range strings.Split(strings.TrimSpace(string(listOut)), "\n") {
 		// btrfs subvolume list emits lines like "ID 258 gen ... top level 5 path @".
-		// Match the subvolume whose path is exactly "@" and take its ID (field 1).
-		if strings.HasSuffix(strings.TrimSpace(line), "path @") {
+		// Match the subvolume whose path is exactly the default name and take its
+		// ID (field 1).
+		if strings.HasSuffix(strings.TrimSpace(line), "path "+defaultName) {
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
 				targetID = fields[1]
@@ -363,7 +431,7 @@ func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolume
 		}
 	}
 	if targetID == "" {
-		return fmt.Errorf("subvolume @ not found in %s", tmp)
+		return fmt.Errorf("subvolume %s not found in %s", defaultName, tmp)
 	}
 	cmd = primitives.Run("btrfs", "subvolume", "set-default", targetID, tmp)
 	out, err := cmd.CombinedOutput()
@@ -418,7 +486,9 @@ func findPartitionsByIndex(parts []shared.PartitionEntry) (*shared.PartitionEntr
 	return efi, root
 }
 
-func readPartitionUUID(partition string) (string, error) {
+// ReadPartitionUUID returns the filesystem UUID of a device (via blkid),
+// trimmed of surrounding whitespace.
+func ReadPartitionUUID(partition string) (string, error) {
 	cmd := primitives.Run("blkid", "-s", "UUID", "-o", "value", partition)
 	out, err := cmd.Output()
 	if err != nil {

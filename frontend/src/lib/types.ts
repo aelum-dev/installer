@@ -64,6 +64,9 @@ export interface ManualLayout {
 	sectorSizeBytes?: number;
 	// freeSectors is the exact unallocated space, in the disk's logical sectors.
 	freeSectors?: number;
+	// lvm places root and home on LVM logical volumes. The backend reconciles
+	// this with the --lvm toggle, so the frontend need not set it.
+	lvm?: boolean;
 	partitions: ManualPartition[];
 	freeMB: number;
 	// Partitions the user removed from the layout. Kept (not dropped) so the

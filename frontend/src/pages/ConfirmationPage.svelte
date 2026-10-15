@@ -155,6 +155,11 @@
 									<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
 								</p>
 							{/if}
+							{#if installState.lvmEnabled}
+								<p class="disk-extra">
+									<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
+								</p>
+							{/if}
 						{/if}
 					</div>
 				{:else}
@@ -354,6 +359,11 @@
 	.luks-tag {
 		background: var(--color-danger-bg);
 		color: var(--color-danger);
+	}
+
+	.lvm-tag {
+		background: var(--color-primary-lighter);
+		color: var(--color-primary);
 	}
 
 	.role-tag.esp {

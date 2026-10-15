@@ -18,6 +18,8 @@
 		luksEnabled = false,
 		onEnableLuks,
 		onDisableLuks,
+		lvmEnabled = false,
+		onToggleLvm,
 		onSelectFileSystem,
 		onToggleMode
 	}: {
@@ -32,6 +34,8 @@
 		luksEnabled?: boolean;
 		onEnableLuks?: () => void;
 		onDisableLuks?: () => void;
+		lvmEnabled?: boolean;
+		onToggleLvm?: () => void;
 		onSelectFileSystem: (fs: FileSystem) => void;
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
@@ -155,6 +159,23 @@
 					onEnableLuks?.();
 				}
 			}}
+		>
+			<span class="luks-slider"></span>
+		</button>
+	{/if}
+
+	<!-- LVM toggle: place root and home on logical volumes in the `aelum` volume
+		group. No passphrase (unlike LUKS). Shown in both automatic and manual mode. -->
+	{#if onToggleLvm}
+		<span class="control-row-label">{t('disk.lvmLabel')}</span>
+		<button
+			type="button"
+			class={['luks-switch', { on: lvmEnabled }]}
+			role="switch"
+			aria-checked={lvmEnabled}
+			aria-label={t('disk.lvmLabel')}
+			title={t('disk.lvmHint')}
+			onclick={() => onToggleLvm?.()}
 		>
 			<span class="luks-slider"></span>
 		</button>

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"aelum-installer/backend/install/luks"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/shared"
 )
 
@@ -29,6 +30,7 @@ type Installer struct {
 	fileSystem     string // root filesystem: "ext4" or "btrfs"
 	luks           bool
 	luksPassphrase []byte // zeroed after being copied to InstallContext
+	lvm            bool
 	dryRun         bool
 	esp            string // ESP mount point (default: /mnt/boot)
 
@@ -62,7 +64,7 @@ type Installer struct {
 }
 
 // NewInstaller creates a new Installer instance.
-func NewInstaller(diskID, username, password, hostname string, region shared.Region, fileSystem string, luks bool, luksPassphrase string, dryRun bool) *Installer {
+func NewInstaller(diskID, username, password, hostname string, region shared.Region, fileSystem string, luks bool, luksPassphrase string, lvm bool, dryRun bool) *Installer {
 	return &Installer{
 		diskID:         diskID,
 		username:       username,
@@ -72,6 +74,7 @@ func NewInstaller(diskID, username, password, hostname string, region shared.Reg
 		fileSystem:     fileSystem,
 		luks:           luks,
 		luksPassphrase: []byte(luksPassphrase),
+		lvm:            lvm,
 		dryRun:         dryRun,
 		esp:            shared.BootMountPoint,
 		Logger:         NewConsoleLogger(),
@@ -298,6 +301,15 @@ func (inst *Installer) context() *InstallContext {
 
 	// Create a fresh cancel channel for this installation run.
 	inst.cancel = make(chan struct{})
+
+	// LVM always installs btrfs: the root LV carries the btrfs subvolume scheme
+	// (@ @srv @cache @tmp @log) and the home LV carries @home. Normalize the
+	// filesystem here so every downstream step (format/fstab/bootloader) agrees.
+	fileSystem := inst.fileSystem
+	if inst.lvm {
+		fileSystem = shared.FileSystemBtrfs
+	}
+
 	ctx := &InstallContext{
 		DiskID:         inst.diskID,
 		ESP:            inst.esp,
@@ -305,11 +317,18 @@ func (inst *Installer) context() *InstallContext {
 		Password:       password,
 		Hostname:       inst.hostname,
 		Region:         inst.region,
-		FileSystem:     inst.fileSystem,
+		FileSystem:     fileSystem,
 		Luks:           inst.luks,
 		LuksPassphrase: luksPassphrase,
+		Lvm:            inst.lvm,
 		Logger:         inst.Logger,
 		Cancel:         inst.cancel,
+	}
+	if inst.lvm {
+		ctx.LvmVolumes = []shared.LvmVolume{
+			{Name: shared.LvmRootVolume, Percent: shared.LvmRootPercent, FileSystem: shared.FileSystemBtrfs, MountPoint: "/"},
+			{Name: shared.LvmHomeVolume, Rest: true, FileSystem: shared.FileSystemBtrfs, MountPoint: "/home"},
+		}
 	}
 	ctx.ManualMode = inst.manualMode
 	ctx.ManualLayout = inst.manualLayout
@@ -396,6 +415,14 @@ func (inst *Installer) Rollback() error {
 func (inst *Installer) RunCleanup() {
 	inst.cleanupOnce.Do(func() {
 		inst.logInfo("Cleanup: started")
+		// Deactivate the LVM volume group (if any) before closing the LUKS
+		// mapper it may sit on, so a failed install can be retried without a
+		// leaked VG. Best-effort — a missing VG errors.
+		if inst.lvm {
+			if err := lvm.VGDeactivate(shared.LvmVolumeGroup); err != nil && inst.Logger != nil {
+				inst.logInfo("Cleanup: LVM VG deactivate (non-fatal): %v", err)
+			}
+		}
 		// Close the LUKS mapper (if any) so a failed install can be retried
 		// without a leaked dm device. Best-effort — a closed mapper errors.
 		if inst.luks {

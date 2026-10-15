@@ -33,6 +33,10 @@ export const installState = $state({
 	luksDialogOpen: false as boolean,
 	luksError: '' as string,
 
+	// LVM: place root and home on logical volumes in the `aelum` volume group.
+	// Opt-in, like LUKS, but with no passphrase and always btrfs.
+	lvmEnabled: false as boolean,
+
 	// Manual (dualboot-safe) partitioning mode
 	manualMode: false as boolean,
 	manualLayout: null as ManualLayout | null,
@@ -142,9 +146,29 @@ export function disableLuks(): void {
 	installState.luksError = '';
 }
 
-// ── Manual partition helpers ───────────────────────────────────────────────
+// ── LVM helpers ────────────────────────────────────────────────────────────
 
-// bytesPerMB is one MiB in bytes.
+// toggleLvm flips LVM on/off. LVM has no passphrase (unlike LUKS), so the toggle
+// commits immediately: the installer places root and home on logical volumes in
+// the `aelum` volume group (always btrfs). Enabling LVM forces btrfs, since the
+// root LV carries the btrfs subvolume scheme.
+export function toggleLvm(): void {
+	if (!installState.lvmEnabled) {
+		installState.fileSystem = 'btrfs';
+	}
+	installState.lvmEnabled = !installState.lvmEnabled;
+}
+
+// setFileSystem selects the root filesystem. LVM requires btrfs, so choosing
+// anything else turns LVM back off (keeping the UI and the install consistent).
+export function setFileSystem(fs: FileSystem): void {
+	installState.fileSystem = fs;
+	if (fs !== 'btrfs') {
+		installState.lvmEnabled = false;
+	}
+}
+
+// ── Manual partition helpers ───────────────────────────────────────────────
 const bytesPerMB = 1024 * 1024;
 // gptBackupBytes is the trailing region a GPT keeps for its backup header:
 // 256 sectors * 512 bytes (const gptBackupSectors in partition.go). The backend

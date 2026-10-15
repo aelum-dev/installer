@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/shared"
 )
 
@@ -105,6 +106,15 @@ func Rollback(logger Logger, diskID string) error {
 	}
 
 	partitions := discoverPartitions(diskID)
+
+	// Remove any `aelum` volume group left behind by a partial install before
+	// wiping signatures: vgchange -an → vgremove -ff → pvremove. Keeps a retry
+	// from failing with "VG already exists".
+	if logger != nil {
+		logger.Info("Rolling back LVM volume group %s (if present)", shared.LvmVolumeGroup)
+	}
+	lvm.Teardown(shared.LvmVolumeGroup, partitions)
+
 	if len(partitions) == 0 {
 		if logger != nil {
 			logger.Info("Rollback: no partitions found on %s, skipping wipe", diskID)

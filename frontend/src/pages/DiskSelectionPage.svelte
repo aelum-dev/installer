@@ -8,7 +8,7 @@
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import LuksPassphraseDialog from '$components/LuksPassphraseDialog.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import { installState, computeUsedMB, computeFreeMB, requestEnableLuks, disableLuks } from '$lib/store.svelte';
+	import { installState, computeUsedMB, computeFreeMB, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
 	import { type DiskInfo, type PartitionEntry, PAGE_IDS } from '$lib/types';
 	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
 	import { t } from '$lib/i18n';
@@ -167,11 +167,13 @@
 			spaceTotalMB={spaceSummary.total}
 			spaceFreeMB={spaceSummary.free}
 			spaceUsedPct={spaceSummary.pct}
-			onSelectFileSystem={(fs) => { installState.fileSystem = fs; }}
+			onSelectFileSystem={(fs) => { setFileSystem(fs); }}
 			onToggleMode={setMode}
 			luksEnabled={installState.luksEnabled}
 			onEnableLuks={requestEnableLuks}
 			onDisableLuks={() => { showDisableConfirm = true; }}
+			lvmEnabled={installState.lvmEnabled}
+			onToggleLvm={toggleLvm}
 		/>
 
 		{#if installState.manualMode}

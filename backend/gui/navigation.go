@@ -47,6 +47,10 @@ type App struct {
 	luks           bool
 	luksPassphrase []byte
 
+	// lvm places root and home on LVM logical volumes in the `aelum` volume
+	// group. Opt-in, like LUKS; always btrfs.
+	lvm bool
+
 	// installCmd is the currently running CLI subprocess, or nil.
 	installCmd *exec.Cmd
 	// installCancel cancels the context for the current CLI subprocess.
@@ -87,6 +91,11 @@ func (a *App) GetUILocale() string {
 // SetUILocale sets the UI locale.
 func (a *App) SetUILocale(locale string) {
 	a.uiLocale = locale
+}
+
+// SetLvm enables or disables placing root and home on LVM logical volumes.
+func (a *App) SetLvm(enabled bool) {
+	a.lvm = enabled
 }
 
 // SetLuks enables or disables LUKS2 root encryption. Disabling clears the

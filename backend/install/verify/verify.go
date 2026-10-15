@@ -42,6 +42,9 @@ func Run(ctx *shared.InstallContext) error {
 	if ctx.Luks {
 		checkLuks(ctx, &issues, &info)
 	}
+	if ctx.Lvm {
+		checkLvm(ctx, &issues, &info)
+	}
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
@@ -141,6 +144,50 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 			*issues = append(*issues, "dm-crypt hook (sd-encrypt) not found in mkinitcpio.conf")
 		} else {
 			*info = append(*info, "initramfs dm-crypt hook present ✓")
+		}
+	} else {
+		*issues = append(*issues, "failed to read "+confPath)
+	}
+}
+
+// checkLvm verifies LVM-related configuration in the installed system when LVM
+// is enabled: the boot entry points root at the root logical volume, fstab lists
+// the home LV, and the lvm2 hook is present in mkinitcpio.
+func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
+	// Boot entry references the root logical volume (not the PV).
+	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
+	if data, err := os.ReadFile(entryPath); err == nil {
+		content := string(data)
+		if !strings.Contains(content, shared.LvmRootLvPath) {
+			*issues = append(*issues, "boot entry does not reference the root LV "+shared.LvmRootLvPath)
+		} else {
+			*info = append(*info, "boot entry references root LV ✓")
+		}
+	} else {
+		*issues = append(*issues, "failed to read boot entry "+entryPath)
+	}
+
+	// Home LV filesystem UUID present in fstab (RootUUID is the root LV's UUID,
+	// already covered by checkFstab).
+	if ctx.Partitions != nil && ctx.Partitions.HomeUUID != "" {
+		path := shared.MountRoot + "/etc/fstab"
+		if data, err := os.ReadFile(path); err == nil {
+			if !strings.Contains(string(data), ctx.Partitions.HomeUUID) {
+				*issues = append(*issues, "fstab missing home LV UUID "+ctx.Partitions.HomeUUID)
+			} else {
+				*info = append(*info, "home LV UUID in fstab ✓")
+			}
+		}
+	}
+
+	// lvm2 hook present in mkinitcpio.conf.
+	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
+	if data, err := os.ReadFile(confPath); err == nil {
+		content := string(data)
+		if !strings.Contains(content, shared.LvmInitramfsHook) {
+			*issues = append(*issues, "lvm2 hook not found in mkinitcpio.conf")
+		} else {
+			*info = append(*info, "initramfs lvm2 hook present ✓")
 		}
 	} else {
 		*issues = append(*issues, "failed to read "+confPath)

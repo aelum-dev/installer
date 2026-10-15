@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"aelum-installer/backend/install/luks"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -45,8 +46,11 @@ func Run(ctx *shared.InstallContext) error {
 	var output []byte
 	var err error
 
-	// When LUKS is enabled the root filesystem lives on the decrypted mapper
-	// device; every mount references it instead of the raw partition.
+	// Resolve the device that holds the root filesystem (and its subvolumes):
+	//   LUKS+LVM : open LUKS, activate the VG, root lives on the root LV
+	//   LUKS     : open LUKS, root lives on the decrypted mapper
+	//   LVM      : activate the VG, root lives on the root LV
+	//   else     : root lives on the raw partition
 	rootDevice := p.RootPart
 	if ctx.Luks {
 		if p.RootMapper == "" {
@@ -59,6 +63,20 @@ func Run(ctx *shared.InstallContext) error {
 			return err
 		}
 		rootDevice = p.RootMapper
+	}
+	if ctx.Lvm {
+		if p.RootLV == "" {
+			return fmt.Errorf("LVM enabled but root LV path not set (format step failed)")
+		}
+		// The VG must be active for the LVs to appear. For the LUKS+LVM path
+		// this runs after the mapper is open, so the PV is available.
+		if err := lvm.VGActivate(shared.LvmVolumeGroup); err != nil {
+			return err
+		}
+		if ctx.Logger != nil {
+			ctx.Logger.Info("LVM root enabled; mounting root LV %s", p.RootLV)
+		}
+		rootDevice = p.RootLV
 	}
 
 	// ── Mount root partition ──
@@ -97,11 +115,15 @@ func Run(ctx *shared.InstallContext) error {
 
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		// Use MountPoints map (populated by FormatDisk) to mount additional subvolumes.
-		// Each entry maps a mount point (e.g., "/home") to the root partition path.
-		for mountPath := range p.MountPoints {
+		// Each entry maps a mount point (e.g., "/home") to the device that holds it:
+		// with LVM, /home lives on the home LV while the rest share the root LV.
+		for mountPath, device := range p.MountPoints {
 			// Skip root mount point — already mounted above
 			if mountPath == "/" {
 				continue
+			}
+			if device == "" {
+				device = rootDevice
 			}
 
 			// Find the subvolume definition for this mount point to get its options
@@ -122,7 +144,7 @@ func Run(ctx *shared.InstallContext) error {
 
 			// Mount subvolume with its properties
 			mountOpts := primitives.BuildMountOpts(sv)
-			cmd = primitives.Run("mount", "-o", mountOpts, rootDevice, fullPath)
+			cmd = primitives.Run("mount", "-o", mountOpts, device, fullPath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("mount %s subvolume (%s) failed: %w: %s", sv.Name, fullPath, err, string(output))

@@ -389,6 +389,9 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	// A layout from the CLI may omit the sector size; read it so the placement
 	// math uses the same sector unit sgdisk reports in (512e vs 4Kn).
 	ensureSectorSize(layout, diskID)
+
+	reconcileLvm(ctx, layout)
+
 	if err := Validate(*layout); err != nil {
 		return err
 	}
@@ -401,16 +404,6 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 			_ = primitives.CleanupMounts(ctx.Logger) //nolint:errcheck // cleanup best-effort on error path
 		}
 	}()
-
-	// Locate the System row (needed only to confirm the layout has a System
-	// partition before the btrfs subvolume step). The ESP path is resolved from
-	// the format actions below.
-	var sys shared.ManualPartition
-	for _, p := range layout.Partitions {
-		if p.Type == shared.TypeSystem {
-			sys = p
-		}
-	}
 
 	// Unmount anything left behind by a prior attempt.
 	_ = primitives.CleanupMounts(ctx.Logger)
@@ -473,11 +466,12 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		return fmt.Errorf("partprobe: %w: %s", probeErr, string(probeOut))
 	}
 
-	// Format each Boot/Root partition. When LUKS is enabled the System
-	// partition is encrypted (handled below via EncryptRoot), so only the ESP
+	// Format each Boot/Root partition. When LUKS or LVM is enabled the System
+	// partition is not formatted directly (EncryptRoot / SetupRootFilesystem
+	// below create the filesystem, and for LVM the PV/VG/LVs), so only the ESP
 	// is formatted here.
 	for _, a := range actions {
-		if a.pType == shared.TypeSystem && ctx.Luks {
+		if a.pType == shared.TypeSystem && (ctx.Luks || ctx.Lvm) {
 			continue
 		}
 		label := "aelum"
@@ -489,42 +483,57 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	var mapperPath, mapperUUID, luksUUID string
-	if ctx.Luks {
+	var setup format.RootSetup
+	switch {
+	case ctx.Luks:
 		if len(ctx.LuksPassphrase) == 0 {
 			return fmt.Errorf("LUKS enabled but no passphrase set")
 		}
-		var err error
-		mapperPath, mapperUUID, luksUUID, err = format.EncryptRoot(ctx, sysPath, string(ctx.LuksPassphrase), ctx.FileSystem)
+		setup, err = format.EncryptRoot(ctx, sysPath, string(ctx.LuksPassphrase), ctx.FileSystem)
 		if err != nil {
 			return err
 		}
-	} else if sys.Type == shared.TypeSystem && ctx.FileSystem == shared.FileSystemBtrfs {
-		// btrfs root → automatic subvolumes.
-		if err := format.SetupBtrfsSubvolumes(ctx, sysPath, shared.GetBtrfsSubvolumes()); err != nil {
+	case ctx.Lvm:
+		setup, err = format.SetupRootFilesystem(ctx, sysPath, ctx.FileSystem)
+		if err != nil {
 			return err
 		}
+	default:
+		// Plain root (ext4 or btrfs): the System partition was formatted above.
+		// For btrfs create the subvolume scheme here, then read the filesystem
+		// UUID for fstab/boot.
+		if ctx.FileSystem == shared.FileSystemBtrfs {
+			if err := format.SetupBtrfsSubvolumes(ctx, sysPath, shared.GetBtrfsSubvolumes()); err != nil {
+				return err
+			}
+		}
+		uuid, err := format.ReadPartitionUUID(sysPath)
+		if err != nil {
+			return fmt.Errorf("blkid %s: %w", sysPath, err)
+		}
+		setup = format.RootSetup{RootDevice: sysPath, RootUUID: uuid}
 	}
 
-	// Build PartitionInfo from the resolved EFI and System paths.
-	partitions, err := format.BuildPartitionInfo(diskID, espPath, sysPath, ctx.FileSystem)
+	// Build PartitionInfo from the resolved EFI and System paths, applying the
+	// LUKS/LVM/plain root mapping.
+	partitions, err := format.NewPartitionInfo(ctx, diskID, espPath, sysPath, setup, ctx.FileSystem)
 	if err != nil {
 		return err
-	}
-	if ctx.Luks {
-		// The root filesystem lives on the decrypted mapper, so fstab/bootloader
-		// must reference the mapper path, its filesystem UUID, and the LUKS
-		// header UUID.
-		partitions.RootMapper = mapperPath
-		partitions.LuksUUID = luksUUID
-		partitions.RootUUID = mapperUUID
-		for mp := range partitions.MountPoints {
-			partitions.MountPoints[mp] = mapperPath
-		}
 	}
 	ctx.Partitions = partitions
 
 	return nil
+}
+
+// reconcileLvm reconciles the LVM decision, which reaches the manual path two
+// ways: the --lvm toggle (ctx.Lvm, from the frontend/CLI) and the layout's own
+// flag (layout.Lvm, which drives the System partition's GPT type in
+// buildActions). LVM is on if either says so.
+func reconcileLvm(ctx *shared.InstallContext, layout *shared.ManualLayout) {
+	if ctx.Lvm || layout.Lvm {
+		ctx.Lvm = true
+		layout.Lvm = true
+	}
 }
 
 // formatAction describes a single ESP or System partition to be formatted.
@@ -575,6 +584,9 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		if p.Type == shared.TypeESP {
 			fstype = shared.FileSystemVfat
 			guid = shared.GPTTypeGUIDs.ESP
+		} else if layout.Lvm {
+			// The System partition becomes an LVM physical volume.
+			guid = shared.GPTTypeGUIDs.LinuxLVM
 		}
 
 		if p.Path != "" {

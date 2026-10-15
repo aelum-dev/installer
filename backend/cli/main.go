@@ -101,6 +101,7 @@ func run(args []string) int {
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
+	lvmFlag := fs.Bool("lvm", false, "Place root and home on LVM logical volumes (aelum VG; btrfs)")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
@@ -159,7 +160,7 @@ func run(args []string) int {
 	}
 
 	// Run the installation
-	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag, *luksFlag)
+	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag, *luksFlag, *lvmFlag)
 }
 
 // resolveUsername resolves the username from flag or stdin.
@@ -179,7 +180,7 @@ func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
 }
 
 // runInstallation performs validation and runs the installation.
-func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string, luks bool) int {
+func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string, luks, lvm bool) int {
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
@@ -248,6 +249,7 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 		fileSystem,
 		luks,           // encrypt root with LUKS2
 		luksPassphrase, // LUKS passphrase (read from stdin)
+		lvm,            // place root/home on LVM logical volumes
 		dryRun,
 	)
 
@@ -357,7 +359,7 @@ func handleRollback(disk string, dryRun *bool) int {
 	}
 	installer := install.NewInstaller(
 		disk, shared.DefaultCLIUsername, "", shared.DefaultHostname,
-		shared.GetRegion(shared.DefaultLanguageCode), "ext4", false, "", false,
+		shared.GetRegion(shared.DefaultLanguageCode), "ext4", false, "", false, false,
 	)
 	installer.Logger = log
 	if err := rollbackFunc(installer.Logger, disk); err != nil {
@@ -399,7 +401,7 @@ func resolveDiskAndStep(args ...string) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--luks] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--luks] [--lvm] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
@@ -415,6 +417,9 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "When --luks is set, a second passphrase is read (same rules) and used to\n")
 	fmt.Fprintf(os.Stderr, "encrypt the root partition with LUKS2. The passphrase is never a flag.\n")
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "When --lvm is set, the root partition becomes an LVM physical volume in the\n")
+	fmt.Fprintf(os.Stderr, "\"aelum\" volume group with root and home logical volumes (both btrfs).\n")
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])

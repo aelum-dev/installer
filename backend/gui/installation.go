@@ -65,6 +65,9 @@ func (a *App) StartInstallation() error {
 	if a.luks {
 		args = append(args, "--luks")
 	}
+	if a.lvm {
+		args = append(args, "--lvm")
+	}
 	if a.dryRun {
 		args = append(args, "--dry-run")
 	}

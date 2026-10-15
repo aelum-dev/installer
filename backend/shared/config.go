@@ -220,10 +220,12 @@ const GPTPartitionStartSector = 2048
 var GPTTypeGUIDs = struct {
 	ESP                    string
 	LinuxRootX86_64        string
+	LinuxLVM               string
 	LinuxFilesystemGeneric string
 }{
 	ESP:                    "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
 	LinuxRootX86_64:        "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
+	LinuxLVM:               "E6D6D379-F507-44C2-A23C-238F2A3DF928",
 	LinuxFilesystemGeneric: "8300",
 }
 
@@ -370,6 +372,46 @@ const (
 	// LuksIterTimeMs is the memory-hard KDF time cost in milliseconds.
 	LuksIterTimeMs = 2000
 )
+
+// --- LVM (logical volume management) ---------------------------------------
+// LVM is an opt-in alternative to putting the btrfs filesystem directly on the
+// root partition: the root partition becomes a physical volume (PV) in a volume
+// group (VG), which holds two logical volumes — a root LV and a home LV. Both
+// are btrfs; the root LV carries every subvolume except @home, which lives on
+// its own LV so /home gets its own checksums/compression/snapshots.
+
+// LvmVolumeGroup is the name of the volume group the installer creates.
+const LvmVolumeGroup = "aelum"
+
+// LvmRootVolume is the name of the root logical volume.
+const LvmRootVolume = "root"
+
+// LvmHomeVolume is the name of the home logical volume.
+const LvmHomeVolume = "home"
+
+// LvmRootPercent is the percentage of the volume group given to the root LV
+// before the minimum-size floor is applied.
+const LvmRootPercent = 30
+
+// LvmRootMinBytes is the minimum size of the root LV (8 GiB) — the same floor
+// as the whole-disk minimum. The root LV is max(LvmRootPercent% of the VG,
+// LvmRootMinBytes).
+const LvmRootMinBytes = 8 * 1024 * 1024 * 1024
+
+// LvmVGMinBytes is the smallest volume group the installer will create
+// (16 GiB): enough for a 8 GiB root LV and a 8 GiB home LV.
+const LvmVGMinBytes = 16 << 30
+
+// LvmRootLvPath is the device-mapper path of the root logical volume.
+const LvmRootLvPath = "/dev/mapper/" + LvmVolumeGroup + "-" + LvmRootVolume
+
+// LvmHomeLvPath is the device-mapper path of the home logical volume.
+const LvmHomeLvPath = "/dev/mapper/" + LvmVolumeGroup + "-" + LvmHomeVolume
+
+// LvmInitramfsHook is the mkinitcpio hook that activates the volume group in
+// the initramfs. It is `lvm2` (shipped by mkinitcpio), not `sd-lvm2`, and goes
+// after `block` and before `filesystems`, after `sd-encrypt` when LUKS is on.
+const LvmInitramfsHook = "lvm2"
 
 // --- Live-ISO backgrounds (hyprpaper) ---------------------------------------
 // These are the live-ISO-only backgrounds the installer toggle switches between
