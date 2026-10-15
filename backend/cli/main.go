@@ -262,7 +262,7 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 			log.Error("invalid manual layout: %v", err)
 			return 1
 		}
-		if err := partition.Validate(*layout); err != nil {
+		if err := partition.ValidateFeasible(*layout); err != nil {
 			log.Error("%v", err)
 			return 1
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -268,6 +269,29 @@ func deriveFstypeFromChildren(children []lsblkEntry) string {
 		}
 	}
 	return ""
+}
+
+// LogicalSectorSize returns the logical sector size of a disk in bytes,
+// defaulting to 512 when it cannot be determined (or in fake-disk mode). sgdisk
+// numbers partition start/end sectors in this unit, so the installer's sector
+// math must use the same value — a 4Kn disk reports 4096, not 512.
+func LogicalSectorSize(diskPath string) int64 {
+	const fallback = int64(512)
+	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
+		return fallback
+	}
+	if !strings.HasPrefix(diskPath, "/dev/") {
+		diskPath = "/dev/" + diskPath
+	}
+	out, err := exec.Command("blockdev", "--getss", diskPath).Output()
+	if err != nil {
+		return fallback
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(string(out)), 10, 64)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n
 }
 
 // GetDiskPartitions returns partition information for a disk using lsblk.

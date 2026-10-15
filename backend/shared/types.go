@@ -131,9 +131,13 @@ type ManualLayout struct {
 	DiskSizeMB int64  `json:"diskSizeMB"`
 	// DiskSizeBytes is the exact total disk size in bytes. Free-space math that
 	// must survive existing-partitions being rounded down to MiB uses it.
-	DiskSizeBytes int64             `json:"diskSizeBytes"`
-	Partitions    []ManualPartition `json:"partitions"`
-	FreeMB        int64             // recomputed from disk total; not serialized
+	DiskSizeBytes int64 `json:"diskSizeBytes"`
+	// SectorSizeBytes is the disk's logical sector size in bytes (512 for most
+	// disks, 4096 for 4Kn). sgdisk numbers sectors in this unit, so all sector
+	// math must use it. Zero means "unknown" and is treated as 512.
+	SectorSizeBytes int64             `json:"sectorSizeBytes,omitempty"`
+	Partitions      []ManualPartition `json:"partitions"`
+	FreeMB          int64             // recomputed from disk total; not serialized
 	// FreeSectors is the exact unallocated space in 512-byte sectors, derived
 	// from the raw byte totals so it never suffers MiB truncation.
 	FreeSectors int64 `json:"freeSectors"`

@@ -113,6 +113,9 @@ const MinESPSizeBytes = 128 * 1024 * 1024
 // MinSystemPartitionBytes is the smallest size the OS partition (Boot/System) may
 // be: the same 8 GiB floor as the disk itself. A smaller root cannot hold the
 // base + desktop packages, so the manual layout rejects it before install.
+// Note: a LUKS2 root loses ~16 MiB to its header before mkfs, so the *usable*
+// root floor is marginally lower; that is not adjusted for because it is
+// negligible (0.2% of 8 GiB) and the floor is already conservative.
 const MinSystemPartitionBytes = MinDiskSizeBytes
 
 // --- Filesystem types --------------------------------------------------------
@@ -208,7 +211,9 @@ const DefaultCLIUsername = "aelum"
 // EFIPartitionSizeMB is the EFI partition size in megabytes.
 const EFIPartitionSizeMB = 128
 
-// GPTPartitionStartSector is the first usable sector on a GPT disk (1 MiB).
+// GPTPartitionStartSector is the first usable sector on a GPT disk with 512-byte
+// logical sectors (1 MiB). On a 4Kn disk the equivalent boundary is 256 sectors;
+// partition.go scales its GPT prefix by the disk's real logical sector size.
 const GPTPartitionStartSector = 2048
 
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.

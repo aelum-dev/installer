@@ -283,13 +283,13 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 	// region (the trailing 256 sectors are reserved for the backup GPT, so
 	// sgdisk won't reject a partition extending past the last usable sector).
 	// That yields 99486 MiB rather than the uncapped 100000-128 = 99872.
-	want := (100000*2048 - gptBackupSectors - 1050624) / 2048
+	want := (100000*2048 - (gptBackupBytes / 512) - 1050624) / 2048
 	if root.sizeMB != want {
 		t.Errorf("root sizeMB = %d, want %d", root.sizeMB, want)
 	}
 	// The partition must fit inside the disk after reserving the backup GPT.
 	rootEndSector := int64(1050624) + root.sizeMB*2048
-	if rootEndSector > 100000*2048-gptBackupSectors {
+	if rootEndSector > 100000*2048-(gptBackupBytes/512) {
 		t.Errorf("root partition end sector %d exceeds disk usable space", rootEndSector)
 	}
 }
@@ -329,7 +329,7 @@ func TestBuildActions_AllRemainingFitsFullDisk(t *testing.T) {
 	}
 	systemEndSector := system.startSector + system.sizeMB*2048
 	diskSectors := layout.DiskSizeMB * 2048
-	if systemEndSector > diskSectors-gptBackupSectors {
+	if systemEndSector > diskSectors-(gptBackupBytes/512) {
 		t.Errorf("system partition end sector %d exceeds disk usable space (disk %d sectors)", systemEndSector, diskSectors)
 	}
 }
@@ -614,10 +614,11 @@ func TestValidate_UseAllOrdering(t *testing.T) {
 	}
 }
 
-func TestBuildActions_ClampsExplicitNewPartition(t *testing.T) {
-	// A brand-new explicit partition whose size outruns the true free space must
-	// be clamped to fit, not sized as requested (which would make sgdisk fail with
-	// "partition extends past the last usable sector of the disk").
+func TestBuildActions_ExplicitNewPartitionTooLargeErrors(t *testing.T) {
+	// A brand-new explicit partition larger than the true free space must fail
+	// loudly instead of being silently clamped to a smaller size — clamping would
+	// install a different layout than the user asked for (and Validate already
+	// rejects this request, so buildActions must agree rather than paper over it).
 	layout := shared.ManualLayout{
 		Disk:          "/dev/vda",
 		DiskSizeMB:    100000,
@@ -629,26 +630,8 @@ func TestBuildActions_ClampsExplicitNewPartition(t *testing.T) {
 	}
 	// ESP occupies the first 128 MiB of the disk.
 	sectors := []partitionSector{{num: 1, start: 2048, end: 2048 + 128*2048 - 1}}
-	actions, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, sectors)
-	if err != nil {
-		t.Fatalf("buildActions: %v", err)
-	}
-	var system *formatAction
-	for _, a := range actions {
-		if a.pType == shared.TypeSystem {
-			system = &a
-		}
-	}
-	if system == nil {
-		t.Fatal("no system action produced")
-	}
-	lastSector := layout.DiskSizeBytes/512 - gptBackupSectors
-	if system.startSector+system.sizeMB*2048 > lastSector {
-		t.Errorf("clamped system partition ends at sector %d, past last usable %d",
-			system.startSector+system.sizeMB*2048, lastSector)
-	}
-	if system.sizeMB >= 99999 {
-		t.Errorf("system partition size %d was not clamped below the requested 99999 MB", system.sizeMB)
+	if _, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, sectors); err == nil {
+		t.Error("expected an error for an explicit partition larger than the free space, got nil (silent clamp)")
 	}
 }
 
@@ -661,7 +644,7 @@ func TestBuildActions_NewPartitionFillsEarlyGap(t *testing.T) {
 	// the front (where a deleted EFI used to be) and only a sliver after it.
 	const (
 		diskSectors = int64(41943040) // 20 GiB / 512
-		lastSector  = diskSectors - gptBackupSectors
+		lastSector  = diskSectors - (gptBackupBytes / 512)
 	)
 	sectors := []partitionSector{
 		{num: 2, start: 4237056, end: 41940991}, // system, ends near the disk end
@@ -711,5 +694,150 @@ func TestBuildActions_NewPartitionFillsEarlyGap(t *testing.T) {
 	// as /dev/vda3 regardless of its physical position.
 	if esp.num != 3 {
 		t.Errorf("ESP num = %d, want 3", esp.num)
+	}
+}
+
+// TestBuildActions_FragmentedExplicitSizeErrors reproduces the silent-clamp bug:
+// the free space is large in total (14399 MiB) but split into two gaps (7000 and
+// ~7398 MiB), so no single gap fits a requested 14398 MiB root. The clamped
+// result (~7398 MiB) would still meet the 8 GiB floor, so the old code quietly
+// created a much smaller root than requested. buildActions must refuse instead.
+func TestBuildActions_FragmentedExplicitSizeErrors(t *testing.T) {
+	const mib = int64(1024 * 1024)
+	diskMB := int64(40000)
+
+	vda1Start := int64(2048)
+	vda1Len := int64(5120) * 2048 // 5 GiB
+	vda1End := vda1Start + vda1Len - 1
+	vda2Start := vda1End + 1 + int64(7000)*2048 // 7 GiB front gap
+	vda2Len := int64(20480) * 2048              // 20 GiB
+	vda2End := vda2Start + vda2Len - 1
+
+	sectors := []partitionSector{
+		{num: 1, start: vda1Start, end: vda1End},
+		{num: 2, start: vda2Start, end: vda2End},
+	}
+	layout := shared.ManualLayout{
+		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/vda1", SizeMB: 5120, SizeBytes: 5120 * mib, Type: shared.TypeESP},
+			{Index: 1, Path: "/dev/vda2", SizeMB: 20480, SizeBytes: 20480 * mib},
+			{Index: 2, Path: "", SizeMB: 14398, Type: shared.TypeSystem}, // fits in total, no single gap
+		},
+	}
+
+	// Validate must pass: the request fits the total free space, so the bug is
+	// invisible to a totals-only check. If this fails the setup is wrong.
+	if err := Validate(layout); err != nil {
+		t.Fatalf("setup: Validate should pass (total free covers the request): %v", err)
+	}
+	if _, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, sectors); err == nil {
+		t.Error("buildActions: expected an error (request fits in total but no single gap), got a silent clamp")
+	}
+}
+
+// TestFeasible_DeletedPartitionFreesSpace confirms the dry-run check models the
+// space freed by deleting a partition: the freed 20 GiB region must accept the
+// replacement root, while the same layout without the delete is infeasible.
+func TestFeasible_DeletedPartitionFreesSpace(t *testing.T) {
+	const mib = int64(1024 * 1024)
+	diskMB := int64(40000)
+
+	vda1Start := int64(2048)
+	vda1Len := int64(5120) * 2048
+	vda1End := vda1Start + vda1Len - 1
+	vda2Start := vda1End + 1 + int64(7000)*2048
+	vda2Len := int64(20480) * 2048
+	vda2End := vda2Start + vda2Len - 1
+
+	sectors := []partitionSector{
+		{num: 1, start: vda1Start, end: vda1End},
+		{num: 2, start: vda2Start, end: vda2End},
+	}
+
+	layout := shared.ManualLayout{
+		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/vda1", SizeMB: 5120, SizeBytes: 5120 * mib, Type: shared.TypeESP},
+			{Index: 1, Path: "", SizeMB: 20000, Type: shared.TypeSystem}, // replaces vda2
+		},
+		DeletedPartitions: []shared.ManualPartition{{Index: 1, Path: "/dev/vda2"}},
+	}
+
+	if err := Validate(layout); err != nil {
+		t.Fatalf("setup: Validate should pass: %v", err)
+	}
+	if err := feasible(layout, sectors); err != nil {
+		t.Errorf("feasible: expected the replacement root to fit vda2's freed space, got: %v", err)
+	}
+}
+
+// TestBuildActions_4KnSectorSize checks the placement math on a 4Kn disk, whose
+// logical sector is 4096 bytes: 1 MiB is 256 sectors, not 2048, so alignment and
+// sizing must scale with the disk's reported sector size.
+func TestBuildActions_4KnSectorSize(t *testing.T) {
+	const ss = int64(4096)
+	const mib = int64(1024 * 1024)
+	spm := mib / ss // 256 sectors per MiB
+
+	diskMB := int64(20480) // 20 GiB
+	layout := &shared.ManualLayout{
+		Disk:            "/dev/nvme0n1",
+		DiskSizeMB:      diskMB,
+		DiskSizeBytes:   diskMB * mib,
+		SectorSizeBytes: ss,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "", SizeMB: shared.EFIPartitionSizeMB, Type: shared.TypeESP},
+			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
+		},
+	}
+
+	actions, err := buildActions("/dev/nvme0n1", layout, shared.FileSystemExt4, nil)
+	if err != nil {
+		t.Fatalf("buildActions: %v", err)
+	}
+	if len(actions) != 2 {
+		t.Fatalf("expected 2 actions, got %d", len(actions))
+	}
+
+	esp := actions[0]
+	// First usable sector on 4Kn is 1 MiB = 256 sectors.
+	if wantStart := mib / ss; esp.startSector != wantStart {
+		t.Errorf("4Kn ESP start sector = %d, want %d", esp.startSector, wantStart)
+	}
+	if esp.startSector%spm != 0 {
+		t.Errorf("4Kn ESP start sector %d is not MiB-aligned (multiple of %d)", esp.startSector, spm)
+	}
+
+	root := actions[1]
+	wantRootStart := esp.startSector + shared.EFIPartitionSizeMB*mib/ss
+	if root.startSector != wantRootStart {
+		t.Errorf("4Kn root start sector = %d, want %d (contiguous after ESP)", root.startSector, wantRootStart)
+	}
+	lastSector := layout.DiskSizeBytes/ss - backupSectors(ss)
+	if root.startSector+root.sizeMB*spm > lastSector {
+		t.Errorf("4Kn root end %d exceeds last usable sector %d", root.startSector+root.sizeMB*spm, lastSector)
+	}
+}
+
+// TestValidate_RejectsRequestThatOnlyFitsWithGPTPrefix guards the prefix
+// accounting fix: a brand-new partition sized to consume the total free space
+// computed from sector 0 (i.e. including the unusable 1 MiB GPT prefix plus the
+// backup region) must be rejected — the old code, which only reserved the backup
+// region, accepted it.
+func TestValidate_RejectsRequestThatOnlyFitsWithGPTPrefix(t *testing.T) {
+	const mib = int64(1024 * 1024)
+	diskMB := int64(100000)
+	layout := shared.ManualLayout{
+		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
+		Partitions: []shared.ManualPartition{
+			{Index: 0, Path: "/dev/vda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			// Exactly total-free-minus-1 MiB: the old check allowed this by
+			// counting the 1 MiB GPT prefix as allocatable.
+			{Index: 1, Path: "", SizeMB: diskMB - 128 - 1, Type: shared.TypeSystem},
+		},
+	}
+	if err := Validate(layout); err == nil {
+		t.Error("expected rejection: the request only fits if the unusable GPT prefix is counted as free")
 	}
 }

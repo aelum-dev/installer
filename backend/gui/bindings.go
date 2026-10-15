@@ -54,8 +54,13 @@ func (a *App) GetManualLayout(diskID string) (shared.ManualLayout, error) {
 
 // ValidateManualLayout validates a manual partition layout without mutating
 // any state. Wails binding.
+//
+// It uses ValidateFeasible, which also simulates placement against the disk's
+// current geometry so a request that only fits after fragmentation is rejected
+// here rather than during installation. If the geometry cannot be read (e.g.
+// unprivileged), it falls back to the coarse Validate result.
 func (a *App) ValidateManualLayout(layout shared.ManualLayout) error {
-	return partition.Validate(layout)
+	return partition.ValidateFeasible(layout)
 }
 
 // SaveManualLayout stores the manual layout and enables manual mode. Wails

@@ -59,7 +59,10 @@ export interface ManualLayout {
 	diskSizeMB: number;
 	// diskSizeBytes is the exact total disk size in bytes.
 	diskSizeBytes?: number;
-	// freeSectors is the exact unallocated space in 512-byte sectors.
+	// sectorSizeBytes is the disk's logical sector size in bytes (512 for most
+	// disks, 4096 for 4Kn). Sector math uses it; 0/unset means 512.
+	sectorSizeBytes?: number;
+	// freeSectors is the exact unallocated space, in the disk's logical sectors.
 	freeSectors?: number;
 	partitions: ManualPartition[];
 	freeMB: number;

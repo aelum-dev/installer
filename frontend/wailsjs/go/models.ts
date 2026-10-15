@@ -136,6 +136,7 @@ export namespace shared {
 	    disk: string;
 	    diskSizeMB: number;
 	    diskSizeBytes: number;
+	    sectorSizeBytes?: number;
 	    partitions: ManualPartition[];
 	    FreeMB: number;
 	    freeSectors: number;
@@ -150,6 +151,7 @@ export namespace shared {
 	        this.disk = source["disk"];
 	        this.diskSizeMB = source["diskSizeMB"];
 	        this.diskSizeBytes = source["diskSizeBytes"];
+	        this.sectorSizeBytes = source["sectorSizeBytes"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);
 	        this.FreeMB = source["FreeMB"];
 	        this.freeSectors = source["freeSectors"];

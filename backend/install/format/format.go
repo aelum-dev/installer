@@ -61,8 +61,10 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		return fmt.Errorf("sgdisk -Z failed: %w: %s", err, string(clearOut))
 	}
 
-	// Create partitions
-	var currentSector int64 = shared.GPTPartitionStartSector
+	// Create partitions. Start/end are left to sgdisk's defaults (0): it picks
+	// the first 1 MiB-aligned usable sector, then the start/end of the largest
+	// free block. This keeps the layout correct regardless of the disk's logical
+	// sector size (512e vs 4Kn) with no sector arithmetic on our side.
 	var cmd *exec.Cmd
 	var out []byte
 	for i, p := range partitions {
@@ -70,10 +72,9 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 
 		var args []string
 		if p.SizeMB > 0 {
-			args = []string{"-n", fmt.Sprintf("%d:%d:+%dm", num, currentSector, p.SizeMB)}
-			currentSector += (p.SizeMB * 1024 * 1024) / 512
+			args = []string{"-n", fmt.Sprintf("%d:0:+%dM", num, p.SizeMB)}
 		} else {
-			args = []string{"-n", fmt.Sprintf("%d:%d:0", num, currentSector)}
+			args = []string{"-n", fmt.Sprintf("%d:0:0", num)}
 		}
 
 		switch p.Fstype {

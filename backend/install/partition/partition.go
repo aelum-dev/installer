@@ -19,11 +19,65 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-// gptBackupSectors is the number of trailing sectors a GPT reserves for its
-// backup partition table at the very end of the disk (256 sectors by default).
-// The "use all remaining space" computation reserves this room so sgdisk does
-// not reject a partition whose end would extend past the last usable sector.
-const gptBackupSectors = int64(256)
+// gptBackupBytes is the trailing space a GPT reserves for its backup table and
+// header. The real default is 33 logical sectors (a 32-entry table plus one
+// header), but a generous 128 KiB is reserved so sgdisk never rejects a
+// partition whose end sits just before the last usable sector. Expressed in
+// bytes so it scales with the disk's logical sector size (256 sectors at
+// 512 bytes/sector, 32 at 4096).
+const gptBackupBytes = int64(128 * 1024)
+
+// gptPrefixBytes is the leading space a GPT reserves for the protective MBR and
+// the main partition table + header: the first usable 1 MiB, which no partition
+// may occupy. Expressed in bytes so it scales with the logical sector size.
+const gptPrefixBytes = int64(1024 * 1024)
+
+// defaultSectorSize is the logical sector size assumed when a disk's real value
+// is unknown. sgdisk numbers sectors in the disk's logical sector size, so
+// every sector calculation must use the same unit (4Kn disks report 4096).
+const defaultSectorSize = int64(512)
+
+// sectorsPerMiB returns the number of logical sectors in one MiB for the given
+// sector size (2048 at 512 bytes/sector, 256 at 4096).
+func sectorsPerMiB(sectorSize int64) int64 {
+	if sectorSize <= 0 {
+		sectorSize = defaultSectorSize
+	}
+	return (1024 * 1024) / sectorSize
+}
+
+// prefixSectors returns the leading GPT reservation (bytes) in logical sectors.
+func prefixSectors(sectorSize int64) int64 {
+	if sectorSize <= 0 {
+		sectorSize = defaultSectorSize
+	}
+	return gptPrefixBytes / sectorSize
+}
+
+// backupSectors returns the trailing GPT reservation (bytes) in logical sectors.
+func backupSectors(sectorSize int64) int64 {
+	if sectorSize <= 0 {
+		sectorSize = defaultSectorSize
+	}
+	return gptBackupBytes / sectorSize
+}
+
+// layoutSectorSize returns the layout's recorded logical sector size, falling
+// back to 512 when it is unset (layouts built by older callers or in tests).
+func layoutSectorSize(layout *shared.ManualLayout) int64 {
+	if layout.SectorSizeBytes > 0 {
+		return layout.SectorSizeBytes
+	}
+	return defaultSectorSize
+}
+
+// ensureSectorSize records the disk's logical sector size on the layout when a
+// caller (e.g. the CLI, or a layout built without geometry) left it unset.
+func ensureSectorSize(layout *shared.ManualLayout, diskID string) {
+	if layout.SectorSizeBytes <= 0 {
+		layout.SectorSizeBytes = shared.LogicalSectorSize(diskID)
+	}
+}
 
 // ComputeLayout returns a ManualLayout describing a disk's current partitions
 // (all preset to Preserve) plus the derived free space. It reuses the same
@@ -63,6 +117,9 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 	// Carry the exact byte/sector geometry so downstream free-space math can stay
 	// truncation-free instead of relying on the rounded-down MiB values below.
 	layout.DiskSizeBytes = diskSizeBytes
+	// Record the disk's logical sector size so all downstream sector math uses
+	// the same unit sgdisk reports in (512e vs 4Kn).
+	layout.SectorSizeBytes = shared.LogicalSectorSize(diskID)
 	var usedBytes int64
 	for i, p := range partitions {
 		sizeBytes := p.Size
@@ -82,7 +139,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 		freeBytes = 0
 	}
 	layout.FreeMB = bytesToMB(freeBytes)
-	layout.FreeSectors = freeBytes / 512
+	layout.FreeSectors = freeBytes / layout.SectorSizeBytes
 	return layout, nil
 }
 
@@ -102,6 +159,9 @@ func Validate(layout shared.ManualLayout) error {
 	}
 	shared.GetLogger().Info("ValidateManualLayout: diskMB=%d diskBytes=%d freeMB=%d freeSectors=%d parts=%s",
 		layout.DiskSizeMB, layout.DiskSizeBytes, layout.FreeMB, layout.FreeSectors, partsDebug)
+
+	ss := layoutSectorSize(&layout)
+	spm := sectorsPerMiB(ss)
 
 	var esp, sys, zeroSize int
 	var newSectors int64
@@ -146,7 +206,10 @@ func Validate(layout shared.ManualLayout) error {
 		}
 
 		// A SizeMB of 0 requests "use all remaining space"; at most one is allowed.
-		if p.SizeMB == 0 {
+		// A real existing partition always carries its exact byte size, so only a
+		// brand-new row (no Path, no SizeBytes) is a genuine request — an existing
+		// partition smaller than 1 MiB is not.
+		if p.SizeMB == 0 && p.SizeBytes == 0 {
 			zeroSize++
 		}
 
@@ -156,7 +219,7 @@ func Validate(layout shared.ManualLayout) error {
 		}
 		if isNew {
 			if p.SizeMB != 0 {
-				newSectors += p.SizeMB * 2048
+				newSectors += p.SizeMB * spm
 			} else {
 				seenRemaining = true
 			}
@@ -186,7 +249,7 @@ func Validate(layout shared.ManualLayout) error {
 	}
 
 	// Strict guard, in sectors: brand-new explicit partitions must fit the free
-	// space, with the trailing gptBackupSectors kept for the backup GPT header.
+	// space, with the leading GPT prefix and the trailing backup region excluded.
 	//
 	// Free space is recomputed from the live layout rather than taken from
 	// layout.FreeSectors: that value is stamped by ComputeLayout at disk-load time
@@ -204,36 +267,110 @@ func Validate(layout shared.ManualLayout) error {
 			continue
 		}
 		if p.SizeBytes > 0 {
-			reservedSectors += p.SizeBytes / 512
+			reservedSectors += p.SizeBytes / ss
 		} else {
-			reservedSectors += p.SizeMB * 2048
+			reservedSectors += p.SizeMB * spm
 		}
 	}
-	diskSectors := layout.DiskSizeBytes / 512
+	diskSectors := layout.DiskSizeBytes / ss
 	if diskSectors == 0 {
-		diskSectors = layout.DiskSizeMB * 2048
+		diskSectors = layout.DiskSizeMB * spm
 	}
-	freeSectors := diskSectors - reservedSectors
-	if freeSectors < 0 {
-		freeSectors = 0
+	// Usable space for new partitions is the disk minus the existing partitions,
+	// minus the leading GPT prefix (partition placement starts at that same 1 MiB
+	// boundary) and the trailing backup region. Subtracting the prefix here keeps
+	// this totals-only check in step with the actual placement in buildActions, so
+	// it can never admit a plan buildActions will reject.
+	usableSectors := diskSectors - reservedSectors - prefixSectors(ss) - backupSectors(ss)
+	if usableSectors < 0 {
+		usableSectors = 0
 	}
 	// Only brand-new partitions can over-allocate free space, so this strict,
 	// truncation-free check is skipped entirely when there are none. On a
 	// fully-partitioned disk (all rows existing) the remaining free space is
-	// often smaller than the trailing GPT backup region, and comparing
-	// `0 > freeSectors-gptBackupSectors` would then be true and reject a valid
-	// untouched layout.
-	if newSectors > 0 && newSectors > freeSectors-gptBackupSectors {
-		shared.GetLogger().Info("ValidateManualLayout: STRICT FAIL newSectors=%d freeSectors=%d gptBackup=%d allowedMB=%d availableAddMB-style",
-			newSectors, freeSectors, gptBackupSectors, (freeSectors-gptBackupSectors)/2048)
+	// often smaller than the GPT prefix/backup regions, and comparing
+	// `0 > usableSectors` would then reject a valid untouched layout.
+	if newSectors > 0 && newSectors > usableSectors {
+		shared.GetLogger().Info("ValidateManualLayout: STRICT FAIL newSectors=%d usableSectors=%d gptPrefix=%d gptBackup=%d",
+			newSectors, usableSectors, prefixSectors(ss), backupSectors(ss))
 		return fmt.Errorf("new partition sizes (%d MB) exceed the free space (%d MB)",
-			newSectors/2048, (freeSectors-gptBackupSectors)/2048)
+			newSectors/spm, usableSectors/spm)
 	}
 
-	shared.GetLogger().Info("ValidateManualLayout: PASS sumMB=%d diskMB=%d newSectors=%d freeSectors=%d",
-		sumMB, layout.DiskSizeMB, newSectors, freeSectors)
+	shared.GetLogger().Info("ValidateManualLayout: PASS sumMB=%d diskMB=%d newSectors=%d usableSectors=%d",
+		sumMB, layout.DiskSizeMB, newSectors, usableSectors)
 
 	return nil
+}
+
+// ValidateFeasible runs Validate and, when the layout has brand-new partitions
+// and the disk geometry can be read, additionally simulates the exact placement
+// Apply performs. This catches fragmentation — free space that is large in
+// total but split into gaps too small for a requested partition — which
+// Validate's totals-only check cannot see. It performs no writes.
+//
+// A geometry read failure (e.g. an unprivileged caller that cannot open the
+// block device) is not fatal: the coarse Validate result is returned, and Apply
+// re-checks with the real geometry as root.
+func ValidateFeasible(layout shared.ManualLayout) error {
+	if err := Validate(layout); err != nil {
+		return err
+	}
+	if layout.Disk == "" || !hasNewPartitions(layout) {
+		return nil
+	}
+	// A layout from the CLI may omit the sector size; read it so the dry-run
+	// placement uses the same unit sgdisk reports in.
+	ensureSectorSize(&layout, layout.Disk)
+	sectors, err := partitionSectors(layout.Disk)
+	if err != nil {
+		// Cannot read geometry here; Apply will re-check as root.
+		return nil
+	}
+	return feasible(layout, sectors)
+}
+
+// feasible reports whether every brand-new partition in the layout fits the
+// disk's current free regions. deleted partitions are treated as already
+// removed (Apply deletes them before reading geometry), so freeing a partition
+// and re-creating another in its place validates correctly.
+func feasible(layout shared.ManualLayout, sectors []partitionSector) error {
+	sectors = dropDeleted(sectors, layout.DeletedPartitions)
+	_, err := buildActions(layout.Disk, &layout, shared.DefaultFileSystem, sectors)
+	return err
+}
+
+// hasNewPartitions reports whether the layout contains a brand-new Boot/System
+// partition that must be carved into free space.
+func hasNewPartitions(layout shared.ManualLayout) bool {
+	for _, p := range layout.Partitions {
+		if p.Path == "" && (p.Type == shared.TypeESP || p.Type == shared.TypeSystem) {
+			return true
+		}
+	}
+	return false
+}
+
+// dropDeleted removes the partitions the user deleted from a sector list, so a
+// dry-run placement sees the same freed space Apply produces after it runs
+// `sgdisk -d` on them.
+func dropDeleted(sectors []partitionSector, deleted []shared.ManualPartition) []partitionSector {
+	if len(deleted) == 0 {
+		return sectors
+	}
+	gone := make(map[int]bool, len(deleted))
+	for _, p := range deleted {
+		if n := parsePartitionNum(p.Path); n > 0 {
+			gone[n] = true
+		}
+	}
+	out := make([]partitionSector, 0, len(sectors))
+	for _, s := range sectors {
+		if !gone[s.num] {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // Apply formats and prepares the Boot and Root partitions described by layout,
@@ -249,6 +386,9 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	if diskID == "" {
 		return fmt.Errorf("manual layout has no disk")
 	}
+	// A layout from the CLI may omit the sector size; read it so the placement
+	// math uses the same sector unit sgdisk reports in (512e vs 4Kn).
+	ensureSectorSize(layout, diskID)
 	if err := Validate(*layout); err != nil {
 		return err
 	}
@@ -404,6 +544,9 @@ type formatAction struct {
 // the disk's free gaps (see allocateFree) and numbered after the last existing
 // partition.
 func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string, sectors []partitionSector) ([]formatAction, error) {
+	ss := layoutSectorSize(layout)
+	spm := sectorsPerMiB(ss)
+
 	// Brand-new partitions are numbered immediately after the highest existing one.
 	maxNum := 0
 	for _, s := range sectors {
@@ -413,13 +556,13 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 	}
 
 	// lastSector caps placement before the trailing GPT backup.
-	diskSectors := layout.DiskSizeBytes / 512
+	diskSectors := layout.DiskSizeBytes / ss
 	if diskSectors == 0 {
-		diskSectors = layout.DiskSizeMB * 2048
+		diskSectors = layout.DiskSizeMB * spm
 	}
-	lastSector := diskSectors - gptBackupSectors
+	lastSector := diskSectors - backupSectors(ss)
 
-	free := freeRegions(sectors, lastSector)
+	free := freeRegions(sectors, prefixSectors(ss), lastSector)
 
 	var actions []formatAction
 	for _, p := range layout.Partitions {
@@ -453,18 +596,16 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 
 		// Brand-new partition: next available number, placed in a free gap.
 		num := maxNum + 1
-		start, sizeMB, rest, ok := allocateFree(free, p.SizeMB)
+		start, sizeMB, rest, ok := allocateFree(free, p.SizeMB, spm)
 		if !ok {
-			return nil, fmt.Errorf("no free space to create a %s partition (%d MB)", p.Type, p.SizeMB)
+			if p.SizeMB != 0 {
+				return nil, fmt.Errorf("no single free region is large enough for the %s partition (%d MB); the disk's free space is fragmented", p.Type, p.SizeMB)
+			}
+			return nil, fmt.Errorf("no free space to create a %s partition", p.Type)
 		}
-		// Brand-new explicit partitions are clamped to fit the largest contiguous
-		// free gap, which can be smaller than the requested size when the free
-		// space is fragmented across several gaps. Validate checks the *requested*
-		// size against the role minimum and cannot see that fragmentation, so a
-		// clamp can silently produce a partition below the enforced minimum
-		// (e.g. an 8 GiB root carved down to a 6 GiB gap). Fail loudly here instead
-		// of formatting an unusably small partition. A "use all remaining space"
-		// row (sizeMB == 0) is exempt — its floor is the disk itself.
+		// allocateFree returns an exact fit for an explicit-size row (Validate
+		// already enforced its floor), so this is a belt-and-suspenders guard; a
+		// "use all remaining space" row is exempt because its floor is the disk.
 		if p.SizeMB != 0 && sizeMB < minPartitionSizeMB(p.Type) {
 			return nil, fmt.Errorf("%s partition has only %d MB of contiguous free space, below the %d MB minimum", p.Type, sizeMB, minPartitionSizeMB(p.Type))
 		}
@@ -492,14 +633,17 @@ type freeRegion struct {
 }
 
 // freeRegions returns the disk's gaps as inclusive sector ranges (before the
-// first partition, between neighbours, after the last), capped at lastSector.
-func freeRegions(sectors []partitionSector, lastSector int64) []freeRegion {
+// first partition, between neighbours, after the last). Allocation cannot begin
+// before the leading GPT prefix (prefixSector, the first 1 MiB) nor extend past
+// lastSector (the trailing backup region). Both are expressed in the disk's
+// logical sectors.
+func freeRegions(sectors []partitionSector, prefixSector, lastSector int64) []freeRegion {
 	sorted := make([]partitionSector, len(sectors))
 	copy(sorted, sectors)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].start < sorted[j].start })
 
 	var regions []freeRegion
-	cursor := int64(shared.GPTPartitionStartSector)
+	cursor := prefixSector
 	for _, s := range sorted {
 		if s.start > cursor {
 			regions = append(regions, freeRegion{cursor, min64(s.start-1, lastSector)})
@@ -533,11 +677,21 @@ func removeSpan(regions []freeRegion, start, end int64) []freeRegion {
 	return out
 }
 
-// allocateFree carves a brand-new partition of sizeMB MiB (0 = fill one region)
-// from the free regions, returning the aligned start sector, the resolved size
-// in MiB (clamped to fit) and the leftover regions. Alignment is 1 MiB = 2048.
-func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest []freeRegion, ok bool) {
-	const align = int64(2048)
+// allocateFree carves a brand-new partition of sizeMB MiB from the free regions,
+// returning the 1-MiB-aligned start sector, the resolved size in MiB and the
+// leftover regions. spm is the number of logical sectors per MiB (2048 at a
+// 512-byte sector size, 256 at 4096), so alignment and sizing track the disk's
+// real sector size.
+//
+//   - sizeMB == 0 ("use all remaining space") fills the largest free region. If
+//     the free space is fragmented the result is the largest single gap, which
+//     may be smaller than the total free space; the leftover gaps stay unused
+//     because a partition must be contiguous.
+//   - sizeMB > 0 requires a single region that fits the exact request. If none
+//     does, ok is false: the caller must fail rather than silently create a
+//     smaller partition than the user asked for.
+func allocateFree(regions []freeRegion, sizeMB, spm int64) (start, size int64, rest []freeRegion, ok bool) {
+	align := spm
 
 	// Per-region candidate: aligned start and whole-MiB capacity.
 	type cand struct {
@@ -557,18 +711,6 @@ func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest [
 		cands = append(cands, cand{start: s, avail: avail})
 	}
 
-	choose := func(best int) (int64, int64, bool) {
-		c := cands[best]
-		if sizeMB != 0 && sizeMB*align <= c.avail {
-			return c.start, sizeMB, true
-		}
-		sz := c.avail / align
-		if sz == 0 {
-			return 0, 0, false
-		}
-		return c.start, sz, true
-	}
-
 	if sizeMB == 0 {
 		// "Use all remaining space": fill the largest region.
 		best := -1
@@ -580,43 +722,23 @@ func allocateFree(regions []freeRegion, sizeMB int64) (start, size int64, rest [
 		if best < 0 {
 			return 0, 0, regions, false
 		}
-		s, sz, ok := choose(best)
-		if !ok {
+		c := cands[best]
+		sz := c.avail / align
+		if sz == 0 {
 			return 0, 0, regions, false
 		}
-		return s, sz, removeSpan(regions, s, s+sz*align-1), true
+		return c.start, sz, removeSpan(regions, c.start, c.start+sz*align-1), true
 	}
 
-	// First region that fits the exact request, else clamp to the largest.
-	placed := -1
-	for i, c := range cands {
+	// Explicit size: take the first region (by address) that fits the request
+	// exactly. No clamping — a fragmented disk must fail loudly instead of
+	// installing a smaller partition than requested.
+	for _, c := range cands {
 		if c.avail >= sizeMB*align {
-			placed = i
-			break
+			return c.start, sizeMB, removeSpan(regions, c.start, c.start+sizeMB*align-1), true
 		}
 	}
-	if placed < 0 {
-		best := -1
-		for i, c := range cands {
-			if best < 0 || c.avail > cands[best].avail {
-				best = i
-			}
-		}
-		if best < 0 {
-			return 0, 0, regions, false
-		}
-		s, sz, ok := choose(best)
-		if !ok {
-			return 0, 0, regions, false
-		}
-		return s, sz, removeSpan(regions, s, s+sz*align-1), true
-	}
-
-	s, sz, ok := choose(placed)
-	if !ok {
-		return 0, 0, regions, false
-	}
-	return s, sz, removeSpan(regions, s, s+sz*align-1), true
+	return 0, 0, regions, false
 }
 
 // min64 returns the smaller of a and b.
@@ -752,7 +874,8 @@ var (
 	trailingDigitRe = regexp.MustCompile(`\d+$`)
 )
 
-// alignUp rounds sector up to the nearest multiple of align (1 MiB = 2048).
+// alignUp rounds sector up to the nearest multiple of align. align is one MiB
+// worth of the disk's logical sectors (typically 2048).
 func alignUp(sector, align int64) int64 {
 	return ((sector + align - 1) / align) * align
 }
@@ -767,8 +890,8 @@ func roleLabel(fstype string) string {
 // minPartitionSizeMB returns the enforced minimum size in MiB for a role: the
 // ESP floor (128 MiB) and the system/root floor (8 GiB). Other roles are not
 // designated partitions and have no floor (0). Mirrors the size checks in
-// Validate, but here it guards the *resolved* (possibly clamped) size of a
-// brand-new partition so fragmentation can't slip a too-small partition through.
+// Validate; here it backstops the *resolved* size of a brand-new partition so a
+// too-small partition can never reach sgdisk.
 func minPartitionSizeMB(pt shared.PartitionType) int64 {
 	switch pt {
 	case shared.TypeESP:
