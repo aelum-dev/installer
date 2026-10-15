@@ -65,6 +65,44 @@
 	}
 </script>
 
+<!-- LUKS2 root encryption toggle. Off → opens the passphrase popup; on → opens
+	the disable confirm. Reflects luksEnabled only. -->
+{#snippet luksSwitch()}
+	<button
+		type="button"
+		class={['luks-switch', { on: luksEnabled }]}
+		role="switch"
+		aria-checked={luksEnabled}
+		aria-label={t('disk.encryptLabel')}
+		title={t('disk.encryptHint')}
+		onclick={() => {
+			if (luksEnabled) {
+				onDisableLuks?.();
+			} else {
+				onEnableLuks?.();
+			}
+		}}
+	>
+		<span class="luks-slider"></span>
+	</button>
+{/snippet}
+
+<!-- LVM toggle: place root and home on logical volumes in the `aelum` volume
+	group. No passphrase (unlike LUKS). -->
+{#snippet lvmSwitch()}
+	<button
+		type="button"
+		class={['luks-switch', { on: lvmEnabled }]}
+		role="switch"
+		aria-checked={lvmEnabled}
+		aria-label={t('disk.lvmLabel')}
+		title={t('disk.lvmHint')}
+		onclick={() => onToggleLvm?.()}
+	>
+		<span class="luks-slider"></span>
+	</button>
+{/snippet}
+
 <div class={['top-bar', { 'top-bar--auto': !manualMode }]}>
 	<!-- Left slot: disk title in manual mode; nothing in automatic mode. -->
 	{#if manualMode && disk}
@@ -141,44 +179,26 @@
 		{/each}
 	</div>
 
-	<!-- LUKS2 root encryption toggle. Off → opens the passphrase popup; on →
-		opens the disable confirm. Reflects luksEnabled only. -->
+	<!-- Encryption (LUKS2) and LVM toggles share the control column (column 2),
+		so their switches line up with the mode/filesystem pills above. The label
+		for the first toggle occupies column 1; the LVM label sits inline before its
+		switch. Shown in both automatic and manual mode. -->
 	{#if onEnableLuks || onDisableLuks}
 		<span class="control-row-label">{t('disk.encryptLabel')}</span>
-		<button
-			type="button"
-			class={['luks-switch', { on: luksEnabled }]}
-			role="switch"
-			aria-checked={luksEnabled}
-			aria-label={t('disk.encryptLabel')}
-			title={t('disk.encryptHint')}
-			onclick={() => {
-				if (luksEnabled) {
-					onDisableLuks?.();
-				} else {
-					onEnableLuks?.();
-				}
-			}}
-		>
-			<span class="luks-slider"></span>
-		</button>
-	{/if}
-
-	<!-- LVM toggle: place root and home on logical volumes in the `aelum` volume
-		group. No passphrase (unlike LUKS). Shown in both automatic and manual mode. -->
-	{#if onToggleLvm}
+		<div class="toggle-row">
+			{@render luksSwitch()}
+			{#if onToggleLvm}
+				<div class="toggle-group">
+					<span class="control-row-label">{t('disk.lvmLabel')}</span>
+					{@render lvmSwitch()}
+				</div>
+			{/if}
+		</div>
+	{:else if onToggleLvm}
 		<span class="control-row-label">{t('disk.lvmLabel')}</span>
-		<button
-			type="button"
-			class={['luks-switch', { on: lvmEnabled }]}
-			role="switch"
-			aria-checked={lvmEnabled}
-			aria-label={t('disk.lvmLabel')}
-			title={t('disk.lvmHint')}
-			onclick={() => onToggleLvm?.()}
-		>
-			<span class="luks-slider"></span>
-		</button>
+		<div class="toggle-row">
+			{@render lvmSwitch()}
+		</div>
 	{/if}
 </div>
 </div>

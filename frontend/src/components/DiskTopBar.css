@@ -139,6 +139,21 @@
 	justify-self: start;
 }
 
+/* Encryption (LUKS) + LVM switches share the control column, so the switches
+   line up with the mode/filesystem pills above. */
+.toggle-row {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-xl);
+}
+
+/* One toggle: its label followed by its switch. */
+.toggle-group {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-md);
+}
+
 .fs-pills {
 	display: flex;
 	gap: var(--spacing-xs);
