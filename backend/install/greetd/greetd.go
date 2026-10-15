@@ -1,7 +1,11 @@
 // Package greetd provides greetd login manager configuration with DMS greeter support.
 package greetd
 
-import "fmt"
+import (
+	"fmt"
+
+	"aelum-installer/backend/shared"
+)
 
 // Executor abstracts command execution and file operations for greetd setup.
 // Implemented by the install package.
@@ -11,18 +15,13 @@ type Executor interface {
 	// WriteFile writes content to a file inside the installed system.
 	WriteFile(path, content string) error
 	// Logger returns the logger for this installation.
-	Logger() Logger
-}
-
-// Logger is the logging interface used by installation steps.
-type Logger interface {
-	Error(format string, args ...interface{})
+	Logger() shared.Logger
 }
 
 // InstallContext holds the data needed for greetd configuration.
 type InstallContext struct {
 	Username string
-	Logger   Logger
+	Logger   shared.Logger
 }
 
 // ConfigureGreetd sets up greetd as the login manager with the DMS greeter.

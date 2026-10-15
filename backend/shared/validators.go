@@ -81,7 +81,7 @@ func ValidateDiskSize(diskPath string) error {
 		return fmt.Errorf("failed to parse disk size %q: %w", sizeStr, err)
 	}
 	if sizeBytes < MinDiskSizeBytes {
-		return fmt.Errorf("disk %s is too small: %s (minimum 8 GB required)", diskPath, FormatSize(int64(sizeBytes)))
+		return fmt.Errorf("disk %s is too small: %s (minimum %s required)", diskPath, FormatSize(int64(sizeBytes)), FormatSize(MinDiskSizeBytes))
 	}
 	return nil
 }
@@ -95,7 +95,7 @@ func ValidateDiskSelection(data DiskSelectionData) error {
 		return fmt.Errorf("please select a disk to install to")
 	}
 	if data.Size < MinDiskSizeBytes {
-		return fmt.Errorf("selected disk is too small. minimum 8 GiB required")
+		return fmt.Errorf("selected disk is too small. minimum %s required", FormatSize(MinDiskSizeBytes))
 	}
 	if data.FileSystem == "" {
 		return fmt.Errorf("please select a filesystem")

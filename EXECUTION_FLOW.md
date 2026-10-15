@@ -190,7 +190,7 @@ Install() returns error
   │
   └─> defer RunCleanup() fires
       │
-      └─> CleanupMounts(logger, diskID)
+      └─> primitives.CleanupMounts(logger)
           ├─> fuser -m -M /mnt  # Find holding PIDs
           ├─> kill -KILL <pids>  # Kill processes holding mounts
           └─> umount -R /mnt  # Recursive unmount
@@ -225,7 +225,7 @@ User closes window
       │   └─> logger.Close()
       │
       └─> exec.Command("sudo", "aelum-installer-cli", "--cleanup")
-          └─> CleanupMounts(logger, "")  # Fallback: unmount /mnt
+          └─> primitives.CleanupMounts(logger)  # Fallback: unmount /mnt
 ```
 
 ### Path 4: Panic Recovery

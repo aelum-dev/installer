@@ -51,10 +51,8 @@ backend/
 │   ├── installer.go     # Installer orchestrator (Install()/Rollback())
 │   ├── step.go          # Step interface + stepWeights() (order + progress weights)
 │   ├── context.go       # InstallContext (shared state, Cancel channel, Logger)
-│   ├── command.go       # Run(), runChroot(), writeFile(), appendFile()
 │   ├── errors.go        # Error types
-│   ├── logger.go        # Logger interface + ConsoleLogger
-│   ├── cleanup.go       # Lazy recursive mount cleanup
+│   ├── cleanup.go       # Rollback + lazy recursive mount cleanup
 │   ├── format/          # Partitioning + formatting (+ btrfs subvolumes)
 │   ├── mount/           # Mount filesystem + verification
 │   ├── installbase/     # Base pacstrap
@@ -63,7 +61,7 @@ backend/
 │   ├── configure/       # Merged: fstab→bootloader→system→greetd→plymouth→zram→services
 │   ├── clearcache/      # Clear pacman cache in chroot
 │   ├── greetd/          # greetd config (config, sync, memory)
-│   ├── primitives/      # Low-level disk primitives
+│   ├── primitives/      # Low-level primitives (Run/RunChroot/WriteFile/AppendFile/CleanupMounts)
 │   ├── progress/        # Pacstrap progress tracker
 │   └── *_test.go        # Unit + integration tests
 ├── validation/          # Centralized validation

@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"aelum-installer/backend/gui"
-	"aelum-installer/backend/install"
+	"aelum-installer/backend/install/primitives"
+	"aelum-installer/backend/shared"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -70,11 +71,11 @@ func main() {
 		case <-cleanupDone:
 		case <-time.After(10 * time.Second):
 			fmt.Println("CLI did not exit in time — force cleaning mounts...")
-			if err := install.CleanupMounts(install.GetLogger()); err != nil {
+			if err := primitives.CleanupMounts(shared.GetLogger()); err != nil {
 				fmt.Fprintf(os.Stderr, "Force cleanup error: %v\n", err)
 			}
 		}
-		install.GetLogger().Close()
+		shared.GetLogger().Close()
 		os.Exit(0)
 	}()
 

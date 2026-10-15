@@ -6,7 +6,7 @@ import type {
 	PartitionType,
 } from '$lib/types';
 import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
-import { MinDiskSizeBytes, MinESPSizeBytes } from '$lib/constants';
+import { GPTBackupBytes, GPTPrefixBytes, MinDiskSizeBytes, MinESPSizeBytes } from '$lib/constants';
 import { t } from '$lib/i18n';
 // ── Installation State (shared across pages) ──
 
@@ -164,18 +164,16 @@ export function setFileSystem(fs: FileSystem): void {
 
 // ── Manual partition helpers ───────────────────────────────────────────────
 const bytesPerMB = 1024 * 1024;
-// gptBackupBytes is the trailing region a GPT keeps for its backup header:
-// 256 sectors * 512 bytes (const gptBackupSectors in partition.go). The backend
-// strict free-space check reserves it before it lets a new partition grow, so
-// the frontend must reserve the same sectors here or it overstates the usable
-// space by 0.125 MiB and rejects a plan that fills the disk by exactly 1 MB.
-const gptBackupBytes = 256 * 512;
-// gptPrefixBytes is the leading region a GPT keeps for its header + protective
-// MBR: the first GPTPartitionStartSector (2048) sectors, never usable for a
-// partition (const GPTPartitionStartSector in partition.go). The backend's free
-// regions start at that sector, so the frontend must exclude it too — otherwise
-// "use remaining" proposes one MiB more than the backend can actually place.
-const gptPrefixBytes = 2048 * 512;
+// gptBackupBytes / gptPrefixBytes are the two regions a GPT reserves and the
+// backend never allocates: the trailing backup header and the leading header +
+// protective MBR. Sourced from the backend (shared.GPTBackupBytes /
+// shared.GPTPrefixBytes via the generated constants.ts) so the frontend's
+// free-space math can never drift from partition.go. The backend reserves both
+// before it places a brand-new partition, so the frontend must too — otherwise
+// it overstates usable space (by the prefix) or rejects a plan that fills the
+// disk (by the backup).
+const gptBackupBytes = GPTBackupBytes;
+const gptPrefixBytes = GPTPrefixBytes;
 
 // computeUsedMB sums the space the plan has reserved, in MiB. Every row in the
 // layout counts — an existing partition (path set) always occupies its space,

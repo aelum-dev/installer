@@ -30,13 +30,14 @@ import (
 
 	"aelum-installer/backend/install"
 	"aelum-installer/backend/install/partition"
+	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 
 	"golang.org/x/term"
 )
 
 // log is the shared logger used by the CLI for consistent output across CLI and GUI.
-var log = install.GetLogger()
+var log = shared.GetLogger()
 
 // Version is set at build time via ldflags.
 var Version = "dev"
@@ -59,10 +60,10 @@ var validateDiskPathFunc = shared.ValidateDiskPath
 var validateDiskSizeFunc = shared.ValidateDiskSize
 
 // cleanupMountsFunc is a variable for testing — allows mocking cleanup.
-var cleanupMountsFunc = install.CleanupMounts
+var cleanupMountsFunc = primitives.CleanupMounts
 
 // rollbackFunc is a variable for testing — allows mocking rollback.
-var rollbackFunc = func(logger install.Logger, diskID string) error {
+var rollbackFunc = func(logger shared.Logger, diskID string) error {
 	return install.Rollback(logger, diskID)
 }
 

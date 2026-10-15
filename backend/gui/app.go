@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os/exec"
 
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
-
-	"aelum-installer/backend/install"
 	"aelum-installer/backend/shared"
+
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // NewApp creates a new App application struct
@@ -28,7 +27,7 @@ func (a *App) StartUp(ctx context.Context) {
 	// so the user can still use the installer without real side effects.
 	result := a.CheckRoot()
 	if !result.Authorized {
-		install.GetLogger().Info("No sudo access — enabling dry-run mode")
+		shared.GetLogger().Info("No sudo access — enabling dry-run mode")
 		a.dryRun = true
 	}
 
@@ -73,7 +72,7 @@ func (a *App) OnBeforeClose(ctx context.Context) bool {
 	if a.installationRunning.Load() {
 		a.CancelInstallation()
 		a.WaitForCleanup()
-		install.GetLogger().Close()
+		shared.GetLogger().Close()
 	}
 
 	return false
@@ -93,7 +92,7 @@ func (a *App) GetDiskID() string {
 // for cleanup to finish first. In dry-run mode, only logs the action.
 func (a *App) RebootAndClose() error {
 	if a.dryRun {
-		install.GetLogger().Info("Rebooting...")
+		shared.GetLogger().Info("Rebooting...")
 		wailsRuntime.Quit(a.ctx)
 		return nil
 	}
@@ -108,6 +107,6 @@ func (a *App) RebootAndClose() error {
 		return fmt.Errorf("failed to reboot: %w", err)
 	}
 
-	install.GetLogger().Info("Rebooting...")
+	shared.GetLogger().Info("Rebooting...")
 	return nil
 }

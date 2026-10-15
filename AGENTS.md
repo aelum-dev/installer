@@ -45,9 +45,10 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       step.go                   — Step interface + stepFunc + Steps()/stepWeights() (order + weights)
       context.go                — InstallContext struct (shared state, Cancel channel, Logger)
       errors.go                 — ValidationError, InstallError types
-      command.go                — Run(), runChroot(), writeFile(), appendFile(), GetLogger() helpers
+      cleanup.go                — Rollback() + partition discovery (exposed for --rollback)
       primitives/
-        primitives.go           — Low-level disk primitives (partition/format/mount helpers)
+        primitives.go           — Low-level primitives shared by all steps: Run(), RunChroot(),
+                                  WriteFile(), AppendFile(), ValidateMountedSystem(), CleanupMounts()
       format/
         format.go               — FormatDisk() + setupBtrfsSubvolumes() (+ format_test.go)
       mount/
@@ -59,7 +60,19 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       users/
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
-        configure.go            — ConfigureSystem (merged step: GenerateFstab→bootloader→system→greetd→plymouth→zram→services) (+ fstab_test.go, swap_test.go)
+        configure.go            — Run() step orchestrator (GenerateFstab→bootloader→system→greetd→plymouth→zram→services)
+        fstab.go                — fstab generation + verification (btrfs/ext4/LVM variants)
+        bootloader.go           — systemd-boot install + boot entry (LUKS/LVM-aware root options)
+        system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
+        greetd.go               — greetd + DMS greeter executor (greetdExecutor)
+        plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin
+        services.go             — zram swap config + systemd service enablement
+        (+ fstab_test.go, swap_test.go)
+      partition/
+        partition.go            — ComputeLayout(), Apply() (dualboot-safe manual partitioning)
+        validate.go             — Validate()/ValidateFeasible() invariants
+        layout.go               — free-space placement math (buildActions, allocateFree, …)
+        sectors.go              — GPT sector geometry helpers + sgdisk -p parsing
       clearcache/
         clearcache.go           — ClearCache() (pacman -Scc in chroot) (+ clearcache_test.go)
       greetd/

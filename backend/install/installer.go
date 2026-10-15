@@ -9,6 +9,7 @@ import (
 
 	"aelum-installer/backend/install/luks"
 	"aelum-installer/backend/install/lvm"
+	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
 
@@ -42,7 +43,7 @@ type Installer struct {
 	manualLayout *shared.ManualLayout
 
 	// Logger for step output (injected by CLI/GUI; default is ConsoleLogger)
-	Logger Logger
+	Logger shared.Logger
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(label string, percent int, phase string)
@@ -77,7 +78,7 @@ func NewInstaller(diskID, username, password, hostname string, region shared.Reg
 		lvm:            lvm,
 		dryRun:         dryRun,
 		esp:            shared.BootMountPoint,
-		Logger:         NewConsoleLogger(),
+		Logger:         shared.NewConsoleLogger(),
 	}
 }
 
@@ -420,7 +421,7 @@ func (inst *Installer) RunCleanup() {
 		// `cryptsetup close` refuse to tear down a device that is still mounted
 		// (or otherwise busy). Unmounting first is what actually lets the VG and
 		// mapper be released, so a failed install can be retried cleanly.
-		if err := CleanupMounts(inst.Logger); err != nil {
+		if err := primitives.CleanupMounts(inst.Logger); err != nil {
 			inst.logError("Cleanup: unmount: %v", err)
 		}
 		// Deactivate the LVM volume group (if any) before closing the LUKS

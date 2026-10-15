@@ -4,9 +4,6 @@
 package validation
 
 import (
-	"fmt"
-	"os"
-
 	"aelum-installer/backend/shared"
 )
 
@@ -28,17 +25,4 @@ func ValidateDiskPath(path string) error {
 // ValidateDiskSize checks that a disk meets the minimum size requirement.
 func ValidateDiskSize(diskPath string) error {
 	return shared.ValidateDiskSize(diskPath)
-}
-
-// ValidateMountedSystem checks that the target system is properly mounted
-// at shared.MountRoot and contains a valid root filesystem.
-func ValidateMountedSystem() error {
-	mountRoot := shared.MountRoot
-	if _, err := os.Stat(mountRoot); err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("mount point %s does not exist", mountRoot)
-		}
-		return fmt.Errorf("cannot access mount point %s: %w", mountRoot, err)
-	}
-	return nil
 }

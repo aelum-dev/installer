@@ -300,8 +300,8 @@ Aelum-Installer/
 │   │   ├── services.go          # systemd service enabling
 │   │   ├── zram.go              # Compressed swap via zram-generator
 │   │   ├── copy.go              # ISO-to-target file copying
-│   │   ├── cleanup.go           # Mount cleanup
-│   │   ├── command.go           # Run(), runChroot(), writeFile(), appendFile()
+│   │   ├── cleanup.go           # Rollback + mount cleanup
+│   │   ├── primitives.go        # Run/RunChroot/WriteFile/AppendFile/CleanupMounts
 │   │   ├── rollback.go          # Rollback partial installations
 │   │   ├── context.go           # InstallContext
 │   │   ├── checks.go            # Validation helpers

@@ -216,6 +216,20 @@ const EFIPartitionSizeMB = 128
 // partition.go scales its GPT prefix by the disk's real logical sector size.
 const GPTPartitionStartSector = 2048
 
+// GPTPrefixBytes is the leading space a GPT reserves for the protective MBR and
+// the main partition table + header: the first usable 1 MiB, which no partition
+// may occupy. Expressed in bytes so it scales with the disk's logical sector
+// size (2048 sectors at 512 bytes/sector, 256 at 4096). Single source for both
+// the partition package and the frontend (via constants.ts).
+const GPTPrefixBytes = 1024 * 1024
+
+// GPTBackupBytes is the trailing space a GPT reserves for its backup partition
+// table and header. The real default is 33 logical sectors (a 32-entry table
+// plus one header), but a generous 128 KiB is reserved so sgdisk never rejects a
+// partition whose end sits just before the last usable sector. Expressed in
+// bytes so it scales with the logical sector size.
+const GPTBackupBytes = 128 * 1024
+
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
 var GPTTypeGUIDs = struct {
 	ESP                    string

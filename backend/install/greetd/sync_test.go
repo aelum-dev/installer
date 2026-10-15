@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"aelum-installer/backend/shared"
 )
 
 // fakeFS is an in-memory, chroot-relative filesystem used to exercise the
@@ -85,7 +87,7 @@ func (f *fakeFS) WriteFile(path, content string) error {
 	return nil
 }
 
-func (f *fakeFS) Logger() Logger { return nil }
+func (f *fakeFS) Logger() shared.Logger { return nil }
 
 func testContext() *InstallContext {
 	return &InstallContext{Username: "aelum"}
