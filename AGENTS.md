@@ -65,7 +65,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         bootloader.go           — systemd-boot install + boot entry (LUKS/LVM-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
-        plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin
+        plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
         services.go             — zram swap config + systemd service enablement
         (+ fstab_test.go, swap_test.go)
       partition/

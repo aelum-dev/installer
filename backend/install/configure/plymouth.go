@@ -18,11 +18,49 @@ import (
 // early-boot (dm-crypt unlock) splash matches the live ISO exactly.
 const aelumThemeISOPath = "/usr/share/plymouth/themes/aelum"
 
+// aelumBootProgressUnit is the installed-system twin of the live ISO's
+// aelum-live-progress.service. It sends the theme's final milestone right
+// before plymouth-quit dismisses the splash, so the installed-system bar
+// finishes at 100% instead of stalling wherever the stopwatch happened to be
+// when the greeter came up.
+const aelumBootProgressUnit = `# SPDX-License-Identifier: GPL-3.0
+#
+# Last installed-system boot milestone: push Aelum's Plymouth theme to 100%
+# just before plymouth-quit dismisses the splash.
+#
+# Plymouth ships two units as static symlinks into multi-user.target.wants:
+#
+#   plymouth-quit.service       runs "plymouth quit"  -> dismisses the splash
+#   plymouth-quit-wait.service  runs "plymouth --wait" -> holds boot until quit
+#
+# Neither is ordered against this unit, so pin it into the last window in which
+# the splash is still on screen: after systemd-user-sessions, before BOTH quit
+# units -- exactly as the live ISO's aelum-live-progress.service does. The
+# theme's timed bar cannot otherwise know when boot ends, so without this it
+# stops short of 100%.
+
+[Unit]
+Description=Aelum boot progress: finish the Plymouth bar before the greeter
+After=plymouth-start.service systemd-user-sessions.service
+Before=plymouth-quit.service plymouth-quit-wait.service
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/plymouth update --status=boot:complete
+
+[Install]
+WantedBy=multi-user.target
+`
+
+// bootProgressUnitPath is where the unit is written inside the installed system.
+const bootProgressUnitPath = "/etc/systemd/system/aelum-boot-progress.service"
+
 // ConfigurePlymouth sets up the Aelum LUKS unlock Plymouth theme for the
 // installed system, matching the live ISO. It copies the branded theme files
 // from the live ISO, points plymouthd.conf at the aelum theme, creates the
-// default->aelum symlink, and regenerates the initramfs so the theme is baked
-// in for early-boot unlock.
+// default->aelum symlink, regenerates the initramfs so the theme is baked in
+// for early-boot unlock, and installs aelum-boot-progress.service so the boot
+// bar finishes at 100% right before the greeter.
 func ConfigurePlymouth(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
@@ -63,6 +101,13 @@ UseFirmwareBackground=false
 		return fmt.Errorf("failed to set Plymouth aelum theme: %w: %s", err, string(output))
 	}
 
+	// 5. Install + enable the bootstrap unit that finishes the splash bar at
+	//    100% right before the greeter (the live ISO does the same with
+	//    aelum-live-progress.service).
+	if err := installBootProgressUnit(ctx); err != nil {
+		return err
+	}
+
 	if ctx.Username != "" {
 		if err := createHushlogin(ctx.Username); err != nil {
 			if ctx.Logger != nil {
@@ -93,6 +138,31 @@ func installAelumTheme(ctx *shared.InstallContext) error {
 	}
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Installed Aelum LUKS unlock Plymouth theme")
+	}
+	return nil
+}
+
+// installBootProgressUnit writes and enables aelum-boot-progress.service in the
+// installed system. It is the installed-system equivalent of the live ISO's
+// aelum-live-progress.service: a single oneshot that tells the aelum Plymouth
+// theme to fill its bar to 100% in the last moment before plymouth-quit
+// dismisses the splash. Best-effort: a missing plymouth binary or an
+// enable failure must not fail the whole install (the theme's timed bar still
+// works, just without the guaranteed finish).
+func installBootProgressUnit(ctx *shared.InstallContext) error {
+	if err := primitives.WriteFile(bootProgressUnitPath, aelumBootProgressUnit); err != nil {
+		return fmt.Errorf("failed to write boot progress unit: %w", err)
+	}
+
+	output, err := primitives.RunChroot("systemctl", "enable", "aelum-boot-progress.service")
+	if err != nil {
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Warning: failed to enable aelum-boot-progress.service: %v: %s", err, strings.TrimSpace(string(output)))
+		}
+		return nil
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Installed aelum-boot-progress.service (finishes the boot splash bar)")
 	}
 	return nil
 }
