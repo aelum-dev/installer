@@ -112,20 +112,29 @@ func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 }
 
 // checkLuks verifies LUKS-related configuration in the installed system when
-// encryption is enabled: the boot entry references the mapper device, the
-// mapper UUID is in fstab, and the dm-crypt hook is present in mkinitcpio.
+// encryption is enabled: the boot entry maps the LUKS header to the "aelum"
+// mapper via rd.luks.name=, the mapper UUID is in fstab, and the dm-crypt hook
+// is present in mkinitcpio.
 func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
-	// Boot entry references the decrypted mapper.
+	// The boot entry maps the header to the mapper with
+	// rd.luks.name=<header-uuid>=<mapper>, consumed by sd-encrypt. The root is
+	// then referenced indirectly: root=UUID=<mapper fs uuid> when root is the
+	// mapper, or root=/dev/mapper/aelum-root when LVM sits on top. Assert the
+	// mapping argument itself rather than a literal /dev/mapper path, which
+	// only the LVM root happens to contain as a substring.
 	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
 	if data, err := os.ReadFile(entryPath); err == nil {
 		content := string(data)
-		if !strings.Contains(content, shared.LuksMapperPath) {
-			*issues = append(*issues, "boot entry does not reference the LUKS mapper "+shared.LuksMapperPath)
+		switch {
+		case !luksEntryMapsMapper(content, ctx.Partitions.LuksUUID):
+			if strings.Contains(content, "rd.luks.name=") {
+				*issues = append(*issues, "boot entry LUKS mapping does not target "+shared.LuksMapperName)
+			} else {
+				*issues = append(*issues, "boot entry missing rd.luks.name= for LUKS")
+			}
+		default:
+			*info = append(*info, "boot entry maps LUKS header to "+shared.LuksMapperName+" ✓")
 		}
-		if !strings.Contains(content, "rd.luks.name=") {
-			*issues = append(*issues, "boot entry missing rd.luks.name= for LUKS")
-		}
-		*info = append(*info, "boot entry references LUKS mapper ✓")
 	} else {
 		*issues = append(*issues, "failed to read boot entry "+entryPath)
 	}
@@ -148,6 +157,22 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 	} else {
 		*issues = append(*issues, "failed to read "+confPath)
 	}
+}
+
+// luksEntryMapsMapper reports whether a boot entry's options map the LUKS header
+// to the aelum mapper via rd.luks.name=<header-uuid>=<mapper>, as consumed by
+// sd-encrypt. When luksUUID is empty the exact header cannot be asserted, so any
+// rd.luks.name= mapping is accepted. The literal /dev/mapper path is deliberately
+// not required: a LUKS root selected by UUID (root=UUID=…) never contains it, so
+// requiring it produced a false failure on every non-LVM encrypted install.
+func luksEntryMapsMapper(options, luksUUID string) bool {
+	if !strings.Contains(options, "rd.luks.name=") {
+		return false
+	}
+	if luksUUID == "" {
+		return true
+	}
+	return strings.Contains(options, "rd.luks.name="+luksUUID+"="+shared.LuksMapperName)
 }
 
 // checkLvm verifies LVM-related configuration in the installed system when LVM
