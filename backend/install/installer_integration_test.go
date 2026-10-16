@@ -28,13 +28,15 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 	// Ensure fake disks are available for disk discovery steps.
 	t.Setenv("FAKE_DISKS", "1")
 
-	inst := NewInstaller(
-		"/dev/vda",
-		"testuser", "testpass",
-		"testhost",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, true, // dryRun
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Username:   "testuser",
+		Password:   "testpass",
+		Hostname:   "testhost",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+		DryRun:     true,
+	})
 
 	var progressEvents []string
 	inst.OnProgress = func(label string, percent int, phase string) {
@@ -67,13 +69,15 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 func TestInstall_DryRun_Btrfs(t *testing.T) {
 	t.Setenv("FAKE_DISKS", "1")
 
-	inst := NewInstaller(
-		"/dev/nvme0n1",
-		"testuser", "testpass",
-		"testhost",
-		shared.GetRegion("en_US"),
-		"btrfs", false, "", false, true,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/nvme0n1",
+		Username:   "testuser",
+		Password:   "testpass",
+		Hostname:   "testhost",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "btrfs",
+		DryRun:     true,
+	})
 
 	var stepLabels []string
 	inst.OnProgress = func(label string, _ int, phase string) {
@@ -96,13 +100,13 @@ func TestInstall_DryRun_Btrfs(t *testing.T) {
 
 // TestInstall_EmptyDiskID verifies that Install rejects an empty disk ID.
 func TestInstall_EmptyDiskID(t *testing.T) {
-	inst := NewInstaller(
-		"",
-		"user", "pass",
-		"host",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, false,
-	)
+	inst := NewInstaller(InstallerConfig{
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+	})
 
 	err := inst.Install()
 	if err == nil {
@@ -115,13 +119,14 @@ func TestInstall_EmptyDiskID(t *testing.T) {
 
 // TestInstall_EmptyRegion verifies that Install rejects an empty region.
 func TestInstall_EmptyRegion(t *testing.T) {
-	inst := NewInstaller(
-		"/dev/vda",
-		"user", "pass",
-		"host",
-		shared.GetRegion(""),
-		"ext4", false, "", false, false,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion(""),
+		FileSystem: "ext4",
+	})
 
 	err := inst.Install()
 	if err == nil {
@@ -137,13 +142,15 @@ func TestInstall_EmptyRegion(t *testing.T) {
 func TestInstall_ProgressPercentages(t *testing.T) {
 	t.Setenv("FAKE_DISKS", "1")
 
-	inst := NewInstaller(
-		"/dev/vda",
-		"user", "pass",
-		"host",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, true,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+		DryRun:     true,
+	})
 
 	var percentages []int
 	inst.OnProgress = func(_ string, percent int, phase string) {
@@ -175,13 +182,14 @@ func TestInstall_ProgressPercentages(t *testing.T) {
 // the log file is written even on error.
 func TestInstall_ErrorCleanup(t *testing.T) {
 	// Use an invalid disk to trigger an early error.
-	inst := NewInstaller(
-		"/dev/nonexistent_disk_xyz",
-		"user", "pass",
-		"host",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, false,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/nonexistent_disk_xyz",
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+	})
 
 	// Remove any existing log so we can verify it gets written.
 	logPath := shared.GetLogPath()
@@ -202,12 +210,11 @@ func TestInstall_ErrorCleanup(t *testing.T) {
 func TestRollback_ValidDisk(t *testing.T) {
 	t.Setenv("FAKE_DISKS", "1")
 
-	inst := NewInstaller(
-		"/dev/vda",
-		"", "", "",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, false,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+	})
 
 	// Rollback should not return an error for an empty disk ID check.
 	// It will fail on the actual wipefs/partprobe calls since there's
@@ -222,12 +229,10 @@ func TestRollback_ValidDisk(t *testing.T) {
 
 // TestRollback_EmptyDiskID verifies that Rollback rejects an empty disk.
 func TestRollback_EmptyDiskID(t *testing.T) {
-	inst := NewInstaller(
-		"",
-		"", "", "",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, false,
-	)
+	inst := NewInstaller(InstallerConfig{
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+	})
 
 	err := inst.Rollback()
 	if err == nil {
@@ -240,13 +245,14 @@ func TestRollback_EmptyDiskID(t *testing.T) {
 
 // TestRunStep_UnknownStep verifies that RunStep rejects unknown step names.
 func TestRunStep_UnknownStep(t *testing.T) {
-	inst := NewInstaller(
-		"/dev/vda",
-		"user", "pass",
-		"host",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, false,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+	})
 
 	_, _, err := inst.RunStep("nonexistent_step")
 	if err == nil {
@@ -259,13 +265,15 @@ func TestRunStep_UnknownStep(t *testing.T) {
 
 // TestRunStep_DryRun verifies that a known step runs successfully in dry-run.
 func TestRunStep_DryRun(t *testing.T) {
-	inst := NewInstaller(
-		"/dev/vda",
-		"user", "pass",
-		"host",
-		shared.GetRegion("en_US"),
-		"ext4", false, "", false, true,
-	)
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion("en_US"),
+		FileSystem: "ext4",
+		DryRun:     true,
+	})
 
 	label, percent, err := inst.RunStep("format_disk")
 	if err != nil {

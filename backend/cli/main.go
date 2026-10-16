@@ -137,16 +137,16 @@ func run(args []string) int {
 		return handleRollback(*rollbackFlag, dryRun)
 	}
 
-	// Determine which flag was provided (first one wins)
-	disk, stepName := resolveDiskAndStep(resolveFlags(
-		installFlag, "",
-		formatDiskFlag, "format_disk",
-		mountFsFlag, "mount_filesystem",
-		installSystemFlag, "install",
-		setupUsersFlag, "setup_users",
-		configureSysFlag, "configure_system",
-		verifySystemFlag, "verify_system",
-	)...)
+	// Determine which flag was provided (first one wins).
+	disk, stepName := resolveDiskAndStep(
+		stepFlag{installFlag, ""},
+		stepFlag{formatDiskFlag, "format_disk"},
+		stepFlag{mountFsFlag, "mount_filesystem"},
+		stepFlag{installSystemFlag, "install"},
+		stepFlag{setupUsersFlag, "setup_users"},
+		stepFlag{configureSysFlag, "configure_system"},
+		stepFlag{verifySystemFlag, "verify_system"},
+	)
 
 	if disk == "" {
 		printUsage()
@@ -241,18 +241,18 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 	if lang == "" {
 		lang = shared.DefaultLanguageCode
 	}
-	installer := install.NewInstaller(
-		disk,
-		username,               // username (from --username flag or stdin)
-		password,               // password (read from stdin)
-		shared.DefaultHostname, // hostname
-		shared.GetRegion(lang), // region (from --language or default)
-		fileSystem,
-		luks,           // encrypt root with LUKS2
-		luksPassphrase, // LUKS passphrase (read from stdin)
-		lvm,            // place root/home on LVM logical volumes
-		dryRun,
-	)
+	installer := install.NewInstaller(install.InstallerConfig{
+		DiskID:         disk,
+		Username:       username,               // from --username flag or stdin
+		Password:       password,               // read from stdin
+		Hostname:       shared.DefaultHostname, // hostname
+		Region:         shared.GetRegion(lang), // from --language or default
+		FileSystem:     fileSystem,
+		Luks:           luks,           // encrypt root with LUKS2
+		LuksPassphrase: luksPassphrase, // read from stdin
+		Lvm:            lvm,            // place root/home on LVM logical volumes
+		DryRun:         dryRun,
+	})
 
 	// Wire the installer to use the shared logger.
 	installer.Logger = log
@@ -358,10 +358,13 @@ func handleRollback(disk string, dryRun *bool) int {
 		log.Error("%v", err)
 		return 1
 	}
-	installer := install.NewInstaller(
-		disk, shared.DefaultCLIUsername, "", shared.DefaultHostname,
-		shared.GetRegion(shared.DefaultLanguageCode), "ext4", false, "", false, false,
-	)
+	installer := install.NewInstaller(install.InstallerConfig{
+		DiskID:     disk,
+		Username:   shared.DefaultCLIUsername,
+		Hostname:   shared.DefaultHostname,
+		Region:     shared.GetRegion(shared.DefaultLanguageCode),
+		FileSystem: "ext4",
+	})
 	installer.Logger = log
 	if err := rollbackFunc(installer.Logger, disk); err != nil {
 		log.Error("%v", err)
@@ -375,26 +378,20 @@ func main() {
 	exitCode(run(os.Args))
 }
 
-// resolveFlags converts flag pointers and their step names into a flat list.
-// Each pair is (flagValue, stepName). Empty stepName means "full install".
-func resolveFlags(pairs ...interface{}) []string {
-	var result []string
-	for i := 0; i < len(pairs); i += 2 {
-		flagPtr := pairs[i].(*string)
-		stepName := pairs[i+1].(string)
-		result = append(result, *flagPtr, stepName)
-	}
-	return result
+// stepFlag pairs a disk-path flag with the installation step it selects.
+// An empty step name means "full installation".
+type stepFlag struct {
+	disk *string
+	step string
 }
 
-// resolveDiskAndStep checks the flags in priority order and returns the disk path
-// and the internal step name. If no step flag is set, stepName is empty (full install).
-func resolveDiskAndStep(args ...string) (disk string, stepName string) {
-	for i := 0; i < len(args); i += 2 {
-		d := args[i]
-		name := args[i+1]
-		if d != "" {
-			return d, name
+// resolveDiskAndStep returns the disk path and internal step name of the first
+// flag that was set, in the order the flags are given (first one wins). If no
+// flag is set, both return values are empty (full install).
+func resolveDiskAndStep(flags ...stepFlag) (disk string, stepName string) {
+	for _, f := range flags {
+		if *f.disk != "" {
+			return *f.disk, f.step
 		}
 	}
 	return "", ""

@@ -64,19 +64,38 @@ type Installer struct {
 	cancel chan struct{}
 }
 
-// NewInstaller creates a new Installer instance.
-func NewInstaller(diskID, username, password, hostname string, region shared.Region, fileSystem string, luks bool, luksPassphrase string, lvm bool, dryRun bool) *Installer {
+// InstallerConfig holds the inputs for a new installation run.
+//
+// Using a struct instead of a long positional parameter list prevents callers
+// from accidentally transposing the many string and bool arguments (for
+// example, swapping the account password for the LUKS passphrase) and makes
+// future fields additive instead of signature-breaking.
+type InstallerConfig struct {
+	DiskID         string
+	Username       string
+	Password       string
+	Hostname       string
+	Region         shared.Region
+	FileSystem     string // root filesystem: "ext4" or "btrfs"
+	Luks           bool
+	LuksPassphrase string
+	Lvm            bool
+	DryRun         bool
+}
+
+// NewInstaller creates a new Installer instance from cfg.
+func NewInstaller(cfg InstallerConfig) *Installer {
 	return &Installer{
-		diskID:         diskID,
-		username:       username,
-		password:       []byte(password),
-		hostname:       hostname,
-		region:         region,
-		fileSystem:     fileSystem,
-		luks:           luks,
-		luksPassphrase: []byte(luksPassphrase),
-		lvm:            lvm,
-		dryRun:         dryRun,
+		diskID:         cfg.DiskID,
+		username:       cfg.Username,
+		password:       []byte(cfg.Password),
+		hostname:       cfg.Hostname,
+		region:         cfg.Region,
+		fileSystem:     cfg.FileSystem,
+		luks:           cfg.Luks,
+		luksPassphrase: []byte(cfg.LuksPassphrase),
+		lvm:            cfg.Lvm,
+		dryRun:         cfg.DryRun,
 		esp:            shared.BootMountPoint,
 		Logger:         shared.NewConsoleLogger(),
 	}
@@ -229,11 +248,6 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 	}
 }
 
-// installationSteps returns the list of installation steps.
-func (inst *Installer) installationSteps() []Step {
-	return Steps()
-}
-
 // validStepNames returns the list of valid step names for error messages.
 func validStepNames() []string {
 	steps := Steps()
@@ -251,8 +265,7 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 	// Ensure mounts are cleaned up on failure so the step is retryable.
 	defer inst.RunCleanup()
 
-	allSteps := inst.installationSteps()
-	for _, s := range allSteps {
+	for _, s := range Steps() {
 		if s.Name() == stepName {
 			label = s.Label()
 			if inst.dryRun {
@@ -363,22 +376,6 @@ func (inst *Installer) logInfo(format string, args ...interface{}) {
 
 // logError logs an error message via the step logger.
 func (inst *Installer) logError(format string, args ...interface{}) {
-	if inst.Logger != nil {
-		inst.Logger.Error(format, args...)
-	}
-}
-
-// LogInfo logs an informational message via the step logger.
-// Exported for use by callers in other packages (e.g. CLI signal handlers).
-func (inst *Installer) LogInfo(format string, args ...interface{}) {
-	if inst.Logger != nil {
-		inst.Logger.Info(format, args...)
-	}
-}
-
-// LogError logs an error message via the step logger.
-// Exported for use by callers in other packages (e.g. CLI signal handlers).
-func (inst *Installer) LogError(format string, args ...interface{}) {
 	if inst.Logger != nil {
 		inst.Logger.Error(format, args...)
 	}

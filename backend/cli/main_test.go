@@ -8,70 +8,6 @@ import (
 )
 
 // ============================================================================
-// Test resolveFlags
-// ============================================================================
-
-func TestResolveFlags_Empty(t *testing.T) {
-	result := resolveFlags()
-	if len(result) != 0 {
-		t.Errorf("expected empty result, got %v", result)
-	}
-}
-
-func TestResolveFlags_SinglePair(t *testing.T) {
-	flagVal := "/dev/vda"
-	result := resolveFlags(&flagVal, "format_disk")
-	expected := []string{"/dev/vda", "format_disk"}
-	if len(result) != len(expected) {
-		t.Fatalf("expected %d items, got %d: %v", len(expected), len(result), result)
-	}
-	for i, v := range expected {
-		if result[i] != v {
-			t.Errorf("expected %s at index %d, got %s", v, i, result[i])
-		}
-	}
-}
-
-func TestResolveFlags_MultiplePairs(t *testing.T) {
-	installFlag := "/dev/vda"
-	formatFlag := ""
-	mountFlag := "/dev/vdb"
-
-	result := resolveFlags(
-		&installFlag, "install",
-		&formatFlag, "format_disk",
-		&mountFlag, "mount_filesystem",
-	)
-
-	if len(result) != 6 {
-		t.Fatalf("expected 6 items, got %d: %v", len(result), result)
-	}
-
-	// Check the structure: [val1, name1, val2, name2, val3, name3]
-	if result[0] != "/dev/vda" || result[1] != "install" {
-		t.Errorf("first pair incorrect: %v", result[0:2])
-	}
-	if result[2] != "" || result[3] != "format_disk" {
-		t.Errorf("second pair incorrect: %v", result[2:4])
-	}
-	if result[4] != "/dev/vdb" || result[5] != "mount_filesystem" {
-		t.Errorf("third pair incorrect: %v", result[4:6])
-	}
-}
-
-func TestResolveFlags_EmptyValues(t *testing.T) {
-	flagVal := ""
-	result := resolveFlags(&flagVal, "format_disk")
-	expected := []string{"", "format_disk"}
-	if len(result) != len(expected) {
-		t.Fatalf("expected %d items, got %d: %v", len(expected), len(result), result)
-	}
-	if result[0] != "" {
-		t.Errorf("expected empty string, got %s", result[0])
-	}
-}
-
-// ============================================================================
 // Test resolveDiskAndStep
 // ============================================================================
 
@@ -83,9 +19,10 @@ func TestResolveDiskAndStep_Empty(t *testing.T) {
 }
 
 func TestResolveDiskAndStep_SinglePair(t *testing.T) {
-	disk, stepName := resolveDiskAndStep("/dev/vda", "format_disk")
-	if disk != "/dev/vda" {
-		t.Errorf("expected disk /dev/vda, got %s", disk)
+	disk := "/dev/vda"
+	gotDisk, stepName := resolveDiskAndStep(stepFlag{&disk, "format_disk"})
+	if gotDisk != "/dev/vda" {
+		t.Errorf("expected disk /dev/vda, got %s", gotDisk)
 	}
 	if stepName != "format_disk" {
 		t.Errorf("expected stepName format_disk, got %s", stepName)
@@ -93,11 +30,12 @@ func TestResolveDiskAndStep_SinglePair(t *testing.T) {
 }
 
 func TestResolveDiskAndStep_FirstWins(t *testing.T) {
-	// First non-empty value should win
+	// First non-empty value should win.
+	empty, first, second := "", "/dev/vda", "/dev/vdb"
 	disk, stepName := resolveDiskAndStep(
-		"", "",
-		"/dev/vda", "format_disk",
-		"/dev/vdb", "install",
+		stepFlag{&empty, ""},
+		stepFlag{&first, "format_disk"},
+		stepFlag{&second, "install"},
 	)
 	if disk != "/dev/vda" {
 		t.Errorf("expected first non-empty disk /dev/vda, got %s", disk)
@@ -108,10 +46,11 @@ func TestResolveDiskAndStep_FirstWins(t *testing.T) {
 }
 
 func TestResolveDiskAndStep_AllEmpty(t *testing.T) {
+	a, b, c := "", "", ""
 	disk, stepName := resolveDiskAndStep(
-		"", "",
-		"", "",
-		"", "",
+		stepFlag{&a, ""},
+		stepFlag{&b, ""},
+		stepFlag{&c, ""},
 	)
 	if disk != "" || stepName != "" {
 		t.Errorf("expected empty disk and stepName, got disk=%q stepName=%q", disk, stepName)
@@ -119,8 +58,9 @@ func TestResolveDiskAndStep_AllEmpty(t *testing.T) {
 }
 
 func TestResolveDiskAndStep_NoStepName(t *testing.T) {
-	// Empty stepName means full install
-	disk, stepName := resolveDiskAndStep("/dev/vda", "")
+	// Empty stepName means full install.
+	diskVal := "/dev/vda"
+	disk, stepName := resolveDiskAndStep(stepFlag{&diskVal, ""})
 	if disk != "/dev/vda" {
 		t.Errorf("expected disk /dev/vda, got %s", disk)
 	}
@@ -130,7 +70,7 @@ func TestResolveDiskAndStep_NoStepName(t *testing.T) {
 }
 
 func TestResolveDiskAndStep_PriorityOrder(t *testing.T) {
-	// Test the actual priority order used in main()
+	// Test the actual priority order used in run(): the first set flag wins.
 	installFlag := ""
 	formatFlag := ""
 	mountFlag := ""
@@ -138,14 +78,14 @@ func TestResolveDiskAndStep_PriorityOrder(t *testing.T) {
 	setupUsersFlag := ""
 	configureSysFlag := "/dev/vda"
 
-	disk, stepName := resolveDiskAndStep(resolveFlags(
-		&installFlag, "", // --install
-		&formatFlag, "format_disk", // --format-disk
-		&mountFlag, "mount_filesystem", // --mount-filesystem
-		&installSystemFlag, "install", // --install-system
-		&setupUsersFlag, "setup_users", // --setup-users
-		&configureSysFlag, "configure_system", // --configure-system
-	)...)
+	disk, stepName := resolveDiskAndStep(
+		stepFlag{&installFlag, ""},                      // --install
+		stepFlag{&formatFlag, "format_disk"},            // --format-disk
+		stepFlag{&mountFlag, "mount_filesystem"},        // --mount-filesystem
+		stepFlag{&installSystemFlag, "install"},         // --install-system
+		stepFlag{&setupUsersFlag, "setup_users"},        // --setup-users
+		stepFlag{&configureSysFlag, "configure_system"}, // --configure-system
+	)
 
 	if disk != "/dev/vda" {
 		t.Errorf("expected disk /dev/vda, got %s", disk)
@@ -156,35 +96,18 @@ func TestResolveDiskAndStep_PriorityOrder(t *testing.T) {
 }
 
 func TestResolveDiskAndStep_WithEmptyStrings(t *testing.T) {
-	disk, stepName := resolveDiskAndStep("", "", "", "", "/dev/vda", "test")
+	a, b := "", ""
+	diskVal := "/dev/vda"
+	disk, stepName := resolveDiskAndStep(
+		stepFlag{&a, ""},
+		stepFlag{&b, ""},
+		stepFlag{&diskVal, "test"},
+	)
 	if disk != "/dev/vda" {
 		t.Errorf("expected /dev/vda, got %s", disk)
 	}
 	if stepName != "test" {
 		t.Errorf("expected test, got %s", stepName)
-	}
-}
-
-func TestResolveFlags_AllEmpty(t *testing.T) {
-	flag1 := ""
-	flag2 := ""
-	flag3 := ""
-
-	result := resolveFlags(
-		&flag1, "step1",
-		&flag2, "step2",
-		&flag3, "step3",
-	)
-
-	if len(result) != 6 {
-		t.Fatalf("expected 6 items, got %d", len(result))
-	}
-
-	// All values should be empty strings
-	for i := 0; i < len(result); i += 2 {
-		if result[i] != "" {
-			t.Errorf("expected empty string at index %d, got %s", i, result[i])
-		}
 	}
 }
 
@@ -311,15 +234,18 @@ func TestPrintUsage(t *testing.T) {
 // ============================================================================
 
 func TestResolveDiskAndStep_SingleEmpty(t *testing.T) {
-	disk, stepName := resolveDiskAndStep("", "")
+	empty := ""
+	disk, stepName := resolveDiskAndStep(stepFlag{&empty, ""})
 	if disk != "" || stepName != "" {
 		t.Errorf("expected empty, got disk=%q stepName=%q", disk, stepName)
 	}
 }
 
 func TestResolveDiskAndStep_ManyEmpty(t *testing.T) {
+	a, b, c, d, e := "", "", "", "", ""
 	disk, stepName := resolveDiskAndStep(
-		"", "", "", "", "", "", "", "", "", "",
+		stepFlag{&a, ""}, stepFlag{&b, ""}, stepFlag{&c, ""},
+		stepFlag{&d, ""}, stepFlag{&e, ""},
 	)
 	if disk != "" || stepName != "" {
 		t.Errorf("expected empty, got disk=%q stepName=%q", disk, stepName)

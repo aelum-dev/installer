@@ -7,8 +7,7 @@ import (
 )
 
 func TestInstaller_StepNames(t *testing.T) {
-	inst := &Installer{}
-	steps := inst.installationSteps()
+	steps := Steps()
 
 	expectedSteps := []string{
 		"format_disk",
