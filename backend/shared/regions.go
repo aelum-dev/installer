@@ -1,5 +1,7 @@
 package shared
 
+import "strings"
+
 // Region represents a regional configuration that maps language to all
 // regional parameters: locale, timezone, keyboard layout, and mirrors.
 type Region struct {
@@ -211,9 +213,35 @@ var Regions = map[string]Region{
 }
 
 // GetRegion returns a region by code, or an empty region if not found.
+//
+// Lookups tolerate the spelling differences between callers: the region table
+// is keyed on "en_US"-style codes, but --language is hand-typed on the CLI and
+// tools commonly pass POSIX tags ("en-US") or full locales ("en_US.UTF-8").
+// Without normalization those return an empty region, and the installer then
+// aborts with "region not set" before the first step.
 func GetRegion(code string) Region {
 	if r, ok := Regions[code]; ok {
 		return r
 	}
-	return Region{}
+	return Regions[canonicalRegionCode(code)]
+}
+
+// canonicalRegionCode maps a caller-supplied language code onto the form used by
+// Regions: the language half lowercased, the territory half uppercased, and the
+// separators normalized — so "en-US", "en-us", "EN_us" and "en_US.UTF-8" all
+// become "en_US". A code without a territory ("eo") is only lowercased.
+func canonicalRegionCode(code string) string {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return ""
+	}
+	// Drop any encoding suffix (en_US.UTF-8 -> en_US).
+	if i := strings.IndexByte(code, '.'); i >= 0 {
+		code = code[:i]
+	}
+	code = strings.ReplaceAll(code, "-", "_")
+	if i := strings.IndexByte(code, '_'); i > 0 {
+		return strings.ToLower(code[:i]) + "_" + strings.ToUpper(code[i+1:])
+	}
+	return strings.ToLower(code)
 }
