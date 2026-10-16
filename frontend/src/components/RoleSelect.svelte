@@ -19,11 +19,12 @@
 		{ value: TYPE_SYSTEM, labelKey: 'manual.type.system', role: 'system' as const },
 	] as const;
 
-	// Unique id per instance so aria-controls / aria-points at a real menu element.
-	let uid = 0;
-	const menuId = `role-menu-${(uid += 1)}`;
-
 	let { value, onChange }: { value: PartitionType; onChange: (v: PartitionType) => void } = $props();
+
+	// Unique id per instance so aria-controls points each trigger at its own menu.
+	// ($props.id() is Svelte's per-instance id; a module- or instance-local counter
+	// would hand every row the same id.)
+	const menuId = $props.id();
 
 	let open = $state(false);
 	let wrap: HTMLElement | null = $state(null);

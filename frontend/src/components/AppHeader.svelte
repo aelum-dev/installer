@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { PAGE_IDS, PAGE_NAMES } from '$lib/types';
+	import { PAGE_IDS } from '$lib/types';
 	import { getIsDryRun, navState } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import logoUrl from '../assets/images/logo.svg';
 	import ThemeToggle from '$components/ThemeToggle.svelte';
-
-	let { currentPage }: { currentPage: number } = $props();
 </script>
 
 <header class="header">

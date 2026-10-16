@@ -1,4 +1,5 @@
 import { MaxUsernameLength, MinPasswordLength, MinUsernameLength } from './constants';
+import { RESERVED_USERNAMES, USERNAME_ALLOWED_CHARS, USERNAME_FIRST_CHAR } from './validation-rules';
 
 export interface ValidationResult {
 	username: string | null;
@@ -11,29 +12,6 @@ export interface ValidationState {
 	passwordTouched: boolean;
 	confirmPasswordTouched: boolean;
 }
-
-// UsernameFirstCharRegex validates the first character of a Linux login name.
-// Must match backend/shared/validators.go UsernameFirstCharRegex exactly.
-const UsernameFirstCharRegex = /^[a-z_]/;
-
-// UsernameAllowedCharsRegex validates all allowed characters in a Linux login name.
-// Must match backend/shared/validators.go UsernameAllowedCharsRegex exactly.
-const UsernameAllowedCharsRegex = /^[a-z0-9_-]+$/;
-
-// Reserved usernames that cannot be used.
-// Mirrors backend/shared/config.go ReservedUsernames map.
-const ReservedUsernames = new Set([
-	'root', 'bin', 'daemon', 'adm', 'lp', 'sync', 'shutdown', 'halt',
-	'mail', 'news', 'uucp', 'operator', 'games', 'gopher', 'ftp',
-	'nobody', 'dbus', 'systemd', 'systemd-journal', 'systemd-network',
-	'systemd-resolve', 'systemd-timesync', 'systemd-bus-proxy',
-	'systemd-coredump', 'tss', 'ntp', 'sshd', 'polkitd', 'colord',
-	'gdm', 'gnome-initial-setup', 'gdm3', 'lightdm', 'pulse', 'rtkit',
-	'avahi', 'cups', 'usbmux', 'kernoops', 'messagebus', 'statd',
-	'rpcuser', 'rpc', 'nfsnobody', 'radvd', 'chrony', 'qemu', 'libvirt',
-	'smmsp', 'postfix', 'www-data', 'proxy', 'bind', 'staff', 'man',
-	'printcap', 'input', 'mailnull', 'list', 'irc', 'gnats', 'backup',
-]);
 
 export function validateUserAccount(
 	username: string,
@@ -78,11 +56,11 @@ export function validateUserAccount(
 			usernameError = msg.usernameMinLength;
 		} else if (username.length > MaxUsernameLength) {
 			usernameError = msg.usernameMaxLength;
-		} else if (!UsernameFirstCharRegex.test(username)) {
+		} else if (!USERNAME_FIRST_CHAR.test(username)) {
 			usernameError = msg.usernameInvalidFirstChar;
-		} else if (!UsernameAllowedCharsRegex.test(username)) {
+		} else if (!USERNAME_ALLOWED_CHARS.test(username)) {
 			usernameError = msg.usernameInvalidChars;
-		} else if (ReservedUsernames.has(username.toLowerCase())) {
+		} else if (RESERVED_USERNAMES.has(username.toLowerCase())) {
 			usernameError = msg.usernameReserved.replace('{name}', username);
 		}
 	}

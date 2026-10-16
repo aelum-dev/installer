@@ -98,7 +98,7 @@
 </script>
 
 <div class="app-layout" dir={getIsRTL() ? 'rtl' : 'ltr'}>
-	<AppHeader currentPage={navState.currentPage} />
+	<AppHeader />
 	<main class="content-area">
 		{#key navState.currentPage}
 			<div

@@ -33,11 +33,8 @@
 		return 'pending';
 	}
 
-	// Next button is always enabled, but validates before proceeding
-	const nextDisabled = $derived(false);
-	const nextDisabledReason = $derived.by(() => {
-		return getPageValidationReasons(currentPage).join('\n');
-	});
+	// Next button is always enabled, but validates before proceeding.
+	const nextDisabledReason = $derived(getPageValidationReasons(currentPage).join('\n'));
 
 	async function handleReboot(): Promise<void> {
 		try {

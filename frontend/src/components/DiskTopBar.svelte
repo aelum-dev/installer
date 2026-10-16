@@ -53,11 +53,6 @@
 		}
 	}
 
-	// Group digits with a space every 3 (e.g. 1500 -> "1 500") for readability.
-	function formatMB(mb: number): string {
-		return String(mb).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-	}
-
 	// Convert MB to GB and format with one decimal (e.g. 1536 MB -> "1.5 GB").
 	function formatGB(mb: number): number {
 		const gb = mb / 1024;

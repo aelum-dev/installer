@@ -4,6 +4,7 @@
 	import { installState } from '$lib/store.svelte';
 	import { confirmInstallation } from '$lib/navigation';
 	import { t } from '$lib/i18n';
+	import './dialog.css';
 
 	let {
 		// Drives visibility. Defaults to (and binds back to) the shared
@@ -116,28 +117,7 @@
 {/if}
 
 <style>
-	.dialog-overlay {
-		position: fixed;
-		inset: 0;
-		background-color: var(--color-overlay);
-		backdrop-filter: blur(4px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 1000;
-		animation: fadeIn 150ms ease;
-	}
-
-	.dialog {
-		background-color: var(--color-bg-white);
-		border-radius: var(--radius-xl);
-		padding: var(--spacing-2xl);
-		max-width: 440px;
-		width: 90%;
-		box-shadow: 0 20px 60px var(--color-overlay-shadow);
-		animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
-	}
-
+	/* Shared dialog chrome lives in ./dialog.css. */
 	.dialog-icon {
 		text-align: center;
 		margin-bottom: var(--spacing-md);
@@ -148,76 +128,11 @@
 		height: 64px;
 	}
 
-	.dialog-title {
-		margin: 0 0 var(--spacing-md);
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-700);
-		color: var(--color-text);
-		text-align: center;
-	}
-
 	.dialog-message {
 		margin: 0 0 24px;
 		font-size: var(--font-size-md);
 		color: var(--color-text-muted);
 		line-height: 1.6;
 		text-align: center;
-	}
-
-	.dialog-actions {
-		display: flex;
-		gap: var(--spacing-md);
-		justify-content: flex-end;
-	}
-
-	.btn-cancel,
-	.btn-confirm {
-		font-family: inherit;
-		font-weight: 600;
-		font-size: var(--font-size-md);
-		padding: var(--pad-btn);
-		border-radius: var(--radius-xl);
-		border: none;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn-cancel {
-		background-color: var(--color-bg-white);
-		color: var(--color-text);
-		border: 1.5px solid var(--color-border-light);
-	}
-
-	.btn-cancel:hover {
-		background-color: var(--color-bg-neutral-hover);
-		border-color: var(--color-border);
-	}
-
-	.btn-confirm {
-		background: transparent;
-		color: var(--color-primary);
-		border: 1.5px solid var(--color-primary);
-	}
-
-	.btn-confirm:hover {
-		background-color: var(--color-primary);
-		color: var(--color-on-primary);
-		border-color: var(--color-primary);
-	}
-
-	@keyframes fadeIn {
-		from { opacity: 0; }
-		to { opacity: 1; }
-	}
-
-	@keyframes slideUp {
-		from {
-			opacity: 0;
-			transform: translateY(20px) scale(0.95);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0) scale(1);
-		}
 	}
 </style>

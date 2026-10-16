@@ -6,16 +6,11 @@
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { PAGE_IDS } from '$lib/types';
+	import type { LanguageOption } from '$lib/types';
 
 	const pageIcon = glyph(STEP_ICONS.welcome);
 
-	interface Language {
-		code: string;
-		name: string;
-		locale: string;
-	}
-
-	let languages = $state<Language[]>([]);
+	let languages = $state<LanguageOption[]>([]);
 	let loading = $state(true);
 
 	async function loadLanguages(): Promise<void> {

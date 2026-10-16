@@ -6,17 +6,13 @@
 	import { installState, computeFreeMB, setPartitionType } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
+	import { groupDigits } from '$lib/format';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import RoleSelect from '$components/RoleSelect.svelte';
 	import NumberStepper from '$components/NumberStepper.svelte';
 	import './ManualPartitionPage.css';
 
 	let { disk }: { disk: DiskInfo | null } = $props();
-
-// Format a MB value with a space as the thousands separator (e.g. 487875 -> "487 875").
-function formatSizeMB(value: number): string {
-	return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
 
 	let layout: ManualLayout | null = $state(null);
 	let loading = $state(false);
@@ -251,7 +247,7 @@ function formatSizeMB(value: number): string {
 									<span class="part-new">{t('manual.newPart')}</span>
 								{/if}
 							</td>
-							<td class="part-size">{formatSizeMB(part.sizeMB)}</td>
+							<td class="part-size">{groupDigits(part.sizeMB)}</td>
 							<td class="part-type">
 							<RoleSelect value={part.type} onChange={(v: PartitionType) => setType(part, v)} />
 							</td>
@@ -283,7 +279,7 @@ function formatSizeMB(value: number): string {
 						<td class="part-name">
 							<span class="unallocated-label">{t('manual.free')}</span>
 						</td>
-						<td class="part-size">{formatSizeMB(unallocatedMB)} {t('unit.mb')}</td>
+						<td class="part-size">{groupDigits(unallocatedMB)} {t('unit.mb')}</td>
 						<td></td>
 						<td class="text-right">
 							<span class="unallocated-indicator" aria-hidden="true">

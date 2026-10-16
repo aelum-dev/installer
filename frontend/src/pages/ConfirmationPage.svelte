@@ -3,20 +3,15 @@
 	import { GetSelectedLanguage, GetLanguages } from '@wails/go/gui/App.js';
 	import { installState } from '$lib/store.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import type { DiskInfo, PartitionType } from '$lib/types';
+	import type { LanguageOption } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
+	import { groupDigits } from '$lib/format';
 
 	const pageIcon = glyph(STEP_ICONS.confirmation);
 
-	interface Language {
-		code: string;
-		name: string;
-		locale: string;
-	}
-
-	let languages = $state<Language[]>([]);
+	let languages = $state<LanguageOption[]>([]);
 	let selectedLanguageName = $state<string>('—');
 
 	async function loadLanguageInfo(): Promise<void> {
@@ -31,11 +26,6 @@
 	}
 
 	loadLanguageInfo();
-
-	// Format a MB value with a space as the thousands separator (e.g. 487875 -> "487 875").
-	function formatSizeMB(value: number): string {
-		return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-	}
 
 	// Whether the manual layout has at least one designated (ESP or System) row.
 	const hasDesignated = $derived.by(
@@ -134,7 +124,7 @@
 														<span class="part-new">{t('manual.newPart')}</span>
 													{/if}
 												</td>
-												<td class="plan-col-size">{formatSizeMB(part.sizeMB)}</td>
+												<td class="plan-col-size">{groupDigits(part.sizeMB)}</td>
 												<td class="plan-col-role">
 													<span class="tag role-tag {part.type}">{t('manual.type.' + (part.type || 'preserve'))}</span>
 												</td>

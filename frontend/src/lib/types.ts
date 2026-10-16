@@ -12,18 +12,6 @@ export type PageID = (typeof PAGE_IDS)[keyof typeof PAGE_IDS];
 
 export const TOTAL_PAGES = 6;
 
-export const PAGE_NAMES: Record<PageID, string> = {
-	[PAGE_IDS.WELCOME]: 'Welcome',
-	[PAGE_IDS.USER_ACCOUNT]: 'User Account',
-	[PAGE_IDS.DISK_SELECTION]: 'Disk Selection',
-	[PAGE_IDS.CONFIRMATION]: 'Confirmation',
-	[PAGE_IDS.INSTALLATION]: 'Installation',
-	[PAGE_IDS.FINISH]: 'Finish',
-};
-
-// Pages that show no header/footer
-export const PAGES_NO_NAV = new Set<PageID>();
-
 // Pages that require validation before advancing
 export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
 
@@ -72,6 +60,14 @@ export interface ManualLayout {
 	// Partitions the user removed from the layout. Kept (not dropped) so the
 	// backend can delete them from the disk at install time.
 	deletedPartitions?: ManualPartition[];
+}
+
+// LanguageOption is one entry in the language picker, mirrored from the backend
+// GetLanguages() binding.
+export interface LanguageOption {
+	code: string; // backend locale code, e.g. "en_US"
+	name: string; // display name, e.g. "English (US)"
+	locale: string; // full backend locale, e.g. "en_US.UTF-8"
 }
 
 // DiskInfo represents a block device discovered on the system.

@@ -4,6 +4,7 @@
 	import { getValidationMessages } from '$lib/validate-messages';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
+	import { MinPasswordLength, MinUsernameLength } from '$lib/constants';
 
 	const pageIcon = glyph(STEP_ICONS.userAccount);
 
@@ -25,8 +26,8 @@
 	);
 
 	// Validation requirements
-	const usernameMinLength = $derived(installState.username.length >= 3);
-	const passwordMinLength = $derived(installState.password.length >= 6);
+	const usernameMinLength = $derived(installState.username.length >= MinUsernameLength);
+	const passwordMinLength = $derived(installState.password.length >= MinPasswordLength);
 	const passwordsMatch = $derived(
 		installState.confirmPassword.length > 0 && installState.confirmPassword === installState.password
 	);
@@ -40,36 +41,26 @@
 	}
 </script>
 
+{#snippet requirement(met: boolean, label: string)}
+	<div class="requirement-item">
+		<span class="check-icon" class:visible={met}>
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="20 6 9 17 4 12" />
+			</svg>
+		</span>
+		<span>{label}</span>
+	</div>
+{/snippet}
+
 <div class="page-layout">
 	<div class="page-info">
 		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
 		<h2 class="page-info-title">{t('page.userAccount.title')}</h2>
 		<p class="page-info-subtitle">{t('page.userAccount.subtitle')}</p>
 		<div class="requirements">
-			<div class="requirement-item">
-				<span class="check-icon" class:visible={usernameMinLength}>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</span>
-				<span>{t('validation.usernameMinLength')}</span>
-			</div>
-			<div class="requirement-item">
-				<span class="check-icon" class:visible={passwordMinLength}>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</span>
-				<span>{t('validation.passwordMinLength')}</span>
-			</div>
-			<div class="requirement-item">
-				<span class="check-icon" class:visible={passwordsMatch}>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</span>
-				<span>{t('validation.passwordsMatch')}</span>
-			</div>
+			{@render requirement(usernameMinLength, t('validation.usernameMinLength'))}
+			{@render requirement(passwordMinLength, t('validation.passwordMinLength'))}
+			{@render requirement(passwordsMatch, t('validation.passwordsMatch'))}
 		</div>
 	</div>
 	<div class="page-content">
