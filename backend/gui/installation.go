@@ -54,6 +54,14 @@ func (a *App) StartInstallation() error {
 		return fmt.Errorf("an installation is already in progress")
 	}
 
+	// Encryption without a passphrase would make the CLI die before its first
+	// step (it reads the passphrase from stdin), showing the user a bare failure
+	// at 0%. The frontend sends the passphrase and the flag as two separate
+	// Wails calls, so refuse to start rather than spawn a doomed process.
+	if a.luks && !a.dryRun && len(a.luksPassphrase) == 0 {
+		return fmt.Errorf("encryption is enabled but no passphrase was provided")
+	}
+
 	cliBinary := findCLIBinary()
 
 	diskID := a.diskSelection.DiskID
