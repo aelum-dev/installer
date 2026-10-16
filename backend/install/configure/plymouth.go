@@ -48,6 +48,14 @@ Before=plymouth-quit.service plymouth-quit-wait.service
 Type=oneshot
 ExecStart=-/usr/bin/plymouth update --status=boot:complete
 
+# The status above only puts a message on plymouthd's socket; the theme still
+# has to be redrawn for the 100% frame to exist on screen. plymouth-quit.service
+# is ordered After= this unit, so holding here keeps the splash up long enough
+# for that frame to be composited. The theme runs Plymouth.SetRefreshRate(50),
+# i.e. one frame every 20 ms, so 0.1 s is five frames of headroom -- without it
+# the two run a couple of frames apart and the bar can stop just short of 100%.
+ExecStartPost=/usr/bin/sleep 0.1
+
 [Install]
 WantedBy=multi-user.target
 `
