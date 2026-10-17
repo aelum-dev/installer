@@ -4,6 +4,7 @@ import {
 	computeUsedMB,
 	isManualLayoutValid,
 	manualLayoutIssues,
+	normalizeManualLayout,
 } from './manual-layout';
 import type { ManualLayout } from './types';
 
@@ -241,5 +242,34 @@ describe('manual layout guards', () => {
 			],
 		});
 		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('existingEspTooSmall');
+	});
+});
+
+describe('empty disk payload', () => {
+	// Go marshals a nil slice as `null`, so a fresh, unpartitioned disk arrives
+	// with `partitions: null` even though the type says array.
+	function emptyLayout(): ManualLayout {
+		return {
+			disk: '/dev/vda',
+			diskSizeMB: 20480,
+			diskSizeBytes: 20480 * mib,
+			partitions: null as unknown as ManualLayout['partitions'],
+		};
+	}
+
+	it('normalizes a null partitions list to an empty array', () => {
+		expect(normalizeManualLayout(emptyLayout()).partitions).toEqual([]);
+	});
+
+	it('computes used/free space instead of throwing', () => {
+		expect(computeUsedMB(emptyLayout())).toBe(0);
+		expect(computeFreeMB(emptyLayout())).toBeGreaterThan(20000);
+	});
+
+	it('reports missing roles instead of crashing the manual page', () => {
+		expect(() => manualLayoutIssues(emptyLayout())).not.toThrow();
+		expect(manualLayoutIssues(emptyLayout()).map((issue) => issue.kind)).toEqual(
+			expect.arrayContaining(['espCount', 'systemCount']),
+		);
 	});
 });

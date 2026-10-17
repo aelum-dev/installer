@@ -30,7 +30,7 @@
 
 	// Whether the manual layout has at least one designated (ESP or System) row.
 	const hasDesignated = $derived.by(
-		() => !!installState.manualLayout?.partitions.some((p) => p.type === TYPE_ESP || p.type === TYPE_SYSTEM),
+		() => !!installState.manualLayout?.partitions?.some((p) => p.type === TYPE_ESP || p.type === TYPE_SYSTEM),
 	);
 
 	// References to measure against, so the partition table scrolls internally
@@ -57,7 +57,7 @@
 		// Re-measure whenever the partition list changes (add/remove rows).
 		// Track the length explicitly: rows are mutated in place, so reading the
 		// array object alone would not subscribe to push/splice.
-		const partitionCount = installState.manualLayout?.partitions.length ?? 0;
+		const partitionCount = installState.manualLayout?.partitions?.length ?? 0;
 		void partitionCount;
 		updatePlanScrollHeight();
 		window.addEventListener('resize', updatePlanScrollHeight);
@@ -118,7 +118,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each installState.manualLayout.partitions as part (part.index)}
+									{#each installState.manualLayout.partitions ?? [] as part (part.index)}
 										<tr class:designated={part.type === TYPE_ESP || part.type === TYPE_SYSTEM}>
 											<td class="plan-col-name">
 												{#if part.path}

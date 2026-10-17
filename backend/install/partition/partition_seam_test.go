@@ -1,6 +1,7 @@
 package partition
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -47,6 +48,22 @@ cat <<'JSON'
 JSON
 `
 
+// emptyPartJSON is what lsblk returns for an unpartitioned (fresh) disk.
+const emptyPartJSON = `{"blockdevices":[{"name":"vda","type":"disk","size":"21474836480","children":[]}]}`
+
+const lsblkEmptyShimBody = `for a in "$@"; do
+  if [ "$a" = "-d" ]; then
+    cat <<'JSON'
+` + fakeDiskJSON + `
+JSON
+    exit 0
+  fi
+done
+cat <<'JSON'
+` + emptyPartJSON + `
+JSON
+`
+
 // --- ComputeLayout -----------------------------------------------------------
 
 func TestComputeLayout(t *testing.T) {
@@ -85,6 +102,35 @@ func TestComputeLayout(t *testing.T) {
 func TestComputeLayout_NoDiskID(t *testing.T) {
 	if _, err := ComputeLayout(""); err == nil || !strings.Contains(err.Error(), "disk ID not set") {
 		t.Fatalf("ComputeLayout(\"\") error = %v", err)
+	}
+}
+
+// An unpartitioned disk must yield an empty (non-nil) partition slice. A nil
+// slice marshals to JSON null, and the frontend's free-space math iterates the
+// list directly — that crashed the manual page on "Scanning partitions...".
+func TestComputeLayout_EmptyDiskReturnsEmptySlice(t *testing.T) {
+	fakeTools(t, map[string]string{
+		"lsblk":    lsblkEmptyShimBody,
+		"blockdev": "echo 512\n",
+	})
+
+	layout, err := ComputeLayout("/dev/vda")
+	if err != nil {
+		t.Fatalf("ComputeLayout() = %v", err)
+	}
+	if layout.Partitions == nil {
+		t.Fatal("Partitions is nil, want an empty non-nil slice")
+	}
+	if len(layout.Partitions) != 0 {
+		t.Fatalf("partitions = %d, want 0", len(layout.Partitions))
+	}
+
+	encoded, err := json.Marshal(layout)
+	if err != nil {
+		t.Fatalf("json.Marshal: %v", err)
+	}
+	if !strings.Contains(string(encoded), `"partitions":[]`) {
+		t.Errorf("layout JSON = %s, want an empty partitions array", encoded)
 	}
 }
 

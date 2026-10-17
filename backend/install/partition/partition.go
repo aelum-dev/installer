@@ -58,6 +58,11 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 	// Record the disk's logical sector size so all downstream sector math uses
 	// the same unit sgdisk reports in (512e vs 4Kn).
 	layout.SectorSizeBytes = shared.LogicalSectorSize(diskID)
+	// Always return a non-nil slice: an empty disk (no partitions) must marshal
+	// as "partitions": [] rather than null. The frontend iterates this list
+	// directly, and a null payload crashes its free-space math (leaving the
+	// manual page stuck on "Scanning partitions...").
+	layout.Partitions = make([]shared.ManualPartition, 0, len(partitions))
 	for i, p := range partitions {
 		layout.Partitions = append(layout.Partitions, shared.ManualPartition{
 			Index:          i,

@@ -39,9 +39,21 @@ function systemFloorBytes(options: ManualLayoutOptions): number {
 // (by the prefix) or rejects a plan that fills the disk (by the backup).
 const GPT_RESERVED_BYTES = GPTPrefixBytes + GPTBackupBytes;
 
+/**
+ * Normalize a layout returned by the backend. Go marshals a nil slice as
+ * `null`, so an empty disk (no partitions yet) arrives with
+ * `partitions: null`. Every consumer here iterates that list, so coerce it
+ * (and the optional deleted-rows list) to an array at the boundary.
+ */
+export function normalizeManualLayout(layout: ManualLayout): ManualLayout {
+	if (!layout.partitions) layout.partitions = [];
+	if (!layout.deletedPartitions) layout.deletedPartitions = [];
+	return layout;
+}
+
 /** Sum of the space the plan has reserved, in MiB. */
 export function computeUsedMB(layout: ManualLayout): number {
-	return layout.partitions.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
+	return (layout.partitions ?? []).reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
 }
 
 /**
@@ -50,7 +62,7 @@ export function computeUsedMB(layout: ManualLayout): number {
  * Deleted rows live in deletedPartitions and are excluded.
  */
 export function computeUsedBytes(layout: ManualLayout): number {
-	return layout.partitions.reduce((sum, p) => {
+	return (layout.partitions ?? []).reduce((sum, p) => {
 		const existing = p.path ? (p.sizeBytes ?? 0) : 0;
 		const newly = p.path === '' ? Math.max(p.sizeMB, 0) * BYTES_PER_MB : 0;
 		return sum + existing + newly;
@@ -74,7 +86,7 @@ export function computeFreeMB(layout: ManualLayout): number {
 /** How many partitions carry the given type. */
 export function typeCount(layout: ManualLayout | null, type: PartitionType): number {
 	if (!layout) return 0;
-	return layout.partitions.filter((p) => p.type === type).length;
+	return (layout.partitions ?? []).filter((p) => p.type === type).length;
 }
 
 /** True when the layout has exactly one ESP and one System. */
@@ -133,9 +145,10 @@ export function manualLayoutIssues(
 	if (espCount !== 1) issues.push({ kind: 'espCount', count: espCount });
 	if (sysCount !== 1) issues.push({ kind: 'systemCount', count: sysCount });
 
+	const partitions = layout.partitions ?? [];
 	const freeMB = computeFreeMB(layout);
 
-	for (const p of layout.partitions) {
+	for (const p of partitions) {
 		// Draft rows are never created by buildActions. Require a role instead of
 		// silently reserving space for a partition install will not make.
 		if (!p.path && !p.type) {
@@ -186,13 +199,13 @@ export function manualLayoutIssues(
 
 	// Only a brand-new row can be a "use all remaining space" request; an
 	// existing sub-1-MiB partition also has sizeMB === 0 but is not one.
-	const remainingCount = layout.partitions.filter(
+	const remainingCount = partitions.filter(
 		(p) => !p.path && p.sizeMB === 0 && p.type,
 	).length;
 	if (remainingCount > 1) issues.push({ kind: 'multipleRemaining' });
 
-	const remainingIndex = layout.partitions.findIndex((p) => !p.path && p.sizeMB === 0);
-	if (remainingIndex >= 0 && remainingIndex < layout.partitions.length - 1) {
+	const remainingIndex = partitions.findIndex((p) => !p.path && p.sizeMB === 0);
+	if (remainingIndex >= 0 && remainingIndex < partitions.length - 1) {
 		issues.push({ kind: 'partitionAfterRemaining' });
 	}
 
@@ -200,7 +213,7 @@ export function manualLayoutIssues(
 	// headroom left by partitions already on the disk — never against the free
 	// space after subtracting them (that double-counts them and rejects any
 	// plan whose new partitions make up a large share of the disk).
-	const usedExistingBytes = layout.partitions.reduce(
+	const usedExistingBytes = partitions.reduce(
 		(sum, p) => sum + (p.path ? (p.sizeBytes ?? 0) : 0),
 		0,
 	);
@@ -209,7 +222,7 @@ export function manualLayoutIssues(
 		Math.floor((diskBytes - usedExistingBytes - GPT_RESERVED_BYTES) / BYTES_PER_MB),
 		0,
 	);
-	const newPartsSize = layout.partitions
+	const newPartsSize = partitions
 		.filter((p) => !p.path)
 		.reduce((sum, p) => sum + Math.max(p.sizeMB, 0), 0);
 	if (newPartsSize > freeForNewMB) {

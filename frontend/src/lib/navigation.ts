@@ -140,7 +140,7 @@ async function validateCurrentPage(page: number): Promise<string | null> {
 		// instead of a generic prompt about assigning roles.
 		if (page === PAGE_IDS.DISK_SELECTION && installState.manualMode) {
 			if (installState.manualLayout) {
-				const p = installState.manualLayout.partitions.map(
+				const p = (installState.manualLayout.partitions ?? []).map(
 					(x) => `${x.path || '<new>'}:${x.sizeMB}MB type='${x.type || 'none'}'`,
 				).join(', ');
 				LogInfo(
