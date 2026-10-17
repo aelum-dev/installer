@@ -91,3 +91,75 @@ func TestParseMirrorList_MissingFile(t *testing.T) {
 		t.Error("expected an error for a missing mirrorlist file")
 	}
 }
+
+func TestWriteRegionMirrorList(t *testing.T) {
+	dir := t.TempDir()
+	servers := []string{
+		"#Server = https://a.example.org/$repo/os/$arch",
+		"#Server = https://b.example.org/$repo/os/$arch",
+	}
+	if err := writeRegionMirrorList("de_DE", servers, dir); err != nil {
+		t.Fatalf("writeRegionMirrorList: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "de_DE.list"))
+	if err != nil {
+		t.Fatalf("read written list: %v", err)
+	}
+	body := string(data)
+	if !strings.Contains(body, "Arch Linux mirrorlist for de_DE") {
+		t.Errorf("header missing from %q", body)
+	}
+	for _, s := range servers {
+		if !strings.Contains(body, s) {
+			t.Errorf("server %q missing from %q", s, body)
+		}
+	}
+}
+
+// TestEnsureMirrorLists_Idempotent exercises the real generated-data path: the
+// repo ships every per-region .list, so the call must be a no-op rather than
+// downloading or rewriting anything.
+func TestEnsureMirrorLists_Idempotent(t *testing.T) {
+	before := map[string][]byte{}
+	entries, err := os.ReadDir(mirrorListsDir)
+	if err != nil {
+		t.Fatalf("read mirrorlist dir: %v", err)
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(mirrorListsDir, e.Name()))
+		if err != nil {
+			t.Fatalf("snapshot %s: %v", e.Name(), err)
+		}
+		before[e.Name()] = data
+	}
+
+	if err := EnsureMirrorLists(); err != nil {
+		t.Fatalf("EnsureMirrorLists: %v", err)
+	}
+
+	after, err := os.ReadDir(mirrorListsDir)
+	if err != nil {
+		t.Fatalf("re-read mirrorlist dir: %v", err)
+	}
+	for _, e := range after {
+		if e.IsDir() {
+			continue
+		}
+		prev, ok := before[e.Name()]
+		if !ok {
+			t.Errorf("EnsureMirrorLists created unexpected file %s", e.Name())
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(mirrorListsDir, e.Name()))
+		if err != nil {
+			t.Fatalf("re-read %s: %v", e.Name(), err)
+		}
+		if string(data) != string(prev) {
+			t.Errorf("EnsureMirrorLists rewrote %s", e.Name())
+		}
+	}
+}
