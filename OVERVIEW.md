@@ -36,7 +36,7 @@ It also ships a **CLI installer** (`aelum-installer-cli`) for headless/automated
 | **Desktop** | Hyprland + DankMaterialShell (based on Quickshell) + DMS Greeter (greetd) |
 | **Bootloader** | systemd-boot (bootctl) |
 | **Filesystems** | ext4 or btrfs (with subvolumes) |
-| **Boot Splash** | Plymouth BGRT (silent boot with firmware background) |
+| **Boot Splash** | Plymouth, branded Aelum theme (silent boot; LUKS passphrase unlock) |
 
 ---
 
@@ -121,7 +121,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 6.2 | Configure Bootloader | `ConfigureBootloader` | systemd-boot install, boot entry, random seed |
 | 6.3 | Configure System | `ConfigureSystemBase` | Hostname, timezone, locale, keymap, NTP, mirrorlist |
 | 6.4 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
-| 6.5 | Configure Plymouth | `ConfigurePlymouth` | BGRT theme, mkinitcpio hook, `.hushlogin` |
+| 6.5 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
 | 6.6 | Configure zram | `ConfigureZram` | Compressed swap via zram-generator |
 | 6.7 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
 
@@ -296,7 +296,7 @@ Aelum-Installer/
 │   │   │   ├── config.go        # Embedded config.toml
 │   │   │   ├── sync.go          # DMS greeter sync
 │   │   │   └── memory.go        # Embedded memory.json
-│   │   ├── plymouth.go          # Silent boot (BGRT theme)
+│   │   ├── plymouth.go          # Silent boot (Aelum theme)
 │   │   ├── services.go          # systemd service enabling
 │   │   ├── zram.go              # Compressed swap via zram-generator
 │   │   ├── copy.go              # ISO-to-target file copying
@@ -351,4 +351,4 @@ The installed system includes:
 - **Editor**: gnome-text-editor
 - **Media**: mpv, imv
 - **Fonts**: Noto (including CJK + Emoji) + Terminus + JetBrains Mono Nerd
-- **Boot Splash**: Plymouth BGRT (uses firmware background image for silent boot)
+- **Boot Splash**: Plymouth with the branded Aelum theme (silent boot; LUKS passphrase splash on encrypted installs)
