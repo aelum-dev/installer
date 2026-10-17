@@ -5,13 +5,14 @@
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { MinPasswordLength, MinUsernameLength } from '$lib/constants';
+	import PageLayout from '$components/PageLayout.svelte';
 
 	const pageIcon = glyph(STEP_ICONS.userAccount);
 
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
 	let confirmPasswordTouched = $state(false);
-	let usernameInput: HTMLInputElement;
+	let usernameInput = $state<HTMLInputElement | null>(null);
 
 	$effect(() => {
 		usernameInput?.select();
@@ -52,92 +53,59 @@
 	</div>
 {/snippet}
 
-<div class="page-layout">
-	<div class="page-info">
-		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-		<h2 class="page-info-title">{t('page.userAccount.title')}</h2>
-		<p class="page-info-subtitle">{t('page.userAccount.subtitle')}</p>
+<PageLayout icon={pageIcon} title={t('page.userAccount.title')} subtitle={t('page.userAccount.subtitle')}>
+	{#snippet info()}
 		<div class="requirements">
 			{@render requirement(usernameMinLength, t('validation.usernameMinLength'))}
 			{@render requirement(passwordMinLength, t('validation.passwordMinLength'))}
 			{@render requirement(passwordsMatch, t('validation.passwordsMatch'))}
 		</div>
-	</div>
-	<div class="page-content">
-		<form class="form" onsubmit={(e) => e.preventDefault()}>
-			<div class="field">
-				<label for="username">{t('page.userAccount.username')}</label>
-				<input
-					id="username"
-					type="text"
-					class={['line-edit', { 'line-edit--error': !!errors.username }]}
-					placeholder={t('page.userAccount.usernamePlaceholder')}
-					bind:this={usernameInput}
-					bind:value={installState.username}
-					onblur={() => handleBlur('username')}
-				/>
-				<span class="error" class:visible={!!errors.username}>{errors.username}</span>
-			</div>
+	{/snippet}
 
-			<div class="field">
-				<label for="password">{t('page.userAccount.password')}</label>
-				<input
-					id="password"
-					type="password"
-					class={['line-edit', { 'line-edit--error': !!errors.password }]}
-					placeholder={t('page.userAccount.passwordPlaceholder')}
-					bind:value={installState.password}
-					onblur={() => handleBlur('password')}
-				/>
-				<span class="error" class:visible={!!errors.password}>{errors.password}</span>
-			</div>
+	<form class="form" onsubmit={(e) => e.preventDefault()}>
+		<div class="field">
+			<label for="username">{t('page.userAccount.username')}</label>
+			<input
+				id="username"
+				type="text"
+				class={['line-edit', { 'line-edit--error': !!errors.username }]}
+				placeholder={t('page.userAccount.usernamePlaceholder')}
+				bind:this={usernameInput}
+				bind:value={installState.username}
+				onblur={() => handleBlur('username')}
+			/>
+			<span class="error" class:visible={!!errors.username}>{errors.username}</span>
+		</div>
 
-			<div class="field">
-				<label for="confirmPassword">{t('page.userAccount.confirmPassword')}</label>
-				<input
-					id="confirmPassword"
-					type="password"
-					class={['line-edit', { 'line-edit--error': !!errors.confirmPassword }]}
-					placeholder={t('page.userAccount.confirmPasswordPlaceholder')}
-					bind:value={installState.confirmPassword}
-					onblur={() => handleBlur('confirmPassword')}
-				/>
-				<span class="error" class:visible={!!errors.confirmPassword}>{errors.confirmPassword}</span>
-			</div>
-		</form>
-	</div>
-</div>
+		<div class="field">
+			<label for="password">{t('page.userAccount.password')}</label>
+			<input
+				id="password"
+				type="password"
+				class={['line-edit', { 'line-edit--error': !!errors.password }]}
+				placeholder={t('page.userAccount.passwordPlaceholder')}
+				bind:value={installState.password}
+				onblur={() => handleBlur('password')}
+			/>
+			<span class="error" class:visible={!!errors.password}>{errors.password}</span>
+		</div>
+
+		<div class="field">
+			<label for="confirmPassword">{t('page.userAccount.confirmPassword')}</label>
+			<input
+				id="confirmPassword"
+				type="password"
+				class={['line-edit', { 'line-edit--error': !!errors.confirmPassword }]}
+				placeholder={t('page.userAccount.confirmPasswordPlaceholder')}
+				bind:value={installState.confirmPassword}
+				onblur={() => handleBlur('confirmPassword')}
+			/>
+			<span class="error" class:visible={!!errors.confirmPassword}>{errors.confirmPassword}</span>
+		</div>
+	</form>
+</PageLayout>
 
 <style>
-	.page-layout {
-		display: flex;
-		flex-direction: row;
-		height: 100%;
-		width: 100%;
-		padding-inline: var(--spacing-xl);
-		box-sizing: border-box;
-		gap: var(--gap-xl);
-	}
-
-	.page-info {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: var(--spacing-2xl);
-		flex: 1;
-	}
-
-	.page-content {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: flex-start;
-		text-align: left;
-		overflow: hidden;
-		min-height: 0;
-	}
-
 	.form {
 		display: flex;
 		flex-direction: column;

@@ -8,9 +8,11 @@
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import LuksPassphraseDialog from '$components/LuksPassphraseDialog.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import { installState, computeUsedMB, computeFreeMB, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
+	import { installState, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
+	import { computeUsedMB, computeFreeMB } from '$lib/manual-layout';
+	import { inferDiskFileSystem } from '$lib/disks';
 	import { type DiskInfo, type PartitionEntry, PAGE_IDS } from '$lib/types';
-	import { MinDiskSizeBytes, FileSystemBtrfs, FileSystemExt4 } from '$lib/constants';
+	import { MinDiskSizeBytes } from '$lib/constants';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import './DiskSelectionPage.css';
@@ -98,23 +100,7 @@
 			const parts = await GetDiskPartitions(disk.path);
 			partitions = parts ?? [];
 
-			let existingFstype = disk.fstype;
-			if (!existingFstype) {
-				const rootPart = partitions.find((p) => p.mountpoints?.includes("/"));
-				if (rootPart?.fstype) {
-					existingFstype = rootPart.fstype;
-				} else {
-					const btrfsOrExt = partitions.find((p) => p.fstype === FileSystemBtrfs || p.fstype === FileSystemExt4);
-					if (btrfsOrExt?.fstype) {
-						existingFstype = btrfsOrExt.fstype;
-					} else {
-						const firstWithFs = partitions.find((p) => p.fstype);
-						if (firstWithFs?.fstype) {
-							existingFstype = firstWithFs.fstype;
-						}
-					}
-				}
-			}
+			const existingFstype = inferDiskFileSystem(disk, partitions);
 			if (existingFstype && existingFstype !== disk.fstype) {
 				disk.fstype = existingFstype;
 				installState.disk = disk;

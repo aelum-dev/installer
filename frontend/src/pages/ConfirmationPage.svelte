@@ -8,6 +8,7 @@
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { groupDigits } from '$lib/format';
+	import PageLayout from '$components/PageLayout.svelte';
 
 	const pageIcon = glyph(STEP_ICONS.confirmation);
 
@@ -62,139 +63,107 @@
 	});
 </script>
 
-<div class="page-layout">
-	<div class="page-info">
-		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-		<h2 class="page-info-title">{t('page.confirmation.title')}</h2>
-		<p class="page-info-subtitle">{t('page.confirmation.subtitle')}</p>
-	</div>
-	<div class="page-content" bind:this={pageContentEl}>
-		<div class="summary">
-			<div class="summary-section">
-				<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
-				<p class="section-value">{selectedLanguageName}</p>
-			</div>
+<PageLayout
+	icon={pageIcon}
+	title={t('page.confirmation.title')}
+	subtitle={t('page.confirmation.subtitle')}
+	variant="summary"
+	bind:contentEl={pageContentEl}
+>
+	<div class="summary">
+		<div class="summary-section">
+			<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
+			<p class="section-value">{selectedLanguageName}</p>
+		</div>
 
-			<div class="summary-section">
-				<h3 class="section-title">{t('page.confirmation.sectionUser')}</h3>
+		<div class="summary-section">
+			<h3 class="section-title">{t('page.confirmation.sectionUser')}</h3>
+			<p class="section-value">
+				{t('page.confirmation.username')}: <strong>{installState.username || '—'}</strong>
+			</p>
+			{#if installState.password}
 				<p class="section-value">
-					{t('page.confirmation.username')}: <strong>{installState.username || '—'}</strong>
+					{t('page.confirmation.password')}: <strong>{'●'.repeat(installState.password.length)}</strong>
 				</p>
-				{#if installState.password}
-					<p class="section-value">
-						{t('page.confirmation.password')}: <strong>{'●'.repeat(installState.password.length)}</strong>
+			{/if}
+		</div>
+
+		<div class="summary-section">
+			<h3 class="section-title">{t('page.confirmation.sectionDisk')}</h3>
+			{#if installState.disk}
+				<div class="disk-summary">
+					<p class="section-value disk-name">
+						{installState.disk.model || '—'} ({installState.disk.sizeFormatted} {t(installState.disk.rotational ? 'disk.hdd' : 'disk.ssd')} {installState.disk.trans?.toUpperCase() || ''})
 					</p>
-				{/if}
-			</div>
+					{#if installState.disk.serial}
+						<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{installState.disk.serial}</span></p>
+					{/if}
+					<!-- Path + current fs are redundant in manual mode: the plan table lists every path, and a disk has no single filesystem. -->
+					{#if !installState.manualMode}
+						<p class="disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
+					{/if}
 
-			<div class="summary-section">
-				<h3 class="section-title">{t('page.confirmation.sectionDisk')}</h3>
-				{#if installState.disk}
-					<div class="disk-summary">
-						<p class="section-value disk-name">
-							{installState.disk.model || '—'} ({installState.disk.sizeFormatted} {t(installState.disk.rotational ? 'disk.hdd' : 'disk.ssd')} {installState.disk.trans?.toUpperCase() || ''})
-						</p>
-						{#if installState.disk.serial}
-							<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{installState.disk.serial}</span></p>
-						{/if}
-						<!-- Path + current fs are redundant in manual mode: the plan table lists every path, and a disk has no single filesystem. -->
-						{#if !installState.manualMode}
-							<p class="disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
-						{/if}
-
-						{#if installState.manualMode}
-							<!-- Manual mode: show the partition plan the user designed -->
-							{#if installState.manualLayout && hasDesignated}
-								<div class="plan-scroll" bind:this={planScrollEl}>
-									<table class="plan-table">
-									<thead>
-										<tr>
-											<th scope="col" class="plan-col-name">{t('page.confirmation.colName')}</th>
-											<th scope="col" class="plan-col-size">{t('page.confirmation.colSize')}</th>
-											<th scope="col" class="plan-col-role">{t('page.confirmation.colRole')}</th>
+					{#if installState.manualMode}
+						<!-- Manual mode: show the partition plan the user designed -->
+						{#if installState.manualLayout && hasDesignated}
+							<div class="plan-scroll" bind:this={planScrollEl}>
+								<table class="plan-table">
+								<thead>
+									<tr>
+										<th scope="col" class="plan-col-name">{t('page.confirmation.colName')}</th>
+										<th scope="col" class="plan-col-size">{t('page.confirmation.colSize')}</th>
+										<th scope="col" class="plan-col-role">{t('page.confirmation.colRole')}</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each installState.manualLayout.partitions as part (part.index)}
+										<tr class:designated={part.type === TYPE_ESP || part.type === TYPE_SYSTEM}>
+											<td class="plan-col-name">
+												{#if part.path}
+													{part.path}
+												{:else}
+													<span class="part-new">{t('manual.newPart')}</span>
+												{/if}
+											</td>
+											<td class="plan-col-size">{groupDigits(part.sizeMB)}</td>
+											<td class="plan-col-role">
+												<span class="tag role-tag {part.type}">{t('manual.type.' + (part.type || 'preserve'))}</span>
+											</td>
 										</tr>
-									</thead>
-									<tbody>
-										{#each installState.manualLayout.partitions as part (part.index)}
-											<tr class:designated={part.type === TYPE_ESP || part.type === TYPE_SYSTEM}>
-												<td class="plan-col-name">
-													{#if part.path}
-														{part.path}
-													{:else}
-														<span class="part-new">{t('manual.newPart')}</span>
-													{/if}
-												</td>
-												<td class="plan-col-size">{groupDigits(part.sizeMB)}</td>
-												<td class="plan-col-role">
-													<span class="tag role-tag {part.type}">{t('manual.type.' + (part.type || 'preserve'))}</span>
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-								</div>
-							{:else}
-								<p class="disk-extra">{t('manual.dualbootHint')}</p>
-							{/if}
+									{/each}
+								</tbody>
+							</table>
+							</div>
 						{:else}
-							<p class="disk-extra">
-								{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{installState.fileSystem || '—'}</span>
-							</p>
-							{#if installState.luksEnabled}
-								<p class="disk-extra">
-									<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
-								</p>
-							{/if}
-							{#if installState.lvmEnabled}
-								<p class="disk-extra">
-									<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
-								</p>
-							{/if}
+							<p class="disk-extra">{t('manual.dualbootHint')}</p>
 						{/if}
-					</div>
-				{:else}
-					<p class="section-value error">{t('validation.noDiskSelected')}</p>
-				{/if}
-			</div>
+					{:else}
+						<p class="disk-extra">
+							{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{installState.fileSystem || '—'}</span>
+						</p>
+						{#if installState.luksEnabled}
+							<p class="disk-extra">
+								<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
+							</p>
+						{/if}
+						{#if installState.lvmEnabled}
+							<p class="disk-extra">
+								<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
+							</p>
+						{/if}
+					{/if}
+				</div>
+			{:else}
+				<p class="section-value error">{t('validation.noDiskSelected')}</p>
+			{/if}
 		</div>
 	</div>
-</div>
+</PageLayout>
 
 	<!-- Installation confirmation (mode-aware copy: wipe vs. dualboot-safe) -->
 	<ConfirmDialog bind:show={installState.showConfirmDialog} />
 
 <style>
-	.page-layout {
-		display: flex;
-		flex-direction: row;
-		height: 100%;
-		width: 100%;
-		padding-inline: var(--spacing-xl);
-		box-sizing: border-box;
-		gap: var(--gap-xl);
-	}
-
-	.page-info {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: var(--spacing-2xl);
-		flex: 1;
-	}
-
-	.page-content {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		/* Vertically center the summary; when the table is tall the JS-bound
-		.plan-scroll grows to fill instead, so nothing clips. */
-		justify-content: center;
-		align-items: flex-start;
-		text-align: left;
-		min-height: 0;
-		min-width: 0;
-	}
-
 	.summary {
 		display: flex;
 		flex-direction: column;

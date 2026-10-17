@@ -2,7 +2,7 @@
 	import { installState, commitLuksPassphrase } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
-	import './dialog.css';
+	import Dialog from '$components/Dialog.svelte';
 
 	let {
 		// Drives visibility; binds back to the shared luks dialog flag.
@@ -19,12 +19,8 @@
 
 	// Live inline validation: error when fields diverge or the first is empty.
 	const error = $derived.by(() => {
-		if (passphrase === '') {
-			return t('luks.dialog.errorEmpty');
-		}
-		if (confirm !== '' && confirm !== passphrase) {
-			return t('luks.dialog.errorMatch');
-		}
+		if (passphrase === '') return t('luks.dialog.errorEmpty');
+		if (confirm !== '' && confirm !== passphrase) return t('luks.dialog.errorMatch');
 		return '';
 	});
 
@@ -48,98 +44,74 @@
 		showConfirm = false;
 	}
 
-	// Focus the first field when the dialog opens, and close on Escape.
+	// The dialog shell skips its own focus so the first field can take it.
 	$effect(() => {
-		if (show) {
-			requestAnimationFrame(() => focusRef?.focus());
-		}
+		if (show) requestAnimationFrame(() => focusRef?.focus());
 	});
-	function onKeydown(e: KeyboardEvent): void {
-		if (e.key === 'Escape') {
-			handleCancel();
-		}
-	}
 </script>
 
-{#if show}
-	<div
-		class="dialog-overlay"
-		role="presentation"
-		onclick={handleCancel}
-		onkeydown={onKeydown}
-	>
-		<div
-			class="dialog"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="luks-title"
-			tabindex="-1"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-		>
-			<h2 id="luks-title" class="dialog-title">{t('luks.dialog.title')}</h2>
-			<div class="field">
-				<label for="luks-passphrase">{t('luks.dialog.passphrase')}</label>
-				<div class="password-field">
-					<input
-						id="luks-passphrase"
-						bind:this={focusRef}
-						bind:value={passphrase}
-						type={showPass ? 'text' : 'password'}
-						placeholder={t('luks.dialog.passphrasePlaceholder')}
-						autocomplete="off"
-						spellcheck="false"
-						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
-					/>
-					<button
-						type="button"
-						class="toggle-visibility"
-						aria-label={showPass ? t('luks.dialog.hide') : t('luks.dialog.show')}
-						onclick={() => (showPass = !showPass)}
-					>
-						<span class="nf-icon" aria-hidden="true">{showPass ? glyph('f070') : glyph('f06e')}</span>
-					</button>
-				</div>
-			</div>
-			<div class="field">
-				<label for="luks-confirm">{t('luks.dialog.confirmPassphrase')}</label>
-				<div class="password-field">
-					<input
-						id="luks-confirm"
-						bind:value={confirm}
-						type={showConfirm ? 'text' : 'password'}
-						placeholder={t('luks.dialog.confirmPlaceholder')}
-						autocomplete="off"
-						spellcheck="false"
-						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
-					/>
-					<button
-						type="button"
-						class="toggle-visibility"
-						aria-label={showConfirm ? t('luks.dialog.hide') : t('luks.dialog.show')}
-						onclick={() => (showConfirm = !showConfirm)}
-					>
-						<span class="nf-icon" aria-hidden="true">{showConfirm ? glyph('f070') : glyph('f06e')}</span>
-					</button>
-				</div>
-				{#if error}
-					<p class="field-error">{error}</p>
-				{/if}
-			</div>
-			<div class="dialog-actions">
-				<button type="button" class="btn-cancel" onclick={handleCancel}>
-					{t('dialog.confirm.cancel')}
-				</button>
-				<button type="button" class="btn-confirm" onclick={handleConfirm} disabled={!valid}>
-					{t('dialog.confirm.confirm')}
-				</button>
-			</div>
+<Dialog bind:show title={t('luks.dialog.title')} onCancel={handleCancel} focusOnOpen={false}>
+	<div class="field">
+		<label for="luks-passphrase">{t('luks.dialog.passphrase')}</label>
+		<div class="password-field">
+			<input
+				id="luks-passphrase"
+				bind:this={focusRef}
+				bind:value={passphrase}
+				type={showPass ? 'text' : 'password'}
+				placeholder={t('luks.dialog.passphrasePlaceholder')}
+				autocomplete="off"
+				spellcheck="false"
+				onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
+			/>
+			<button
+				type="button"
+				class="toggle-visibility"
+				aria-label={showPass ? t('luks.dialog.hide') : t('luks.dialog.show')}
+				onclick={() => (showPass = !showPass)}
+			>
+				<span class="nf-icon" aria-hidden="true">{showPass ? glyph('f070') : glyph('f06e')}</span>
+			</button>
 		</div>
 	</div>
-{/if}
+	<div class="field">
+		<label for="luks-confirm">{t('luks.dialog.confirmPassphrase')}</label>
+		<div class="password-field">
+			<input
+				id="luks-confirm"
+				bind:value={confirm}
+				type={showConfirm ? 'text' : 'password'}
+				placeholder={t('luks.dialog.confirmPlaceholder')}
+				autocomplete="off"
+				spellcheck="false"
+				onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
+			/>
+			<button
+				type="button"
+				class="toggle-visibility"
+				aria-label={showConfirm ? t('luks.dialog.hide') : t('luks.dialog.show')}
+				onclick={() => (showConfirm = !showConfirm)}
+			>
+				<span class="nf-icon" aria-hidden="true">{showConfirm ? glyph('f070') : glyph('f06e')}</span>
+			</button>
+		</div>
+		{#if error}
+			<p class="field-error">{error}</p>
+		{/if}
+	</div>
+
+	{#snippet actions()}
+		<button type="button" class="btn-cancel" onclick={handleCancel}>
+			{t('dialog.confirm.cancel')}
+		</button>
+		<button type="button" class="btn-confirm" onclick={handleConfirm} disabled={!valid}>
+			{t('dialog.confirm.confirm')}
+		</button>
+	{/snippet}
+</Dialog>
 
 <style>
-	/* Shared dialog chrome lives in ./dialog.css. */
+	/* Shared dialog chrome lives in Dialog.svelte / dialog.css. */
 	.field {
 		display: flex;
 		flex-direction: column;
@@ -200,12 +172,6 @@
 		margin: 0;
 		font-size: var(--font-size-sm);
 		color: var(--color-danger);
-	}
-
-	/* The shared .dialog-actions rule provides the flex layout; this dialog
-	additionally spaces the action row off the fields. */
-	.dialog-actions {
-		margin-top: var(--spacing-lg);
 	}
 
 	.btn-confirm:disabled {

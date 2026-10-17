@@ -3,6 +3,7 @@
 	import { GetLanguages, GetSelectedLanguage, SetSelectedLanguage } from '@wails/go/gui/App.js';
 	import { installState } from '$lib/store.svelte';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
+	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { PAGE_IDS } from '$lib/types';
@@ -49,68 +50,44 @@
 	loadLanguages();
 </script>
 
-<div class="page-layout">
-	<div class="page-info">
-		<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-		<h2 class="page-info-title">{t('page.welcome.title')}</h2>
-		<p class="page-info-subtitle">{t('page.welcome.subtitle')}</p>
+<PageLayout
+	icon={pageIcon}
+	title={t('page.welcome.title')}
+	subtitle={t('page.welcome.subtitle')}
+	variant="list"
+	wideInset
+>
+	{#snippet info()}
 		<div class="requirements">
 			<div class="requirement-header">{t('page.welcome.requirements')}</div>
 			<div class="requirement-item">{t('page.welcome.reqUEFI')}</div>
 			<div class="requirement-item">{t('page.welcome.reqGPT')}</div>
 			<div class="requirement-item">{t('page.welcome.reqDisk')}</div>
 		</div>
-	</div>
-	<div class="page-content">
-		{#if loading}
-			<span class="loading-text">{t('page.welcome.loading')}</span>
-		{:else}
-			<ScrollBox persistKey={PAGE_IDS.WELCOME}>
-				<ul class="language-list">
-					{#each languages as lang (lang.code)}
-						<li>
-							<button
-								type="button"
-								class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
-								onclick={() => selectLanguage(lang.code)}
-							>
-								{lang.name}
-							</button>
-						</li>
-					{/each}
-				</ul>
-			</ScrollBox>
-		{/if}
-	</div>
-</div>
+	{/snippet}
+
+	{#if loading}
+		<span class="loading-text">{t('page.welcome.loading')}</span>
+	{:else}
+		<ScrollBox persistKey={PAGE_IDS.WELCOME}>
+			<ul class="language-list">
+				{#each languages as lang (lang.code)}
+					<li>
+						<button
+							type="button"
+							class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
+							onclick={() => selectLanguage(lang.code)}
+						>
+							{lang.name}
+						</button>
+					</li>
+				{/each}
+			</ul>
+		</ScrollBox>
+	{/if}
+</PageLayout>
 
 <style>
-	.page-layout {
-		display: flex;
-		flex-direction: row;
-		height: 100%;
-		width: 100%;
-		padding-inline: calc(var(--spacing-xl) + 8px);
-		box-sizing: border-box;
-		gap: var(--gap-xl);
-	}
-
-	.page-info {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: var(--spacing-2xl);
-		flex: 1;
-	}
-
-	.page-content {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		overflow: visible;
-		min-height: 0;
-	}
-
 	.loading-text {
 		font-size: var(--font-size-md-lg);
 		color: var(--color-text-light);

@@ -128,24 +128,30 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         AppHeader.svelte        — Top bar with page title (+ DRY RUN badge)
         AppFooter.svelte        — Bottom bar with back/next buttons (+ step indicator dots)
         Button.svelte           — Reusable button component
-        ConfirmDialog.svelte    — Confirmation dialog modal
+        ConfirmDialog.svelte    — Confirmation/validation modal (uses Dialog)
+        Dialog.svelte           — Shared modal chrome: overlay, Escape, focus restore
+        PageLayout.svelte       — Shared two-column wizard page shell (info rail + content)
         ScrollBox.svelte        — Scrollable container component
       lib/
         constants.ts            — Frontend constants (auto-generated from Go via gen-ts-constants.go)
+        disks.ts                — Disk filesystem inference helper
+        manual-layout.ts        — Pure manual-partition geometry + structural validation
         navigation.ts           — Page navigation state
-        store.svelte.ts         — Svelte 5 store (`installState`, `navState`, `isPageValid()`)
+        page-validation.ts      — `isPageValid()`/`getPageValidationReasons()` (shares validate.ts rules)
+        store.svelte.ts         — Svelte 5 store (`installState`, `navState`, LUKS/LVM actions)
         i18n/
-          index.svelte.ts       — svelte-intl runtime + locale loading
-          index.ts              — Intl config, locale registry
-          locales.ts            — Supported locale list
+          index.svelte.ts       — Translation runtime (glob-imported locales) + locale loading
+          index.ts              — Re-exports for .ts/.svelte consumers
+          locales.ts            — Supported locale list + RTL set
         types.ts                — TypeScript type definitions
-        validate.ts             — Frontend validation helpers
+        validate.ts             — Single user-account rule engine + inline validation
         validate-messages.ts    — Validation message strings
         validate.test.ts        — Validation tests
       pages/
         WelcomePage.svelte      — Language/region selection
         UserAccountPage.svelte  — Username + password (interactive validation hints)
         DiskSelectionPage.svelte — Disk cards + filesystem pills
+        ManualPartitionPage.svelte — Manual (dualboot-safe) partition editor
         ConfirmationPage.svelte — Summary + root check + confirm dialog
         InstallationPage.svelte — Progress bar + live events
         FinishPage.svelte       — Success screen
@@ -201,7 +207,7 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 | `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
 
 ## Internationalization (i18n)
-All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales live in `frontend/src/translations/*.json` (28 locales); the registry/messages are in `frontend/src/lib/i18n/`. RTL is supported for Arabic (`ar-SA`) and Hebrew (`he-IL`). Backend exposes `GetUILocale()`/`SetUILocale()` for auto-detection + persistence.
+All UI strings are translated by a small custom flat-key runtime in `frontend/src/lib/i18n/` (`t()` with English fallback, glob-imported locale JSON). Frontend locales live in `frontend/src/translations/*.json` (28 locales); locale display names + the RTL set are in `frontend/src/lib/i18n/locales.ts`. Backend locale codes (`de_DE.UTF-8`) map mechanically to frontend codes (`de-DE`). RTL is supported for Arabic (`ar-SA`), Hebrew (`he-IL`), and Persian (`fa-IR`). Backend exposes `GetUILocale()`/`SetUILocale()` for auto-detection + persistence.
 
 ## Key Patterns (Follow These)
 - **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aelum-installer-cli --install <disk>` and reads JSON progress from stderr.

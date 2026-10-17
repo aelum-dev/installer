@@ -12,15 +12,21 @@ import { gui } from '@wails/go/models';
 // Tracks whether user has confirmed installation (prevents dialog re-show)
 let _installationConfirmed = false;
 
-// Page-specific error messages for validation failures
-const PAGE_ERROR_MESSAGES: Record<PageID, string> = {
-	[PAGE_IDS.WELCOME]: t('validation.selectLanguage'),
-	[PAGE_IDS.USER_ACCOUNT]: t('validation.selectUserAccount'),
-	[PAGE_IDS.DISK_SELECTION]: t('validation.selectDisk'),
-	[PAGE_IDS.CONFIRMATION]: t('validation.reviewInstallation'),
-	[PAGE_IDS.INSTALLATION]: t('validation.waitInstallation'),
-	[PAGE_IDS.FINISH]: t('validation.installationComplete'),
+// Page-specific error message keys for validation failures. Translated at use
+// time (not at module load) so switching language updates the fallbacks too.
+const PAGE_ERROR_KEYS: Record<PageID, string> = {
+	[PAGE_IDS.WELCOME]: 'validation.selectLanguage',
+	[PAGE_IDS.USER_ACCOUNT]: 'validation.selectUserAccount',
+	[PAGE_IDS.DISK_SELECTION]: 'validation.selectDisk',
+	[PAGE_IDS.CONFIRMATION]: 'validation.reviewInstallation',
+	[PAGE_IDS.INSTALLATION]: 'validation.waitInstallation',
+	[PAGE_IDS.FINISH]: 'validation.installationComplete',
 };
+
+function pageErrorMessage(page: PageID): string {
+	const key = PAGE_ERROR_KEYS[page];
+	return key ? t(key) : 'Please fix the issues above to continue.';
+}
 
 /**
  * Result of a Next attempt. `error` carries a frontend validation failure;
@@ -128,7 +134,7 @@ async function validateCurrentPage(page: number): Promise<string | null> {
 			}
 			return err instanceof Error ? err.message : t('validation.selectDiskManual');
 		}
-		return PAGE_ERROR_MESSAGES[page as PageID] ?? 'Please fix the issues above to continue.';
+		return pageErrorMessage(page as PageID);
 	}
 }
 

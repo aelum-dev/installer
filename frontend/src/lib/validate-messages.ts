@@ -1,18 +1,5 @@
 import { t } from '$lib/i18n';
-import type { ValidationState } from './validate';
-
-export interface ValidationMessages {
-  usernameRequired: string;
-  usernameMinLength: string;
-  usernameMaxLength: string;
-  usernameInvalidFirstChar: string;
-  usernameInvalidChars: string;
-  usernameReserved: string;
-  passwordRequired: string;
-  passwordMinLength: string;
-  passwordsMatch: string;
-  passwordsNoMatch: string;
-}
+import type { ValidationMessages } from './validate';
 
 export function getValidationMessages(): ValidationMessages {
   return {
