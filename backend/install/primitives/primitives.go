@@ -94,6 +94,88 @@ func RunChroot(args ...string) ([]byte, error) {
 	return Run(chrootArgs...).CombinedOutput()
 }
 
+// ============================================================================
+// File system primitives
+// ============================================================================
+
+// FileSystem abstracts the file operations used by the install steps. The
+// default implementation talks to the real filesystem; tests inject an
+// in-memory implementation (see primitivestest.MemFS) via SetFileSystem to
+// exercise file-driven logic without writing under /mnt.
+//
+// All paths are host paths. Chroot-relative paths are prefixed with MountRoot by
+// WriteFile/AppendFile before they reach a FileSystem, so implementations never
+// need to know about the install root.
+type FileSystem interface {
+	ReadFile(path string) ([]byte, error)
+	WriteFile(path string, data []byte, perm os.FileMode) error
+	// AppendFile appends data, creating the file if needed with the given perm.
+	AppendFile(path string, data []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
+	Stat(path string) (os.FileInfo, error)
+	RemoveAll(path string) error
+	// Chmod changes path's permission bits.
+	Chmod(path string, mode os.FileMode) error
+}
+
+// defaultFS is the process-wide FileSystem. Only tests swap it.
+var defaultFS FileSystem = osFS{}
+
+// SetFileSystem replaces the filesystem used by the primitives and returns a
+// function that restores the previous one. It is intended for tests:
+//
+//	defer primitives.SetFileSystem(fake)()
+func SetFileSystem(fs FileSystem) (restore func()) {
+	prev := defaultFS
+	defaultFS = fs
+	return func() { defaultFS = prev }
+}
+
+// osFS is the real-filesystem FileSystem, backed by the os package.
+type osFS struct{}
+
+func (osFS) ReadFile(path string) ([]byte, error) { return os.ReadFile(path) }
+
+func (osFS) WriteFile(path string, data []byte, perm os.FileMode) error {
+	return os.WriteFile(path, data, perm)
+}
+
+func (osFS) AppendFile(path string, data []byte, perm os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, perm)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	_, err = f.Write(data)
+	return err
+}
+
+func (osFS) MkdirAll(path string, perm os.FileMode) error { return os.MkdirAll(path, perm) }
+func (osFS) Stat(path string) (os.FileInfo, error)        { return os.Stat(path) }
+func (osFS) RemoveAll(path string) error                  { return os.RemoveAll(path) }
+func (osFS) Chmod(path string, mode os.FileMode) error    { return os.Chmod(path, mode) }
+
+// ReadFile reads a host path through the active FileSystem seam.
+func ReadFile(path string) ([]byte, error) { return defaultFS.ReadFile(path) }
+
+// Stat reports file information through the active FileSystem seam.
+func Stat(path string) (os.FileInfo, error) { return defaultFS.Stat(path) }
+
+// RemoveAll removes a host path and its contents through the active FileSystem
+// seam.
+func RemoveAll(path string) error { return defaultFS.RemoveAll(path) }
+
+// Chmod changes a host path's permission bits through the active FileSystem
+// seam.
+func Chmod(path string, mode os.FileMode) error { return defaultFS.Chmod(path, mode) }
+
+// WriteFileMode writes content to an absolute host path with the given
+// permissions through the active FileSystem seam. Unlike WriteFile it applies no
+// MountRoot prefixing, so callers must pass a host path.
+func WriteFileMode(path string, content string, perm os.FileMode) error {
+	return defaultFS.WriteFile(path, []byte(content), perm)
+}
+
 // WriteFile writes content to a file inside the installed system.
 // targetPath should be absolute path inside the chroot (e.g., "/etc/fstab").
 // If the path already starts with MountRoot (e.g., ESP paths), it is used as-is.
@@ -104,10 +186,10 @@ func WriteFile(targetPath string, content string) error {
 		hostPath = shared.MountRoot + targetPath
 	}
 	// Create parent directories
-	if err := os.MkdirAll(filepath.Dir(hostPath), 0o755); err != nil {
+	if err := defaultFS.MkdirAll(filepath.Dir(hostPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(hostPath), err)
 	}
-	if err := os.WriteFile(hostPath, []byte(content), 0o644); err != nil {
+	if err := defaultFS.WriteFile(hostPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", targetPath, err)
 	}
 	return nil
@@ -126,15 +208,10 @@ func AppendFile(targetPath string, content string) error {
 		hostPath = shared.MountRoot + targetPath
 	}
 	// Create parent directories if needed
-	if err := os.MkdirAll(filepath.Dir(hostPath), 0o755); err != nil {
+	if err := defaultFS.MkdirAll(filepath.Dir(hostPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(hostPath), err)
 	}
-	f, err := os.OpenFile(hostPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("failed to open %s for appending: %w", targetPath, err)
-	}
-	defer func() { _ = f.Close() }()
-	if _, err := f.WriteString(content); err != nil {
+	if err := defaultFS.AppendFile(hostPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to append to %s: %w", targetPath, err)
 	}
 	return nil

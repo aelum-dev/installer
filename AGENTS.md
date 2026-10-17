@@ -48,10 +48,13 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       cleanup.go                — Rollback() + partition discovery (exposed for --rollback)
       primitives/
         primitives.go           — Low-level primitives shared by all steps: Run(), RunChroot(),
-                                  WriteFile(), AppendFile(), ValidateMountedSystem(), CleanupMounts()
+                                  WriteFile(), AppendFile(), ReadFile(), Stat(), RemoveAll(), Chmod(),
+                                  ValidateMountedSystem(), CleanupMounts()
                                   (+ CommandRunner seam: SetCommandRunner() injects a fake)
+                                  (+ FileSystem seam: SetFileSystem() injects a fake)
         primitivestest/
           recorder.go           — Scripted primitives.CommandRunner for unit tests (no root needed)
+          memfs.go              — In-memory primitives.FileSystem for unit tests (no /mnt needed)
       format/
         format.go               — FormatDisk() + setupBtrfsSubvolumes() (+ format_test.go)
       mount/
@@ -203,6 +206,7 @@ All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales l
 ## Key Patterns (Follow These)
 - **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aelum-installer-cli --install <disk>` and reads JSON progress from stderr.
 - **Direct exec for root ops**: Install steps use `Run()` (exec.Command) and `RunChroot()` (arch-chroot) directly — no helper binary. Both go through the `primitives.CommandRunner` seam: tests inject a fake with `primitives.SetCommandRunner(rec)()` (see `primitives/primitivestest`) to assert argv and simulate output/failure without root. Commands are `*primitives.Command` (mirrors `exec.Cmd`'s `Args`/`Stdin`/`Run`/`Output`/`CombinedOutput`). Note: `installbase` and the GUI spawn streaming processes (`Start`/`Wait`/pipes) via `os/exec` directly — those are not behind the seam.
+- **File I/O for root ops**: Install steps write/read the target via `primitives.WriteFile()`/`AppendFile()`/`ReadFile()`/`Stat()`/`RemoveAll()`/`Chmod()` rather than calling `os` directly. Those go through the `primitives.FileSystem` seam: tests inject `primitivestest.NewMemFS()` with `primitives.SetFileSystem(fs)()` to exercise file-driven logic without writing under `/mnt`. `WriteFile`/`AppendFile` prepend `MountRoot` for chroot paths and leave host paths (`/mnt/...`) as-is; `WriteFileMode`/`ReadFile`/`Stat`/`RemoveAll`/`Chmod` take host paths verbatim. `os/exec`, `shared/` (logger, mirrorlist), and the GUI binary lookup still use `os` directly.
 - **InstallContext**: Shared state passed through all install steps. New fields go here, not in Installer struct.
 - **Progress tracking**: pacstrap uses line-count-based tracker in `install/progress/pacstrap.go`. Step weights in `install/step.go`.
 - **Dry run**: `AELUM_DRY_RUN=1` — steps sleep 200ms instead of executing.

@@ -2,7 +2,6 @@ package verify
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -89,7 +88,7 @@ func capitalizeFirst(s string) string {
 // partition UUIDs are known) lists the root and EFI partitions.
 func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 	path := shared.MountRoot + "/etc/fstab"
-	data, err := os.ReadFile(path)
+	data, err := primitives.ReadFile(path)
 	if err != nil {
 		*issues = append(*issues, "fstab not found or unreadable at "+path)
 		return
@@ -123,7 +122,7 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 	// mapping argument itself rather than a literal /dev/mapper path, which
 	// only the LVM root happens to contain as a substring.
 	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
-	if data, err := os.ReadFile(entryPath); err == nil {
+	if data, err := primitives.ReadFile(entryPath); err == nil {
 		content := string(data)
 		switch {
 		case !luksEntryMapsMapper(content, ctx.Partitions.LuksUUID):
@@ -147,7 +146,7 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 
 	// dm-crypt hook present in mkinitcpio.conf.
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
-	if data, err := os.ReadFile(confPath); err == nil {
+	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, "sd-encrypt") {
 			*issues = append(*issues, "dm-crypt hook (sd-encrypt) not found in mkinitcpio.conf")
@@ -181,7 +180,7 @@ func luksEntryMapsMapper(options, luksUUID string) bool {
 func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 	// Boot entry references the root logical volume (not the PV).
 	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
-	if data, err := os.ReadFile(entryPath); err == nil {
+	if data, err := primitives.ReadFile(entryPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, shared.LvmRootLvPath) {
 			*issues = append(*issues, "boot entry does not reference the root LV "+shared.LvmRootLvPath)
@@ -196,7 +195,7 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 	// already covered by checkFstab).
 	if ctx.Partitions != nil && ctx.Partitions.HomeUUID != "" {
 		path := shared.MountRoot + "/etc/fstab"
-		if data, err := os.ReadFile(path); err == nil {
+		if data, err := primitives.ReadFile(path); err == nil {
 			if !strings.Contains(string(data), ctx.Partitions.HomeUUID) {
 				*issues = append(*issues, "fstab missing home LV UUID "+ctx.Partitions.HomeUUID)
 			} else {
@@ -207,7 +206,7 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 
 	// lvm2 hook present in mkinitcpio.conf.
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
-	if data, err := os.ReadFile(confPath); err == nil {
+	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, shared.LvmInitramfsHook) {
 			*issues = append(*issues, "lvm2 hook not found in mkinitcpio.conf")
@@ -286,7 +285,7 @@ func checkUserAccount(ctx *shared.InstallContext, issues, info *[]string) {
 		return
 	}
 	path := shared.MountRoot + "/etc/passwd"
-	data, err := os.ReadFile(path)
+	data, err := primitives.ReadFile(path)
 	if err != nil {
 		*issues = append(*issues, "failed to read "+path)
 		return
@@ -313,7 +312,7 @@ func checkHostname(ctx *shared.InstallContext, issues, info *[]string) {
 		return
 	}
 	path := shared.MountRoot + "/etc/hostname"
-	data, err := os.ReadFile(path)
+	data, err := primitives.ReadFile(path)
 	if err != nil {
 		*issues = append(*issues, "failed to read "+path)
 		return

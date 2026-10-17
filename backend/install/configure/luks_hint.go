@@ -92,7 +92,7 @@ func writeSystemFile(targetPath, content string, mode os.FileMode) error {
 	if !strings.HasPrefix(targetPath, shared.MountRoot) {
 		hostPath = shared.MountRoot + targetPath
 	}
-	if err := os.Chmod(hostPath, mode); err != nil {
+	if err := primitives.Chmod(hostPath, mode); err != nil {
 		return fmt.Errorf("failed to set mode %#o on %s: %w", mode, targetPath, err)
 	}
 	return nil

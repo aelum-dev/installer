@@ -2,7 +2,6 @@ package configure
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -163,7 +162,7 @@ func setDefaultBootEntry(esp, entryID string) error {
 	// with systemd-boot (e.g. Ventoy/GRUB). The file write is all that's
 	// needed — systemd-boot reads it at boot time.
 	confPath := esp + "/loader/loader.conf"
-	data, err := os.ReadFile(confPath)
+	data, err := primitives.ReadFile(confPath)
 	if err != nil {
 		return fmt.Errorf("failed to read loader.conf: %w", err)
 	}
@@ -215,7 +214,7 @@ func verifyBootloaderInstallation(esp string) error {
 	if err := cmd.Run(); err != nil {
 		issues = append(issues, "boot entry file is MISSING: "+entryPath)
 	} else {
-		data, err := os.ReadFile(entryPath)
+		data, err := primitives.ReadFile(entryPath)
 		if err == nil {
 			info = append(info, "boot entry contents: "+strings.TrimSpace(string(data)))
 		}

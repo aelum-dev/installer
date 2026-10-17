@@ -1,8 +1,6 @@
 package clearcache
 
 import (
-	"os"
-
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -17,8 +15,8 @@ func Run(ctx *shared.InstallContext) error {
 	// Remove cached packages directly to avoid pacman's interactive
 	// confirmation prompt and exit code 1 when cache is empty.
 	pkgDir := shared.MountRoot + "/var/cache/pacman/pkg"
-	if _, err := os.Stat(pkgDir); err == nil {
-		if err := os.RemoveAll(pkgDir); err != nil {
+	if _, err := primitives.Stat(pkgDir); err == nil {
+		if err := primitives.RemoveAll(pkgDir); err != nil {
 			// Best-effort: log the failure but don't abort installation.
 			if ctx.Logger != nil {
 				ctx.Logger.Error("cache clear failed (non-fatal): %v", err)

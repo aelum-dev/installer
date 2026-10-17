@@ -2,7 +2,6 @@ package users
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -120,7 +119,7 @@ func Run(ctx *shared.InstallContext) error {
 	// Write with correct permissions directly (0440) to avoid a window where
 	// the file is world-readable if the process crashes between write and chmod.
 	sudoersPath := shared.MountRoot + "/etc/sudoers.d/wheel"
-	if err := os.WriteFile(sudoersPath, []byte("%wheel ALL=(ALL:ALL) ALL\n"), 0o440); err != nil {
+	if err := primitives.WriteFileMode(sudoersPath, "%wheel ALL=(ALL:ALL) ALL\n", 0o440); err != nil {
 		return fmt.Errorf("failed to write sudoers: %w", err)
 	}
 

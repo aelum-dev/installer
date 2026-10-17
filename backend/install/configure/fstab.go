@@ -2,7 +2,6 @@ package configure
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
@@ -138,7 +137,7 @@ func verifyFstab(rootUUID, efiUUID string) error {
 		return fmt.Errorf("EFI UUID is empty — cannot verify fstab")
 	}
 
-	data, err := os.ReadFile(shared.MountRoot + "/etc/fstab")
+	data, err := primitives.ReadFile(shared.MountRoot + "/etc/fstab")
 	if err != nil {
 		return fmt.Errorf("failed to read fstab: %w", err)
 	}

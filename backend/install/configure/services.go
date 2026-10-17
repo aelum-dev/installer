@@ -2,7 +2,6 @@ package configure
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,7 +38,7 @@ var meminfoKBRegex = regexp.MustCompile(`^MemTotal:\s+(\d+)\s+kB$`)
 const zramSizeMaxMiB = 8192
 
 func calculateZramSizeMiB() int {
-	data, err := os.ReadFile("/proc/meminfo")
+	data, err := primitives.ReadFile("/proc/meminfo")
 	if err != nil {
 		return 2048
 	}

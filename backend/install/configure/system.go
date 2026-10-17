@@ -2,7 +2,6 @@ package configure
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -41,7 +40,7 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	}
 
 	localeGenPath := shared.MountRoot + "/etc/locale.gen"
-	data, err := os.ReadFile(localeGenPath)
+	data, err := primitives.ReadFile(localeGenPath)
 	if err != nil {
 		return fmt.Errorf("failed to read locale.gen: %w", err)
 	}
@@ -97,7 +96,7 @@ func copyMirrorList(regionCode string) error {
 func configureInitramfs(ctx *shared.InstallContext) error {
 	// Edit the target system's config, not the live ISO's.
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
-	data, err := os.ReadFile(confPath)
+	data, err := primitives.ReadFile(confPath)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", confPath, err)
 	}
