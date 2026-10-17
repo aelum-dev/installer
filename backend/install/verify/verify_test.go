@@ -32,6 +32,24 @@ func TestExpectedPackagesNonEmpty(t *testing.T) {
 	}
 }
 
+// TestCapitalizeFirst covers the log-line prettifier applied to diagnostics.
+func TestCapitalizeFirst(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"", ""},
+		{"kernel image: vmlinuz-lts", "Kernel image: vmlinuz-lts"},
+		{"Already capitalised", "Already capitalised"},
+		{"über", "Über"},
+	}
+	for _, tt := range tests {
+		if got := capitalizeFirst(tt.in); got != tt.want {
+			t.Errorf("capitalizeFirst(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
 // TestLuksEntryMapsMapper covers the LUKS boot-entry check that previously
 // required a literal /dev/mapper/aelum path. That passed only when LVM made the
 // root command line contain /dev/mapper/aelum as a substring of

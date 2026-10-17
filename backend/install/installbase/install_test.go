@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"aelum-installer/backend/install/progress"
+	"aelum-installer/backend/shared"
 )
 
 func TestBasePackages_NotEmpty(t *testing.T) {
@@ -25,6 +26,36 @@ func TestBasePackages_ContainsEssential(t *testing.T) {
 		if !found {
 			t.Errorf("expected BasePackages to contain %q", pkg)
 		}
+	}
+}
+
+// TestBasePackages_NoDuplicatesOrEmpty guards the package list against a typo
+// that would make pacstrap fetch the same package twice or fail on "".
+func TestBasePackages_NoDuplicatesOrEmpty(t *testing.T) {
+	seen := map[string]bool{}
+	for _, p := range BasePackages {
+		if p == "" {
+			t.Error("BasePackages contains an empty entry")
+			continue
+		}
+		if seen[p] {
+			t.Errorf("BasePackages contains duplicate %q", p)
+		}
+		seen[p] = true
+	}
+}
+
+// TestRun_NotMounted checks the step fails cleanly when the installed system is
+// not mounted (the normal state during unit tests).
+func TestRun_NotMounted(t *testing.T) {
+	if err := Run(&shared.InstallContext{}); err == nil {
+		t.Error("expected an error when /mnt is not mounted")
+	}
+}
+
+func TestInstallPackages_NotMounted(t *testing.T) {
+	if err := InstallPackages(&shared.InstallContext{}, []string{"base"}, "test"); err == nil {
+		t.Error("expected an error when /mnt is not mounted")
 	}
 }
 

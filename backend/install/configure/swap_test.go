@@ -1,41 +1,41 @@
 package configure
 
-import (
-	"testing"
-)
+import "testing"
 
-// Note: Swap file support has been replaced with zram.
-// The ConfigureZram step writes /etc/systemd/zram-generator.conf
-// and the generator handles the rest at boot.
+// Swap-file support was replaced with zram (see services.go): ConfigureZram
+// sizes a compressed swap device from the host's RAM. These tests cover the pure
+// sizing rules instead of the (mount-dependent) step itself.
 
-func TestConfigureZram_ConfigContent(t *testing.T) {
-	// Verify the config string content is correct.
-	// We can't easily test the full function without a real helper,
-	// but we can verify the config template is well-formed.
-	zramConf := `[zram0]
-zram-size = min(ram / 2, 16384)
-compression-algorithm = zstd
-`
-	if zramConf == "" {
-		t.Error("zram config should not be empty")
+// TestCalculateZramSizeMiB verifies the host-memory-based sizing returns one of
+// the supported sizes and respects the floor/cap.
+func TestCalculateZramSizeMiB(t *testing.T) {
+	got := calculateZramSizeMiB()
+	switch got {
+	case 2048, 4096, zramSizeMaxMiB:
+	default:
+		t.Errorf("calculateZramSizeMiB() = %d, want one of 2048, 4096, %d", got, zramSizeMaxMiB)
 	}
-	if !containsString(zramConf, "zram-size = min(ram / 2, 16384)") {
-		t.Error("zram config missing zram-size setting")
+	if got < 2048 {
+		t.Errorf("zram size %d is below the 2 GiB floor", got)
 	}
-	if !containsString(zramConf, "compression-algorithm = zstd") {
-		t.Error("zram config missing compression-algorithm setting")
+	if got > zramSizeMaxMiB {
+		t.Errorf("zram size %d exceeds the cap %d", got, zramSizeMaxMiB)
 	}
 }
 
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && indexOfSubstring(s, substr) >= 0
+func TestZramSizeMaxMiB(t *testing.T) {
+	if zramSizeMaxMiB != 8192 {
+		t.Errorf("zramSizeMaxMiB = %d, want 8192", zramSizeMaxMiB)
+	}
 }
 
-func indexOfSubstring(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
+// TestMeminfoKBRegex pins the /proc/meminfo parser used to size zram.
+func TestMeminfoKBRegex(t *testing.T) {
+	matches := meminfoKBRegex.FindStringSubmatch("MemTotal:       16299560 kB")
+	if matches == nil || matches[1] != "16299560" {
+		t.Errorf("failed to parse a MemTotal line: %v", matches)
 	}
-	return -1
+	if meminfoKBRegex.MatchString("MemFree:        123456 kB") {
+		t.Error("a MemFree line must not match the MemTotal regex")
+	}
 }

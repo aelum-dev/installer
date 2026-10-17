@@ -6,12 +6,11 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-func TestRun_ContextValidation(t *testing.T) {
-	ctx := &shared.InstallContext{
-		DiskID: "/dev/vda",
-	}
-
-	if ctx.DiskID != "/dev/vda" {
-		t.Errorf("expected disk ID /dev/vda, got %s", ctx.DiskID)
+// TestRun_RequiresMountedSystem verifies the step fails cleanly when /mnt is not
+// mounted, caught before any filesystem mutation.
+func TestRun_RequiresMountedSystem(t *testing.T) {
+	ctx := &shared.InstallContext{DiskID: "/dev/vda"}
+	if err := Run(ctx); err == nil {
+		t.Error("expected an error when /mnt is not mounted")
 	}
 }
