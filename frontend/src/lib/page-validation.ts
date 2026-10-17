@@ -6,7 +6,7 @@
 
 import { installState } from '$lib/store.svelte';
 import { PAGE_IDS } from '$lib/types';
-import { MinDiskSizeBytes } from '$lib/constants';
+import { MinDiskSizeBytes, MinManualDiskSizeBytes } from '$lib/constants';
 import { t } from '$lib/i18n';
 import {
 	confirmPasswordRule,
@@ -117,6 +117,13 @@ function manualLayoutValidationReasons(): string[] {
 		reasons.push(t('validation.modal.selectFileSystem'));
 		return reasons;
 	}
+	if (installState.disk && installState.disk.size < MinManualDiskSizeBytes) {
+		reasons.push(
+			t('validation.modal.diskTooSmallManual', {
+				min: (MinManualDiskSizeBytes / 1024 ** 3).toFixed(1),
+			}),
+		);
+	}
 
 	const layout = installState.manualLayout;
 	if (!layout) {
@@ -126,7 +133,10 @@ function manualLayoutValidationReasons(): string[] {
 		return reasons;
 	}
 
-	for (const issue of manualLayoutIssues(layout)) {
+	for (const issue of manualLayoutIssues(layout, {
+		lvm: installState.lvmEnabled,
+		luks: installState.luksEnabled,
+	})) {
 		reasons.push(manualIssueReason(issue));
 	}
 	return reasons;
@@ -138,10 +148,22 @@ function manualIssueReason(issue: ManualLayoutIssue): string {
 			return t('validation.modal.espRequired', { n: issue.count });
 		case 'systemCount':
 			return t('validation.modal.systemRequired', { n: issue.count });
+		case 'newPartNoType':
+			return t('validation.modal.newPartNoType');
 		case 'espTooSmall':
 			return t('validation.modal.espTooSmall', { size: issue.sizeMB });
+		case 'existingEspTooSmall':
+			return t('validation.modal.existingEspTooSmall', {
+				size: issue.sizeMB,
+				min: issue.minMB,
+			});
 		case 'systemTooSmall':
 			return t('validation.modal.systemTooSmall', { size: issue.sizeMB });
+		case 'lvmSystemTooSmall':
+			return t('validation.modal.lvmSystemTooSmall', {
+				size: issue.sizeMB,
+				min: issue.minMB,
+			});
 		case 'invalidType':
 			return t('validation.modal.invalidType', { type: issue.type });
 		case 'multipleRemaining':

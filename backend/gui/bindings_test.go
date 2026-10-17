@@ -60,6 +60,62 @@ func TestBindings_ManualMode(t *testing.T) {
 	}
 }
 
+func TestBindings_ValidateManualLayoutUsesLvmFlag(t *testing.T) {
+	a := NewApp(false)
+	a.lvm = true
+
+	layout := shared.ManualLayout{
+		Disk:          "/dev/vda",
+		DiskSizeMB:    20480,
+		DiskSizeBytes: 20480 * 1024 * 1024,
+		Partitions: []shared.ManualPartition{
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP},
+			{Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * 1024 * 1024, Type: shared.TypeSystem},
+		},
+	}
+	if err := a.ValidateManualLayout(layout); err == nil {
+		t.Fatal("ValidateManualLayout() = nil, want LVM floor error")
+	}
+}
+
+func TestBindings_SaveManualLayoutStoresCryptoFlags(t *testing.T) {
+	a := NewApp(false)
+	a.lvm = true
+	a.luks = true
+
+	a.SaveManualLayout(shared.ManualLayout{Disk: "/dev/vda"})
+	if !a.manualLayout.Lvm || !a.manualLayout.Luks {
+		t.Errorf("stored layout flags = lvm:%v luks:%v, want both true", a.manualLayout.Lvm, a.manualLayout.Luks)
+	}
+
+	// Disabling a toggle must clear a stale layout flag, not leave it enabled.
+	a.lvm = false
+	a.luks = false
+	a.SaveManualLayout(shared.ManualLayout{Disk: "/dev/vda", Lvm: true, Luks: true})
+	if a.manualLayout.Lvm || a.manualLayout.Luks {
+		t.Errorf("stale flags survived disable: lvm:%v luks:%v", a.manualLayout.Lvm, a.manualLayout.Luks)
+	}
+}
+
+func TestBindings_ValidateManualLayoutClearsDisabledLvm(t *testing.T) {
+	a := NewApp(false)
+	a.lvm = false
+
+	layout := shared.ManualLayout{
+		Disk:          "/dev/vda",
+		DiskSizeMB:    20480,
+		DiskSizeBytes: 20480 * 1024 * 1024,
+		Lvm:           true, // stale value from a layout loaded before the toggle was turned off
+		Partitions: []shared.ManualPartition{
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP},
+			{Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * 1024 * 1024, Type: shared.TypeSystem},
+		},
+	}
+	if err := a.ValidateManualLayout(layout); err != nil {
+		t.Fatalf("ValidateManualLayout() = %v, want nil with LVM disabled", err)
+	}
+}
+
 func TestBindings_GetDisksAndPartitions(t *testing.T) {
 	t.Setenv("FAKE_DISKS", "1")
 	a := NewApp(false)
@@ -88,12 +144,17 @@ func TestBindings_GetManualLayout(t *testing.T) {
 	defer primitives.SetCommandRunner(rec)()
 
 	a := NewApp(false)
+	a.lvm = true
+	a.luks = true
 	layout, err := a.GetManualLayout("/dev/vda")
 	if err != nil {
 		t.Fatalf("GetManualLayout: %v", err)
 	}
 	if layout.Disk != "/dev/vda" {
 		t.Errorf("layout.Disk = %q", layout.Disk)
+	}
+	if !layout.Lvm || !layout.Luks {
+		t.Errorf("layout flags = lvm:%v luks:%v, want both true", layout.Lvm, layout.Luks)
 	}
 	if len(layout.Partitions) != 2 {
 		t.Errorf("layout partitions = %d, want 2", len(layout.Partitions))

@@ -16,6 +16,8 @@ function resetState(): void {
 	installState.fileSystem = '';
 	installState.manualMode = false;
 	installState.manualLayout = null;
+	installState.luksEnabled = false;
+	installState.lvmEnabled = false;
 }
 
 function setManual(layout: ManualLayout): void {
@@ -40,7 +42,6 @@ describe('getPageValidationReasons — new-partition free space', () => {
 				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 80000, type: 'system' },
 			],
-			freeMB: 0,
 		});
 		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
 	});
@@ -54,7 +55,6 @@ describe('getPageValidationReasons — new-partition free space', () => {
 				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 99500, type: 'system' },
 			],
-			freeMB: 0,
 		});
 		// Over-allocation is still rejected (this also trips the disk-size check,
 		// since new + existing > disk), so just assert it does not silently pass.
@@ -119,7 +119,6 @@ describe('isPageValid — agrees with the modal reasons', () => {
 				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 99500, type: 'system' },
 			],
-			freeMB: 0,
 		});
 
 		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(false);
@@ -135,10 +134,41 @@ describe('isPageValid — agrees with the modal reasons', () => {
 				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 80000, type: 'system' },
 			],
-			freeMB: 0,
 		});
 
 		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(true);
 		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
+	});
+
+	it('uses the LVM System floor when the toggle is on', () => {
+		installState.lvmEnabled = true;
+		setManual({
+			disk: '/dev/sda',
+			diskSizeMB: 100000,
+			diskSizeBytes: 100000 * mib,
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '', sizeMB: 8192, type: 'system' },
+			],
+		});
+
+		const reasons = getPageValidationReasons(PAGE_IDS.DISK_SELECTION);
+		expect(reasons.some((reason) => reason.includes('LVM'))).toBe(true);
+	});
+
+	it('rejects an 8 GiB disk in manual mode', () => {
+		installState.disk = { size: 8 * 1024 * mib } as unknown as typeof installState.disk;
+		setManual({
+			disk: '/dev/sda',
+			diskSizeMB: 100000,
+			diskSizeBytes: 100000 * mib,
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '', sizeMB: 80000, type: 'system' },
+			],
+		});
+
+		const reasons = getPageValidationReasons(PAGE_IDS.DISK_SELECTION);
+		expect(reasons.some((reason) => reason.includes('manual partitioning'))).toBe(true);
 	});
 });

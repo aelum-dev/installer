@@ -63,17 +63,19 @@ func Apply(device string, params Params, format Formatter) ([]LV, error) {
 		fsType = shared.FileSystemBtrfs
 	}
 
-	// Idempotent retries: remove any group left behind by a prior attempt.
-	Teardown(shared.LvmVolumeGroup, []string{device})
-
 	sizeBytes, err := DeviceSizeBytes(device)
 	if err != nil {
 		return nil, err
 	}
+	// Check the floor before Teardown: a too-small device must not lose an
+	// existing `aelum` volume group on its way to the same size error.
 	if sizeBytes < shared.LvmVGMinBytes {
 		return nil, fmt.Errorf("LVM requires at least %d GiB of space (device %s has %d GiB)",
 			shared.LvmVGMinBytes>>30, device, sizeBytes>>30)
 	}
+
+	// Idempotent retries: remove any group left behind by a prior attempt.
+	Teardown(shared.LvmVolumeGroup, []string{device})
 
 	if out, err := primitives.Run(pvCreateArgs(device)...).CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("pvcreate %s failed: %w: %s", device, err, strings.TrimSpace(string(out)))

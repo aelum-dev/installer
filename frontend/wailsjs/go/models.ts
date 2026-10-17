@@ -136,11 +136,10 @@ export namespace shared {
 	    disk: string;
 	    diskSizeMB: number;
 	    lvm?: boolean;
+	    luks?: boolean;
 	    diskSizeBytes: number;
 	    sectorSizeBytes?: number;
 	    partitions: ManualPartition[];
-	    FreeMB: number;
-	    freeSectors: number;
 	    deletedPartitions?: ManualPartition[];
 	
 	    static createFrom(source: any = {}) {
@@ -152,11 +151,10 @@ export namespace shared {
 	        this.disk = source["disk"];
 	        this.diskSizeMB = source["diskSizeMB"];
 	        this.lvm = source["lvm"];
+	        this.luks = source["luks"];
 	        this.diskSizeBytes = source["diskSizeBytes"];
 	        this.sectorSizeBytes = source["sectorSizeBytes"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);
-	        this.FreeMB = source["FreeMB"];
-	        this.freeSectors = source["freeSectors"];
 	        this.deletedPartitions = this.convertValues(source["deletedPartitions"], ManualPartition);
 	    }
 	

@@ -398,9 +398,9 @@ func TestBuildActions_NoOverlapWithExisting(t *testing.T) {
 	}
 }
 
-// TestComputeLayout_FreeSpace checks that ComputeLayout presets every existing
-// partition to Preserve and derives free space correctly (total - sum - overhead).
-func TestComputeLayout_FreeSpace(t *testing.T) {
+// TestComputeLayout_PresetsPreserve checks that ComputeLayout presets every
+// existing partition to Preserve and records the disk geometry.
+func TestComputeLayout_PresetsPreserve(t *testing.T) {
 	shared.SetFakeDisks(true)
 	defer shared.SetFakeDisks(false)
 
@@ -415,21 +415,10 @@ func TestComputeLayout_FreeSpace(t *testing.T) {
 	if layout.DiskSizeMB != 40960 {
 		t.Errorf("layout.DiskSizeMB = %d, want 40960", layout.DiskSizeMB)
 	}
-
-	var sumMB int64
 	for _, p := range layout.Partitions {
 		if p.Type != "" {
 			t.Errorf("partition %s role = %q, want empty (untouched)", p.Path, p.Type)
 		}
-		sumMB += p.SizeMB
-	}
-
-	wantFree := layout.DiskSizeMB - sumMB
-	if wantFree < 0 {
-		wantFree = 0
-	}
-	if layout.FreeMB != wantFree {
-		t.Errorf("layout.FreeMB = %d, want %d", layout.FreeMB, wantFree)
 	}
 }
 
@@ -486,10 +475,10 @@ func TestDeleteOrder(t *testing.T) {
 	}
 }
 
-func TestValidate_NewPartitionRespectsFreeSectors(t *testing.T) {
-	// Free space is reported exactly (FreeSectors). A brand-new explicit root that
-	// fits the coarse MiB sum but exceeds the true free sectors must be rejected —
-	// this is the truncation bug: counting truncated MB overstates the free space.
+func TestValidate_NewPartitionRespectsExactFreeSpace(t *testing.T) {
+	// Free space is measured byte-exactly. A brand-new explicit root that fits
+	// the coarse MiB sum but exceeds the true free space must be rejected — the
+	// truncation bug was that counting truncated MB overstated free space.
 	const mib = 1024 * 1024
 	layout := shared.ManualLayout{
 		Disk:          "/dev/sda",
@@ -501,8 +490,6 @@ func TestValidate_NewPartitionRespectsFreeSectors(t *testing.T) {
 			{Index: 2, Path: "", SizeMB: 9488, Type: shared.TypeSystem},
 		},
 	}
-	usedBytes := 512*mib + (90000*mib + 500000)
-	layout.FreeSectors = int64((100000*mib - usedBytes) / 512)
 
 	// Coarse sum = 512+90000+9488 = 100000 == DiskSizeMB, so it passes that guard.
 	if sum := layout.Partitions[0].SizeMB + layout.Partitions[1].SizeMB + layout.Partitions[2].SizeMB; sum > layout.DiskSizeMB {
@@ -515,14 +502,15 @@ func TestValidate_NewPartitionRespectsFreeSectors(t *testing.T) {
 }
 
 // TestValidate_MinPartitionSizes checks the enforced floor for designated
-// partitions: an ESP must be at least 512 MiB and the system partition at least
-// 8 GiB (the disk floor). A "use all remaining space" row is checked against the
-// resolved free space in TestValidate_UseRemainingRespectsFloor.
+// partitions: a brand-new ESP must be at least 512 MiB, an existing ESP at
+// least 100 MiB, and the system partition at least 8 GiB (the disk floor). A
+// "use all remaining space" row is checked against the resolved free space in
+// TestValidate_UseRemainingRespectsFloor.
 func TestValidate_MinPartitionSizes(t *testing.T) {
 	const mib = 1024 * 1024
 	minESP := int64(shared.MinESPSizeBytes / mib)
+	minExistingESP := int64(shared.MinExistingESPSizeBytes / mib)
 	minSys := int64(shared.MinSystemPartitionBytes / mib) // 8192
-	tooSmallESP := int64(shared.MinESPSizeBytes / mib / 2)
 
 	make := func(esp, sys shared.ManualPartition) shared.ManualLayout {
 		return shared.ManualLayout{
@@ -533,8 +521,14 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		}
 	}
 
-	esp := func(sizeMB int64) shared.ManualPartition {
-		return shared.ManualPartition{Index: 0, Path: "/dev/sda1", SizeMB: sizeMB, SizeBytes: sizeMB * mib, Type: shared.TypeESP}
+	esp := func(sizeMB int64, brandNew bool) shared.ManualPartition {
+		part := shared.ManualPartition{Index: 0, SizeMB: sizeMB, Type: shared.TypeESP}
+		if brandNew {
+			return part
+		}
+		part.Path = "/dev/sda1"
+		part.SizeBytes = sizeMB * mib
+		return part
 	}
 	sys := func(sizeMB int64, brandNew bool) shared.ManualPartition {
 		part := shared.ManualPartition{Index: 1, SizeMB: sizeMB, Type: shared.TypeSystem}
@@ -551,12 +545,15 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		sys     shared.ManualPartition
 		wantErr bool
 	}{
-		{"system exactly 8 GiB", esp(minESP), sys(minSys, false), false},
-		{"existing system below 8 GiB", esp(minESP), sys(minSys-1, false), true},
-		{"brand-new system below 8 GiB", esp(minESP), sys(4096, true), true},
-		{"system use-remaining resolves above floor", esp(minESP), sys(0, true), false},
-		{"esp below 512 MiB", esp(tooSmallESP), sys(minSys, false), true},
-		{"esp exactly 512 MiB", esp(minESP), sys(minSys, false), false},
+		{"system exactly 8 GiB", esp(minESP, false), sys(minSys, false), false},
+		{"existing system below 8 GiB", esp(minESP, false), sys(minSys-1, false), true},
+		{"brand-new system below 8 GiB", esp(minESP, false), sys(4096, true), true},
+		{"system use-remaining resolves above floor", esp(minESP, false), sys(0, true), false},
+		{"existing esp below 100 MiB", esp(minExistingESP-1, false), sys(minSys, false), true},
+		{"existing esp exactly 100 MiB", esp(minExistingESP, false), sys(minSys, false), false},
+		{"existing 256 MiB esp is reusable", esp(256, false), sys(minSys, false), false},
+		{"brand-new esp below 512 MiB", esp(minESP-1, true), sys(minSys, false), true},
+		{"brand-new esp exactly 512 MiB", esp(minESP, true), sys(minSys, false), false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -664,12 +661,10 @@ func TestBuildActions_UseRemainingRespectsFloor(t *testing.T) {
 	}
 }
 
-// TestValidate_NewPartitionFreesSpaceFromDeletedRow reproduces a regression
-// where Validate used layout.FreeSectors (stamped by ComputeLayout at disk-load
-// time and never updated after edits) for its strict new-partition check. When
-// the user deletes an existing partition and adds a brand-new one in its place,
-// the free space is larger than the stale value reflects, so the old code
-// rejected a plan the frontend itself considered valid.
+// TestValidate_NewPartitionFreesSpaceFromDeletedRow guards the case where the
+// user deletes an existing partition and adds a brand-new one in its place: the
+// freed space must be counted even though it was not free when the layout was
+// loaded.
 func TestValidate_NewPartitionFreesSpaceFromDeletedRow(t *testing.T) {
 	const mib = 1024 * 1024
 	diskMB := int64(20480)
@@ -685,10 +680,6 @@ func TestValidate_NewPartitionFreesSpaceFromDeletedRow(t *testing.T) {
 			{Index: 1, Path: "", SizeMB: 19960, Type: shared.TypeSystem},
 		},
 	}
-	// Preserve the stale load-time free space (only ~1 MB really free today) to
-	// prove the check is recomputed from the live plan, not read from FreeSectors.
-	layout.FreeSectors = 2081
-
 	if err := Validate(layout); err != nil {
 		t.Fatalf("expected the replacement partition to fit the freed space, got: %v", err)
 	}

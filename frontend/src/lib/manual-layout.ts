@@ -7,9 +7,28 @@
 
 import type { ManualLayout, ManualPartition, PartitionType } from '$lib/types';
 import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
-import { GPTBackupBytes, GPTPrefixBytes, MinDiskSizeBytes, MinESPSizeBytes } from '$lib/constants';
+import {
+	GPTBackupBytes,
+	GPTPrefixBytes,
+	MinESPSizeBytes,
+	MinExistingESPSizeBytes,
+	MinLvmLuksSystemPartitionBytes,
+	MinLvmSystemPartitionBytes,
+	MinSystemPartitionBytes,
+} from '$lib/constants';
 
 const BYTES_PER_MB = 1024 * 1024;
+
+/** Storage/encryption choices that change the System-partition floor. */
+export interface ManualLayoutOptions {
+	lvm?: boolean;
+	luks?: boolean;
+}
+
+function systemFloorBytes(options: ManualLayoutOptions): number {
+	if (!options.lvm) return MinSystemPartitionBytes;
+	return options.luks ? MinLvmLuksSystemPartitionBytes : MinLvmSystemPartitionBytes;
+}
 
 // The two regions a GPT reserves and the backend never allocates: the trailing
 // backup header and the leading header + protective MBR. Sourced from the
@@ -69,8 +88,11 @@ export function hasRequiredTypes(layout: ManualLayout | null): boolean {
  * remaining space", reported as -1 so callers can exempt it from a fixed floor.
  */
 function partitionSizeMB(p: ManualPartition): number {
-	if (p.sizeMB === 0) return -1;
+	// Check sizeBytes first: an existing partition smaller than 1 MiB has
+	// sizeMB === 0 but a real SizeBytes, and must not be mistaken for a
+	// "use all remaining space" row.
 	if (p.path && p.sizeBytes) return Math.floor(p.sizeBytes / BYTES_PER_MB);
+	if (p.sizeMB === 0) return -1;
 	return p.sizeMB;
 }
 
@@ -78,8 +100,11 @@ function partitionSizeMB(p: ManualPartition): number {
 export type ManualLayoutIssue =
 	| { kind: 'espCount'; count: number }
 	| { kind: 'systemCount'; count: number }
+	| { kind: 'newPartNoType' }
 	| { kind: 'espTooSmall'; sizeMB: number }
+	| { kind: 'existingEspTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'systemTooSmall'; sizeMB: number }
+	| { kind: 'lvmSystemTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'invalidType'; type: string }
 	| { kind: 'multipleRemaining' }
 	| { kind: 'partitionAfterRemaining' }
@@ -91,8 +116,17 @@ export type ManualLayoutIssue =
  * backend. Empty means valid. Kept as data (not translated strings) so the
  * same checks drive both the boolean gate and the explanatory modal.
  */
-export function manualLayoutIssues(layout: ManualLayout): ManualLayoutIssue[] {
+export function manualLayoutIssues(
+	layout: ManualLayout,
+	options: ManualLayoutOptions = {},
+): ManualLayoutIssue[] {
 	const issues: ManualLayoutIssue[] = [];
+	// Explicit options win; otherwise fall back to the flags carried on the
+	// layout. Page validation passes the live toggles so a changed toggle is
+	// respected even when the saved layout still has the old value.
+	const lvm = options.lvm ?? layout.lvm ?? false;
+	const luks = options.luks ?? layout.luks ?? false;
+	const systemFloorMB = systemFloorBytes({ lvm, luks }) / BYTES_PER_MB;
 
 	const espCount = typeCount(layout, TYPE_ESP);
 	const sysCount = typeCount(layout, TYPE_SYSTEM);
@@ -102,6 +136,12 @@ export function manualLayoutIssues(layout: ManualLayout): ManualLayoutIssue[] {
 	const freeMB = computeFreeMB(layout);
 
 	for (const p of layout.partitions) {
+		// Draft rows are never created by buildActions. Require a role instead of
+		// silently reserving space for a partition install will not make.
+		if (!p.path && !p.type) {
+			issues.push({ kind: 'newPartNoType' });
+		}
+
 		const sizeMB = partitionSizeMB(p);
 		if (sizeMB < 0) {
 			// "Use all remaining space": the floor applies to the resolved free
@@ -110,27 +150,48 @@ export function manualLayoutIssues(layout: ManualLayout): ManualLayoutIssue[] {
 			if (!p.path && p.type === TYPE_ESP && freeMB < MinESPSizeBytes / BYTES_PER_MB) {
 				issues.push({ kind: 'espTooSmall', sizeMB: freeMB });
 			}
-			if (!p.path && p.type === TYPE_SYSTEM && freeMB < MinDiskSizeBytes / BYTES_PER_MB) {
-				issues.push({ kind: 'systemTooSmall', sizeMB: freeMB });
+			if (!p.path && p.type === TYPE_SYSTEM && freeMB < systemFloorMB) {
+				issues.push(
+					lvm
+						? { kind: 'lvmSystemTooSmall', sizeMB: freeMB, minMB: systemFloorMB }
+						: { kind: 'systemTooSmall', sizeMB: freeMB },
+				);
 			}
 			continue;
 		}
 
-		if (p.type === TYPE_ESP && sizeMB < MinESPSizeBytes / BYTES_PER_MB) {
-			issues.push({ kind: 'espTooSmall', sizeMB });
+		if (p.type === TYPE_ESP) {
+			// Existing ESPs are often Windows-created at 100-300 MiB; only require
+			// the full 512 MiB floor for a brand-new ESP.
+			const floorMB = (p.path ? MinExistingESPSizeBytes : MinESPSizeBytes) / BYTES_PER_MB;
+			if (sizeMB < floorMB) {
+				issues.push(
+					p.path
+						? { kind: 'existingEspTooSmall', sizeMB, minMB: floorMB }
+						: { kind: 'espTooSmall', sizeMB },
+				);
+			}
 		}
-		if (p.type === TYPE_SYSTEM && sizeMB < MinDiskSizeBytes / BYTES_PER_MB) {
-			issues.push({ kind: 'systemTooSmall', sizeMB });
+		if (p.type === TYPE_SYSTEM && sizeMB < systemFloorMB) {
+			issues.push(
+				lvm
+					? { kind: 'lvmSystemTooSmall', sizeMB, minMB: systemFloorMB }
+					: { kind: 'systemTooSmall', sizeMB },
+			);
 		}
 		if (p.type && p.type !== TYPE_ESP && p.type !== TYPE_SYSTEM && p.type !== 'preserve') {
 			issues.push({ kind: 'invalidType', type: p.type });
 		}
 	}
 
-	const remainingCount = layout.partitions.filter((p) => p.sizeMB === 0 && p.type).length;
+	// Only a brand-new row can be a "use all remaining space" request; an
+	// existing sub-1-MiB partition also has sizeMB === 0 but is not one.
+	const remainingCount = layout.partitions.filter(
+		(p) => !p.path && p.sizeMB === 0 && p.type,
+	).length;
 	if (remainingCount > 1) issues.push({ kind: 'multipleRemaining' });
 
-	const remainingIndex = layout.partitions.findIndex((p) => p.sizeMB === 0);
+	const remainingIndex = layout.partitions.findIndex((p) => !p.path && p.sizeMB === 0);
 	if (remainingIndex >= 0 && remainingIndex < layout.partitions.length - 1) {
 		issues.push({ kind: 'partitionAfterRemaining' });
 	}
@@ -168,9 +229,12 @@ export function manualLayoutIssues(layout: ManualLayout): ManualLayoutIssue[] {
  * === 0`; it intentionally includes the free-space and disk-size checks so the
  * UI gate can never let the backend reject a plan it showed as valid.
  */
-export function isManualLayoutValid(layout: ManualLayout | null): boolean {
+export function isManualLayoutValid(
+	layout: ManualLayout | null,
+	options: ManualLayoutOptions = {},
+): boolean {
 	if (!layout) return false;
-	return manualLayoutIssues(layout).length === 0;
+	return manualLayoutIssues(layout, options).length === 0;
 }
 
 /** Set a partition's type by row index. */

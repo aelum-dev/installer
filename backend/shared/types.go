@@ -153,13 +153,16 @@ type ManualPartition struct {
 }
 
 // ManualLayout is the user-designed manual partition plan for one disk.
-// FreeMB is recomputed from disk total on every edit, never serialized.
 type ManualLayout struct {
 	Disk       string `json:"disk"`
 	DiskSizeMB int64  `json:"diskSizeMB"`
 	// Lvm enables LVM on the designated System partition (dualboot-safe): the
 	// System partition becomes a PV in the `aelum` VG with root + home LVs.
 	Lvm bool `json:"lvm,omitempty"`
+	// Luks is a validation hint: true when the System partition is encrypted.
+	// Apply reconciles it from ctx.Luks; the GUI/CLI set it before validation so
+	// the LUKS header reserve is included in the System-partition floor.
+	Luks bool `json:"luks,omitempty"`
 	// DiskSizeBytes is the exact total disk size in bytes. Free-space math that
 	// must survive existing-partitions being rounded down to MiB uses it.
 	DiskSizeBytes int64 `json:"diskSizeBytes"`
@@ -168,10 +171,6 @@ type ManualLayout struct {
 	// math must use it. Zero means "unknown" and is treated as 512.
 	SectorSizeBytes int64             `json:"sectorSizeBytes,omitempty"`
 	Partitions      []ManualPartition `json:"partitions"`
-	FreeMB          int64             // recomputed from disk total; not serialized
-	// FreeSectors is the exact unallocated space in 512-byte sectors, derived
-	// from the raw byte totals so it never suffers MiB truncation.
-	FreeSectors int64 `json:"freeSectors"`
 	// DeletedPartitions holds partitions the user removed from the layout. They
 	// are kept (rather than dropped) so Apply can delete them from the disk with
 	// `sgdisk -d`. The frontend moves a row here when the user clicks delete.

@@ -110,12 +110,21 @@ const MinDiskSizeBytes = MinDiskSizeGB * 1024 * 1024 * 1024
 // without squeezing the ESP.
 const MinESPSizeBytes = 512 * 1024 * 1024
 
+// MinExistingESPSizeBytes is the smallest *existing* ESP the manual installer
+// will reuse (100 MiB). Existing ESPs are commonly 100-300 MiB because Windows
+// created them; requiring the new-ESP 512 MiB floor would reject every dual-boot
+// machine with a Windows-made ESP. The bootloader step still has to fit the
+// kernel and initrd, so a full existing ESP can fail later with a clear error.
+const MinExistingESPSizeBytes = 100 * 1024 * 1024
+
 // MinSystemPartitionBytes is the smallest size the OS partition (Boot/System) may
 // be: the same 8 GiB floor as the disk itself. A smaller root cannot hold the
 // base + desktop packages, so the manual layout rejects it before install.
 // Note: a LUKS2 root loses ~16 MiB to its header before mkfs, so the *usable*
 // root floor is marginally lower; that is not adjusted for because it is
-// negligible (0.2% of 8 GiB) and the floor is already conservative.
+// negligible (0.2% of 8 GiB) and the floor is already conservative. When LVM is
+// enabled the System partition becomes a PV and uses the higher
+// MinLvmSystemPartitionBytes floor instead; MinSystemPartitionSize selects it.
 const MinSystemPartitionBytes = MinDiskSizeBytes
 
 // --- Filesystem types --------------------------------------------------------
@@ -229,6 +238,13 @@ const GPTPrefixBytes = 1024 * 1024
 // partition whose end sits just before the last usable sector. Expressed in
 // bytes so it scales with the logical sector size.
 const GPTBackupBytes = 128 * 1024
+
+// MinManualDiskSizeBytes is the smallest disk that can hold the smallest valid
+// manual layout: an 8 GiB System partition, an existing 100 MiB ESP, and the
+// GPT prefix/backup. A disk below this can pass the automatic 8 GiB disk check
+// but can never satisfy the manual partition floors, so manual mode rejects it
+// up front with a specific message.
+const MinManualDiskSizeBytes = MinSystemPartitionBytes + MinExistingESPSizeBytes + GPTPrefixBytes + GPTBackupBytes
 
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
 var GPTTypeGUIDs = struct {
@@ -404,6 +420,11 @@ const (
 	LuksIterTimeMs = 2000
 )
 
+// LuksHeaderReserveBytes is the space a LUKS2 header can consume before the
+// decrypted mapper is exposed. The default metadata area is 16 MiB; 32 MiB is
+// reserved so the mapper still meets an LVM floor even after alignment slack.
+const LuksHeaderReserveBytes = 32 * 1024 * 1024
+
 // --- LVM (logical volume management) ---------------------------------------
 // LVM is an opt-in alternative to putting the filesystem directly on the root
 // partition: the root partition becomes a physical volume (PV) in a volume group
@@ -432,7 +453,30 @@ const LvmRootMinBytes = 8 * 1024 * 1024 * 1024
 
 // LvmVGMinBytes is the smallest volume group the installer will create
 // (16 GiB): enough for a 8 GiB root LV and a 8 GiB home LV.
-const LvmVGMinBytes = 16 << 30
+const LvmVGMinBytes = 16 * 1024 * 1024 * 1024
+
+// MinLvmSystemPartitionBytes is the System-partition floor when LVM is enabled:
+// the partition becomes the PV, so it must be large enough to build the 16 GiB
+// volume group the LVM sizing rule requires.
+const MinLvmSystemPartitionBytes = LvmVGMinBytes
+
+// MinLvmLuksSystemPartitionBytes is the System-partition floor for LUKS + LVM.
+// The mapper is smaller than the raw partition by the LUKS2 header, so the raw
+// partition must include the header reserve on top of the LVM floor.
+const MinLvmLuksSystemPartitionBytes = LvmVGMinBytes + LuksHeaderReserveBytes
+
+// MinSystemPartitionSize returns the System-partition floor for the chosen
+// storage stack. LVM turns the partition into a PV and needs a 16 GiB VG; a
+// LUKS2 layer underneath that PV reduces the mapper by the header reserve.
+func MinSystemPartitionSize(lvm, luks bool) int64 {
+	if !lvm {
+		return MinSystemPartitionBytes
+	}
+	if luks {
+		return MinLvmLuksSystemPartitionBytes
+	}
+	return MinLvmSystemPartitionBytes
+}
 
 // LvmRootLvPath is the device-mapper path of the root logical volume.
 const LvmRootLvPath = "/dev/mapper/" + LvmVolumeGroup + "-" + LvmRootVolume

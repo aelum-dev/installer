@@ -254,9 +254,10 @@ Welcome (language select)
 ```
 
 ## Constants Reference
-- Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram)
+- Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual partitioning needs `shared.MinManualDiskSizeBytes` (~8.1 GiB) because it also needs an ESP and GPT overhead
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
-- ESP floor: `shared.MinESPSizeBytes` = 512 MiB, enforced for explicit-size and "use remaining" rows alike
+- ESP floor: new ESP `shared.MinESPSizeBytes` = 512 MiB; reused existing ESP `shared.MinExistingESPSizeBytes` = 100 MiB (Windows-created ESPs are often 100–300 MiB)
+- System floor: 8 GiB normally; LVM uses `shared.MinLvmSystemPartitionBytes` = 16 GiB, plus `shared.LuksHeaderReserveBytes` when LUKS+LVM is enabled
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Default username: `shared.DefaultCLIUsername` = "aelum"

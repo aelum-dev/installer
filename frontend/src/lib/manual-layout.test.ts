@@ -18,7 +18,6 @@ function baseLayout(over: Partial<ManualLayout> = {}): ManualLayout {
 			{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 			{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 		],
-		freeMB: 0,
 		...over,
 	};
 }
@@ -38,10 +37,30 @@ describe('isManualLayoutValid', () => {
 		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 
-	it('rejects an ESP below 512 MiB', () => {
+	it('accepts a 256 MiB existing ESP (dual-boot reuse)', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 256, sizeBytes: 256 * mib, type: 'esp' },
+				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
+			],
+		});
+		expect(isManualLayoutValid(layout)).toBe(true);
+	});
+
+	it('rejects an existing ESP below 100 MiB', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 99, sizeBytes: 99 * mib, type: 'esp' },
+				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
+			],
+		});
+		expect(isManualLayoutValid(layout)).toBe(false);
+	});
+
+	it('rejects a brand-new ESP below 512 MiB', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '', sizeMB: 256, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
@@ -161,8 +180,66 @@ describe('manual layout geometry', () => {
 			],
 		});
 		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toEqual([
-			'espTooSmall',
+			'existingEspTooSmall',
 			'systemTooSmall',
 		]);
+	});
+});
+
+describe('manual layout guards', () => {
+	it('rejects a brand-new partition with no role', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
+				{ index: 2, path: '', sizeMB: 1024, type: '' },
+			],
+		});
+		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('newPartNoType');
+	});
+
+	it('enforces the LVM System floor', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '', sizeMB: 8192, type: 'system' },
+			],
+		});
+		expect(manualLayoutIssues(layout, { lvm: true }).map((issue) => issue.kind)).toContain(
+			'lvmSystemTooSmall',
+		);
+	});
+
+	it('uses the layout LVM flag when no explicit options are passed', () => {
+		const layout = baseLayout({
+			lvm: true,
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '', sizeMB: 8192, type: 'system' },
+			],
+		});
+		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('lvmSystemTooSmall');
+	});
+
+	it('adds the LUKS header reserve to the LVM System floor', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '', sizeMB: 16384, type: 'system' },
+			],
+		});
+		expect(manualLayoutIssues(layout, { lvm: true, luks: true }).map((issue) => issue.kind)).toContain(
+			'lvmSystemTooSmall',
+		);
+	});
+
+	it('rejects an existing sub-1-MiB ESP instead of treating it as use-remaining', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 0, sizeBytes: 512 * 1024, type: 'esp' },
+				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
+			],
+		});
+		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('existingEspTooSmall');
 	});
 });

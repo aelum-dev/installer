@@ -80,9 +80,6 @@ func TestComputeLayout(t *testing.T) {
 			t.Errorf("existing partition %s has role %q, want empty", p.Path, p.Type)
 		}
 	}
-	if layout.FreeMB <= 0 || layout.FreeSectors <= 0 {
-		t.Errorf("free space not derived: FreeMB=%d FreeSectors=%d", layout.FreeMB, layout.FreeSectors)
-	}
 }
 
 func TestComputeLayout_NoDiskID(t *testing.T) {
@@ -129,6 +126,30 @@ func TestReconcileLvm(t *testing.T) {
 			reconcileLvm(ctx, layout)
 			if ctx.Lvm != tt.wantCtxLvm || layout.Lvm != tt.wantLayoutLvm {
 				t.Errorf("reconcileLvm() = ctx:%v layout:%v, want ctx:%v layout:%v", ctx.Lvm, layout.Lvm, tt.wantCtxLvm, tt.wantLayoutLvm)
+			}
+		})
+	}
+}
+
+func TestReconcileLuks(t *testing.T) {
+	tests := []struct {
+		name           string
+		ctx, layout    bool
+		wantCtxLuks    bool
+		wantLayoutLuks bool
+	}{
+		{"neither", false, false, false, false},
+		{"ctx only", true, false, true, true},
+		{"layout only", false, true, true, true},
+		{"both", true, true, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := &shared.InstallContext{Luks: tt.ctx}
+			layout := &shared.ManualLayout{Luks: tt.layout}
+			reconcileLuks(ctx, layout)
+			if ctx.Luks != tt.wantCtxLuks || layout.Luks != tt.wantLayoutLuks {
+				t.Errorf("reconcileLuks() = ctx:%v layout:%v, want ctx:%v layout:%v", ctx.Luks, layout.Luks, tt.wantCtxLuks, tt.wantLayoutLuks)
 			}
 		})
 	}

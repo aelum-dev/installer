@@ -8,9 +8,12 @@ import (
 
 // Validate checks a ManualLayout for the invariants required to install:
 //   - exactly one ESP and exactly one System partition
+//   - every brand-new row carries a role (ESP or System)
 //   - the sum of partition sizes must fit the disk
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
 //   - every type must be a known value
+//   - designated partitions meet their role floor (the System floor rises for
+//     LVM and LUKS+LVM; an existing ESP may use the 100 MiB reuse floor)
 func Validate(layout shared.ManualLayout) error {
 	// Debug: record the layout and every number behind the size checks so a
 	// rejection that only happens on real disk geometry can be traced from the
@@ -20,11 +23,16 @@ func Validate(layout shared.ManualLayout) error {
 	for _, p := range layout.Partitions {
 		partsDebug += fmt.Sprintf("[path=%q sizeMB=%d type=%q] ", p.Path, p.SizeMB, p.Type)
 	}
-	shared.GetLogger().Info("ValidateManualLayout: diskMB=%d diskBytes=%d freeMB=%d freeSectors=%d parts=%s",
-		layout.DiskSizeMB, layout.DiskSizeBytes, layout.FreeMB, layout.FreeSectors, partsDebug)
+	shared.GetLogger().Info("ValidateManualLayout: diskMB=%d diskBytes=%d parts=%s",
+		layout.DiskSizeMB, layout.DiskSizeBytes, partsDebug)
+
+	if err := validateManualDiskMinimum(layout); err != nil {
+		return err
+	}
 
 	ss := layoutSectorSize(&layout)
 	spm := sectorsPerMiB(ss)
+	systemFloorBytes := shared.MinSystemPartitionSize(layout.Lvm, layout.Luks)
 
 	var esp, sys, zeroSize int
 	var newSectors int64
@@ -33,6 +41,12 @@ func Validate(layout shared.ManualLayout) error {
 	// be nothing left to carve, and buildActions would place it past the disk.
 	seenRemaining := false
 	for _, p := range layout.Partitions {
+		// A brand-new row with no role is a draft: buildActions skips it, so
+		// keeping it in the plan would make validation reserve space for a
+		// partition install never creates. Require a role (or deletion) instead.
+		if p.Path == "" && p.Type == "" {
+			return fmt.Errorf("new partition must be assigned as ESP or System (or deleted)")
+		}
 		switch p.Type {
 		case shared.TypeESP:
 			esp++
@@ -43,29 +57,8 @@ func Validate(layout shared.ManualLayout) error {
 		default:
 			return fmt.Errorf("invalid partition type %q (want esp or system)", p.Type)
 		}
-		if p.SizeMB < 0 {
-			return fmt.Errorf("partition size cannot be negative")
-		}
-
-		// Designated Boot/System partitions must be large enough to be usable. A
-		// SizeMB of 0 means "use all remaining space", whose resulting size is
-		// whatever is left on the disk, so it is exempt from the floor. Existing
-		// rows carry their exact byte size; brand-new rows are whole MiB.
-		if p.SizeMB != 0 {
-			sizeBytes := p.SizeBytes
-			if sizeBytes == 0 {
-				sizeBytes = p.SizeMB * 1024 * 1024
-			}
-			switch p.Type {
-			case shared.TypeESP:
-				if sizeBytes < shared.MinESPSizeBytes {
-					return fmt.Errorf("ESP partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(shared.MinESPSizeBytes))
-				}
-			case shared.TypeSystem:
-				if sizeBytes < shared.MinSystemPartitionBytes {
-					return fmt.Errorf("system partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(shared.MinSystemPartitionBytes))
-				}
-			}
+		if err := validatePartitionSize(p, systemFloorBytes); err != nil {
+			return err
 		}
 
 		// A SizeMB of 0 requests "use all remaining space"; at most one is allowed.
@@ -114,16 +107,15 @@ func Validate(layout shared.ManualLayout) error {
 	// Strict guard, in sectors: brand-new explicit partitions must fit the free
 	// space, with the leading GPT prefix and the trailing backup region excluded.
 	//
-	// Free space is recomputed from the live layout rather than taken from
-	// layout.FreeSectors: that value is stamped by ComputeLayout at disk-load time
-	// and is never updated once the user edits the plan. Deleting an existing row
-	// and adding a brand-new one in its place must free real room for the new
-	// partition, so the check has to measure free space against the partitions that
-	// remain in the plan (existing ones kept verbatim). Existing partitions are
-	// read by exact byte size when known so rounding them down to MiB can't
-	// overstate how much room is left; the MiB fallback covers layouts without
-	// byte geometry. Brand-new rows are skipped here because newSectors already
-	// accounts for exactly the space they consume.
+	// Free space is recomputed from the live layout rather than cached at
+	// disk-load time. Deleting an existing row and adding a brand-new one in its
+	// place must free real room for the new partition, so the check has to
+	// measure free space against the partitions that remain in the plan
+	// (existing ones kept verbatim). Existing partitions are read by exact byte
+	// size when known so rounding them down to MiB can't overstate how much room
+	// is left; the MiB fallback covers layouts without byte geometry. Brand-new
+	// rows are skipped here because newSectors already accounts for exactly the
+	// space they consume.
 	var reservedSectors int64
 	for _, p := range layout.Partitions {
 		if p.Path == "" {
@@ -173,6 +165,41 @@ func Validate(layout shared.ManualLayout) error {
 	return nil
 }
 
+// validatePartitionSize enforces the non-negative size and the role floor on a
+// single row. A SizeMB of 0 means "use all remaining space", whose final size is
+// unknown here, so only the resolved-size check in validateUseRemainingFloors
+// applies. Check when either representation is present: an existing partition
+// smaller than 1 MiB has SizeMB == 0 but a real SizeBytes and must still be
+// rejected.
+func validatePartitionSize(p shared.ManualPartition, systemFloorBytes int64) error {
+	if p.SizeMB < 0 {
+		return fmt.Errorf("partition size cannot be negative")
+	}
+	if p.SizeMB == 0 && p.SizeBytes == 0 {
+		return nil
+	}
+
+	sizeBytes := p.SizeBytes
+	if sizeBytes == 0 {
+		sizeBytes = p.SizeMB * 1024 * 1024
+	}
+	switch p.Type {
+	case shared.TypeESP:
+		espFloor := int64(shared.MinESPSizeBytes)
+		if p.Path != "" {
+			espFloor = shared.MinExistingESPSizeBytes
+		}
+		if sizeBytes < espFloor {
+			return fmt.Errorf("ESP partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(espFloor))
+		}
+	case shared.TypeSystem:
+		if sizeBytes < systemFloorBytes {
+			return fmt.Errorf("system partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(systemFloorBytes))
+		}
+	}
+	return nil
+}
+
 // validateUseRemainingFloors enforces the role floor on a brand-new "use all
 // remaining space" row (SizeMB 0). Its final size is only known after explicit
 // new partitions are subtracted from the usable space, so the per-row pass in
@@ -188,9 +215,25 @@ func validateUseRemainingFloors(layout shared.ManualLayout, usableSectors, newSe
 		if p.Path != "" || p.SizeMB != 0 || (p.Type != shared.TypeESP && p.Type != shared.TypeSystem) {
 			continue
 		}
-		if min := minPartitionSizeMB(p.Type); remainingMB < min {
+		if min := minPartitionSizeMB(p.Type, layout.Lvm, layout.Luks); remainingMB < min {
 			return fmt.Errorf("%s partition would have only %d MB of free space, below the %d MB minimum", p.Type, remainingMB, min)
 		}
+	}
+	return nil
+}
+
+// validateManualDiskMinimum rejects a disk that cannot hold even the smallest
+// valid manual layout (8 GiB System + existing 100 MiB ESP + GPT). Disk
+// selection only enforces the automatic 8 GiB floor, which leaves a manual plan
+// on an 8 GiB disk impossible to satisfy.
+func validateManualDiskMinimum(layout shared.ManualLayout) error {
+	diskBytes := layout.DiskSizeBytes
+	if diskBytes == 0 && layout.DiskSizeMB > 0 {
+		diskBytes = layout.DiskSizeMB * 1024 * 1024
+	}
+	if diskBytes > 0 && diskBytes < shared.MinManualDiskSizeBytes {
+		return fmt.Errorf("disk is too small for manual partitioning: %s (minimum %s required)",
+			shared.FormatSize(diskBytes), shared.FormatSize(shared.MinManualDiskSizeBytes))
 	}
 	return nil
 }

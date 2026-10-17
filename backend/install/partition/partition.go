@@ -58,26 +58,17 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 	// Record the disk's logical sector size so all downstream sector math uses
 	// the same unit sgdisk reports in (512e vs 4Kn).
 	layout.SectorSizeBytes = shared.LogicalSectorSize(diskID)
-	var usedBytes int64
 	for i, p := range partitions {
-		sizeBytes := p.Size
-		usedBytes += sizeBytes
 		layout.Partitions = append(layout.Partitions, shared.ManualPartition{
 			Index:          i,
 			Path:           p.Path,
-			SizeMB:         bytesToMB(sizeBytes),
-			SizeBytes:      sizeBytes,
+			SizeMB:         bytesToMB(p.Size),
+			SizeBytes:      p.Size,
 			ExistingFstype: p.Fstype,
 			// Role is empty → untouched (dualboot-safe).
 		})
 	}
 
-	freeBytes := diskSizeBytes - usedBytes
-	if freeBytes < 0 {
-		freeBytes = 0
-	}
-	layout.FreeMB = bytesToMB(freeBytes)
-	layout.FreeSectors = freeBytes / layout.SectorSizeBytes
 	return layout, nil
 }
 
@@ -94,13 +85,23 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	if diskID == "" {
 		return fmt.Errorf("manual layout has no disk")
 	}
+	layout.Disk = diskID
 	// A layout from the CLI may omit the sector size; read it so the placement
 	// math uses the same sector unit sgdisk reports in (512e vs 4Kn).
 	ensureSectorSize(layout, diskID)
 
 	reconcileLvm(ctx, layout)
+	reconcileLuks(ctx, layout)
 
 	if err := Validate(*layout); err != nil {
+		return err
+	}
+
+	// Preflight exact placement against the post-delete geometry before any
+	// destructive sgdisk -d. Validate is totals-only; this mirrors
+	// ValidateFeasible so a caller that skipped the GUI/CLI preflight cannot lose
+	// partitions to a fragmented plan that buildActions will reject later.
+	if err := preflightPlacement(diskID, layout); err != nil {
 		return err
 	}
 
@@ -147,25 +148,10 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	// Create any brand-new partitions first.
-	for _, a := range actions {
-		if !a.isNew {
-			continue
-		}
-		if err := createPartition(diskID, a); err != nil {
-			return err
-		}
-	}
-
-	// Ensure existing ESP/System partitions carry the correct GPT type GUID.
-	for _, a := range actions {
-		if a.isNew {
-			continue
-		}
-		out, err := primitives.Run("sgdisk", "-t", fmt.Sprintf("%d:%s", a.num, a.guid), diskID).CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("sgdisk set type for existing partition %d: %w: %s", a.num, err, string(out))
-		}
+	// Create brand-new partitions and stamp the correct GPT type on the ones we
+	// reuse.
+	if err := applyPartitionTable(diskID, actions); err != nil {
+		return err
 	}
 
 	// Refresh the kernel partition table.
@@ -233,6 +219,46 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	return nil
 }
 
+// applyPartitionTable creates every brand-new partition, then sets the expected
+// GPT type GUID on each existing ESP/System action. Existing partitions are
+// never recreated or renumbered; only their type is adjusted so firmware and
+// bootloader discovery see the role the user assigned.
+func applyPartitionTable(diskID string, actions []formatAction) error {
+	for _, a := range actions {
+		if !a.isNew {
+			continue
+		}
+		if err := createPartition(diskID, a); err != nil {
+			return err
+		}
+	}
+	for _, a := range actions {
+		if a.isNew {
+			continue
+		}
+		out, err := primitives.Run("sgdisk", "-t", fmt.Sprintf("%d:%s", a.num, a.guid), diskID).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("sgdisk set type for existing partition %d: %w: %s", a.num, err, string(out))
+		}
+	}
+	return nil
+}
+
+// preflightPlacement simulates the exact post-delete placement before Apply
+// removes anything. It is a no-op when the plan neither creates nor deletes a
+// partition; otherwise it reads the current geometry and runs the same
+// buildActions simulation ValidateFeasible uses.
+func preflightPlacement(diskID string, layout *shared.ManualLayout) error {
+	if len(layout.DeletedPartitions) == 0 && !hasNewPartitions(*layout) {
+		return nil
+	}
+	sectors, err := partitionSectors(diskID)
+	if err != nil {
+		return err
+	}
+	return feasible(*layout, sectors)
+}
+
 // reconcileLvm reconciles the LVM decision, which reaches the manual path two
 // ways: the --lvm toggle (ctx.Lvm, from the frontend/CLI) and the layout's own
 // flag (layout.Lvm, which drives the System partition's GPT type in
@@ -241,6 +267,16 @@ func reconcileLvm(ctx *shared.InstallContext, layout *shared.ManualLayout) {
 	if ctx.Lvm || layout.Lvm {
 		ctx.Lvm = true
 		layout.Lvm = true
+	}
+}
+
+// reconcileLuks reconciles the LUKS decision the same way: either the --luks
+// toggle (ctx.Luks) or the layout's validation hint can enable it. Validate uses
+// the flag to include the LUKS header reserve in the System-partition floor.
+func reconcileLuks(ctx *shared.InstallContext, layout *shared.ManualLayout) {
+	if ctx.Luks || layout.Luks {
+		ctx.Luks = true
+		layout.Luks = true
 	}
 }
 

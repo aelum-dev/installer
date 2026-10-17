@@ -265,6 +265,12 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 			log.Error("invalid manual layout: %v", err)
 			return 1
 		}
+		// The CLI flags are authoritative before the feasibility check: a stale
+		// layout field must not enable LVM/LUKS after the user disabled them, and
+		// validation must see the LVM/LUKS floors now rather than after partitions
+		// are touched.
+		layout.Lvm = lvm
+		layout.Luks = luks
 		if err := partition.ValidateFeasible(*layout); err != nil {
 			log.Error("%v", err)
 			return 1

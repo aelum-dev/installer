@@ -40,12 +40,21 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 	if diskSectors == 0 {
 		diskSectors = layout.DiskSizeMB * spm
 	}
-	lastSector := diskSectors - backupSectors(ss)
+	// Reserve exactly backupSectors(ss) trailing sectors: the last usable LBA
+	// is diskSectors-1, so the last allocatable sector is diskSectors-B-1.
+	// Validate subtracts the same B from the usable total, keeping the totals
+	// check and placement in step at MiB boundaries.
+	lastSector := diskSectors - backupSectors(ss) - 1
 
 	free := freeRegions(sectors, prefixSectors(ss), lastSector)
 
 	var actions []formatAction
 	for _, p := range layout.Partitions {
+		// Existing rows with no role are untouched (dualboot-safe). A brand-new
+		// row with no role is a draft that must never be silently ignored.
+		if p.Path == "" && p.Type == "" {
+			return nil, fmt.Errorf("new partition must be assigned as ESP or System (or deleted)")
+		}
 		if p.Type != shared.TypeESP && p.Type != shared.TypeSystem {
 			continue // empty type = untouched, never formatted or mounted
 		}
@@ -90,8 +99,8 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		// "use all remaining space" row (SizeMB 0): Validate cannot know its
 		// final size, so without this check a tiny ESP or sub-8-GiB root could
 		// be created from whatever little free space is left.
-		if sizeMB < minPartitionSizeMB(p.Type) {
-			return nil, fmt.Errorf("%s partition has only %d MB of contiguous free space, below the %d MB minimum", p.Type, sizeMB, minPartitionSizeMB(p.Type))
+		if min := minPartitionSizeMB(p.Type, layout.Lvm, layout.Luks); sizeMB < min {
+			return nil, fmt.Errorf("%s partition has only %d MB of contiguous free space, below the %d MB minimum", p.Type, sizeMB, min)
 		}
 		free = rest
 		actions = append(actions, formatAction{
@@ -240,17 +249,18 @@ func roleLabel(fstype string) string {
 	return "aelum"
 }
 
-// minPartitionSizeMB returns the enforced minimum size in MiB for a role: the
-// ESP floor (512 MiB) and the system/root floor (8 GiB). Other roles are not
-// designated partitions and have no floor (0). Mirrors the size checks in
-// Validate; here it backstops the *resolved* size of a brand-new partition so a
-// too-small partition can never reach sgdisk.
-func minPartitionSizeMB(pt shared.PartitionType) int64 {
+// minPartitionSizeMB returns the enforced minimum size in MiB for a brand-new
+// partition role: the new-ESP floor (512 MiB) and the System floor (8 GiB, or
+// 16 GiB / 16 GiB + LUKS header when LVM is enabled). Existing ESPs are checked
+// against the lower 100 MiB reuse floor in Validate. Other roles have no floor
+// (0). This backstops the *resolved* size of a use-remaining row so a too-small
+// partition can never reach sgdisk.
+func minPartitionSizeMB(pt shared.PartitionType, lvm, luks bool) int64 {
 	switch pt {
 	case shared.TypeESP:
 		return shared.MinESPSizeBytes / (1024 * 1024)
 	case shared.TypeSystem:
-		return shared.MinSystemPartitionBytes / (1024 * 1024)
+		return shared.MinSystemPartitionSize(lvm, luks) / (1024 * 1024)
 	default:
 		return 0
 	}
