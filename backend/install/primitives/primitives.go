@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,16 +16,82 @@ import (
 // Command execution primitives
 // ============================================================================
 
-// Run executes a command directly (no helper needed when running as root).
-func Run(args ...string) *exec.Cmd {
-	return exec.Command(args[0], args[1:]...)
+// Command is a handle to an external process. It mirrors the subset of
+// *os/exec.Cmd that the install steps use — the Args slice, a Stdin reader, and
+// the Run/Output/CombinedOutput terminal methods — so those steps can be unit
+// tested with an injected CommandRunner instead of shelling out for real.
+//
+// Args[0] is the program name and Args[1:] its arguments, exactly like
+// exec.Cmd, so callers that build argv incrementally keep working.
+type Command struct {
+	// Args holds the program name followed by its arguments, mirroring
+	// exec.Cmd.Args (Args[0] is the program name).
+	Args []string
+	// Stdin, when non-nil, is connected to the command's standard input.
+	Stdin io.Reader
+	// runner executes this command. It is captured when the Command is built
+	// so a test that swaps the runner sees the swap.
+	runner CommandRunner
+}
+
+// Run starts the command and waits for it to complete.
+func (c *Command) Run() error { return c.runner.Run(c) }
+
+// Output runs the command and returns its standard output.
+func (c *Command) Output() ([]byte, error) { return c.runner.Output(c) }
+
+// CombinedOutput runs the command and returns its combined stdout and stderr.
+func (c *Command) CombinedOutput() ([]byte, error) { return c.runner.CombinedOutput(c) }
+
+// CommandRunner executes the external commands used by the install steps. The
+// default implementation shells out via os/exec; tests inject a fake (see
+// SetCommandRunner) to assert argv and simulate output or failure without root.
+type CommandRunner interface {
+	Run(cmd *Command) error
+	Output(cmd *Command) ([]byte, error)
+	CombinedOutput(cmd *Command) ([]byte, error)
+}
+
+// defaultRunner is the process-wide CommandRunner. Only tests swap it.
+var defaultRunner CommandRunner = execRunner{}
+
+// SetCommandRunner replaces the runner used by Run and RunChroot and returns a
+// function that restores the previous one. It is intended for tests:
+//
+//	defer primitives.SetCommandRunner(fake)()
+func SetCommandRunner(r CommandRunner) (restore func()) {
+	prev := defaultRunner
+	defaultRunner = r
+	return func() { defaultRunner = prev }
+}
+
+// execRunner runs commands for real via os/exec.
+type execRunner struct{}
+
+func (execRunner) build(cmd *Command) *exec.Cmd {
+	c := exec.Command(cmd.Args[0], cmd.Args[1:]...)
+	c.Stdin = cmd.Stdin
+	return c
+}
+
+func (r execRunner) Run(cmd *Command) error { return r.build(cmd).Run() }
+
+func (r execRunner) Output(cmd *Command) ([]byte, error) { return r.build(cmd).Output() }
+
+func (r execRunner) CombinedOutput(cmd *Command) ([]byte, error) {
+	return r.build(cmd).CombinedOutput()
+}
+
+// Run builds a command to execute directly (no helper needed when running as
+// root). The command is not started until one of its terminal methods is called.
+func Run(args ...string) *Command {
+	return &Command{Args: append([]string(nil), args...), runner: defaultRunner}
 }
 
 // RunChroot executes a command inside the installed system via arch-chroot.
 func RunChroot(args ...string) ([]byte, error) {
-	cmdArgs := append([]string{shared.MountRoot}, args...)
-	cmd := exec.Command("arch-chroot", cmdArgs...)
-	return cmd.CombinedOutput()
+	chrootArgs := append([]string{"arch-chroot", shared.MountRoot}, args...)
+	return Run(chrootArgs...).CombinedOutput()
 }
 
 // WriteFile writes content to a file inside the installed system.
@@ -128,8 +195,7 @@ func CleanupMounts(logger shared.Logger) error {
 }
 
 func findHoldingPIDs(mountPoint string) ([]string, error) {
-	cmd := exec.Command("fuser", "-m", "-M", mountPoint)
-	output, err := cmd.Output()
+	output, err := Run("fuser", "-m", "-M", mountPoint).Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.ExitCode() == 1 {
@@ -147,16 +213,14 @@ func findHoldingPIDs(mountPoint string) ([]string, error) {
 
 func killAndVerifyPIDs(pids []string) error {
 	for _, pid := range pids {
-		killCmd := exec.Command("kill", "-KILL", pid)
-		if err := killCmd.Run(); err != nil {
+		if err := Run("kill", "-KILL", pid).Run(); err != nil {
 			if strings.Contains(err.Error(), "No such process") {
 				continue
 			}
 			return fmt.Errorf("kill -KILL %s: %w", pid, err)
 		}
 		for i := 0; i < 50; i++ {
-			checkCmd := exec.Command("kill", "-0", pid)
-			if err := checkCmd.Run(); err != nil {
+			if err := Run("kill", "-0", pid).Run(); err != nil {
 				break
 			}
 			time.Sleep(20 * time.Millisecond)
@@ -166,8 +230,7 @@ func killAndVerifyPIDs(pids []string) error {
 }
 
 func unmountRecursive(mountPoint string) error {
-	cmd := exec.Command("umount", "-R", mountPoint)
-	output, err := cmd.CombinedOutput()
+	output, err := Run("umount", "-R", mountPoint).CombinedOutput()
 	if err != nil {
 		errMsg := strings.ToLower(string(output))
 		if strings.Contains(errMsg, "not mounted") || strings.Contains(errMsg, "no such device") {

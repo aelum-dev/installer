@@ -2,7 +2,6 @@ package format
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aelum-installer/backend/install/luks"
@@ -66,7 +65,7 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 	// the first 1 MiB-aligned usable sector, then the start/end of the largest
 	// free block. This keeps the layout correct regardless of the disk's logical
 	// sector size (512e vs 4Kn) with no sector arithmetic on our side.
-	var cmd *exec.Cmd
+	var cmd *primitives.Command
 	var out []byte
 	for i, p := range partitions {
 		num := i + 1
@@ -364,7 +363,7 @@ func FormatPartition(path, fstype, label string) error {
 	}
 
 	// Format with appropriate tool
-	var cmd *exec.Cmd
+	var cmd *primitives.Command
 	switch fstype {
 	case shared.FileSystemVfat:
 		cmd = primitives.Run("mkfs.fat", "-F", "32", "-n", label, path)

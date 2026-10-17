@@ -2,7 +2,6 @@ package mount
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aelum-installer/backend/install/luks"
@@ -47,7 +46,7 @@ func Run(ctx *shared.InstallContext) error {
 	}
 
 	p := ctx.Partitions
-	var cmd *exec.Cmd
+	var cmd *primitives.Command
 	var output []byte
 	var err error
 

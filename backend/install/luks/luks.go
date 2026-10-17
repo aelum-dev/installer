@@ -8,7 +8,6 @@ package luks
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
@@ -70,7 +69,7 @@ func uuidArgs(path string) []string {
 // reader while the copy's PipeReader.Read blocks waiting for a writer, so
 // neither sends and cryptsetup's stdin is starved. That hung the luksFormat
 // step forever.
-func feedPassphrase(cmd *exec.Cmd, passphrase string) {
+func feedPassphrase(cmd *primitives.Command, passphrase string) {
 	cmd.Stdin = strings.NewReader(passphrase)
 }
 

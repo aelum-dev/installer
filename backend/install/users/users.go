@@ -3,7 +3,6 @@ package users
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -79,7 +78,7 @@ func Run(ctx *shared.InstallContext) error {
 		return nil
 	}
 
-	var cmd *exec.Cmd
+	var cmd *primitives.Command
 	var output []byte
 	var err error
 
