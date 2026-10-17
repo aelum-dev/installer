@@ -19,6 +19,7 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let saving = $state(false);
+	let saveQueued = $state(false);
 
 	// Delete confirmation target (partition index), or null when closed.
 	let deleteTargetIndex = $state<number | null>(null);
@@ -81,27 +82,45 @@
 	});
 
 
-	async function loadLayout(): Promise<void> {
-		if (!disk) return;
+	// Identifies the latest layout request, so a slow response for a previous
+	// disk can't overwrite the current one.
+	let loadRequest = 0;
+
+	async function loadLayout(path: string): Promise<void> {
+		const request = ++loadRequest;
 		loading = true;
 		error = null;
 		try {
-			const fetched = await GetManualLayout(disk.path);
+			const fetched = await GetManualLayout(path);
+			if (request !== loadRequest) return;
 			layout = fetched;
 			installState.manualLayout = fetched;
 		} catch (err) {
+			if (request !== loadRequest) return;
 			error = `Failed to load partition layout: ${err instanceof Error ? err.message : String(err)}`;
 		} finally {
-			loading = false;
+			if (request === loadRequest) loading = false;
 		}
 	}
 
-	// Persist the current layout to the backend app state.
+	// Persist the current layout to the backend app state. Saves are serialized:
+	// rapid edits previously fired overlapping calls, and an older call could
+	// resolve last and overwrite the newest layout. While a save is in flight,
+	// further edits set `saveQueued` and are picked up by the running loop.
 	async function persist(): Promise<void> {
 		if (!layout) return;
+		if (saving) {
+			saveQueued = true;
+			return;
+		}
+
 		saving = true;
 		try {
-			await SaveManualLayout(layout);
+			do {
+				saveQueued = false;
+				if (!layout) break;
+				await SaveManualLayout(layout);
+			} while (saveQueued);
 		} catch (err) {
 			error = `Failed to save layout: ${err instanceof Error ? err.message : String(err)}`;
 		} finally {
@@ -186,9 +205,18 @@
 		deleteTargetIndex = null;
 	}
 
-	// Reload whenever the selected disk changes.
+	// Reload whenever the selected disk changes. Depend on the path (not the
+	// whole disk object) so unrelated mutations like fstype inference don't
+	// trigger a reload.
 	$effect(() => {
-		void loadLayout();
+		const path = disk?.path;
+		if (!path) {
+			loadRequest++;
+			layout = null;
+			loading = false;
+			return;
+		}
+		void loadLayout(path);
 	});
 
 	// When the add-control is revealed, scroll the partition editor to its bottom
@@ -339,6 +367,7 @@
 		bind:show={showDeleteDialog}
 		title={t('manual.deleteTitle')}
 		message={t('manual.deleteMessage')}
+		confirmLabel={t('manual.deleteConfirm')}
 		onConfirm={confirmDelete}
 		onCancel={() => { deleteTargetIndex = null; }}
 	/>

@@ -137,7 +137,7 @@
   "validation.installationComplete": "ההתקנה הושלמה.",
   "validation.modal.diskTooSmall": "הדיסק הנבחר קטן מדי. נדרשים לפחות 8 גיגה־בייט.",
   "validation.modal.espRequired": "נדרש מחיצת Boot (ESP) אחת בדיוק (נמצאו {n}).",
-  "validation.modal.espTooSmall": "מחיצת Boot קטנה מדי: {size} MB (נדרש מינימום 128 MB).",
+  "validation.modal.espTooSmall": "מחיצת Boot קטנה מדי: {size} MB (נדרש מינימום 512 MB).",
   "validation.modal.exceedsDisk": "גדלים של מחיצות ({size} MB) חורגים מגודל הדיסק ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "גדלים של מחיצות חדשות ({size} MB) חורגים מהשטח הפנוי ({free} MB).",
   "validation.modal.invalidType": "סוג מחיצה לא חוקי '{type}' (חייב להיות ריק, esp או system).",

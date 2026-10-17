@@ -54,9 +54,9 @@ The **Next button is always enabled**; invalid input no longer blocks navigation
 Clicking Next with invalid input instead shows a "Cannot proceed" validation
 modal (an OK-only `ConfirmDialog`). Tests assert this modal appears on bad input
 and that the wizard advances once the input is valid. In manual mode, the Manual
-mode pill stays disabled until a disk is selected, and the Add control stays
-disabled when the disk has no free space — those are the states the tests still
-assert as `toBeDisabled()`.
+mode pill stays disabled until a disk is selected. The add control only exists
+after clicking the FREE row, and a fully used disk has no FREE row at all — those
+are the states the tests assert.
 
 ## Note on the install step
 

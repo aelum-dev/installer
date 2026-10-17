@@ -177,7 +177,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 
 ## Installation Steps (8 top-level)
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
-1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
+1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
@@ -255,7 +255,8 @@ Welcome (language select)
 
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram)
-- EFI partition: 128MB, vfat, label "EFI", type GUID `C12A7328...`
+- EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
+- ESP floor: `shared.MinESPSizeBytes` = 512 MiB, enforced for explicit-size and "use remaining" rows alike
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Default username: `shared.DefaultCLIUsername` = "aelum"

@@ -95,8 +95,10 @@ test.describe('Manual partitioning', () => {
     const rows = page.locator('.editor-row');
     await expect(rows).toHaveCount(2);
 
-    // Add a new 1000 MB partition.
-    await page.locator('.add-size-input').fill('1000');
+    // Reveal the add control by clicking the unallocated-space row, then add a
+    // new 1000 MB partition.
+    await page.locator('.unallocated-row').click();
+    await page.locator('.number-stepper-input').fill('1000');
     await page.locator('.add-btn').click();
 
     // A new blank row appears, labelled "New partition".
@@ -118,13 +120,13 @@ test.describe('Manual partitioning', () => {
   });
 
   test('adding is blocked when the disk has no free space', async ({ page }) => {
-    // /dev/nvme0n1 (first disk) is fully used, so the Add control is disabled.
+    // /dev/nvme0n1 (first disk) is fully used: there is no FREE row, so the
+    // add control cannot be revealed at all.
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
-    // The disk is fully used, so the Add button is disabled (the size input
-    // itself stays enabled; it is only disabled when "Use remaining" is on).
-    await expect(page.locator('.add-btn')).toBeDisabled();
+    await expect(page.locator('.unallocated-row')).toHaveCount(0);
+    await expect(page.locator('.add-btn')).toHaveCount(0);
   });
 
   test('cancelling the delete dialog keeps the partition', async ({ page }) => {

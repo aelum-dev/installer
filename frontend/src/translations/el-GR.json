@@ -137,7 +137,7 @@
   "validation.installationComplete": "Η εγκατάσταση ολοκληρώθηκε.",
   "validation.modal.diskTooSmall": "Ο επιλεγμένος δίσκος είναι πολύ μικρός. Απαιτούνται τουλάχιστον 8 GiB.",
   "validation.modal.espRequired": "Απαιτείται ακριβώς ένα Boot (ESP) partition (βρέθηκαν {n}).",
-  "validation.modal.espTooSmall": "Το Boot partition είναι πολύ μικρό: {size} MB (ελάχιστο 128 MB).",
+  "validation.modal.espTooSmall": "Το Boot partition είναι πολύ μικρό: {size} MB (ελάχιστο 512 MB).",
   "validation.modal.exceedsDisk": "Τα μεγέθη partition ({size} MB) υπερβαίνουν το μέγεθος του δίσκου ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Τα νέα μεγέθη partition ({size} MB) υπερβαίνουν τον ελεύθερο χώρο ({free} MB).",
   "validation.modal.invalidType": "Μη έγκυρος τύπος partition '{type}' (πρέπει να είναι κενό, esp ή system).",

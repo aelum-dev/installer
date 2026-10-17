@@ -137,7 +137,7 @@
   "validation.installationComplete": "Встановлення завершено.",
   "validation.modal.diskTooSmall": "Вибраний диск занадто малий. Потрібно щонайменше 8 GiB.",
   "validation.modal.espRequired": "Потрібен рівно один розділ Boot (ESP) (знайдено {n}).",
-  "validation.modal.espTooSmall": "Розділ Boot занадто малий: {size} МБ (потрібно щонайменше 128 МБ).",
+  "validation.modal.espTooSmall": "Розділ Boot занадто малий: {size} МБ (потрібно щонайменше 512 МБ).",
   "validation.modal.exceedsDisk": "Розміри розділів ({size} МБ) перевищують розмір диска ({disk} МБ).",
   "validation.modal.exceedsFreeSpace": "Розміри нових розділів ({size} МБ) перевищують вільний простір ({free} МБ).",
   "validation.modal.invalidType": "Недійсний тип розділу '{type}' (повинен бути порожнім, esp або system).",

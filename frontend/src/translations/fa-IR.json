@@ -137,7 +137,7 @@
   "validation.installationComplete": "نصب کامل شد.",
   "validation.modal.diskTooSmall": "دیسک انتخابی بسیار کوچک است. حداقل ۸ گیگابایت مورد نیاز است.",
   "validation.modal.espRequired": "دقیقاً یک پارتیشن Boot (ESP) مورد نیاز است ({n} یافت شد).",
-  "validation.modal.espTooSmall": "پارتیشن Boot بسیار کوچک است: {size} مگابایت (حداقل ۱۲۸ مگابایت مورد نیاز).",
+  "validation.modal.espTooSmall": "پارتیشن Boot بسیار کوچک است: {size} مگابایت (حداقل ۵۱۲ مگابایت مورد نیاز).",
   "validation.modal.exceedsDisk": "اندازه‌های پارتیشن ({size} MB) از اندازه دیسک ({disk} MB) بیشتر است.",
   "validation.modal.exceedsFreeSpace": "اندازه‌های پارتیشن جدید ({size} MB) از فضای آزاد ({free} MB) بیشتر است.",
   "validation.modal.invalidType": "نوع پارتیشن نامعتبر '{type}' (باید خالی، esp یا system باشد).",

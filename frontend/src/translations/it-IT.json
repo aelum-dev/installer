@@ -137,7 +137,7 @@
   "validation.installationComplete": "L'installazione è completa.",
   "validation.modal.diskTooSmall": "Il disco selezionato è troppo piccolo. Minimo 8 GiB richiesti.",
   "validation.modal.espRequired": "È richiesta esattamente una partizione Boot (ESP) (trovate {n}).",
-  "validation.modal.espTooSmall": "La partizione Boot è troppo piccola: {size} MB (minimo 128 MB).",
+  "validation.modal.espTooSmall": "La partizione Boot è troppo piccola: {size} MB (minimo 512 MB).",
   "validation.modal.exceedsDisk": "Le dimensioni delle partizioni ({size} MB) superano la dimensione del disco ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Le nuove dimensioni delle partizioni ({size} MB) superano lo spazio disponibile ({free} MB).",
   "validation.modal.invalidType": "Tipo di partizione non valido '{type}' (deve essere vuoto, esp o system).",

@@ -106,7 +106,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 
 | # | Step | Weight | Function | Description |
 |---|------|--------|----------|-------------|
-| 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 128MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
+| 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 512MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
 | 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, ESP to `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
 | 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
@@ -204,7 +204,7 @@ When btrfs is selected, 6 subvolumes are created: `@` (default), `@home`, `@srv`
 
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:
-- **Partition 1**: 128MB EFI (vfat, type GUID `C12A7328...`)
+- **Partition 1**: 512MB EFI (vfat, type GUID `C12A7328...`)
 - **Partition 2**: Rest of disk (ext4/btrfs, type GUID `4F68BCE3...`)
 
 ### Mirrorlists

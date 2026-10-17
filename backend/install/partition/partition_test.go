@@ -49,7 +49,7 @@ func TestValidate(t *testing.T) {
 			Disk:       "/dev/sda",
 			DiskSizeMB: 100000,
 			Partitions: []shared.ManualPartition{
-				{Index: 0, Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+				{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
 				{Index: 1, Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
 				{Index: 2, Path: "/dev/sda3", SizeMB: 0}, // empty role = untouched
 			},
@@ -97,8 +97,8 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
-					{Path: "/dev/sda2", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/sda2", SizeMB: 512, Type: shared.TypeESP},
 					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
@@ -109,7 +109,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
 				},
 			},
 			wantErr: true,
@@ -119,7 +119,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
 					{Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
 					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
@@ -153,8 +153,8 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 128, Type: shared.PartitionType("swap")},
-					{Path: "/dev/sda2", SizeMB: 128, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.PartitionType("swap")},
+					{Path: "/dev/sda2", SizeMB: 512, Type: shared.TypeESP},
 					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
@@ -191,7 +191,7 @@ func TestBuildActions_DualbootInvariant(t *testing.T) {
 		Partitions: []shared.ManualPartition{
 			{Index: 0, Path: "/dev/sda1", SizeMB: 512, ExistingFstype: "ext4"}, // empty role = untouched
 			{Index: 1, Path: "/dev/sda3", SizeMB: 20000, Type: shared.TypeSystem, ExistingFstype: "ext4"},
-			{Index: 2, Path: "", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 2, Path: "", SizeMB: 512, Type: shared.TypeESP},
 		},
 	}
 
@@ -257,7 +257,7 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
 			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
 		},
 	}
@@ -282,7 +282,7 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 	// Root uses "all remaining", capped so it ends within the disk's usable
 	// region (the trailing 256 sectors are reserved for the backup GPT, so
 	// sgdisk won't reject a partition extending past the last usable sector).
-	// That yields 99486 MiB rather than the uncapped 100000-128 = 99872.
+	// That yields 99486 MiB rather than the uncapped 100000-512 = 99488.
 	want := (100000*2048 - (gptBackupBytes / 512) - 1050624) / 2048
 	if root.sizeMB != want {
 		t.Errorf("root sizeMB = %d, want %d", root.sizeMB, want)
@@ -496,15 +496,15 @@ func TestValidate_NewPartitionRespectsFreeSectors(t *testing.T) {
 		DiskSizeMB:    100000,
 		DiskSizeBytes: 100000 * mib,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
 			{Index: 1, Path: "/dev/sda2", SizeMB: 90000, SizeBytes: 90000*mib + 500000, Type: shared.TypeSystem},
-			{Index: 2, Path: "", SizeMB: 9872, Type: shared.TypeSystem},
+			{Index: 2, Path: "", SizeMB: 9488, Type: shared.TypeSystem},
 		},
 	}
-	usedBytes := 128*mib + (90000*mib + 500000)
+	usedBytes := 512*mib + (90000*mib + 500000)
 	layout.FreeSectors = int64((100000*mib - usedBytes) / 512)
 
-	// Coarse sum = 128+90000+9872 = 100000 == DiskSizeMB, so it passes that guard.
+	// Coarse sum = 512+90000+9488 = 100000 == DiskSizeMB, so it passes that guard.
 	if sum := layout.Partitions[0].SizeMB + layout.Partitions[1].SizeMB + layout.Partitions[2].SizeMB; sum > layout.DiskSizeMB {
 		t.Fatalf("test setup broke its own coarse guard: sum %d > %d", sum, layout.DiskSizeMB)
 	}
@@ -515,14 +515,14 @@ func TestValidate_NewPartitionRespectsFreeSectors(t *testing.T) {
 }
 
 // TestValidate_MinPartitionSizes checks the enforced floor for designated
-// partitions: an ESP must be at least 128 MiB and the system partition at least
-// 8 GiB (the disk floor). A "use all remaining space" row (sizeMB 0) is exempt
-// because its size is whatever the disk leaves over.
+// partitions: an ESP must be at least 512 MiB and the system partition at least
+// 8 GiB (the disk floor). A "use all remaining space" row is checked against the
+// resolved free space in TestValidate_UseRemainingRespectsFloor.
 func TestValidate_MinPartitionSizes(t *testing.T) {
 	const mib = 1024 * 1024
-	minESP := int64(shared.MinESPSizeBytes / mib)          // 128
-	minSys := int64(shared.MinSystemPartitionBytes / mib)  // 8192
-	tooSmallESP := int64(shared.MinESPSizeBytes / mib / 2) // 64
+	minESP := int64(shared.MinESPSizeBytes / mib)
+	minSys := int64(shared.MinSystemPartitionBytes / mib) // 8192
+	tooSmallESP := int64(shared.MinESPSizeBytes / mib / 2)
 
 	make := func(esp, sys shared.ManualPartition) shared.ManualLayout {
 		return shared.ManualLayout{
@@ -554,14 +554,111 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		{"system exactly 8 GiB", esp(minESP), sys(minSys, false), false},
 		{"existing system below 8 GiB", esp(minESP), sys(minSys-1, false), true},
 		{"brand-new system below 8 GiB", esp(minESP), sys(4096, true), true},
-		{"system use-remaining is exempt", esp(minESP), sys(0, true), false},
-		{"esp below 128 MiB", esp(tooSmallESP), sys(minSys, false), true},
-		{"esp exactly 128 MiB", esp(minESP), sys(minSys, false), false},
+		{"system use-remaining resolves above floor", esp(minESP), sys(0, true), false},
+		{"esp below 512 MiB", esp(tooSmallESP), sys(minSys, false), true},
+		{"esp exactly 512 MiB", esp(minESP), sys(minSys, false), false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := Validate(make(tc.esp, tc.sys)); (err != nil) != tc.wantErr {
 				t.Fatalf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// TestValidate_UseRemainingRespectsFloor guards the resolved-size floor for a
+// brand-new "use all remaining space" row: Validate cannot know its final size
+// during the per-row pass, so it must check the remaining free space afterwards.
+func TestValidate_UseRemainingRespectsFloor(t *testing.T) {
+	const mib = int64(1024 * 1024)
+
+	tests := []struct {
+		name    string
+		layout  shared.ManualLayout
+		wantErr bool
+	}{
+		{
+			name: "new ESP use-remaining below 512 MiB",
+			layout: shared.ManualLayout{
+				Disk: "/dev/vda", DiskSizeMB: 9000, DiskSizeBytes: 9000 * mib,
+				Partitions: []shared.ManualPartition{
+					{Path: "/dev/vda1", SizeMB: 8700, SizeBytes: 8700 * mib, Type: shared.TypeSystem},
+					{Path: "", SizeMB: 0, Type: shared.TypeESP},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "new System use-remaining below 8 GiB",
+			layout: shared.ManualLayout{
+				Disk: "/dev/vda", DiskSizeMB: 8700, DiskSizeBytes: 8700 * mib,
+				Partitions: []shared.ManualPartition{
+					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+					{Path: "", SizeMB: 0, Type: shared.TypeSystem},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "new ESP use-remaining meets the floor",
+			layout: shared.ManualLayout{
+				Disk: "/dev/vda", DiskSizeMB: 9000, DiskSizeBytes: 9000 * mib,
+				Partitions: []shared.ManualPartition{
+					{Path: "/dev/vda1", SizeMB: 8192, SizeBytes: 8192 * mib, Type: shared.TypeSystem},
+					{Path: "", SizeMB: 0, Type: shared.TypeESP},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := Validate(tc.layout); (err != nil) != tc.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// TestBuildActions_UseRemainingRespectsFloor is the last-line defence: even if a
+// layout reaches Apply without the coarse check, a use-remaining row that
+// resolves below its role floor must not be created.
+func TestBuildActions_UseRemainingRespectsFloor(t *testing.T) {
+	const mib = int64(1024 * 1024)
+
+	tests := []struct {
+		name    string
+		layout  shared.ManualLayout
+		sectors []partitionSector
+	}{
+		{
+			name: "ESP",
+			layout: shared.ManualLayout{
+				Disk: "/dev/vda", DiskSizeMB: 300, DiskSizeBytes: 300 * mib,
+				Partitions: []shared.ManualPartition{
+					{Path: "", SizeMB: 0, Type: shared.TypeESP},
+				},
+			},
+		},
+		{
+			name: "System",
+			layout: shared.ManualLayout{
+				Disk: "/dev/vda", DiskSizeMB: 8700, DiskSizeBytes: 8700 * mib,
+				Partitions: []shared.ManualPartition{
+					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+					{Path: "", SizeMB: 0, Type: shared.TypeSystem},
+				},
+			},
+			sectors: []partitionSector{{num: 1, start: 2048, end: 2048 + 512*2048 - 1}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := buildActions("/dev/vda", &tc.layout, shared.FileSystemExt4, tc.sectors); err == nil {
+				t.Error("buildActions accepted a use-remaining row below its role floor")
 			}
 		})
 	}
@@ -582,10 +679,10 @@ func TestValidate_NewPartitionFreesSpaceFromDeletedRow(t *testing.T) {
 		DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
 			// Existing ESP kept verbatim.
-			{Index: 0, Path: "/dev/vda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
 			// Brand-new System replacing a partition the user deleted (deletedPartitions
 			// are excluded from Partitions, so their space is genuinely freed).
-			{Index: 1, Path: "", SizeMB: 20350, Type: shared.TypeSystem},
+			{Index: 1, Path: "", SizeMB: 19960, Type: shared.TypeSystem},
 		},
 	}
 	// Preserve the stale load-time free space (only ~1 MB really free today) to
@@ -604,7 +701,7 @@ func TestValidate_UseAllOrdering(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
 			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
 			{Index: 2, Path: "", SizeMB: 500, Type: shared.TypeSystem},
 		},
@@ -624,12 +721,12 @@ func TestBuildActions_ExplicitNewPartitionTooLargeErrors(t *testing.T) {
 		DiskSizeMB:    100000,
 		DiskSizeBytes: 100000 * 1024 * 1024,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 128, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, Type: shared.TypeESP},
 			{Index: 1, Path: "", SizeMB: 99999, Type: shared.TypeSystem},
 		},
 	}
-	// ESP occupies the first 128 MiB of the disk.
-	sectors := []partitionSector{{num: 1, start: 2048, end: 2048 + 128*2048 - 1}}
+	// ESP occupies the first 512 MiB of the disk.
+	sectors := []partitionSector{{num: 1, start: 2048, end: 2048 + 512*2048 - 1}}
 	if _, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, sectors); err == nil {
 		t.Error("expected an error for an explicit partition larger than the free space, got nil (silent clamp)")
 	}
@@ -831,10 +928,10 @@ func TestValidate_RejectsRequestThatOnlyFitsWithGPTPrefix(t *testing.T) {
 	layout := shared.ManualLayout{
 		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
 			// Exactly total-free-minus-1 MiB: the old check allowed this by
 			// counting the 1 MiB GPT prefix as allocatable.
-			{Index: 1, Path: "", SizeMB: diskMB - 128 - 1, Type: shared.TypeSystem},
+			{Index: 1, Path: "", SizeMB: diskMB - 512 - 1, Type: shared.TypeSystem},
 		},
 	}
 	if err := Validate(layout); err == nil {

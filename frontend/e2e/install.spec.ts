@@ -36,10 +36,10 @@ test('full wizard flow reaches the finish screen', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Installation Summary' })).toBeVisible();
 
   // Confirmation -> Installation. The first Next opens a confirm dialog;
-  // clicking "Yes, Erase & Install" commits and advances to Installation.
+  // clicking "Confirm" commits and advances to Installation.
   await next(page).click();
   await expect(page.getByRole('heading', { name: 'Confirm Installation' })).toBeVisible();
-  await page.getByRole('button', { name: 'Yes, Erase & Install' }).click();
+  await page.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByRole('heading', { name: 'Installing Aelum' })).toBeVisible();
 
   // The install runs (dry-run) and settles. In a healthy dev build it

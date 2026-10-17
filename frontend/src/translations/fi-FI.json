@@ -137,7 +137,7 @@
   "validation.installationComplete": "Asennus on valmis.",
   "validation.modal.diskTooSmall": "Valittu levy on liian pieni. Vähintään 8 GiB vaaditaan.",
   "validation.modal.espRequired": "Täsmälleen yksi Boot (ESP) -osio on vaadittu (löytyi {n}).",
-  "validation.modal.espTooSmall": "Boot-osio on liian pieni: {size} MB (vähintään 128 MB vaaditaan).",
+  "validation.modal.espTooSmall": "Boot-osio on liian pieni: {size} MB (vähintään 512 MB vaaditaan).",
   "validation.modal.exceedsDisk": "Osion koot ({size} MB) ylittävät levyyn koon ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Uusien osioiden koot ({size} MB) ylittävät vapaan tilan ({free} MB).",
   "validation.modal.invalidType": "Virheellinen osion tyyppi '{type}' (tyhjä, esp tai system).",

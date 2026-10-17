@@ -45,7 +45,7 @@ func TestParsePartitionSectorsRealFormat(t *testing.T) {
 func TestBuildActionsESPOnExistingNonFirst(t *testing.T) {
 	diskID := "/dev/vda"
 	layout := &shared.ManualLayout{
-		Disk: diskID, DiskSizeMB: 19073,
+		Disk: diskID, DiskSizeMB: 23000,
 		Partitions: []shared.ManualPartition{
 			{Index: 0, Path: "/dev/vda1", SizeMB: 1024},                        // preserve (existing EFI)
 			{Index: 1, Path: "/dev/vda2", SizeMB: 11972, Type: shared.TypeESP}, // reuse as EFI

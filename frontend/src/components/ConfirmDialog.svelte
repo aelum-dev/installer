@@ -4,6 +4,7 @@
 	import { installState } from '$lib/store.svelte';
 	import { confirmInstallation } from '$lib/navigation';
 	import { t } from '$lib/i18n';
+	import { escapeHtml } from '$lib/format';
 	import Dialog from '$components/Dialog.svelte';
 
 	let {
@@ -41,12 +42,15 @@
 
 	// Installation confirmation copy adapts to the install mode. Automatic installs
 	// wipe the whole disk; manual (dualboot-safe) installs only touch the chosen
-	// Boot and Root partitions and leave the rest of the disk intact.
-	const installationMessage = $derived.by(() =>
-		installState.manualMode
-			? t('dialog.confirm.messageManual', { model: installState.disk?.model || 'Unknown' })
-			: t('dialog.confirm.message', { model: installState.disk?.model || 'Unknown' }),
-	);
+	// Boot and Root partitions and leave the rest of the disk intact. The model
+	// string comes from the hardware, so escape it before the template is rendered
+	// with {@html} (the translation's <strong> markup is trusted).
+	const installationMessage = $derived.by(() => {
+		const model = escapeHtml(installState.disk?.model || 'Unknown');
+		return installState.manualMode
+			? t('dialog.confirm.messageManual', { model })
+			: t('dialog.confirm.message', { model });
+	});
 
 	// Fall back to the reactive installation message when the caller didn't pass
 	// its own (i.e. the standard installation confirmation dialog).

@@ -137,7 +137,7 @@
   "validation.installationComplete": "La instalado finiĝis.",
   "validation.modal.diskTooSmall": "Elektita disko estas tro malgranda. Minimume 8 GiB postuleblas.",
   "validation.modal.espRequired": "Precize unu Boot (ESP) partio estas postulata (trovita {n}).",
-  "validation.modal.espTooSmall": "Boot-partio estas tro malgranda: {size} MB (minimume 128 MB postuleblas).",
+  "validation.modal.espTooSmall": "Boot-partio estas tro malgranda: {size} MB (minimume 512 MB postuleblas).",
   "validation.modal.exceedsDisk": "Partiaj grandecoj ({size} MB) superas la diskon grandecon ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Novaj partiaj grandecoj ({size} MB) superas la liberan spacon ({free} MB).",
   "validation.modal.invalidType": "Nevalida partia tipo '{type}' (devas esti malplena, esp, aŭ system).",

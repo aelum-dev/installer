@@ -84,7 +84,11 @@
 
 	async function handleBack(): Promise<void> {
 		if (navState.currentPage === PAGE_IDS.WELCOME) return;
-		await goBack(navState.currentPage);
+		const error = await goBack(navState.currentPage);
+		if (error) {
+			console.error(`[App] Back failed: ${error}`);
+			validationError = error;
+		}
 	}
 
 	async function handleFinish(): Promise<void> {

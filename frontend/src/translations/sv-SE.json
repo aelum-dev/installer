@@ -137,7 +137,7 @@
   "validation.installationComplete": "Installationen är slutförd.",
   "validation.modal.diskTooSmall": "Vald disk är för liten. Minst 8 GiB krävs.",
   "validation.modal.espRequired": "Exakt en Boot (ESP)-partition krävs (hittade {n}).",
-  "validation.modal.espTooSmall": "Boot-partitionen är för liten: {size} MB (minst 128 MB krävs).",
+  "validation.modal.espTooSmall": "Boot-partitionen är för liten: {size} MB (minst 512 MB krävs).",
   "validation.modal.exceedsDisk": "Partitionstorlekar ({size} MB) överskrider diskstorleken ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Nya partitionstorlekar ({size} MB) överskrider den lediga platsen ({free} MB).",
   "validation.modal.invalidType": "Ogiltig partitionstyp '{type}' (måste vara tom, esp eller system).",

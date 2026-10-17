@@ -137,7 +137,7 @@
   "validation.installationComplete": "Kurulum tamamlandı.",
   "validation.modal.diskTooSmall": "Seçilen disk çok küçük. En az 8 GiB gereklidir.",
   "validation.modal.espRequired": "Tam olarak bir Boot (ESP) bölümü gereklidir (bulunan: {n}).",
-  "validation.modal.espTooSmall": "Boot bölümü çok küçük: {size} MB (minimum 128 MB gereklidir).",
+  "validation.modal.espTooSmall": "Boot bölümü çok küçük: {size} MB (minimum 512 MB gereklidir).",
   "validation.modal.exceedsDisk": "Bölüm boyutları ({size} MB) disk boyutunu ({disk} MB) aşıyor.",
   "validation.modal.exceedsFreeSpace": "Yeni bölüm boyutları ({size} MB) boş alanı ({free} MB) aşıyor.",
   "validation.modal.invalidType": "Geçersiz bölüm türü '{type}' (boş, esp veya system olmalıdır).",

@@ -32,7 +32,8 @@
 	}
 
 	// Next button is always enabled, but validates before proceeding.
-	const nextDisabledReason = $derived(getPageValidationReasons(currentPage).join('\n'));
+	// `<br>` (not '\n') because the dialog renders this through {@html}.
+	const nextDisabledReason = $derived(getPageValidationReasons(currentPage).join('<br>'));
 </script>
 
 <footer class="footer">

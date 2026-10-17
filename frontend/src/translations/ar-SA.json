@@ -137,7 +137,7 @@
   "validation.installationComplete": "اكتمل التثبيت.",
   "validation.modal.diskTooSmall": "القرص المحدد صغير جداً. الحد الأدنى 8 غيغابايت مطلوب.",
   "validation.modal.espRequired": "مطلوب تقسيم واحد فقط للإقلاع (ESP) (تم العثور على {n}).",
-  "validation.modal.espTooSmall": "تقسيم الإقلاع صغير جداً: {size} ميغابايت (الحد الأدنى 128 ميغابايت مطلوب).",
+  "validation.modal.espTooSmall": "تقسيم الإقلاع صغير جداً: {size} ميغابايت (الحد الأدنى 512 ميغابايت مطلوب).",
   "validation.modal.exceedsDisk": "حجم التقسيمات ({size} MB) يتجاوز حجم القرص ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "حجم التقسيمات الجديدة ({size} MB) يتجاوز المساحة الحرة ({free} MB).",
   "validation.modal.invalidType": "نوع تقسيم غير صالح '{type}' (يجب أن يكون فارغاً أو esp أو system).",

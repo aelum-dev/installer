@@ -137,7 +137,7 @@
   "validation.installationComplete": "Cài đặt đã hoàn tất.",
   "validation.modal.diskTooSmall": "Đĩa đã chọn quá nhỏ. Cần tối thiểu 8 GiB.",
   "validation.modal.espRequired": "Cần chính xác một phân vùng Boot (ESP) (đã tìm thấy {n}).",
-  "validation.modal.espTooSmall": "Phân vùng Boot quá nhỏ: {size} MB (tối thiểu 128 MB).",
+  "validation.modal.espTooSmall": "Phân vùng Boot quá nhỏ: {size} MB (tối thiểu 512 MB).",
   "validation.modal.exceedsDisk": "Kích thước phân vùng ({size} MB) vượt quá kích thước đĩa ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Kích thước phân vùng mới ({size} MB) vượt quá không gian trống ({free} MB).",
   "validation.modal.invalidType": "Loại phân vùng không hợp lệ '{type}' (phải để trống, esp hoặc system).",

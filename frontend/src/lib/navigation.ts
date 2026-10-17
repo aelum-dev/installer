@@ -52,15 +52,21 @@ export async function goNext(currentPage: number): Promise<GoNextResult> {
 		if (validationError) return { error: null, backendError: validationError };
 	}
 
-	// Commit (save) page data after validation passes
-	await commitPageData(currentPage);
+	// Commit (save) page data after validation passes, then move the backend to
+	// the next page. Both are Wails calls that can reject (I/O, serialization,
+	// a backend invariant); surface that through the same modal instead of
+	// letting an unhandled rejection swallow the click.
+	try {
+		await commitPageData(currentPage);
 
-	// Update backend
-	const nextPage = currentPage + 1;
-	await SetCurrentPage(new gui.PageID({ Value: nextPage }));
+		const nextPage = currentPage + 1;
+		await SetCurrentPage(new gui.PageID({ Value: nextPage }));
 
-	navState.direction = 'forward';
-	navState.currentPage = nextPage;
+		navState.direction = 'forward';
+		navState.currentPage = nextPage;
+	} catch (err) {
+		return { error: null, backendError: errorMessage(err) };
+	}
 
 	return { error: null, backendError: null }; // Success
 }
@@ -68,12 +74,20 @@ export async function goNext(currentPage: number): Promise<GoNextResult> {
 export async function goBack(currentPage: number): Promise<string | null> {
 	// Update backend
 	const prevPage = currentPage - 1;
-	await SetCurrentPage(new gui.PageID({ Value: prevPage }));
+	try {
+		await SetCurrentPage(new gui.PageID({ Value: prevPage }));
+	} catch (err) {
+		return errorMessage(err);
+	}
 
 	navState.direction = 'backward';
 	navState.currentPage = prevPage;
 
 	return null; // Success
+}
+
+function errorMessage(err: unknown): string {
+	return err instanceof Error ? err.message : String(err);
 }
 
 // Called when user clicks "Yes" in confirmation dialog

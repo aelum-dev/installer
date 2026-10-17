@@ -31,6 +31,8 @@ function interpolate(msg: string, args: Record<string, unknown> | undefined): st
 
 export const setLocale = (l: string) => {
 	_locale = l;
+	// Keep the document language in sync for screen readers and CSS :lang().
+	if (typeof document !== 'undefined') document.documentElement.lang = l;
 };
 
 export const locale = {

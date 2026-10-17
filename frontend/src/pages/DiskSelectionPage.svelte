@@ -65,10 +65,16 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
+	// Identifies the latest partition request. A slower response for a disk the
+	// user has already navigated away from must not overwrite the current one.
+	let partitionsRequest = 0;
+
 	// Disabling encryption discards the passphrase, so confirm first.
 	let showDisableConfirm = $state(false);
 
 	async function loadDisks(): Promise<void> {
+		loading = true;
+		error = null;
 		try {
 			disks = (await GetDisks()) ?? [];
 		} catch (err) {
@@ -94,10 +100,14 @@
 		installState.diskId = disk.path;
 		installState.disk = disk;
 
+		const request = ++partitionsRequest;
 		partitionsLoading = true;
 		partitions = [];
 		try {
 			const parts = await GetDiskPartitions(disk.path);
+			// A newer selection (or a deselect) happened while this request was
+			// in flight — drop the stale result instead of clobbering current state.
+			if (request !== partitionsRequest) return;
 			partitions = parts ?? [];
 
 			const existingFstype = inferDiskFileSystem(disk, partitions);
@@ -108,11 +118,12 @@
 		} catch (err) {
 			console.error(`[DiskSelectionPage] Failed to load partitions: ${err}`);
 		} finally {
-			partitionsLoading = false;
+			if (request === partitionsRequest) partitionsLoading = false;
 		}
 	}
 
 	function deselectDisk(): void {
+		partitionsRequest++;
 		installState.diskId = "";
 		installState.disk = null;
 		installState.fileSystem = "btrfs";
@@ -120,6 +131,7 @@
 		installState.pendingAddMB = 0;
 		installState.manualMode = false;
 		partitions = [];
+		partitionsLoading = false;
 	}
 
 	loadDisks();

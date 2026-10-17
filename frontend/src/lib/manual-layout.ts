@@ -99,9 +99,22 @@ export function manualLayoutIssues(layout: ManualLayout): ManualLayoutIssue[] {
 	if (espCount !== 1) issues.push({ kind: 'espCount', count: espCount });
 	if (sysCount !== 1) issues.push({ kind: 'systemCount', count: sysCount });
 
+	const freeMB = computeFreeMB(layout);
+
 	for (const p of layout.partitions) {
 		const sizeMB = partitionSizeMB(p);
-		if (sizeMB < 0) continue; // "use all remaining space" — exempt from the floor
+		if (sizeMB < 0) {
+			// "Use all remaining space": the floor applies to the resolved free
+			// space. Only a brand-new row can resolve to something different from
+			// an existing partition's real size.
+			if (!p.path && p.type === TYPE_ESP && freeMB < MinESPSizeBytes / BYTES_PER_MB) {
+				issues.push({ kind: 'espTooSmall', sizeMB: freeMB });
+			}
+			if (!p.path && p.type === TYPE_SYSTEM && freeMB < MinDiskSizeBytes / BYTES_PER_MB) {
+				issues.push({ kind: 'systemTooSmall', sizeMB: freeMB });
+			}
+			continue;
+		}
 
 		if (p.type === TYPE_ESP && sizeMB < MinESPSizeBytes / BYTES_PER_MB) {
 			issues.push({ kind: 'espTooSmall', sizeMB });

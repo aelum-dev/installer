@@ -137,7 +137,7 @@
   "validation.installationComplete": "Installasjonen er fullført.",
   "validation.modal.diskTooSmall": "Valgt disk er for liten. Minimum 8 GiB kreves.",
   "validation.modal.espRequired": "Nøyaktig én Boot (ESP)-partisjon er påkrevd (funnet {n}).",
-  "validation.modal.espTooSmall": "Boot-parisjonen er for liten: {size} MB (minimum 128 MB kreves).",
+  "validation.modal.espTooSmall": "Boot-parisjonen er for liten: {size} MB (minimum 512 MB kreves).",
   "validation.modal.exceedsDisk": "Partisjonsstørrelser ({size} MB) overstiger diskstørrelsen ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Nye partisjonsstørrelser ({size} MB) overstiger den ledige plassen ({free} MB).",
   "validation.modal.invalidType": "Ugyldig partisjonstype '{type}' (må være tom, esp eller system).",

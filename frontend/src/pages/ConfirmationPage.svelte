@@ -55,8 +55,10 @@
 
 	$effect(() => {
 		// Re-measure whenever the partition list changes (add/remove rows).
-		const partitions = installState.manualLayout?.partitions ?? [];
-		void partitions;
+		// Track the length explicitly: rows are mutated in place, so reading the
+		// array object alone would not subscribe to push/splice.
+		const partitionCount = installState.manualLayout?.partitions.length ?? 0;
+		void partitionCount;
 		updatePlanScrollHeight();
 		window.addEventListener('resize', updatePlanScrollHeight);
 		return () => window.removeEventListener('resize', updatePlanScrollHeight);

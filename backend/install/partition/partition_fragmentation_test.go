@@ -15,11 +15,11 @@ import (
 func TestBuildActions_ClampedRootBelowMinimumErrors(t *testing.T) {
 	const mib = int64(1024 * 1024)
 	diskMB := int64(30000)
-	// Existing 128 MiB ESP at the front, and a large kept partition in the middle
+	// Existing 512 MiB ESP at the front, and a large kept partition in the middle
 	// that splits the remaining free space into two gaps, each smaller than 8 GiB
 	// even though together they exceed it.
 	sectors := []partitionSector{
-		{num: 1, start: 2048, end: 2048 + 128*2048 - 1}, // existing ESP (128 MiB)
+		{num: 1, start: 2048, end: 2048 + 512*2048 - 1}, // existing ESP (512 MiB)
 		{num: 2, start: 12000000, end: 48000000},        // kept partition (~17.6 GiB)
 	}
 	layout := shared.ManualLayout{
@@ -27,7 +27,7 @@ func TestBuildActions_ClampedRootBelowMinimumErrors(t *testing.T) {
 		DiskSizeMB:    diskMB,
 		DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP}, // existing ESP kept
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP}, // existing ESP kept
 			// SizeBytes matches the exact sector span (48000000-12000000+1) so Validate
 			// and buildActions agree on how much space the kept partition occupies.
 			{Path: "/dev/vda2", SizeMB: 17578, SizeBytes: 36000001 * 512}, // kept, preserve (empty type)
@@ -58,7 +58,7 @@ func TestBuildActions_ClampedRootFitsNoError(t *testing.T) {
 	keptEnd := keptStart + 12000*2048 - 1
 	keptSpan := keptEnd - keptStart + 1
 	sectors := []partitionSector{
-		{num: 1, start: 2048, end: 2048 + 128*2048 - 1}, // existing ESP (128 MiB)
+		{num: 1, start: 2048, end: 2048 + 512*2048 - 1}, // existing ESP (512 MiB)
 		{num: 2, start: keptStart, end: keptEnd},        // kept partition (12000 MiB)
 	}
 	layout := shared.ManualLayout{
@@ -66,7 +66,7 @@ func TestBuildActions_ClampedRootFitsNoError(t *testing.T) {
 		DiskSizeMB:    diskMB,
 		DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 128, SizeBytes: 128 * mib, Type: shared.TypeESP},
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
 			{Path: "/dev/vda2", SizeMB: 12000, SizeBytes: keptSpan * 512}, // kept, preserve (empty type)
 			{Path: "", SizeMB: 9000, Type: shared.TypeSystem},             // fits the rear gap, above the 8 GiB floor
 		},

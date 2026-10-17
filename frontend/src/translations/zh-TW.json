@@ -137,7 +137,7 @@
   "validation.installationComplete": "安裝已完成。",
   "validation.modal.diskTooSmall": "所選磁碟太小。至少需要8 GiB。",
   "validation.modal.espRequired": "需要恰好一個Boot（ESP）分割區（找到{n}個）。",
-  "validation.modal.espTooSmall": "Boot分割區太小：{size} MB（至少需要128 MB）。",
+  "validation.modal.espTooSmall": "Boot分割區太小：{size} MB（至少需要512 MB）。",
   "validation.modal.exceedsDisk": "分割區大小（{size} MB）超過磁碟大小（{disk} MB）。",
   "validation.modal.exceedsFreeSpace": "新分割區大小（{size} MB）超過可用空間（{free} MB）。",
   "validation.modal.invalidType": "無效的分割區類型'{type}'（必須為空、esp或system）。",

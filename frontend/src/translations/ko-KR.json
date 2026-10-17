@@ -137,7 +137,7 @@
   "validation.installationComplete": "설치가 완료되었습니다.",
   "validation.modal.diskTooSmall": "선택한 디스크가 너무 작습니다. 최소 8 GiB가 필요합니다.",
   "validation.modal.espRequired": "Boot (ESP) 파티션이 정확히 1개 필요합니다 (찾음 {n}).",
-  "validation.modal.espTooSmall": "Boot 파티션이 너무 작습니다: {size} MB (최소 128 MB 필요).",
+  "validation.modal.espTooSmall": "Boot 파티션이 너무 작습니다: {size} MB (최소 512 MB 필요).",
   "validation.modal.exceedsDisk": "파티션 크기 ({size} MB)가 디스크 크기 ({disk} MB)를 초과합니다.",
   "validation.modal.exceedsFreeSpace": "새 파티션 크기 ({size} MB)가 여유 공간 ({free} MB)을 초과합니다.",
   "validation.modal.invalidType": "잘못된 파티션 유형 '{type}' (비어 있음, esp 또는 system이어야 함).",

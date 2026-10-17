@@ -137,7 +137,7 @@
   "validation.installationComplete": "Instalasi selesai.",
   "validation.modal.diskTooSmall": "Disk yang dipilih terlalu kecil. Minimal 8 GiB diperlukan.",
   "validation.modal.espRequired": "Tepat satu partisi Boot (ESP) diperlukan (ditemukan {n}).",
-  "validation.modal.espTooSmall": "Partisi Boot terlalu kecil: {size} MB (minimum 128 MB diperlukan).",
+  "validation.modal.espTooSmall": "Partisi Boot terlalu kecil: {size} MB (minimum 512 MB diperlukan).",
   "validation.modal.exceedsDisk": "Ukuran partisi ({size} MB) melebihi ukuran disk ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Ukuran partisi baru ({size} MB) melebihi ruang bebas ({free} MB).",
   "validation.modal.invalidType": "Tipe partisi tidak valid '{type}' (harus kosong, esp, atau system).",

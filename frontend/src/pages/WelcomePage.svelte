@@ -14,14 +14,25 @@
 	let languages = $state<LanguageOption[]>([]);
 	let loading = $state(true);
 
+	// Apply the UI translation that belongs to a backend language/region code.
+	// Used for both the restored selection and a user click, so the UI language
+	// always matches the selected install language.
+	function applyUiLocale(code: string): void {
+		const lang = languages.find((l) => l.code === code);
+		const uiLocale = lang ? backendLocaleToFrontend(lang.locale) : undefined;
+		if (uiLocale) setLocale(uiLocale);
+	}
+
 	async function loadLanguages(): Promise<void> {
 		try {
 			languages = await GetLanguages();
 			const saved = await GetSelectedLanguage();
 			if (saved && languages.some(l => l.code === saved)) {
 				installState.locale = saved;
+				applyUiLocale(saved);
 			} else if (languages.length > 0) {
 				installState.locale = languages[0].code;
+				applyUiLocale(installState.locale);
 				await SetSelectedLanguage(installState.locale);
 			}
 		} catch (err) {
@@ -33,17 +44,12 @@
 
 	async function selectLanguage(code: string): Promise<void> {
 		installState.locale = code;
-		const lang = languages.find(l => l.code === code);
-		const uiLocale = lang ? backendLocaleToFrontend(lang.locale) : undefined;
+		applyUiLocale(code);
 
 		try {
 			await SetSelectedLanguage(code);
 		} catch (err) {
 			console.error(`Failed to set language: ${err}`);
-		}
-
-		if (uiLocale) {
-			setLocale(uiLocale);
 		}
 	}
 

@@ -321,7 +321,7 @@ func TestRun_PlainExt4(t *testing.T) {
 
 	for _, want := range [][]string{
 		{"sgdisk", "-Z", "/dev/vda"},
-		{"sgdisk", "-n", "1:0:+128M"},
+		{"sgdisk", "-n", "1:0:+512M"},
 		{"sgdisk", "-n", "2:0:0"},
 		{"partprobe", "/dev/vda"},
 	} {

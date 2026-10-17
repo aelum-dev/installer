@@ -86,10 +86,11 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 			}
 			return nil, fmt.Errorf("no free space to create a %s partition", p.Type)
 		}
-		// allocateFree returns an exact fit for an explicit-size row (Validate
-		// already enforced its floor), so this is a belt-and-suspenders guard; a
-		// "use all remaining space" row is exempt because its floor is the disk.
-		if p.SizeMB != 0 && sizeMB < minPartitionSizeMB(p.Type) {
+		// Enforce the role floor on the *resolved* size. This matters for a
+		// "use all remaining space" row (SizeMB 0): Validate cannot know its
+		// final size, so without this check a tiny ESP or sub-8-GiB root could
+		// be created from whatever little free space is left.
+		if sizeMB < minPartitionSizeMB(p.Type) {
 			return nil, fmt.Errorf("%s partition has only %d MB of contiguous free space, below the %d MB minimum", p.Type, sizeMB, minPartitionSizeMB(p.Type))
 		}
 		free = rest
@@ -240,7 +241,7 @@ func roleLabel(fstype string) string {
 }
 
 // minPartitionSizeMB returns the enforced minimum size in MiB for a role: the
-// ESP floor (128 MiB) and the system/root floor (8 GiB). Other roles are not
+// ESP floor (512 MiB) and the system/root floor (8 GiB). Other roles are not
 // designated partitions and have no floor (0). Mirrors the size checks in
 // Validate; here it backstops the *resolved* size of a brand-new partition so a
 // too-small partition can never reach sgdisk.

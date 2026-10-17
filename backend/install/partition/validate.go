@@ -160,9 +160,38 @@ func Validate(layout shared.ManualLayout) error {
 			newSectors/spm, usableSectors/spm)
 	}
 
+	// A brand-new "use all remaining space" row (SizeMB 0) is exempt from the
+	// per-row floor above because its final size is only known after allocation.
+	// Enforce the floor on the resolved space now.
+	if err := validateUseRemainingFloors(layout, usableSectors, newSectors, spm); err != nil {
+		return err
+	}
+
 	shared.GetLogger().Info("ValidateManualLayout: PASS sumMB=%d diskMB=%d newSectors=%d usableSectors=%d",
 		sumMB, layout.DiskSizeMB, newSectors, usableSectors)
 
+	return nil
+}
+
+// validateUseRemainingFloors enforces the role floor on a brand-new "use all
+// remaining space" row (SizeMB 0). Its final size is only known after explicit
+// new partitions are subtracted from the usable space, so the per-row pass in
+// Validate cannot check it.
+func validateUseRemainingFloors(layout shared.ManualLayout, usableSectors, newSectors, spm int64) error {
+	remainingSectors := usableSectors - newSectors
+	if remainingSectors < 0 {
+		remainingSectors = 0
+	}
+	remainingMB := remainingSectors / spm
+
+	for _, p := range layout.Partitions {
+		if p.Path != "" || p.SizeMB != 0 || (p.Type != shared.TypeESP && p.Type != shared.TypeSystem) {
+			continue
+		}
+		if min := minPartitionSizeMB(p.Type); remainingMB < min {
+			return fmt.Errorf("%s partition would have only %d MB of free space, below the %d MB minimum", p.Type, remainingMB, min)
+		}
+	}
 	return nil
 }
 

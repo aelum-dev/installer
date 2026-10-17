@@ -15,11 +15,13 @@
 	let confirm = $state('');
 	let showPass = $state(false);
 	let showConfirm = $state(false);
+	let passphraseTouched = $state(false);
 	let focusRef = $state<HTMLElement | null>(null);
 
-	// Live inline validation: error when fields diverge or the first is empty.
+	// Live inline validation: stay quiet until the user has left the first field,
+	// so opening the dialog doesn't greet them with a red "required" error.
 	const error = $derived.by(() => {
-		if (passphrase === '') return t('luks.dialog.errorEmpty');
+		if (passphraseTouched && passphrase === '') return t('luks.dialog.errorEmpty');
 		if (confirm !== '' && confirm !== passphrase) return t('luks.dialog.errorMatch');
 		return '';
 	});
@@ -42,6 +44,7 @@
 		confirm = '';
 		showPass = false;
 		showConfirm = false;
+		passphraseTouched = false;
 	}
 
 	// The dialog shell skips its own focus so the first field can take it.
@@ -62,6 +65,7 @@
 				placeholder={t('luks.dialog.passphrasePlaceholder')}
 				autocomplete="off"
 				spellcheck="false"
+				onblur={() => (passphraseTouched = true)}
 				onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
 			/>
 			<button

@@ -15,7 +15,7 @@ function baseLayout(over: Partial<ManualLayout> = {}): ManualLayout {
 		diskSizeMB: 100000,
 		diskSizeBytes: 100000 * mib,
 		partitions: [
-			{ index: 0, path: '/dev/sda1', sizeMB: 128, sizeBytes: 128 * mib, type: 'esp' },
+			{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 			{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 		],
 		freeMB: 0,
@@ -24,24 +24,24 @@ function baseLayout(over: Partial<ManualLayout> = {}): ManualLayout {
 }
 
 describe('isManualLayoutValid', () => {
-	it('accepts an ESP >= 128 MiB and a System >= 8 GiB', () => {
+	it('accepts an ESP >= 512 MiB and a System >= 8 GiB', () => {
 		expect(isManualLayoutValid(baseLayout())).toBe(true);
 	});
 
 	it('rejects a System partition below 8 GiB', () => {
 		const layout = baseLayout({
 			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 128, sizeBytes: 128 * mib, type: 'esp' },
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 1, type: 'system' },
 			],
 		});
 		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 
-	it('rejects an ESP below 128 MiB', () => {
+	it('rejects an ESP below 512 MiB', () => {
 		const layout = baseLayout({
 			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 64, sizeBytes: 64 * mib, type: 'esp' },
+				{ index: 0, path: '/dev/sda1', sizeMB: 256, sizeBytes: 256 * mib, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
@@ -51,7 +51,7 @@ describe('isManualLayoutValid', () => {
 	it('accepts a brand-new System using all remaining space (sizeMB 0)', () => {
 		const layout = baseLayout({
 			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 128, sizeBytes: 128 * mib, type: 'esp' },
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 0, type: 'system' },
 			],
 		});
@@ -61,7 +61,7 @@ describe('isManualLayoutValid', () => {
 	it('rejects a brand-new System explicit size below 8 GiB', () => {
 		const layout = baseLayout({
 			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 128, sizeBytes: 128 * mib, type: 'esp' },
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 4096, type: 'system' },
 			],
 		});
@@ -70,7 +70,7 @@ describe('isManualLayoutValid', () => {
 
 	it('rejects a layout with no System partition', () => {
 		const layout = baseLayout({
-			partitions: [{ index: 0, path: '/dev/sda1', sizeMB: 128, type: 'esp' }],
+			partitions: [{ index: 0, path: '/dev/sda1', sizeMB: 512, type: 'esp' }],
 		});
 		expect(isManualLayoutValid(layout)).toBe(false);
 	});
@@ -90,26 +90,67 @@ describe('isManualLayoutValid', () => {
 	});
 });
 
+describe('use-all-remaining rows respect the role floor', () => {
+	it('rejects a brand-new ESP whose resolved free space is below 512 MiB', () => {
+		const layout = baseLayout({
+			diskSizeMB: 9000,
+			diskSizeBytes: 9000 * mib,
+			partitions: [
+				{ index: 0, path: '/dev/sda2', sizeMB: 8700, sizeBytes: 8700 * mib, type: 'system' },
+				{ index: 1, path: '', sizeMB: 0, type: 'esp' },
+			],
+		});
+		expect(manualLayoutIssues(layout)).toContainEqual({ kind: 'espTooSmall', sizeMB: 298 });
+		expect(isManualLayoutValid(layout)).toBe(false);
+	});
+
+	it('rejects a brand-new System whose resolved free space is below 8 GiB', () => {
+		const layout = baseLayout({
+			diskSizeMB: 8700,
+			diskSizeBytes: 8700 * mib,
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '', sizeMB: 0, type: 'system' },
+			],
+		});
+		expect(manualLayoutIssues(layout)).toContainEqual({ kind: 'systemTooSmall', sizeMB: 8186 });
+		expect(isManualLayoutValid(layout)).toBe(false);
+	});
+
+	it('accepts a use-all ESP when the resolved free space meets the floor', () => {
+		const layout = baseLayout({
+			diskSizeMB: 9000,
+			diskSizeBytes: 9000 * mib,
+			partitions: [
+				{ index: 0, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
+				{ index: 1, path: '', sizeMB: 0, type: 'esp' },
+			],
+		});
+		expect(manualLayoutIssues(layout)).toEqual([]);
+		expect(isManualLayoutValid(layout)).toBe(true);
+	});
+});
+
 describe('manual layout geometry', () => {
 	it('sums existing byte sizes and new MiB sizes in computeUsedMB', () => {
 		const layout = baseLayout({
 			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 128, sizeBytes: 128 * mib, type: 'esp' },
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 4096, type: 'system' },
 			],
 		});
-		expect(computeUsedMB(layout)).toBe(4224);
+		expect(computeUsedMB(layout)).toBe(4608);
 	});
 
 	it('reserves both GPT regions when reporting free space', () => {
 		const layout = baseLayout({
 			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 128, sizeBytes: 128 * mib, type: 'esp' },
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 0, type: 'system' },
 			],
 		});
-		// 100000 MiB minus 128 MiB minus the 1 MiB GPT prefix and 128 KiB backup.
-		expect(computeFreeMB(layout)).toBe(99870);
+		// 100000 MiB minus 512 MiB minus the 1 MiB GPT prefix and 128 KiB backup.
+		expect(computeFreeMB(layout)).toBe(99486);
 	});
 
 	it('reports structured issues in the same order the modal renders them', () => {

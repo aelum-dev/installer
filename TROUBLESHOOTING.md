@@ -21,7 +21,7 @@ On the live ISO, the path is:
 ```
 [14:32:01] Starting step: Formatting disk
 [14:32:02] Running: sgdisk -Z /dev/sda
-[14:32:02] Running: sgdisk -n 1:2048:+128M -t 1:C12A7328... /dev/sda
+[14:32:02] Running: sgdisk -n 1:2048:+512M -t 1:C12A7328... /dev/sda
 [14:32:03] ERROR: Failed to wipe /dev/sda1: exit status 1 (Unknown command: wipefs ...)
 ```
 

@@ -137,7 +137,7 @@
   "validation.installationComplete": "A telepítés befejeződött.",
   "validation.modal.diskTooSmall": "A kiválasztott lemez túl kicsi. Minimum 8 GiB szükséges.",
   "validation.modal.espRequired": "Pontosan egy Boot (ESP) partíció szükséges (talált: {n}).",
-  "validation.modal.espTooSmall": "A Boot partíció túl kicsi: {size} MB (minimum 128 MB szükséges).",
+  "validation.modal.espTooSmall": "A Boot partíció túl kicsi: {size} MB (minimum 512 MB szükséges).",
   "validation.modal.exceedsDisk": "A partíciók méretei ({size} MB) meghaladják a lemez méretét ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Az új partíciók méretei ({size} MB) meghaladják a szabad helyet ({free} MB).",
   "validation.modal.invalidType": "Érvénytelen partíciótípus '{type}' (üres, esp vagy system lehet).",

@@ -104,11 +104,11 @@ const MinDiskSizeGB = 8
 // packages (~4GB) + overhead (~1GB).
 const MinDiskSizeBytes = MinDiskSizeGB * 1024 * 1024 * 1024
 
-// MinESPSizeBytes is the smallest size an ESP partition may be (128 MiB). This
+// MinESPSizeBytes is the smallest size an ESP partition may be (512 MiB). This
 // matches the automatic installer's EFI partition and leaves room for firmware,
-// Windows Boot Manager, and multiple entries without squeezing the FAT32
-// allocation bitmap.
-const MinESPSizeBytes = 128 * 1024 * 1024
+// Windows Boot Manager, multiple kernels/initrds, and FAT32 allocation metadata
+// without squeezing the ESP.
+const MinESPSizeBytes = 512 * 1024 * 1024
 
 // MinSystemPartitionBytes is the smallest size the OS partition (Boot/System) may
 // be: the same 8 GiB floor as the disk itself. A smaller root cannot hold the
@@ -208,8 +208,8 @@ const DefaultCLIUsername = "aelum"
 
 // --- EFI / GPT ---------------------------------------------------------------
 
-// EFIPartitionSizeMB is the EFI partition size in megabytes.
-const EFIPartitionSizeMB = 128
+// EFIPartitionSizeMB is the EFI partition size in mebibytes.
+const EFIPartitionSizeMB = 512
 
 // GPTPartitionStartSector is the first usable sector on a GPT disk with 512-byte
 // logical sectors (1 MiB). On a 4Kn disk the equivalent boundary is 256 sectors;

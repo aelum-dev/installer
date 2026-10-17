@@ -137,7 +137,7 @@
   "validation.installationComplete": "De installatie is voltooid.",
   "validation.modal.diskTooSmall": "Geselecteerde schijf is te klein. Minimaal 8 GiB vereist.",
   "validation.modal.espRequired": "Precies één Boot (ESP) partitie is vereist (gevonden: {n}).",
-  "validation.modal.espTooSmall": "Boot-partitie is te klein: {size} MB (minimum 128 MB vereist).",
+  "validation.modal.espTooSmall": "Boot-partitie is te klein: {size} MB (minimum 512 MB vereist).",
   "validation.modal.exceedsDisk": "Partitiegroottes ({size} MB) overschrijden de schijfgrootte ({disk} MB).",
   "validation.modal.exceedsFreeSpace": "Nieuwe partitiegroottes ({size} MB) overschrijden de vrije ruimte ({free} MB).",
   "validation.modal.invalidType": "Ongeldig partitietype '{type}' (moet leeg, esp of system zijn).",

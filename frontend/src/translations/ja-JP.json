@@ -137,7 +137,7 @@
   "validation.installationComplete": "インストールが完了しました。",
   "validation.modal.diskTooSmall": "選択したディスクが小さすぎます。8 GiB以上が必要です。",
   "validation.modal.espRequired": "Boot (ESP) パーティションが正確に1つ必要です ({n}個見つかりました)。",
-  "validation.modal.espTooSmall": "Bootパーティションが小さすぎます: {size} MB (最低128 MB必要)。",
+  "validation.modal.espTooSmall": "Bootパーティションが小さすぎます: {size} MB (最低512 MB必要)。",
   "validation.modal.exceedsDisk": "パーティションのサイズ ({size} MB) がディスク容量 ({disk} MB) を超えています。",
   "validation.modal.exceedsFreeSpace": "新しいパーティションのサイズ ({size} MB) が空き容量 ({free} MB) を超えています。",
   "validation.modal.invalidType": "無効なパーティションタイプ '{type}' (空、esp、system のいずれか)。",

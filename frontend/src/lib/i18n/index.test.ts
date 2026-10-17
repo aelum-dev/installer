@@ -30,6 +30,11 @@ describe('i18n locale registry', () => {
 		expect(t('app.brand')).toBe('Aelum');
 	});
 
+	it('updates the document language for assistive tech', () => {
+		setLocale('ar-SA');
+		expect(document.documentElement.lang).toBe('ar-SA');
+	});
+
 	it('returns the key itself when no locale defines it', () => {
 		expect(t('missing.translation.key')).toBe('missing.translation.key');
 	});
