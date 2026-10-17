@@ -167,27 +167,32 @@ func setDefaultBootEntry(esp, entryID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read loader.conf: %w", err)
 	}
-	content := string(data)
-	// Replace or append the default line (space-separated, no =).
+	content := applyLoaderConfDefaults(string(data), entryID)
+	if err := primitives.WriteFile(confPath, content); err != nil {
+		return fmt.Errorf("failed to write default entry to loader.conf: %w", err)
+	}
+	return nil
+}
+
+// applyLoaderConfDefaults returns loader.conf with the systemd-boot default
+// entry and selection timeout set, replacing the existing lines when present or
+// appending them when absent. A timeout is important because systemd-boot
+// defaults to 0 (no menu) when it is unset, so the user can still pick an entry.
+func applyLoaderConfDefaults(content, entryID string) string {
 	re := regexp.MustCompile(`(?m)^default .*$`)
 	if re.MatchString(content) {
 		content = re.ReplaceAllString(content, "default "+entryID)
 	} else {
 		content += "default " + entryID + "\n"
 	}
-	// Ensure a boot-selection timeout so the user can pick an entry at boot.
-	// systemd-boot defaults to 0 (no menu) when timeout is unset, so set it
-	// explicitly. Uses the shared BootLoaderTimeout constant.
+
 	timeRe := regexp.MustCompile(`(?m)^timeout .*$`)
 	if timeRe.MatchString(content) {
 		content = timeRe.ReplaceAllString(content, "timeout "+strconv.Itoa(shared.BootLoaderTimeout))
 	} else {
 		content += "timeout " + strconv.Itoa(shared.BootLoaderTimeout) + "\n"
 	}
-	if err := primitives.WriteFile(confPath, content); err != nil {
-		return fmt.Errorf("failed to write default entry to loader.conf: %w", err)
-	}
-	return nil
+	return content
 }
 
 func verifyBootloaderInstallation(esp string) error {
