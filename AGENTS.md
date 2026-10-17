@@ -60,9 +60,9 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       mount/
         mount.go                — MountFilesystem() + verifyMount() (+ mount_test.go)
       installbase/
-        install.go              — base pacstrap (basePackages) with line-count progress (+ install_test.go)
+        install.go              — base pacstrap (basePackages) with phase-banded progress (+ install_test.go)
       installdesktop/
-        install.go              — desktop pacstrap (desktopPackages) with line-count progress (+ install_test.go)
+        install.go              — desktop pacstrap (desktopPackages) with phase-banded progress (+ install_test.go)
       users/
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
@@ -90,7 +90,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
           config.toml           — Embedded greetd config template (includes --cache-dir)
           memory.json           — Embedded greetd memory template
       progress/
-        pacstrap.go             — PacstrapProgressTracker (line-count-based progress)
+        pacstrap.go             — PacstrapProgressTracker (phase-banded progress)
         pacstrap_test.go        — Progress tracker tests
       *_test.go                 — Unit + integration tests (installer, installer_integration)
     shared/
@@ -173,7 +173,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 128MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` (`install/mount/`)
-3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, line-count progress, `install/installbase/`)
+3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
@@ -208,7 +208,7 @@ All UI strings are translated via `@svelte-intl/svelte-intl`. Frontend locales l
 - **Direct exec for root ops**: Install steps use `Run()` (exec.Command) and `RunChroot()` (arch-chroot) directly — no helper binary. Both go through the `primitives.CommandRunner` seam: tests inject a fake with `primitives.SetCommandRunner(rec)()` (see `primitives/primitivestest`) to assert argv and simulate output/failure without root. Commands are `*primitives.Command` (mirrors `exec.Cmd`'s `Args`/`Stdin`/`Run`/`Output`/`CombinedOutput`). Note: `installbase` and the GUI spawn streaming processes (`Start`/`Wait`/pipes) via `os/exec` directly — those are not behind the seam.
 - **File I/O for root ops**: Install steps write/read the target via `primitives.WriteFile()`/`AppendFile()`/`ReadFile()`/`Stat()`/`RemoveAll()`/`Chmod()` rather than calling `os` directly. Those go through the `primitives.FileSystem` seam: tests inject `primitivestest.NewMemFS()` with `primitives.SetFileSystem(fs)()` to exercise file-driven logic without writing under `/mnt`. `WriteFile`/`AppendFile` prepend `MountRoot` for chroot paths and leave host paths (`/mnt/...`) as-is; `WriteFileMode`/`ReadFile`/`Stat`/`RemoveAll`/`Chmod` take host paths verbatim. `os/exec`, `shared/` (logger, mirrorlist), and the GUI binary lookup still use `os` directly.
 - **InstallContext**: Shared state passed through all install steps. New fields go here, not in Installer struct.
-- **Progress tracking**: pacstrap uses line-count-based tracker in `install/progress/pacstrap.go`. Step weights in `install/step.go`.
+- **Progress tracking**: pacstrap uses a phase-banded tracker in `install/progress/pacstrap.go` (download/install/hook bands; see `PacstrapDownloadBandEnd`/`PacstrapInstallBandEnd` in `shared/config.go`). Step weights in `install/step.go`.
 - **Dry run**: `AELUM_DRY_RUN=1` — steps sleep 200ms instead of executing.
 - **Fake disks**: `FAKE_DISKS=1` — synthetic disk data for frontend dev.
 - **Rollback**: `--rollback /dev/vda` — unmounts + wipes partition signatures.

@@ -147,15 +147,19 @@ func (inst *Installer) Install() error {
 		cumulativePercent += weights[idx]
 		endPercent := cumulativePercent * 100 / totalWeight
 
+		// high is this step's high-water mark (absolute percent). Both the
+		// parsed pacstrap progress and the gap-filling ticker raise it, so the
+		// bar never moves backwards and the ticker never overtakes real
+		// progress.
+		var high atomic.Int32
+		high.Store(int32(startPercent))
+
 		// Wire progress callback to update context + emit JSON only.
 		// Command() already writes the percentage to stdout, so we don't call Progress() here.
 		ctx.ProgressCallback = func(percent int) {
 			// Convert step-relative percentage (0-100) to absolute percentage (startPercent-endPercent)
 			absPercent := int(float64(startPercent) + (float64(percent) * float64(endPercent-startPercent) / 100.0))
-			if inst.Logger != nil {
-				inst.Logger.SetProgressContext(label, absPercent)
-				inst.Logger.ProgressJSON(label, absPercent, "running")
-			}
+			inst.raiseProgress(label, &high, absPercent)
 		}
 
 		inst.emitProgress(label, startPercent, "running")
@@ -168,7 +172,7 @@ func (inst *Installer) Install() error {
 		if inst.dryRun {
 			stepDuration = time.Duration(shared.DryRunStepDurationMs) * time.Millisecond
 		}
-		go inst.tickProgress(label, startPercent, endPercent, stepDuration, stopTick)
+		go inst.tickProgress(label, startPercent, endPercent, stepDuration, stopTick, &high)
 
 		var err error
 		if inst.dryRun {
@@ -193,14 +197,17 @@ func (inst *Installer) Install() error {
 // tickProgress slowly advances the percentage from start to end, emitting
 // progress events at regular intervals. Used to keep the UI feeling alive
 // during long-running steps (e.g. pacstrap). Stops when stopTick is closed.
-// In dry-run mode, stepDuration controls the total sleep time and tick interval
-// is calculated so that 1% is emitted per tick (e.g. 22s step → ~1 tick/sec).
-func (inst *Installer) tickProgress(label string, start, end int, stepDuration time.Duration, stopTick chan struct{}) {
+//
+// high is the shared high-water mark for the step: the ticker only ever raises
+// it, so it fills the silent gaps between pacstrap's progress lines without
+// overtaking the parsed progress (which raises the same mark). In dry-run mode
+// stepDuration controls the total sleep time and tick interval is calculated so
+// that 1% is emitted per tick (e.g. 22s step → ~1 tick/sec).
+func (inst *Installer) tickProgress(label string, start, end int, stepDuration time.Duration, stopTick chan struct{}, high *atomic.Int32) {
 	if start >= end {
 		return
 	}
 
-	current := start
 	var ticker *time.Ticker
 
 	if stepDuration > 0 {
@@ -215,7 +222,10 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 		}
 		ticker = time.NewTicker(time.Duration(intervalMs) * time.Millisecond)
 	} else {
-		// Real install: initial delay then slow ticks (pacstrap drives progress).
+		// Real install: initial delay then slow ticks. These fill gaps in
+		// pacstrap output (a slow hook or a large extraction can be silent for
+		// several seconds); parsed progress always wins because it raises the
+		// same high-water mark.
 		select {
 		case <-time.After(time.Duration(shared.ProgressTickDelayMs) * time.Millisecond):
 		case <-stopTick:
@@ -228,24 +238,45 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 	for {
 		select {
 		case <-ticker.C:
-			current++
-			if current > end {
-				current = end
-			}
-			// Only emit JSON in dry-run mode — normal mode gets progress from pacstrap output.
-			if inst.Logger != nil {
-				inst.Logger.UpdateContext(label, current)
-				if stepDuration > 0 {
-					inst.Logger.ProgressJSON(label, current, "running")
-				}
-			}
-			if current >= end {
+			cur := high.Load()
+			if int(cur) >= end {
 				return
+			}
+			next := int(cur) + 1
+			if next > end {
+				next = end
+			}
+			if !high.CompareAndSwap(cur, int32(next)) {
+				continue // parsed progress advanced; re-read its value next tick
+			}
+			if inst.Logger != nil {
+				inst.Logger.SetProgressContext(label, next)
+				inst.Logger.ProgressJSON(label, next, "running")
 			}
 		case <-stopTick:
 			return
 		}
 	}
+}
+
+// raiseProgress records pct as the step's high-water mark, and when it advances
+// updates the log context and emits a JSON progress event. Returns true when the
+// mark advanced.
+func (inst *Installer) raiseProgress(label string, high *atomic.Int32, pct int) bool {
+	for {
+		cur := high.Load()
+		if int32(pct) <= cur {
+			return false
+		}
+		if high.CompareAndSwap(cur, int32(pct)) {
+			break
+		}
+	}
+	if inst.Logger != nil {
+		inst.Logger.SetProgressContext(label, pct)
+		inst.Logger.ProgressJSON(label, pct, "running")
+	}
+	return true
 }
 
 // validStepNames returns the list of valid step names for error messages.

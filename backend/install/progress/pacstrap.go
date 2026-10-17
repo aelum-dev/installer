@@ -4,15 +4,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"aelum-installer/backend/shared"
 )
 
 // pacstrap line-type constants — matched against pacstrap stdout to track progress.
 const (
-	pacstrapSuffixDownloading       = "downloading..."
-	pacstrapPrefixInstalling        = "installing "
-	pacstrapPrefixChecking          = "checking "
-	pacstrapPrefixLoading           = "loading "
-	pacstrapPrefixProcessingChanges = ":: Processing package changes"
+	pacstrapSuffixDownloading = "downloading..."
+	pacstrapPrefixInstalling  = "installing "
 )
 
 // pacstrapProgressRegex matches pacstrap's (N/M) progress lines.
@@ -21,8 +20,7 @@ var pacstrapProgressRegex = regexp.MustCompile(`^\(\s*(\d+)\s*/\s*(\d+)\s*\)`)
 // packagesRegex matches "Packages (N)" to get total package count.
 var packagesRegex = regexp.MustCompile(`Packages \((\d+)\)`)
 
-// PacstrapProgressTracker tracks progress across all pacstrap phases using
-// actual line counts rather than relying solely on (N/M) counters.
+// PacstrapProgressTracker tracks progress across all pacstrap phases.
 //
 // Pacstrap's output phases (in order):
 //  1. Pre-download: resolving deps, package list (Packages (N))
@@ -31,26 +29,23 @@ var packagesRegex = regexp.MustCompile(`Packages \((\d+)\)`)
 //  4. Installing: "installing <pkg>..." lines — one per package
 //  5. Post-hooks: "( N/M) ..." lines with explicit counters
 //
-// Work model:
-//   - Download: totalPackages units
-//   - Verification: verified count (each verify line = 1 unit)
-//   - Install: totalPackages units
-//   - Hooks: hookCompletedPhases + hookCurrentTotal (grows with new phases)
+// Rather than weighing every line equally — which front-loads the bar, because
+// an offline install finishes the entire download phase in under a second —
+// each phase is mapped to its own band of the step:
 //
-// Progress = (downloaded + verified + installed + hookCurrent) /
+//	download: 0            → shared.PacstrapDownloadBandEnd
+//	install:  download end → shared.PacstrapInstallBandEnd
+//	hooks:    install end  → 100
 //
-//	(2*totalPackages + verified + hookDenominator) * 100
-//
-// The reported percentage is clamped to be monotonically non-decreasing.
-// When pacstrap enters the post-transaction hook phase the denominator jumps
-// by the new phase's total (M) before the numerator can keep up, which would
-// otherwise make the bar visibly jump backwards (e.g. 93% → 90% → 93%).
+// The install band tops out below 100 so the post-transaction hooks (initramfs
+// rebuild, font/icon caches) — which run after the last package is extracted —
+// always have room to move the bar. The reported percentage is clamped to be
+// monotonically non-decreasing.
 type PacstrapProgressTracker struct {
 	totalPackages int // from "Packages (N)"
 
 	// Phase counters — each represents completed work units.
 	downloaded int // "downloading..." lines
-	verified   int // verification steps (checking keyring, integrity, etc.)
 	installed  int // "installing <pkg>..." lines
 
 	// Hook (N/M) tracking for post-transaction phase.
@@ -81,6 +76,8 @@ func (t *PacstrapProgressTracker) SetTotalPackages(n int) {
 // ProcessLine handles all pacstrap output line types and returns the current
 // overall progress percentage (0-100).
 func (t *PacstrapProgressTracker) ProcessLine(line string) int {
+	trimmed := strings.TrimSpace(line)
+
 	// Phase 1: "Packages (N)" — record total package count.
 	if count := parsePackagesCount(line); count > 0 {
 		t.totalPackages = count
@@ -88,24 +85,18 @@ func (t *PacstrapProgressTracker) ProcessLine(line string) int {
 	}
 
 	// Phase 2: "<pkg> downloading..." — count downloads.
-	if strings.HasSuffix(line, pacstrapSuffixDownloading) {
+	if strings.HasSuffix(trimmed, pacstrapSuffixDownloading) {
 		t.downloaded++
 		return t.CalculatePercent()
 	}
 
-	// Phase 3: Verification steps.
-	if isVerifyLine(line) {
-		t.verified++
-		return t.CalculatePercent()
-	}
-
-	// Phase 4: "installing <pkg>..." — count installs.
-	if strings.HasPrefix(strings.TrimSpace(line), pacstrapPrefixInstalling) {
+	// Phase 3: "installing <pkg>..." — count installs.
+	if strings.HasPrefix(trimmed, pacstrapPrefixInstalling) {
 		t.installed++
 		return t.CalculatePercent()
 	}
 
-	// Phase 5: "( N/M) ..." — hook progress.
+	// Phase 4: "( N/M) ..." — post-transaction hook progress.
 	if n, m := parsePacstrapProgressPair(line); n >= 0 && m >= 0 {
 		return t.UpdateHook(n, m)
 	}
@@ -149,14 +140,6 @@ func parsePackagesCount(line string) int {
 	return count
 }
 
-// isVerifyLine returns true for pacstrap verification phase lines.
-func isVerifyLine(line string) bool {
-	trimmed := strings.TrimSpace(line)
-	return strings.HasPrefix(trimmed, pacstrapPrefixChecking) ||
-		strings.HasPrefix(trimmed, pacstrapPrefixLoading) ||
-		strings.HasPrefix(trimmed, pacstrapPrefixProcessingChanges)
-}
-
 // UpdateHook processes a hook (N/M) line and returns overall progress.
 func (t *PacstrapProgressTracker) UpdateHook(n, m int) int {
 	// Detect phase boundary: M changed means we're in a new hook phase.
@@ -179,17 +162,7 @@ func (t *PacstrapProgressTracker) UpdateHook(n, m int) int {
 
 // CalculatePercent computes overall progress as a percentage (0-100).
 func (t *PacstrapProgressTracker) CalculatePercent() int {
-	hookDenominator := t.hookCompletedPhases + t.hookCurrentTotal
-	hookCurrent := t.hookCompletedPhases + t.hookCurrentCurrent
-
-	totalUnits := (t.totalPackages * 2) + t.verified + hookDenominator
-	currentUnits := t.downloaded + t.verified + t.installed + hookCurrent
-
-	if totalUnits == 0 {
-		return 0
-	}
-
-	pct := int(float64(currentUnits) / float64(totalUnits) * 100)
+	pct := t.rawPercent()
 	if pct > 100 {
 		pct = 100
 	}
@@ -197,13 +170,69 @@ func (t *PacstrapProgressTracker) CalculatePercent() int {
 		pct = 0
 	}
 
-	// Guarantee forward-only progress. The raw ratio can momentarily drop
-	// (e.g. when a new hook phase enlarges the denominator), but the displayed
-	// bar must never move backwards.
+	// Guarantee forward-only progress. A new hook phase enlarges the
+	// denominator before the numerator catches up, but the displayed bar must
+	// never move backwards.
 	if pct > t.maxPercent {
 		t.maxPercent = pct
 	}
 	return t.maxPercent
+}
+
+// rawPercent returns the unclamped percentage for the furthest phase observed.
+// Later phases always map to a higher band than earlier ones, so the result is
+// naturally monotonic across phase transitions.
+func (t *PacstrapProgressTracker) rawPercent() int {
+	switch {
+	case t.hooksStarted():
+		return t.hookPercent()
+	case t.installed > 0:
+		return t.installPercent()
+	default:
+		return t.downloadPercent()
+	}
+}
+
+// downloadPercent maps download lines onto the [0, PacstrapDownloadBandEnd] band.
+func (t *PacstrapProgressTracker) downloadPercent() int {
+	if t.totalPackages <= 0 {
+		return 0
+	}
+	if t.downloaded >= t.totalPackages {
+		return shared.PacstrapDownloadBandEnd
+	}
+	return t.downloaded * shared.PacstrapDownloadBandEnd / t.totalPackages
+}
+
+// installPercent maps install lines onto the
+// [PacstrapDownloadBandEnd, PacstrapInstallBandEnd] band.
+func (t *PacstrapProgressTracker) installPercent() int {
+	if t.totalPackages <= 0 {
+		return shared.PacstrapDownloadBandEnd
+	}
+	done := t.installed
+	if done > t.totalPackages {
+		done = t.totalPackages
+	}
+	span := shared.PacstrapInstallBandEnd - shared.PacstrapDownloadBandEnd
+	return shared.PacstrapDownloadBandEnd + done*span/t.totalPackages
+}
+
+// hooksStarted reports whether any post-transaction hook line has been seen.
+func (t *PacstrapProgressTracker) hooksStarted() bool {
+	return t.hookCurrentTotal > 0 || t.hookCompletedPhases > 0
+}
+
+// hookPercent maps post-transaction hook progress onto the
+// [PacstrapInstallBandEnd, 100] band.
+func (t *PacstrapProgressTracker) hookPercent() int {
+	denom := t.hookCompletedPhases + t.hookCurrentTotal
+	if denom <= 0 {
+		return shared.PacstrapInstallBandEnd
+	}
+	num := t.hookCompletedPhases + t.hookCurrentCurrent
+	span := 100 - shared.PacstrapInstallBandEnd
+	return shared.PacstrapInstallBandEnd + num*span/denom
 }
 
 // --- Step progress tracker --------------------------------------------------

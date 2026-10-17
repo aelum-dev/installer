@@ -62,15 +62,16 @@ func TestInstallPackages_NotMounted(t *testing.T) {
 func TestPacstrapProgressTracker_BasicProgress(t *testing.T) {
 	tr := progress.NewPacstrapProgressTracker()
 
-	// Single phase: (1/5), (2/5), (3/5), (4/5), (5/5)
+	// Single phase: (1/5), (2/5), (3/5), (4/5), (5/5) — the hook band spans
+	// 80→100, so each step adds 4 points.
 	tests := []struct {
 		n, m    int
 		wantPct int
 	}{
-		{1, 5, 20},
-		{2, 5, 40},
-		{3, 5, 60},
-		{4, 5, 80},
+		{1, 5, 84},
+		{2, 5, 88},
+		{3, 5, 92},
+		{4, 5, 96},
 		{5, 5, 100},
 	}
 
@@ -124,11 +125,12 @@ func TestPacstrapProgressTracker_PhaseJump(t *testing.T) {
 	tr.UpdateHook(2, 20)
 
 	// Raw ratio: completedPhasesTotal is 3 (highest N observed in phase 1),
-	// giving (3+2)/(3+20) = 21%. Phase 1 had already reported 60%, so the
-	// monotonic clamp keeps the displayed progress at 60% (forward-only bar).
+	// giving (3+2)/(3+20) = 21%, which maps into the hook band as 83%.
+	// Phase 1 had already reported 92%, so the monotonic clamp keeps the
+	// displayed progress at 92% (forward-only bar).
 	got := tr.UpdateHook(2, 20)
-	if got != 60 {
-		t.Errorf("phase jump: got %d%%, want 60%% (raw ratio would be 21%%)", got)
+	if got != 92 {
+		t.Errorf("phase jump: got %d%%, want 92%%", got)
 	}
 }
 
@@ -153,9 +155,9 @@ func TestPacstrapProgressTracker_DefensiveN(t *testing.T) {
 	tr.UpdateHook(7, 10) // N increased past previous max
 
 	// completed=0, currentTotal=10, currentCurrent=7
-	// overall: (0+7)/(0+10) = 70%
+	// hook band: 80 + 7/10 * 20 = 94%
 	got := tr.UpdateHook(7, 10)
-	want := 70
+	want := 94
 	if got != want {
 		t.Errorf("defensive N: got %d%%, want %d%%", got, want)
 	}
@@ -184,13 +186,10 @@ func TestPacstrapProgressTracker_DownloadPhase(t *testing.T) {
 	tr.ProcessLine("  sudo downloading...")
 	tr.ProcessLine("  vim downloading...")
 
-	// After all 4 downloads: downloaded=4
-	// totalUnits = 4*2 (download+install) + 0 (verify) + 0 (hooks) = 8
-	// currentUnits = 4
-	// pct = 4/8 * 100 = 50
+	// All 4 downloads complete → the download band tops out at 5%.
 	got := tr.CalculatePercent()
-	if got != 50 {
-		t.Errorf("after all downloads: got %d%%, want 50%%", got)
+	if got != 5 {
+		t.Errorf("after all downloads: got %d%%, want 5%%", got)
 	}
 }
 
@@ -204,12 +203,11 @@ func TestPacstrapProgressTracker_VerifyPhase(t *testing.T) {
 	tr.ProcessLine("loading package files...")
 	tr.ProcessLine("checking for file conflicts...")
 
-	// verified=4, totalUnits = 4*2 (download+install) + 4 (verify) + 0 (hooks) = 12
-	// currentUnits = 0 + 4 + 0 + 0 = 4
-	// pct = 4/12 * 100 = 33
+	// Verification lines are near-instant and carry no progress of their own,
+	// so they must not advance the bar.
 	got := tr.CalculatePercent()
-	if got != 33 {
-		t.Errorf("after verification: got %d%%, want 33%%", got)
+	if got != 0 {
+		t.Errorf("after verification: got %d%%, want 0%%", got)
 	}
 }
 
@@ -229,13 +227,10 @@ func TestPacstrapProgressTracker_InstallPhase(t *testing.T) {
 	tr.ProcessLine("installing pkg1...")
 	tr.ProcessLine("installing pkg2...")
 
-	// downloaded=3, verified=5 (4 check + 1 processing), installed=2
-	// totalUnits = 3*2 (download+install) + 5 (verify) + 0 (hooks) = 11
-	// currentUnits = 3 + 5 + 2 + 0 = 10
-	// pct = 10/11 * 100 = 90
+	// installed=2 of 3 → install band: 5 + 2/3 * 75 = 55%.
 	got := tr.CalculatePercent()
-	if got != 90 {
-		t.Errorf("after 2/3 installs: got %d%%, want 90%%", got)
+	if got != 55 {
+		t.Errorf("after 2/3 installs: got %d%%, want 55%%", got)
 	}
 }
 
@@ -264,11 +259,7 @@ func TestPacstrapProgressTracker_FullFlow(t *testing.T) {
 		tr.ProcessLine(line)
 	}
 
-	// downloaded=3, verified=5 (4 check + 1 processing), installed=3
-	// hook: completed=0, currentTotal=2, currentCurrent=2
-	// totalUnits = 3*2 (download+install) + 5 (verify) + 2 (hooks) = 13
-	// currentUnits = 3 + 5 + 3 + 2 = 13
-	// pct = 13/13 * 100 = 100
+	// All 3 installs → install band tops at 80; hooks (2/2) → 100.
 	got := tr.CalculatePercent()
 	if got != 100 {
 		t.Errorf("full flow complete: got %d%%, want 100%%", got)

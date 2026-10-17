@@ -320,6 +320,23 @@ const ProgressTickIntervalMs = 8000
 // ProgressTickMaxPercent is the maximum percentage the tick goroutine will reach.
 const ProgressTickMaxPercent = 99
 
+// --- Pacstrap progress bands ------------------------------------------------
+// Each pacstrap step (base + desktop) reports a step-relative 0-100 percentage
+// assembled from ordered phase bands rather than a single unit ratio. The
+// download band is deliberately tiny: an offline install copies packages from
+// the ISO's embedded mirror in well under a second, so counting those lines
+// equally with installs front-loads the bar (downloads would consume half the
+// budget in the first second). The install band tops out below 100 so pacman's
+// post-transaction hooks — the initramfs rebuild, font and icon caches — always
+// have room to move the bar after the last package is extracted, instead of
+// being hidden behind an already-full bar.
+const (
+	// PacstrapDownloadBandEnd is where the package-download phase tops out.
+	PacstrapDownloadBandEnd = 5
+	// PacstrapInstallBandEnd is where the package-install phase tops out.
+	PacstrapInstallBandEnd = 80
+)
+
 // --- Installation step weights ----------------------------------------------
 // Relative weights for progress bar calculation. The two pacstrap steps
 // (base + desktop) together account for ~90% of total installation time.

@@ -45,20 +45,20 @@ func TestPacstrapProgressTracker_DownloadThenInstall(t *testing.T) {
 	tr.ProcessLine("  pkg1 downloading...")
 	tr.ProcessLine("  pkg2 downloading...")
 
-	// downloaded=2, totalUnits=2*2=4, currentUnits=2 → 50%
+	// All downloads complete → the download band tops out at 5%.
 	got := tr.CalculatePercent()
-	if got != 50 {
-		t.Errorf("after 2 downloads: got %d%%, want 50%%", got)
+	if got != 5 {
+		t.Errorf("after 2 downloads: got %d%%, want 5%%", got)
 	}
 
 	// Install both packages.
 	tr.ProcessLine("installing pkg1...")
 	tr.ProcessLine("installing pkg2...")
 
-	// downloaded=2, installed=2, totalUnits=4, currentUnits=4 → 100%
+	// Both installed → the install band tops out at 80%.
 	got = tr.CalculatePercent()
-	if got != 100 {
-		t.Errorf("after 2 installs: got %d%%, want 100%%", got)
+	if got != 80 {
+		t.Errorf("after 2 installs: got %d%%, want 80%%", got)
 	}
 }
 
@@ -72,10 +72,11 @@ func TestPacstrapProgressTracker_VerifyLines(t *testing.T) {
 	tr.ProcessLine("checking for file conflicts...")
 	tr.ProcessLine(":: Processing package changes...")
 
-	// verified=5, totalUnits=1*2+5=7, currentUnits=5 → 71%
+	// Validation lines are near-instant and carry no progress of their own —
+	// they must not advance the bar.
 	got := tr.CalculatePercent()
-	if got != 71 {
-		t.Errorf("after 5 verify lines: got %d%%, want 71%%", got)
+	if got != 0 {
+		t.Errorf("after 5 verify lines: got %d%%, want 0%%", got)
 	}
 }
 
@@ -111,10 +112,10 @@ func TestPacstrapProgressTracker_HookPhaseIncomplete(t *testing.T) {
 	// Phase 2: 10 items, 4 completed.
 	got := tr.UpdateHook(4, 10)
 
-	// Raw ratio would be: completedPhases=3 (highest N observed),
-	// currentTotal=10, currentCurrent=4 → totalUnits=13, currentUnits=7 → 53%.
-	// Phase 1 had already reported 60%, so the monotonic clamp holds at 60%.
-	want := 60
+	// Phase 1's highest observed N (3) is credited. Raw ratio would be
+	// (3+4)/(3+10) = 54%, which maps into the hook band as 80 + 10 = 90%.
+	// Phase 1 had already reported 92%, so the monotonic clamp holds at 92%.
+	want := 92
 	if got != want {
 		t.Errorf("incomplete phase jump: got %d%%, want %d%%", got, want)
 	}
@@ -153,15 +154,15 @@ func TestPacstrapProgressTracker_MonotonicAcrossHooks(t *testing.T) {
 		tr.ProcessLine("checking step...")
 	}
 
-	// Download + install all packages (reaches ~100% of the install work).
+	// Download + install all packages (reaches the top of the install band).
 	for i := 0; i < 150; i++ {
 		tr.ProcessLine("pkg downloading...")
 		tr.ProcessLine("installing pkg...")
 	}
 
 	last := tr.CalculatePercent()
-	if last < 99 {
-		t.Fatalf("expected install phase to reach ~100%%, got %d%%", last)
+	if last != 80 {
+		t.Fatalf("expected install phase to reach the install band (80%%), got %d%%", last)
 	}
 
 	// Enter the post-transaction hook phase with a large M. The denominator
