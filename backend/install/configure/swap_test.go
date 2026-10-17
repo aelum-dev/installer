@@ -6,22 +6,9 @@ import "testing"
 // sizes a compressed swap device from the host's RAM. These tests cover the pure
 // sizing rules instead of the (mount-dependent) step itself.
 
-// TestCalculateZramSizeMiB verifies the host-memory-based sizing returns one of
-// the supported sizes and respects the floor/cap.
-func TestCalculateZramSizeMiB(t *testing.T) {
-	got := calculateZramSizeMiB()
-	switch got {
-	case 2048, 4096, zramSizeMaxMiB:
-	default:
-		t.Errorf("calculateZramSizeMiB() = %d, want one of 2048, 4096, %d", got, zramSizeMaxMiB)
-	}
-	if got < 2048 {
-		t.Errorf("zram size %d is below the 2 GiB floor", got)
-	}
-	if got > zramSizeMaxMiB {
-		t.Errorf("zram size %d exceeds the cap %d", got, zramSizeMaxMiB)
-	}
-}
+// TestCalculateZramSizeMiB covers the sizing rules in configure_files_test.go
+// against a scripted /proc/meminfo, so the floor/cap boundaries are pinned
+// deterministically instead of depending on the host's RAM.
 
 func TestZramSizeMaxMiB(t *testing.T) {
 	if zramSizeMaxMiB != 8192 {
