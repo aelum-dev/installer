@@ -217,6 +217,20 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 		}
 	}
 
+	// Apply the same Linux username/password rules as the GUI before touching
+	// anything. Only steps that create the account need them; the other single
+	// steps ignore the username/password entirely.
+	if !dryRun && (stepName == "" || stepName == "setup_users") {
+		if err := shared.ValidateUserAccount(shared.UserAccountData{
+			Username:        username,
+			Password:        password,
+			ConfirmPassword: password,
+		}); err != nil {
+			log.Error("%v", err)
+			return 1
+		}
+	}
+
 	if dryRun {
 		log.Info("[DRY RUN MODE] Installation steps will be simulated.")
 	}
@@ -471,12 +485,14 @@ func readPassword() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return strings.TrimSpace(string(bytes)), nil
+		// Preserve spaces: Linux passwords may start or end with whitespace.
+		return string(bytes), nil
 	}
 	// Non-interactive: read from stdin (piped or redirected). Use the shared
 	// buffered reader so this line does not drain input meant for later reads
-	// (username → account password → LUKS passphrase).
-	return readStdinLine()
+	// (username → account password → LUKS passphrase). Keep whitespace intact;
+	// only the line terminator is removed.
+	return readStdinLineRaw()
 }
 
 // stdinReader is a single buffered reader shared by every non-interactive stdin
@@ -502,4 +518,17 @@ func readStdinLine() (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(line), nil
+}
+
+// readStdinLineRaw returns the next line without trimming interior/surrounding
+// whitespace. Used for passwords, where spaces are legal and must be preserved;
+// only the line terminator (LF, or CRLF) is removed.
+func readStdinLineRaw() (string, error) {
+	line, err := sharedStdin().ReadString('\n')
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+	line = strings.TrimSuffix(line, "\n")
+	line = strings.TrimSuffix(line, "\r")
+	return line, nil
 }

@@ -1,9 +1,11 @@
 // AUTO-GENERATED — do not edit. Run go run ./backend/scripts/gen-ts-constants.go to regenerate.
 // Source: backend/shared/config.go
 
-export const MinUsernameLength = 3;
-export const MaxUsernameLength = 32;
-export const MinPasswordLength = 6;
+export const MinUsernameLength = 1;
+export const MaxUsernameLength = 255;
+export const MinPasswordLength = 1;
+export const MaxPasswordLength = 511;
+export const ReservedAccountNames = ((("adm,alpm,audio,bin,clock,daemon,dbus,disk,empower,floppy,ftp,games,greeter,http,input," + "kmem,kvm,lock,log,lp,mail,mem,network,nobody,optical,pcscd,polkitd,power,proc,render,rfkill,root,") + "scanner,sgx,smmsp,storage,sys,systemd-coredump,systemd-imds,systemd-journal,systemd-journal-remote,") + "systemd-network,systemd-oom,systemd-resolve,systemd-timesync,tss,tty,users,utmp,uucp,uuidd,video,wheel");
 export const MinDiskSizeGB = 8;
 export const MinDiskSizeBytes = (((MinDiskSizeGB * 1024) * 1024) * 1024);
 export const MinESPSizeBytes = ((512 * 1024) * 1024);

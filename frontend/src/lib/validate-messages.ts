@@ -4,13 +4,15 @@ import type { ValidationMessages } from './validate';
 export function getValidationMessages(): ValidationMessages {
   return {
     usernameRequired: t('validation.usernameRequired'),
-    usernameMinLength: t('validation.usernameMinLength'),
-    usernameMaxLength: t('validation.usernameMaxLength'),
-    usernameInvalidFirstChar: t('validation.usernameInvalidFirstChar'),
-    usernameInvalidChars: t('validation.usernameInvalidChars'),
+    usernameTooLong: t('validation.usernameTooLong'),
+    usernameDotNames: t('validation.usernameDotNames'),
+    usernameDigitsOnly: t('validation.usernameDigitsOnly'),
+    usernameInvalidStart: t('validation.usernameInvalidStart'),
+    usernameInvalidCharacters: t('validation.usernameInvalidCharacters'),
     usernameReserved: t('validation.usernameReserved'),
     passwordRequired: t('validation.passwordRequired'),
-    passwordMinLength: t('validation.passwordMinLength'),
+    passwordTooLong: t('validation.passwordTooLong'),
+    passwordInvalidCharacters: t('validation.passwordInvalidCharacters'),
     passwordsMatch: t('validation.passwordsMatch'),
     passwordsNoMatch: t('validation.passwordsNoMatch'),
   };

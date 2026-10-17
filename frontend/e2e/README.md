@@ -39,6 +39,29 @@ npm run e2e:headed     # visible browser, handy for debugging
 npm run e2e:report     # open the HTML report (after a run)
 ```
 
+## If Playwright appears to hang at startup
+
+`wails dev` opens the native installer window and binds two ports: **34115**
+(the Wails backend the tests call) and **5173** (Vite). If a previous run was
+interrupted, a stale Vite or `wails dev` process can keep those ports busy, so
+the next run opens the installer window but never becomes reachable and
+Playwright waits for the webServer URL.
+
+Check for leftovers and stop them before retrying:
+
+```bash
+pgrep -af "wails dev|node_modules/.bin/vite|aelum-installer-dev"
+```
+
+You can also start the dev server yourself and let Playwright reuse it:
+
+```bash
+cd ..   # installer/
+env AELUM_DRY_RUN=1 FAKE_DISKS=1 wails dev -tags webkit2_41
+# then, in another terminal:
+cd frontend && npx playwright test
+```
+
 ## What's covered
 
 - `wizard.spec.ts` — Welcome → User account (validation) → Disk selection →

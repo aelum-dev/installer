@@ -46,10 +46,11 @@ test.describe('Installer wizard', () => {
     await expect(page.getByRole('heading', { name: 'Cannot proceed' })).toBeVisible();
     await dismissValidationModal(page);
 
-    // Too-short username shows an inline validation error.
-    await page.getByLabel('Username').fill('ab');
+    // An all-digit username is invalid under Linux's useradd rules and shows an
+    // inline validation error.
+    await page.getByLabel('Username').fill('123');
     await page.getByLabel('Username').blur();
-    await expect(page.locator('.error.visible')).toContainText(/username/i);
+    await expect(page.locator('.error.visible')).toContainText(/digits/i);
 
     // Valid + matching passwords -> Next advances to disk selection.
     await page.getByLabel('Username').fill('alice');

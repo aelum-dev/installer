@@ -67,7 +67,49 @@ func copyISOFiles() error {
 // User setup
 // ============================================================================
 
-// Run creates user accounts using sudo.
+// checkTargetAccountName rejects a username that already exists as a user or
+// group in the installed system. This is the same collision useradd enforces,
+// but checked before anything is changed so the error is clear. It also covers
+// package-created accounts absent from the static early-validation list.
+func checkTargetAccountName(name string) error {
+	passwd, err := primitives.ReadFile(shared.MountRoot + "/etc/passwd")
+	if err != nil {
+		return fmt.Errorf("read target passwd: %w", err)
+	}
+	group, err := primitives.ReadFile(shared.MountRoot + "/etc/group")
+	if err != nil {
+		return fmt.Errorf("read target group: %w", err)
+	}
+	if kind, conflict := targetNameConflict(passwd, group, name); conflict {
+		return fmt.Errorf("username %q is already used by a %s on the target system; choose another", name, kind)
+	}
+	return nil
+}
+
+// targetNameConflict reports whether name is an existing user or group in the
+// given passwd/group file contents.
+func targetNameConflict(passwd, group []byte, name string) (kind string, conflict bool) {
+	if hasAccountLine(passwd, name) {
+		return "user", true
+	}
+	if hasAccountLine(group, name) {
+		return "group", true
+	}
+	return "", false
+}
+
+// hasAccountLine reports whether data has a colon-separated record named name.
+func hasAccountLine(data []byte, name string) bool {
+	prefix := name + ":"
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// Run creates the user account and writes the sudoers rule.
 func Run(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
@@ -75,6 +117,16 @@ func Run(ctx *shared.InstallContext) error {
 
 	if ctx.Username == "" {
 		return nil
+	}
+
+	if err := checkTargetAccountName(ctx.Username); err != nil {
+		return err
+	}
+	if len(ctx.Password) > shared.MaxPasswordLength {
+		return fmt.Errorf("password must be at most %d UTF-8 bytes", shared.MaxPasswordLength)
+	}
+	if strings.ContainsAny(string(ctx.Password), "\n\r\x00") {
+		return fmt.Errorf("password cannot contain newlines or NUL characters")
 	}
 
 	var cmd *primitives.Command
@@ -90,11 +142,9 @@ func Run(ctx *shared.InstallContext) error {
 		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
 	}
 
-	output, err = primitives.RunChroot("useradd", "-m", "-G", "wheel", ctx.Username)
+	output, err = primitives.RunChroot("useradd", "-m", "-G", "wheel", "--", ctx.Username)
 	if err != nil {
-		if !strings.Contains(string(output), "already exists") {
-			return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
-		}
+		return fmt.Errorf("failed to setup user: %w: %s", err, string(output))
 	}
 	if ctx.Logger != nil && len(output) > 0 {
 		ctx.Logger.Command(string(output))

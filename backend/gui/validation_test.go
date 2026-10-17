@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"strings"
 	"testing"
 
 	"aelum-installer/backend/shared"
@@ -22,7 +23,7 @@ func TestValidateUserAccount(t *testing.T) {
 		},
 		{
 			name:        "valid minimum length username and password",
-			data:        shared.UserAccountData{Username: "abc", Password: "abc123", ConfirmPassword: "abc123"},
+			data:        shared.UserAccountData{Username: "a", Password: "x", ConfirmPassword: "x"},
 			expectError: false,
 		},
 		{
@@ -32,10 +33,10 @@ func TestValidateUserAccount(t *testing.T) {
 			errorMsg:    "username is required",
 		},
 		{
-			name:        "username too short",
-			data:        shared.UserAccountData{Username: "ab", Password: "password123", ConfirmPassword: "password123"},
+			name:        "all-digit username",
+			data:        shared.UserAccountData{Username: "123", Password: "password123", ConfirmPassword: "password123"},
 			expectError: true,
-			errorMsg:    "username must be at least 3 characters",
+			errorMsg:    "username cannot consist only of digits",
 		},
 		{
 			name:        "empty password (skipped, waiting for input)",
@@ -43,10 +44,10 @@ func TestValidateUserAccount(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "password too short",
-			data:        shared.UserAccountData{Username: "john_doe", Password: "abc12", ConfirmPassword: "abc12"},
+			name:        "password too long",
+			data:        shared.UserAccountData{Username: "john_doe", Password: strings.Repeat("a", shared.MaxPasswordLength+1), ConfirmPassword: strings.Repeat("a", shared.MaxPasswordLength+1)},
 			expectError: true,
-			errorMsg:    "password must be at least 6 characters",
+			errorMsg:    "password must be at most 511 UTF-8 bytes",
 		},
 		{
 			name:        "empty confirm password",

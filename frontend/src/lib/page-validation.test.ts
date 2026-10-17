@@ -73,12 +73,12 @@ describe('getPageValidationReasons — user account', () => {
 	});
 
 	it('reports the first failing username rule only', () => {
-		installState.username = 'A';
+		installState.username = '123';
 		installState.password = 'secret1';
 		installState.confirmPassword = 'secret1';
 
 		expect(getPageValidationReasons(PAGE_IDS.USER_ACCOUNT)).toEqual([
-			'Username must be at least 3 characters.',
+			'Username cannot consist only of digits.',
 		]);
 	});
 

@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { installState } from '$lib/store.svelte';
-	import { validateUserAccount } from '$lib/validate';
+	import { passwordRule, usernameRule, validateUserAccount } from '$lib/validate';
 	import { getValidationMessages } from '$lib/validate-messages';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
-	import { MinPasswordLength, MinUsernameLength } from '$lib/constants';
 	import PageLayout from '$components/PageLayout.svelte';
 
 	const pageIcon = glyph(STEP_ICONS.userAccount);
@@ -27,8 +26,8 @@
 	);
 
 	// Validation requirements
-	const usernameMinLength = $derived(installState.username.length >= MinUsernameLength);
-	const passwordMinLength = $derived(installState.password.length >= MinPasswordLength);
+	const usernameValid = $derived(usernameRule(installState.username) === null);
+	const passwordValid = $derived(passwordRule(installState.password) === null);
 	const passwordsMatch = $derived(
 		installState.confirmPassword.length > 0 && installState.confirmPassword === installState.password
 	);
@@ -56,8 +55,8 @@
 <PageLayout icon={pageIcon} title={t('page.userAccount.title')} subtitle={t('page.userAccount.subtitle')}>
 	{#snippet info()}
 		<div class="requirements">
-			{@render requirement(usernameMinLength, t('validation.usernameMinLength'))}
-			{@render requirement(passwordMinLength, t('validation.passwordMinLength'))}
+			{@render requirement(usernameValid, t('validation.usernameRequired'))}
+			{@render requirement(passwordValid, t('validation.passwordRequired'))}
 			{@render requirement(passwordsMatch, t('validation.passwordsMatch'))}
 		</div>
 	{/snippet}

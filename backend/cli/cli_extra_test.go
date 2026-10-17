@@ -134,6 +134,14 @@ func TestReadPassword_NonTerminal(t *testing.T) {
 	}
 }
 
+func TestReadPassword_PreservesSpaces(t *testing.T) {
+	withStdin(t, "  pass word  \n")
+	got, err := readPassword()
+	if err != nil || got != "  pass word  " {
+		t.Fatalf("readPassword() = %q, %v; want spaces preserved", got, err)
+	}
+}
+
 func TestReadUsername_NonTerminal(t *testing.T) {
 	withStdin(t, "alice\n")
 	got, err := readUsername()
@@ -243,6 +251,26 @@ func TestRunInstallation_PasswordFailures(t *testing.T) {
 	readPasswordFunc = func() (string, error) { return "", nil }
 	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", false, false); code != 1 {
 		t.Errorf("empty password exit = %d, want 1", code)
+	}
+}
+
+func TestRunInstallation_InvalidUsername(t *testing.T) {
+	oldPath := validateDiskPathFunc
+	oldSize := validateDiskSizeFunc
+	oldPw := readPasswordFunc
+	validateDiskPathFunc = func(string) error { return nil }
+	validateDiskSizeFunc = func(string) error { return nil }
+	readPasswordFunc = func() (string, error) { return "x", nil }
+	defer func() {
+		validateDiskPathFunc = oldPath
+		validateDiskSizeFunc = oldSize
+		readPasswordFunc = oldPw
+	}()
+
+	for _, username := range []string{"123", "root", "-bad"} {
+		if code := runInstallation("/dev/vda", "", username, "ext4", "", false, "", false, false); code != 1 {
+			t.Errorf("runInstallation(username=%q) = %d, want 1", username, code)
+		}
 	}
 }
 

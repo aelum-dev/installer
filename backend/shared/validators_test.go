@@ -6,53 +6,22 @@ import (
 )
 
 func TestValidateUserAccount_UsernameOnly(t *testing.T) {
-	// Console installer validates username before password is entered.
-	// Password checks must be skipped when password is empty.
+	// The GUI validates the username while the password is still empty, and the
+	// console installer does the same before prompting. Password checks must be
+	// skipped when password is empty.
 	tests := []struct {
 		name      string
 		data      UserAccountData
 		expectErr bool
 	}{
-		{
-			name:      "valid username, no password yet",
-			data:      UserAccountData{Username: "john_doe"},
-			expectErr: false,
-		},
-		{
-			name:      "empty username with no password",
-			data:      UserAccountData{Username: ""},
-			expectErr: true,
-		},
-		{
-			name:      "short username with no password",
-			data:      UserAccountData{Username: "ab"},
-			expectErr: true,
-		},
-		{
-			name:      "valid 3-char username with no password",
-			data:      UserAccountData{Username: "abc"},
-			expectErr: false,
-		},
-		{
-			name:      "username starting with underscore",
-			data:      UserAccountData{Username: "_user"},
-			expectErr: false,
-		},
-		{
-			name:      "username with hyphen",
-			data:      UserAccountData{Username: "user-name"},
-			expectErr: false,
-		},
-		{
-			name:      "username with numbers",
-			data:      UserAccountData{Username: "user123"},
-			expectErr: false,
-		},
-		{
-			name:      "username at max length",
-			data:      UserAccountData{Username: "abcdefghijklmnopqrstuvwxyz123456"},
-			expectErr: false,
-		},
+		{name: "valid username, no password yet", data: UserAccountData{Username: "john_doe"}},
+		{name: "empty username with no password", data: UserAccountData{Username: ""}, expectErr: true},
+		{name: "one character username", data: UserAccountData{Username: "a"}},
+		{name: "uppercase username", data: UserAccountData{Username: "Alice"}},
+		{name: "username starting with a digit", data: UserAccountData{Username: "1alice"}},
+		{name: "username starting with a dot", data: UserAccountData{Username: ".alice"}},
+		{name: "username with a dot", data: UserAccountData{Username: "alice.b"}},
+		{name: "username with a trailing dollar", data: UserAccountData{Username: "alice$"}},
 	}
 
 	for _, tt := range tests {
@@ -60,51 +29,6 @@ func TestValidateUserAccount_UsernameOnly(t *testing.T) {
 			err := ValidateUserAccount(tt.data)
 			if (err != nil) != tt.expectErr {
 				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
-			}
-		})
-	}
-}
-
-func TestValidateUserAccount_FullData(t *testing.T) {
-	tests := []struct {
-		name      string
-		data      UserAccountData
-		expectErr bool
-		errorMsg  string
-	}{
-		{
-			name:      "valid full data",
-			data:      UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "password123"},
-			expectErr: false,
-		},
-		{
-			name:      "password too short",
-			data:      UserAccountData{Username: "john_doe", Password: "abc12", ConfirmPassword: "abc12"},
-			expectErr: true,
-			errorMsg:  "password must be at least 6 characters",
-		},
-		{
-			name:      "passwords do not match",
-			data:      UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: "different"},
-			expectErr: true,
-			errorMsg:  "passwords do not match",
-		},
-		{
-			name:      "missing confirm password",
-			data:      UserAccountData{Username: "john_doe", Password: "password123", ConfirmPassword: ""},
-			expectErr: true,
-			errorMsg:  "please confirm your password",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateUserAccount(tt.data)
-			if (err != nil) != tt.expectErr {
-				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
-			}
-			if tt.expectErr && err != nil && err.Error() != tt.errorMsg {
-				t.Errorf("expected error message %q, got %q", tt.errorMsg, err.Error())
 			}
 		})
 	}
@@ -117,70 +41,151 @@ func TestValidateUserAccount_UsernameFormat(t *testing.T) {
 		expectErr bool
 		errorMsg  string
 	}{
-		// Valid usernames
-		{name: "lowercase letters only", username: "john", expectErr: false},
-		{name: "lowercase with underscore", username: "john_doe", expectErr: false},
-		{name: "lowercase with hyphen", username: "john-doe", expectErr: false},
-		{name: "lowercase with numbers", username: "user123", expectErr: false},
-		{name: "starts with underscore", username: "_user", expectErr: false},
-		{name: "minimum length (3 chars)", username: "abc", expectErr: false},
-		{name: "maximum length (32 chars)", username: "abcdefghijklmnopqrstuvwxyz123456", expectErr: false},
+		// Valid: shadow-utils (useradd) accepts all of these.
+		{name: "lowercase", username: "john"},
+		{name: "uppercase", username: "John"},
+		{name: "all uppercase", username: "JOHN"},
+		{name: "mixed case", username: "jOhnDoe"},
+		{name: "one character", username: "a"},
+		{name: "underscore", username: "_user"},
+		{name: "leading digit", username: "1user"},
+		{name: "dot", username: "user.name"},
+		{name: "leading dot", username: ".user"},
+		{name: "hyphen", username: "user-name"},
+		{name: "trailing hyphen", username: "user-"},
+		{name: "digits and dot", username: "1.23"},
+		{name: "trailing dollar", username: "user$"},
+		{name: "digits with trailing dollar", username: "123$"},
+		{name: "max length (255)", username: strings.Repeat("a", MaxUsernameLength)},
 
-		// Invalid: uppercase
-		{name: "uppercase first letter", username: "John", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
-		{name: "all uppercase", username: "JOHN", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
-		{name: "mixed case (lower first, upper later)", username: "jOhnDoe", expectErr: true, errorMsg: "must contain only lowercase letters"},
-
-		// Invalid: special characters (pass first char check, fail allowed chars)
-		{name: "contains dot", username: "user.name", expectErr: true, errorMsg: "must contain only lowercase letters"},
-		{name: "contains at sign", username: "user@home", expectErr: true, errorMsg: "must contain only lowercase letters"},
-		{name: "contains hash", username: "user#name", expectErr: true, errorMsg: "must contain only lowercase letters"},
-		{name: "contains space", username: "user name", expectErr: true, errorMsg: "must contain only lowercase letters"},
-
-		// Invalid: starts with wrong character
-		{name: "starts with hyphen", username: "-user", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
-		{name: "starts with number", username: "1user", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
-		{name: "starts with dot", username: ".user", expectErr: true, errorMsg: "must start with a lowercase letter or underscore"},
-
-		// Invalid: length
-		{name: "too short (2 chars)", username: "ab", expectErr: true, errorMsg: "at least 3"},
-		{name: "too short (1 char)", username: "a", expectErr: true, errorMsg: "at least 3"},
-		{name: "too long (33 chars)", username: "abcdefghijklmnopqrstuvwxyz1234567", expectErr: true, errorMsg: "at most 32"},
-		{name: "too long (50 chars)", username: "a", expectErr: true}, // Will be set dynamically
+		// Invalid: shadow-utils rejects these.
+		{name: "empty", username: "", expectErr: true, errorMsg: "required"},
+		{name: "dot", username: ".", expectErr: true, errorMsg: "cannot be"},
+		{name: "dot dot", username: "..", expectErr: true, errorMsg: "cannot be"},
+		{name: "all digits", username: "123", expectErr: true, errorMsg: "only of digits"},
+		{name: "leading hyphen", username: "-user", expectErr: true, errorMsg: "must start with"},
+		{name: "leading dollar", username: "$user", expectErr: true, errorMsg: "must start with"},
+		{name: "internal dollar", username: "user$name", expectErr: true, errorMsg: "may only contain"},
+		{name: "at sign", username: "user@home", expectErr: true, errorMsg: "may only contain"},
+		{name: "space", username: "user name", expectErr: true, errorMsg: "may only contain"},
+		{name: "hash", username: "user#name", expectErr: true, errorMsg: "may only contain"},
+		{name: "colon", username: "user:name", expectErr: true, errorMsg: "may only contain"},
+		{name: "slash", username: "user/name", expectErr: true, errorMsg: "may only contain"},
+		{name: "plus", username: "user+name", expectErr: true, errorMsg: "may only contain"},
+		{name: "non-ASCII later", username: "aliceä", expectErr: true, errorMsg: "may only contain"},
+		{name: "non-ASCII first", username: "älice", expectErr: true, errorMsg: "must start with"},
+		{name: "too long (256)", username: strings.Repeat("a", MaxUsernameLength+1), expectErr: true, errorMsg: "at most 255"},
 	}
-
-	// Set dynamic test case
-	tests[17].errorMsg = "at most 32"
-	tests[17].username = "a" + strings.Repeat("a", 49)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateUserAccount(UserAccountData{Username: tt.username, Password: "test123", ConfirmPassword: "test123"})
+			err := ValidateUserAccount(UserAccountData{Username: tt.username, Password: "x", ConfirmPassword: "x"})
 			if (err != nil) != tt.expectErr {
 				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
 			}
-			if tt.expectErr && err != nil {
-				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
-					t.Errorf("expected error to contain %q, got %q", tt.errorMsg, err.Error())
-				}
+			if tt.expectErr && err != nil && tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+				t.Errorf("expected error to contain %q, got %q", tt.errorMsg, err.Error())
 			}
 		})
 	}
 }
 
-func TestValidateUserAccount_ReservedNames(t *testing.T) {
-	// Test a sample of reserved usernames to ensure they're all blocked
-	reservedNames := []string{"root", "bin", "daemon", "nobody", "sshd", "gdm", "pulse"}
-
-	for _, name := range reservedNames {
+func TestValidateUserAccount_ExistingAccounts(t *testing.T) {
+	// These users/groups exist on a stock install, so useradd would either reuse
+	// a system account or fail because its private group already exists.
+	for _, name := range []string{"root", "wheel", "alpm", "greeter", "pcscd", "uuidd"} {
 		t.Run(name, func(t *testing.T) {
-			err := ValidateUserAccount(UserAccountData{Username: name, Password: "test123", ConfirmPassword: "test123"})
+			err := ValidateUserAccount(UserAccountData{Username: name, Password: "x", ConfirmPassword: "x"})
 			if err == nil {
-				t.Errorf("expected error for reserved username %q, got nil", name)
-				return
+				t.Fatalf("expected error for existing account %q, got nil", name)
 			}
-			if !strings.Contains(err.Error(), "reserved") {
-				t.Errorf("expected error to contain 'reserved', got %q", err.Error())
+			if !strings.Contains(err.Error(), "already used") {
+				t.Errorf("expected an 'already used' error, got %q", err.Error())
+			}
+		})
+	}
+
+	// Case-sensitive, like Linux: "Root" does not collide with "root".
+	if err := ValidateUserAccount(UserAccountData{Username: "Root", Password: "x", ConfirmPassword: "x"}); err != nil {
+		t.Errorf("Root should be allowed (case-sensitive), got %v", err)
+	}
+
+	// A name that is not on the target must stay allowed even though it is a
+	// common account on other distros.
+	if err := ValidateUserAccount(UserAccountData{Username: "avahi", Password: "x", ConfirmPassword: "x"}); err != nil {
+		t.Errorf("avahi is not on the target and should be allowed, got %v", err)
+	}
+}
+
+func TestValidateUserAccount_PasswordRules(t *testing.T) {
+	tests := []struct {
+		name      string
+		password  string
+		expectErr bool
+		errorMsg  string
+	}{
+		// Linux/PAM accepts any non-empty password up to 511 UTF-8 bytes.
+		{name: "one character", password: "x"},
+		{name: "spaces", password: "      "},
+		{name: "punctuation", password: "!@#$%^&*()"},
+		{name: "511 ASCII bytes", password: strings.Repeat("a", MaxPasswordLength)},
+		{name: "510 multi-byte bytes", password: strings.Repeat("é", MaxPasswordLength/2)},
+		{name: "max length minus one", password: strings.Repeat("a", MaxPasswordLength-1)},
+
+		// PAM (pam_unix/PAM_MAX_RESP_SIZE) rejects 512+ bytes.
+		{name: "512 ASCII bytes", password: strings.Repeat("a", MaxPasswordLength+1), expectErr: true, errorMsg: "at most 511"},
+		{name: "512 multi-byte bytes", password: strings.Repeat("é", 256), expectErr: true, errorMsg: "at most 511"},
+		{name: "newline", password: "pass\nword", expectErr: true, errorMsg: "newlines"},
+		{name: "carriage return", password: "pass\rword", expectErr: true, errorMsg: "newlines"},
+		{name: "NUL", password: "pass\x00word", expectErr: true, errorMsg: "NUL"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateUserAccount(UserAccountData{Username: "alice", Password: tt.password, ConfirmPassword: tt.password})
+			if (err != nil) != tt.expectErr {
+				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
+			}
+			if tt.expectErr && err != nil && tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+				t.Errorf("expected error to contain %q, got %q", tt.errorMsg, err.Error())
+			}
+		})
+	}
+}
+
+func TestValidateUserAccount_Confirmation(t *testing.T) {
+	tests := []struct {
+		name      string
+		data      UserAccountData
+		expectErr bool
+		errorMsg  string
+	}{
+		{
+			name: "valid",
+			data: UserAccountData{Username: "alice", Password: "x", ConfirmPassword: "x"},
+		},
+		{
+			name:      "missing confirm",
+			data:      UserAccountData{Username: "alice", Password: "x", ConfirmPassword: ""},
+			expectErr: true,
+			errorMsg:  "please confirm",
+		},
+		{
+			name:      "mismatch",
+			data:      UserAccountData{Username: "alice", Password: "x", ConfirmPassword: "y"},
+			expectErr: true,
+			errorMsg:  "do not match",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateUserAccount(tt.data)
+			if (err != nil) != tt.expectErr {
+				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
+			}
+			if tt.expectErr && err != nil && !strings.Contains(err.Error(), tt.errorMsg) {
+				t.Errorf("expected error to contain %q, got %q", tt.errorMsg, err.Error())
 			}
 		})
 	}

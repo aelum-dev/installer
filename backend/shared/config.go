@@ -7,93 +7,39 @@ package shared
 
 // --- Validation thresholds ---------------------------------------------------
 
-// MinUsernameLength is the minimum allowed username length.
-const MinUsernameLength = 3
+// MinUsernameLength is the shortest name useradd accepts (one character). The
+// required-name check is what actually blocks an empty username.
+const MinUsernameLength = 1
 
-// MaxUsernameLength is the maximum allowed username length (POSIX LOGIN_NAME_MAX).
-// Linux limits usernames to 32 characters; useradd will reject longer names.
-const MaxUsernameLength = 32
+// MaxUsernameLength is the longest name shadow's useradd accepts. Linux
+// LOGIN_NAME_MAX is 256 including the NUL terminator, so names may be at most
+// 255 characters; useradd rejects a 256-character name.
+const MaxUsernameLength = 255
 
-// MinPasswordLength is the minimum allowed password length.
-const MinPasswordLength = 6
+// MinPasswordLength is the shortest non-empty password PAM accepts. Arch's
+// default PAM stack has no password-quality policy, so even one character is
+// valid (chpasswd accepts it).
+const MinPasswordLength = 1
 
-// ReservedUsernames contains system usernames that cannot be used by users.
-// This includes POSIX reserved names, systemd service accounts, and common
-// daemon accounts found on Arch Linux systems.
-var ReservedUsernames = map[string]bool{
-	"root": true, // superuser
+// MaxPasswordLength is the longest password PAM accepts, in UTF-8 bytes.
+// pam_unix rejects a PAM response of 512 bytes or larger (PAM_MAX_RESP_SIZE),
+// so 511 bytes is the last accepted length.
+const MaxPasswordLength = 511
 
-	// POSIX reserved names
-	"bin":      true,
-	"daemon":   true,
-	"adm":      true,
-	"lp":       true,
-	"sync":     true,
-	"shutdown": true,
-	"halt":     true,
-	"mail":     true,
-	"news":     true,
-	"uucp":     true,
-	"operator": true,
-	"games":    true,
-	"gopher":   true,
-	"ftp":      true,
-	"nobody":   true,
-
-	// systemd service accounts
-	"systemd":           true,
-	"systemd-journal":   true,
-	"systemd-network":   true,
-	"systemd-resolve":   true,
-	"systemd-timesync":  true,
-	"systemd-bus-proxy": true,
-	"systemd-coredump":  true,
-
-	// Common daemon accounts (Arch Linux)
-	"dbus":       true,
-	"tss":        true,
-	"ntp":        true,
-	"sshd":       true,
-	"polkitd":    true,
-	"colord":     true,
-	"pulse":      true,
-	"rtkit":      true,
-	"avahi":      true,
-	"cups":       true,
-	"usbmux":     true,
-	"kernoops":   true,
-	"messagebus": true,
-	"statd":      true,
-	"rpcuser":    true,
-	"rpc":        true,
-	"nfsnobody":  true,
-	"radvd":      true,
-	"chrony":     true,
-	"qemu":       true,
-	"libvirt":    true,
-	"smmsp":      true,
-	"postfix":    true,
-	"www-data":   true,
-	"proxy":      true,
-	"bind":       true,
-	"staff":      true,
-	"man":        true,
-	"printcap":   true,
-	"input":      true,
-	"mailnull":   true,
-	"list":       true,
-	"irc":        true,
-	"gnats":      true,
-	"backup":     true,
-
-	// Display manager accounts
-	"gdm":                 true,
-	"gnome-initial-setup": true,
-	"gdm3":                true,
-	"lightdm":             true,
-	"greetd":              true,
-	"greeter":             true,
-}
+// ReservedAccountNames is the comma-separated set of user and group names that
+// exist on a stock Aelum install. This is not a policy list: useradd fails when
+// its private group name already exists, and an existing system account would
+// otherwise be reused (and have its password changed) instead of creating the
+// requested user. A single const keeps the Go backend and the generated
+// frontend constants.ts (and therefore the inline validator) in sync.
+//
+// Source: the sysusers output of a full base + desktop install. users.Run also
+// re-checks the actual target's /etc/passwd and /etc/group, so package drift
+// is caught even if this list becomes stale.
+const ReservedAccountNames = "adm,alpm,audio,bin,clock,daemon,dbus,disk,empower,floppy,ftp,games,greeter,http,input," +
+	"kmem,kvm,lock,log,lp,mail,mem,network,nobody,optical,pcscd,polkitd,power,proc,render,rfkill,root," +
+	"scanner,sgx,smmsp,storage,sys,systemd-coredump,systemd-imds,systemd-journal,systemd-journal-remote," +
+	"systemd-network,systemd-oom,systemd-resolve,systemd-timesync,tss,tty,users,utmp,uucp,uuidd,video,wheel"
 
 // MinDiskSizeGB is the minimum disk size in gigabytes.
 const MinDiskSizeGB = 8

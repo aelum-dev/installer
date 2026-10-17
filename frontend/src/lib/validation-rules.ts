@@ -1,28 +1,27 @@
 // Single source of truth for user-account validation rules.
 //
-// Both the inline field validator (`validate.ts`) and the shared store's modal
-// validation reasons (`store.svelte.ts`) enforce the same rules; before this
-// module each kept its own copy of the regexes and the reserved-name list, so
-// they could silently drift apart. The rules mirror the Go backend
-// (`backend/shared/validators.go` and `config.go`).
+// The rules mirror Linux shadow-utils 4.20 (useradd with NAME_REGEX unset, as on
+// Arch): a name may be 1..255 characters, starts with a letter, digit,
+// underscore, or dot, and otherwise contains only letters, digits, underscore,
+// dot, or hyphen, plus an optional trailing '$'. "." and "..", leading '-', and
+// all-digit names are rejected. The installer adds no extra case or punctuation
+// policy.
+//
+// The account-name list is generated from Go (shared.ReservedAccountNames) so the
+// inline validator and the backend can never drift apart.
 
-// A Linux login name starts with a lowercase letter or underscore.
-export const USERNAME_FIRST_CHAR = /^[a-z_]/;
+import { ReservedAccountNames } from './constants';
 
-// ...and otherwise contains only lowercase letters, digits, hyphens, underscores.
-export const USERNAME_ALLOWED_CHARS = /^[a-z0-9_-]+$/;
+// A Linux login name starts with a letter, digit, underscore, or dot.
+export const USERNAME_FIRST_CHAR = /^[A-Za-z0-9_.]/;
 
-// System accounts that cannot be used as the installer's user name.
-// Mirrors backend/shared/config.go ReservedUsernames.
-export const RESERVED_USERNAMES = new Set([
-	'root', 'bin', 'daemon', 'adm', 'lp', 'sync', 'shutdown', 'halt',
-	'mail', 'news', 'uucp', 'operator', 'games', 'gopher', 'ftp',
-	'nobody', 'dbus', 'systemd', 'systemd-journal', 'systemd-network',
-	'systemd-resolve', 'systemd-timesync', 'systemd-bus-proxy',
-	'systemd-coredump', 'tss', 'ntp', 'sshd', 'polkitd', 'colord',
-	'gdm', 'gnome-initial-setup', 'gdm3', 'lightdm', 'pulse', 'rtkit',
-	'avahi', 'cups', 'usbmux', 'kernoops', 'messagebus', 'statd',
-	'rpcuser', 'rpc', 'nfsnobody', 'radvd', 'chrony', 'qemu', 'libvirt',
-	'smmsp', 'postfix', 'www-data', 'proxy', 'bind', 'staff', 'man',
-	'printcap', 'input', 'mailnull', 'list', 'irc', 'gnats', 'backup',
-]);
+// ...and otherwise contains only letters, digits, underscores, dots, and
+// hyphens, with an optional trailing '$' (Samba machine accounts).
+export const USERNAME_ALLOWED_CHARS = /^[A-Za-z0-9_.-]*\$?$/;
+
+// Linux rejects names that are made up only of digits.
+export const USERNAME_ALL_DIGITS = /^[0-9]+$/;
+
+// Existing accounts and groups on a stock Aelum install. These names would
+// collide with useradd's private-group creation or reuse a system account.
+export const RESERVED_USERNAMES = new Set(ReservedAccountNames.split(','));

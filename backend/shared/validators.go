@@ -8,42 +8,68 @@ import (
 	"strings"
 )
 
-// UsernameFirstCharRegex validates the first character of a Linux login name.
-// Must be a lowercase letter or underscore.
-var UsernameFirstCharRegex = regexp.MustCompile(`^[a-z_]`)
+// Username rules mirror shadow-utils 4.20's is_valid_name()/is_valid_user_name()
+// (used by useradd when NAME_REGEX is unset, as on Arch). Linux accepts:
+//   - 1..255 characters (LOGIN_NAME_MAX is 256 including the NUL terminator)
+//   - first character: letter, digit, underscore, or dot
+//   - remaining characters: letters, digits, underscore, dot, or hyphen
+//   - an optional trailing '$' (Samba machine accounts)
+//   - but not ".", "..", a leading '-', or a name made up only of digits.
+//
+// Anything meeting those rules is valid here too; the installer does not add
+// extra character-case or punctuation policy.
+var (
+	UsernameFirstCharRegex    = regexp.MustCompile(`^[A-Za-z0-9_.]`)
+	UsernameAllowedCharsRegex = regexp.MustCompile(`^[A-Za-z0-9_.-]*\$?$`)
+	UsernameAllDigitsRegex    = regexp.MustCompile(`^[0-9]+$`)
+)
 
-// UsernameAllowedCharsRegex validates all allowed characters in a Linux login name.
-// Lowercase letters, digits, underscores, and hyphens only.
-var UsernameAllowedCharsRegex = regexp.MustCompile(`^[a-z0-9_-]+$`)
+// reservedAccountNames is the set of target users/groups that would collide
+// with a new account (see shared.ReservedAccountNames).
+var reservedAccountNames = func() map[string]bool {
+	set := make(map[string]bool)
+	for _, name := range strings.Split(ReservedAccountNames, ",") {
+		if name != "" {
+			set[name] = true
+		}
+	}
+	return set
+}()
 
-// ValidateUserAccount checks user account fields.
-// Password/confirm checks are skipped when password is empty,
-// allowing callers to validate username before password is entered.
+// ValidateUserAccount checks user account fields using Linux's own rules.
+// Password/confirm checks are skipped when password is empty, allowing callers
+// to validate the username before the password is entered.
 // Shared by GUI and console installer.
 func ValidateUserAccount(data UserAccountData) error {
 	if data.Username == "" {
 		return fmt.Errorf("username is required")
 	}
-	if len(data.Username) < MinUsernameLength {
-		return fmt.Errorf("username must be at least %d characters", MinUsernameLength)
-	}
 	if len(data.Username) > MaxUsernameLength {
 		return fmt.Errorf("username must be at most %d characters", MaxUsernameLength)
 	}
+	if data.Username == "." || data.Username == ".." {
+		return fmt.Errorf("username cannot be %q", data.Username)
+	}
+	if UsernameAllDigitsRegex.MatchString(data.Username) {
+		return fmt.Errorf("username cannot consist only of digits")
+	}
 	if !UsernameFirstCharRegex.MatchString(data.Username) {
-		return fmt.Errorf("username must start with a lowercase letter or underscore")
+		return fmt.Errorf("username must start with a letter, number, underscore, or dot")
 	}
 	if !UsernameAllowedCharsRegex.MatchString(data.Username) {
-		return fmt.Errorf("username must contain only lowercase letters, numbers, hyphens, and underscores")
+		return fmt.Errorf("username may only contain letters, numbers, dots, hyphens, and underscores (with an optional trailing '$')")
 	}
-	if ReservedUsernames[data.Username] {
-		return fmt.Errorf("username %q is reserved", data.Username)
+	if reservedAccountNames[data.Username] {
+		return fmt.Errorf("username %q is already used by a system account or group", data.Username)
 	}
 	if data.Password == "" {
 		return nil
 	}
-	if len(data.Password) < MinPasswordLength {
-		return fmt.Errorf("password must be at least %d characters", MinPasswordLength)
+	if strings.ContainsAny(data.Password, "\n\r\x00") {
+		return fmt.Errorf("password cannot contain newlines or NUL characters")
+	}
+	if len(data.Password) > MaxPasswordLength {
+		return fmt.Errorf("password must be at most %d UTF-8 bytes", MaxPasswordLength)
 	}
 	if data.ConfirmPassword == "" {
 		return fmt.Errorf("please confirm your password")

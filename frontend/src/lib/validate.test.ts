@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MaxUsernameLength, MinPasswordLength, MinUsernameLength } from './constants';
+import { MaxPasswordLength, MaxUsernameLength } from './constants';
 import { validateUserAccount } from './validate';
 
 const emptyState = {
@@ -16,105 +16,81 @@ const touchedState = {
 
 describe('validateUserAccount', () => {
 	describe('username validation', () => {
-		it('returns no error when username is valid and touched', () => {
-			const result = validateUserAccount('john_doe', 'password123', 'password123', touchedState);
-			expect(result.username).toBeNull();
+		it('accepts the same names Linux useradd accepts', () => {
+			for (const name of [
+				'a',
+				'alice',
+				'Alice',
+				'ALICE',
+				'1alice',
+				'_alice',
+				'.alice',
+				'alice.b',
+				'alice-b',
+				'alice_b',
+				'alice$',
+				'1.23',
+				'123$',
+				'a'.repeat(MaxUsernameLength),
+			]) {
+				expect(validateUserAccount(name, 'password', 'password', touchedState).username, name).toBeNull();
+			}
 		});
 
-		// Username errors shown inline under line edit (not in left-panel checkmarks)
 		it('returns error when username is empty and touched', () => {
-			const result = validateUserAccount('', 'password123', 'password123', touchedState);
+			const result = validateUserAccount('', 'password', 'password', touchedState);
 			expect(result.username).toBe('Username is required');
 		});
 
-		it('returns error when username is whitespace only and touched', () => {
-			const result = validateUserAccount('   ', 'password123', 'password123', touchedState);
+		it('returns error when username is only whitespace and touched', () => {
+			const result = validateUserAccount('   ', 'password', 'password', touchedState);
 			expect(result.username).toBe('Username is required');
 		});
 
-		it('returns error when username is less than minimum length and touched', () => {
-			const result = validateUserAccount('ab', 'password123', 'password123', touchedState);
-			expect(result.username).toBe(`Username must be at least ${MinUsernameLength} characters`);
-		});
-
-		it('returns no error when username is exactly minimum length and touched', () => {
-			const result = validateUserAccount('abc', 'password123', 'password123', touchedState);
-			expect(result.username).toBeNull();
-		});
-
-		it('returns error when username exceeds maximum length and touched', () => {
-			const result = validateUserAccount('a'.repeat(MaxUsernameLength + 1), 'password123', 'password123', touchedState);
+		it('returns error when username exceeds the Linux maximum length', () => {
+			const result = validateUserAccount('a'.repeat(MaxUsernameLength + 1), 'password', 'password', touchedState);
 			expect(result.username).toBe(`Username must be at most ${MaxUsernameLength} characters`);
 		});
 
-		it('returns no error when username is exactly maximum length and touched', () => {
-			const result = validateUserAccount('a'.repeat(MaxUsernameLength), 'password123', 'password123', touchedState);
-			expect(result.username).toBeNull();
+		it('rejects all-digit names like useradd does', () => {
+			const result = validateUserAccount('123', 'password', 'password', touchedState);
+			expect(result.username).toBe('Username cannot consist only of digits');
 		});
 
-		it('returns error when username starts with uppercase letter', () => {
-			const result = validateUserAccount('John', 'password123', 'password123', touchedState);
-			expect(result.username).toBe('Username must start with a lowercase letter or underscore');
+		it('rejects "." and ".." like useradd does', () => {
+			expect(validateUserAccount('.', 'password', 'password', touchedState).username).toBe(
+				'Username cannot be "." or ".."',
+			);
+			expect(validateUserAccount('..', 'password', 'password', touchedState).username).toBe(
+				'Username cannot be "." or ".."',
+			);
 		});
 
-		it('returns error when username contains uppercase letters (not first char)', () => {
-			const result = validateUserAccount('jOhnDoe', 'password123', 'password123', touchedState);
-			expect(result.username).toBe('Username must contain only lowercase letters, numbers, hyphens, and underscores');
+		it('rejects a leading hyphen', () => {
+			const result = validateUserAccount('-alice', 'password', 'password', touchedState);
+			expect(result.username).toBe('Username must start with a letter, number, underscore, or dot');
 		});
 
-		it('returns error when username contains dots', () => {
-			const result = validateUserAccount('user.name', 'password123', 'password123', touchedState);
-			expect(result.username).toBe('Username must contain only lowercase letters, numbers, hyphens, and underscores');
+		it('rejects characters Linux useradd rejects', () => {
+			for (const name of ['alice@home', 'alice x', 'alice#x', 'alice:x', 'alice/x', 'alice+x', 'a$b', 'aliceä']) {
+				const result = validateUserAccount(name, 'password', 'password', touchedState);
+				expect(result.username, name).toBe(
+					"Username may only contain letters, numbers, dots, hyphens, and underscores (with an optional trailing '$')",
+				);
+			}
 		});
 
-		it('returns error when username contains special characters', () => {
-			const result = validateUserAccount('user@home', 'password123', 'password123', touchedState);
-			expect(result.username).toBe('Username must contain only lowercase letters, numbers, hyphens, and underscores');
+		it('reports existing target accounts (users and groups)', () => {
+			expect(validateUserAccount('root', 'password', 'password', touchedState).username).toBe(
+				"Username 'root' is reserved",
+			);
+			expect(validateUserAccount('wheel', 'password', 'password', touchedState).username).toBe(
+				"Username 'wheel' is reserved",
+			);
 		});
 
-		it('returns error when username starts with hyphen', () => {
-			const result = validateUserAccount('-weird', 'password123', 'password123', touchedState);
-			expect(result.username).toBe('Username must start with a lowercase letter or underscore');
-		});
-
-		it('returns error when username starts with number', () => {
-			const result = validateUserAccount('1user', 'password123', 'password123', touchedState);
-			expect(result.username).toBe('Username must start with a lowercase letter or underscore');
-		});
-
-		it('accepts username starting with underscore', () => {
-			const result = validateUserAccount('_user', 'password123', 'password123', touchedState);
-			expect(result.username).toBeNull();
-		});
-
-		it('accepts username with hyphens in the middle', () => {
-			const result = validateUserAccount('user-name', 'password123', 'password123', touchedState);
-			expect(result.username).toBeNull();
-		});
-
-		it('accepts username with numbers', () => {
-			const result = validateUserAccount('user123', 'password123', 'password123', touchedState);
-			expect(result.username).toBeNull();
-		});
-
-		it('returns error when username is root', () => {
-			const result = validateUserAccount('root', 'password123', 'password123', touchedState);
-			expect(result.username).toBe("Username 'root' is reserved");
-		});
-
-		it('returns error when username is bin', () => {
-			const result = validateUserAccount('bin', 'password123', 'password123', touchedState);
-			expect(result.username).toBe("Username 'bin' is reserved");
-		});
-
-		it('returns error when username is daemon', () => {
-			const result = validateUserAccount('daemon', 'password123', 'password123', touchedState);
-			expect(result.username).toBe("Username 'daemon' is reserved");
-		});
-
-		it('returns error when username is sshd', () => {
-			const result = validateUserAccount('sshd', 'password123', 'password123', touchedState);
-			expect(result.username).toBe("Username 'sshd' is reserved");
+		it('allows names that are not on the target, even if other distros use them', () => {
+			expect(validateUserAccount('avahi', 'password', 'password', touchedState).username).toBeNull();
 		});
 
 		it('returns no errors when not touched', () => {
@@ -126,62 +102,76 @@ describe('validateUserAccount', () => {
 	});
 
 	describe('password validation', () => {
-		it('returns no error when password is valid and touched', () => {
-			const result = validateUserAccount('john_doe', 'password123', 'password123', touchedState);
+		it('accepts a single character, like Linux/PAM', () => {
+			const result = validateUserAccount('alice', 'x', 'x', touchedState);
 			expect(result.password).toBeNull();
 		});
 
 		it('returns error when password is empty and touched', () => {
-			const result = validateUserAccount('john_doe', '', 'password123', touchedState);
+			const result = validateUserAccount('alice', '', 'x', touchedState);
 			expect(result.password).toBe('Password is required');
 		});
 
-		it('returns error when password is less than minimum length and touched', () => {
-			const result = validateUserAccount('john_doe', 'abc12', 'password123', touchedState);
-			expect(result.password).toBe(`Password must be at least ${MinPasswordLength} characters`);
+		it('accepts a password of exactly the PAM maximum in bytes', () => {
+			const password = 'a'.repeat(MaxPasswordLength);
+			const result = validateUserAccount('alice', password, password, touchedState);
+			expect(result.password).toBeNull();
 		});
 
-		it('returns no error when password is exactly minimum length and touched', () => {
-			const result = validateUserAccount('john_doe', 'abc123', 'abc123', touchedState);
-			expect(result.password).toBeNull();
+		it('rejects a password above the PAM maximum in bytes', () => {
+			const password = 'a'.repeat(MaxPasswordLength + 1);
+			const result = validateUserAccount('alice', password, password, touchedState);
+			expect(result.password).toBe(`Password must be at most ${MaxPasswordLength} UTF-8 bytes`);
+		});
+
+		it('counts UTF-8 bytes rather than UTF-16 code units', () => {
+			// 256 × "é" is 256 characters but 512 bytes, which PAM rejects.
+			const tooLong = 'é'.repeat(256);
+			expect(validateUserAccount('alice', tooLong, tooLong, touchedState).password).toBe(
+				`Password must be at most ${MaxPasswordLength} UTF-8 bytes`,
+			);
+			// 255 × "é" is 510 bytes and fits.
+			const fits = 'é'.repeat(255);
+			expect(validateUserAccount('alice', fits, fits, touchedState).password).toBeNull();
+		});
+
+		it('rejects newlines and NULs that chpasswd/PAM cannot represent', () => {
+			for (const password of ['pass\nword', 'pass\rword', 'pass\u0000word']) {
+				expect(validateUserAccount('alice', password, password, touchedState).password).toBe(
+					'Password cannot contain newlines or NUL characters',
+				);
+			}
 		});
 	});
 
 	describe('confirm password validation', () => {
 		it('returns no error when confirm password matches and touched', () => {
-			const result = validateUserAccount('john_doe', 'password123', 'password123', touchedState);
+			const result = validateUserAccount('alice', 'password', 'password', touchedState);
 			expect(result.confirmPassword).toBeNull();
 		});
 
 		it('returns error when confirm password is empty and touched', () => {
-			const result = validateUserAccount('john_doe', 'password123', '', touchedState);
+			const result = validateUserAccount('alice', 'password', '', touchedState);
 			expect(result.confirmPassword).toBe('Please confirm your password');
 		});
 
 		it('returns error when confirm password does not match and touched', () => {
-			const result = validateUserAccount('john_doe', 'password123', 'different', touchedState);
+			const result = validateUserAccount('alice', 'password', 'different', touchedState);
 			expect(result.confirmPassword).toBe('Passwords do not match');
 		});
 
 		it('returns no errors when not touched', () => {
-			const result = validateUserAccount('john_doe', 'pass', 'nomatch', emptyState);
+			const result = validateUserAccount('alice', 'pass', 'nomatch', emptyState);
 			expect(result.confirmPassword).toBeNull();
 		});
 	});
 
 	describe('multiple errors', () => {
 		it('returns all errors when all fields are invalid', () => {
-			const result = validateUserAccount('', 'ab', 'nomatch', touchedState);
-			expect(result.username).toBe('Username is required');
-			expect(result.password).toBe(`Password must be at least ${MinPasswordLength} characters`);
+			const result = validateUserAccount('123', 'a'.repeat(MaxPasswordLength + 1), 'nomatch', touchedState);
+			expect(result.username).toBe('Username cannot consist only of digits');
+			expect(result.password).toBe(`Password must be at most ${MaxPasswordLength} UTF-8 bytes`);
 			expect(result.confirmPassword).toBe('Passwords do not match');
-		});
-
-		it('returns all errors when confirm is empty and password is too short', () => {
-			const result = validateUserAccount('john', 'ab', '', touchedState);
-			expect(result.username).toBeNull();
-			expect(result.password).toBe(`Password must be at least ${MinPasswordLength} characters`);
-			expect(result.confirmPassword).toBe('Please confirm your password');
 		});
 	});
 });

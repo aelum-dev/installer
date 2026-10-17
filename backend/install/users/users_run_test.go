@@ -14,10 +14,18 @@ func mountedRunner() *primitivestest.Recorder {
 	return primitivestest.NewRecorder().OnOutput("findmnt", "/dev/vda2\n")
 }
 
+// mountedFS returns an in-memory target with passwd/group files, which Run
+// reads to reject collisions before useradd.
+func mountedFS() *primitivestest.MemFS {
+	return primitivestest.NewMemFS().
+		WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0:root:/root:/bin/bash\n").
+		WithFile(shared.MountRoot+"/etc/group", "root:x:0:\nwheel:x:10:\n")
+}
+
 func TestRun_Full(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
-	fs := primitivestest.NewMemFS()
+	fs := mountedFS()
 	defer primitives.SetFileSystem(fs)()
 
 	ctx := &shared.InstallContext{Username: "alice", Password: []byte("secret")}
@@ -25,7 +33,7 @@ func TestRun_Full(t *testing.T) {
 		t.Fatalf("Run() = %v, want nil", err)
 	}
 
-	if !hasArgv(rec.CallsFor("arch-chroot"), "arch-chroot", shared.MountRoot, "useradd", "-m", "-G", "wheel", "alice") {
+	if !hasArgv(rec.CallsFor("arch-chroot"), "arch-chroot", shared.MountRoot, "useradd", "-m", "-G", "wheel", "--", "alice") {
 		t.Errorf("user not created: %v", rec.CallsFor("arch-chroot"))
 	}
 	// The passphrase is fed to chpasswd on stdin, never as an argument.
@@ -67,16 +75,18 @@ func TestRun_NoUsername(t *testing.T) {
 	}
 }
 
-func TestRun_UserAlreadyExists(t *testing.T) {
-	rec := mountedRunner().OnArgs(
-		[]string{"arch-chroot", shared.MountRoot, "useradd"},
-		primitivestest.Result{Output: []byte("user alice already exists"), Err: errors.New("exit status 9")},
-	)
+func TestRun_ExistingAccountRejected(t *testing.T) {
+	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
-	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	fs := mountedFS().WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0:root:/root:/bin/bash\nalice:x:1000:1000::/home/alice:/bin/bash\n")
+	defer primitives.SetFileSystem(fs)()
 
-	if err := Run(&shared.InstallContext{Username: "alice"}); err != nil {
-		t.Fatalf("Run() = %v, want nil (existing user is fine)", err)
+	err := Run(&shared.InstallContext{Username: "alice"})
+	if err == nil || !strings.Contains(err.Error(), "already used") {
+		t.Fatalf("Run() error = %v, want existing-account rejection", err)
+	}
+	if rec.Called("arch-chroot") {
+		t.Error("useradd must not run for an existing account")
 	}
 }
 
@@ -86,7 +96,7 @@ func TestRun_UseraddFails(t *testing.T) {
 		primitivestest.Result{Output: []byte("invalid username"), Err: errors.New("exit status 1")},
 	)
 	defer primitives.SetCommandRunner(rec)()
-	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	defer primitives.SetFileSystem(mountedFS())()
 
 	err := Run(&shared.InstallContext{Username: "alice"})
 	if err == nil || !strings.Contains(err.Error(), "failed to setup user") {
@@ -97,7 +107,7 @@ func TestRun_UseraddFails(t *testing.T) {
 func TestRun_ChpasswdFails(t *testing.T) {
 	rec := mountedRunner().OnArgsError([]string{"arch-chroot", shared.MountRoot, "chpasswd"}, errors.New("exit status 1"))
 	defer primitives.SetCommandRunner(rec)()
-	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	defer primitives.SetFileSystem(mountedFS())()
 
 	err := Run(&shared.InstallContext{Username: "alice", Password: []byte("secret")})
 	if err == nil || !strings.Contains(err.Error(), "passwd failed") {
@@ -108,7 +118,7 @@ func TestRun_ChpasswdFails(t *testing.T) {
 func TestRun_SudoersWriteFails(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
-	fs := primitivestest.NewMemFS().WithWriteError(shared.MountRoot+"/etc/sudoers.d/wheel", errors.New("read-only fs"))
+	fs := mountedFS().WithWriteError(shared.MountRoot+"/etc/sudoers.d/wheel", errors.New("read-only fs"))
 	defer primitives.SetFileSystem(fs)()
 
 	err := Run(&shared.InstallContext{Username: "alice"})
@@ -120,7 +130,7 @@ func TestRun_SudoersWriteFails(t *testing.T) {
 func TestRun_CopyJobsFail(t *testing.T) {
 	rec := mountedRunner().OnError("cp", errors.New("exit status 1"))
 	defer primitives.SetCommandRunner(rec)()
-	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	defer primitives.SetFileSystem(mountedFS())()
 
 	err := Run(&shared.InstallContext{Username: "alice"})
 	if err == nil || !strings.Contains(err.Error(), "copy job") {
