@@ -82,21 +82,19 @@
 		} finally {
 			loading = false;
 
-			// If a disk was already selected (navigated back), expand it
+			// If a disk was already selected (navigated back from a later page),
+			// restore it. Use adoptDisk, not selectDisk: selectDisk toggles the
+			// current disk off, which would clear the selection we're restoring.
 			if (installState.diskId && disks.length > 0) {
 				const selected = disks.find((d) => d.path === installState.diskId);
-				if (selected) selectDisk(selected);
+				if (selected) await adoptDisk(selected);
 			}
 		}
 	}
 
-	async function selectDisk(disk: DiskInfo): Promise<void> {
-		// Toggle: clicking the already-selected disk deselects it again.
-		if (installState.diskId === disk.path) {
-			deselectDisk();
-			return;
-		}
-
+	// adoptDisk loads a disk into the wizard state and fetches its partitions.
+	// It never toggles: restoring a selection on remount must keep the disk.
+	async function adoptDisk(disk: DiskInfo): Promise<void> {
 		installState.diskId = disk.path;
 		installState.disk = disk;
 
@@ -120,6 +118,15 @@
 		} finally {
 			if (request === partitionsRequest) partitionsLoading = false;
 		}
+	}
+
+	async function selectDisk(disk: DiskInfo): Promise<void> {
+		// Toggle: clicking the already-selected disk deselects it again.
+		if (installState.diskId === disk.path) {
+			deselectDisk();
+			return;
+		}
+		await adoptDisk(disk);
 	}
 
 	function deselectDisk(): void {

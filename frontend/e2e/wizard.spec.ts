@@ -112,6 +112,26 @@ test.describe('Installer wizard', () => {
     await expect(page.locator('.disk-path code')).toHaveText(/dev/);
   });
 
+  test('Disk selection: selected disk persists after returning from the summary', async ({ page }) => {
+    await page.goto('/');
+    await next(page).click(); // -> User account
+    await fillUserAccount(page);
+    await next(page).click(); // -> Disk selection
+
+    const card = page.locator('.disk-card').first();
+    const diskName = await card.locator('.disk-name').innerText();
+    await card.click();
+    await expect(card).toHaveClass(/selected/);
+
+    await next(page).click(); // -> Confirmation
+    await expect(page.getByRole('heading', { name: 'Installation Summary' })).toBeVisible();
+
+    await back(page).click(); // -> Disk selection again
+    await expect(page.getByRole('heading', { name: 'Select Installation Disk' })).toBeVisible();
+    await expect(page.locator('.disk-card.selected')).toBeVisible();
+    await expect(page.locator('.disk-card.selected .disk-name')).toHaveText(diskName);
+  });
+
   test('Back button navigates between pages', async ({ page }) => {
     await page.goto('/');
     await next(page).click(); // -> User account
