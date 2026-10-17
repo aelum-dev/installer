@@ -103,8 +103,24 @@ func configureInitramfs(ctx *shared.InstallContext) error {
 	}
 	content := string(data)
 
-	// plymouth must come after systemd and before sd-encrypt (dm-crypt).
-	hooks := []string{"base", "systemd", "plymouth", "autodetect", "microcode", "modconf", "kms", "keyboard", "sd-vconsole", "block"}
+	// plymouth must come after systemd and before sd-encrypt (dm-crypt). The
+	// aelum-luks-hint hook (encrypted boots only) is baked in here, before the
+	// initramfs that uses it is generated: it carries the retry watcher, the
+	// poweroff unit, and the drop-ins that gate the boot bar on unlock.
+	hooks := []string{"base", "systemd", "plymouth"}
+	if ctx.Luks {
+		if err := installLuksHint(ctx); err != nil {
+			// Best-effort, like the boot-progress unit: a broken hint must not
+			// fail the whole install, so the hook is only added when every file
+			// was written.
+			if ctx.Logger != nil {
+				ctx.Logger.Error("Warning: failed to install LUKS unlock feedback: %v", err)
+			}
+		} else {
+			hooks = append(hooks, luksHintHookName)
+		}
+	}
+	hooks = append(hooks, "autodetect", "microcode", "modconf", "kms", "keyboard", "sd-vconsole", "block")
 	if ctx.Luks {
 		hooks = append(hooks, "sd-encrypt")
 	}

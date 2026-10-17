@@ -191,6 +191,13 @@ the mapper) instead of `p.RootPart`. `verifyMount` compares against the mapper p
   add `encrypt` and ensure a keymap hook precedes it. Then run an explicit
   `arch-chroot /mnt mkinitcpio -P`. This runs in `ConfigureSystemBase`, which
   precedes `ConfigurePlymouth`, so the plymouth regen preserves the hook.
+- **Unlock feedback** (`luks_hint.go`): on LUKS installs, bake the
+  `aelum-luks-hint` initramfs hook (added to HOOKS right after `plymouth`) and
+  the files it pulls in — a retry watcher that turns a rejected passphrase into
+  a Plymouth message, a poweroff unit, and drop-ins that send `luks:locked`
+  (prompt imminent) / `luks:unlocked` (root opened) so the theme only shows the
+  boot bar after a correct passphrase. `installLuksHint` is best-effort: the
+  hook is only added to HOOKS when every file is written.
 
 ### 3.12 `backend/install/verify/verify.go`
 When `ctx.Luks`: verify `root=`/`rd.luks.name` reference the mapper, the mapper UUID
