@@ -40,19 +40,22 @@ func TestVgCreateArgs(t *testing.T) {
 	}
 }
 
-// TestLvCreateSizeArgs verifies the root LV is created at a fixed size in MiB.
+// TestLvCreateSizeArgs verifies the root LV is created at a fixed size in MiB,
+// with signature wiping forced so a reused LV name never triggers an
+// interactive "Wipe it? [y/n]" prompt (which defaults to "n" without a TTY).
 func TestLvCreateSizeArgs(t *testing.T) {
 	got := lvCreateSizeArgs(8192, shared.LvmRootVolume, shared.LvmVolumeGroup)
-	want := []string{"lvcreate", "-L", "8192M", "-n", shared.LvmRootVolume, shared.LvmVolumeGroup}
+	want := []string{"lvcreate", "-y", "-W", "y", "-L", "8192M", "-n", shared.LvmRootVolume, shared.LvmVolumeGroup}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("lvCreateSizeArgs() = %v, want %v", got, want)
 	}
 }
 
-// TestLvCreateRestArgs verifies the home LV consumes all remaining free space.
+// TestLvCreateRestArgs verifies the home LV consumes all remaining free space,
+// with signature wiping forced (see TestLvCreateSizeArgs).
 func TestLvCreateRestArgs(t *testing.T) {
 	got := lvCreateRestArgs(shared.LvmHomeVolume, shared.LvmVolumeGroup)
-	want := []string{"lvcreate", "-l", "100%FREE", "-n", shared.LvmHomeVolume, shared.LvmVolumeGroup}
+	want := []string{"lvcreate", "-y", "-W", "y", "-l", "100%FREE", "-n", shared.LvmHomeVolume, shared.LvmVolumeGroup}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("lvCreateRestArgs() = %v, want %v", got, want)
 	}

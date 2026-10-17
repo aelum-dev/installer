@@ -154,14 +154,21 @@ func vgCreateArgs(vg, device string) []string {
 }
 
 // lvCreateSizeArgs builds a fixed-size lvcreate invocation.
+//
+// -y and -W y are required: when the new LV's first extents still hold a
+// filesystem signature from a previous install (LVM reuses the same LV name and
+// extents), lvcreate would otherwise prompt "Wipe it? [y/n]" and, with no TTY,
+// default to "n" and abort with exit status 5. The signature is always wiped
+// because the caller formats the LV immediately afterwards.
 func lvCreateSizeArgs(sizeMiB int64, lv, vg string) []string {
-	return []string{"lvcreate", "-L", fmt.Sprintf("%dM", sizeMiB), "-n", lv, vg}
+	return []string{"lvcreate", "-y", "-W", "y", "-L", fmt.Sprintf("%dM", sizeMiB), "-n", lv, vg}
 }
 
 // lvCreateRestArgs builds an lvcreate invocation that consumes all remaining
-// free space in the volume group.
+// free space in the volume group. -y / -W y have the same rationale as
+// lvCreateSizeArgs.
 func lvCreateRestArgs(lv, vg string) []string {
-	return []string{"lvcreate", "-l", "100%FREE", "-n", lv, vg}
+	return []string{"lvcreate", "-y", "-W", "y", "-l", "100%FREE", "-n", lv, vg}
 }
 
 // vgChangeArgs builds a vgchange activation/deactivation invocation.
