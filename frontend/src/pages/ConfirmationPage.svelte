@@ -148,17 +148,13 @@
 					{#if installState.luksEnabled}
 						<div class="option-row">
 							<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
-							{#if installState.manualMode}
-								<span class="option-hint">{t('disk.encryptHint')}</span>
-							{/if}
+							<span class="option-hint">{t('disk.encryptHint')}</span>
 						</div>
 					{/if}
 					{#if installState.lvmEnabled}
 						<div class="option-row">
 							<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
-							{#if installState.manualMode}
-								<span class="option-hint">{t('disk.lvmHint')}</span>
-							{/if}
+							<span class="option-hint">{t('disk.lvmHint')}</span>
 						</div>
 					{/if}
 				</div>
