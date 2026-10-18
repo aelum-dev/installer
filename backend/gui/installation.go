@@ -90,6 +90,11 @@ func (a *App) StartInstallation() error {
 		args = append(args, "--manual-layout", string(layoutJSON))
 	}
 
+	// The GUI computes the log path once and passes it to the CLI so both
+	// processes report and write the same file (including the /shared mirror).
+	logPath := shared.GetLogPath()
+	args = append(args, "--log-path", logPath)
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmdArgs := append([]string{cliBinary}, args...)
@@ -178,7 +183,6 @@ func (a *App) StartInstallation() error {
 		if err == nil {
 			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, nil)
 		} else {
-			logPath := shared.GetLogPath()
 			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed", fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
 		}
 		close(a.installDone)

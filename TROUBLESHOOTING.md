@@ -7,14 +7,17 @@ Common issues and how to resolve them.
 The installer writes a detailed log to:
 
 ```
-~/.local/share/aelum-installer/installation.log
+/var/log/aelum-install-<timestamp>.log
 ```
 
-On the live ISO, the path is:
+When the live ISO runs in the QEMU test guest, `/shared` exists and a second
+copy is written there too:
 
 ```
-/shared/installation.log
+/shared/aelum-install-<timestamp>.log
 ```
+
+Both files have the same name; the GUI always shows the `/var/log/...` path.
 
 ### Log Format
 
@@ -34,13 +37,13 @@ On the live ISO, the path is:
 
 ```bash
 # Last 50 lines
-tail -50 ~/.local/share/aelum-installer/installation.log
+tail -50 "$(ls -t /var/log/aelum-install-*.log | head -1)"
 
 # Search for errors
-grep -i "error\|failed" ~/.local/share/aelum-installer/installation.log
+grep -i "error\|failed" /var/log/aelum-install-*.log
 
 # See only a specific step
-sed -n '/Starting step: Formatting disk/,/Starting step: Mounting filesystem/p' ~/.local/share/aelum-installer/installation.log
+sed -n '/Starting step: Formatting disk/,/Starting step: Mounting filesystem/p' /var/log/aelum-install-*.log
 ```
 
 ## Common Failures
@@ -145,7 +148,7 @@ When reporting a bug, include:
 
 1. **What you expected** vs **what actually happened**
 2. **Steps to reproduce** (exact commands, disk type, filesystem choice)
-3. **Log file** — attach `~/.local/share/aelum-installer/installation.log`
+3. **Log file** — attach `/var/log/aelum-install-<timestamp>.log` (or the copy in `/shared`)
 4. **Environment**:
    - Live ISO version
    - Target disk model and size

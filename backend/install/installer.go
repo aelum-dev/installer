@@ -118,9 +118,12 @@ func (inst *Installer) Install() error {
 		return fmt.Errorf("manual partition layout not set")
 	}
 
-	// Clear previous log
-	logPath := shared.GetLogPath()
-	_ = os.WriteFile(logPath, nil, shared.LogFileMode)
+	// Clear previous log (primary + optional /shared mirror).
+	for _, logPath := range []string{shared.GetLogPath(), shared.GetLogMirrorPath()} {
+		if logPath != "" {
+			_ = os.WriteFile(logPath, nil, shared.LogFileMode)
+		}
+	}
 
 	// Ensure mounts are cleaned up on any failure so the installer is retryable.
 	// Cleanup is guarded by sync.Once — only the first caller wins, regardless

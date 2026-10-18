@@ -114,11 +114,22 @@ const MountRoot = "/mnt"
 // BootMountPoint is the EFI System Partition (ESP) mount point.
 const BootMountPoint = "/mnt/boot"
 
-// LogFileName is the default installation log filename.
-const LogFileName = "installation.log"
+// LogDir is the directory that holds the installation log.
+const LogDir = "/var/log"
 
-// AppDataDir is the XDG data directory for the installer (used for frontend log path).
-const AppDataDir = ".local/share/aelum-installer"
+// LogMirrorDir is an optional shared folder (the QEMU host share). When it
+// exists, the installer writes a second copy of the log there.
+const LogMirrorDir = "/shared"
+
+// LogFileNamePrefix is the installation log filename prefix.
+const LogFileNamePrefix = "aelum-install-"
+
+// LogFileTimeLayout is the timestamp appended to the log filename.
+const LogFileTimeLayout = "20060102-150405"
+
+// LogPathEnv is the environment variable the GUI uses to hand the CLI the same
+// log path it will display on failure.
+const LogPathEnv = "AELUM_LOG_PATH"
 
 // --- Time formats ------------------------------------------------------------
 

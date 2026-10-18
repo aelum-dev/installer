@@ -51,6 +51,7 @@ const (
 type ConsoleLogger struct {
 	logFileOnce     sync.Once
 	logFile         *os.File
+	mirrorFile      *os.File
 	progressLabel   atomic.Pointer[string]
 	progressPercent atomic.Int32
 }
@@ -65,20 +66,44 @@ func (l *ConsoleLogger) getLogFile() *os.File {
 	// call writeLine -> getLogFile simultaneously). sync.Once removes the
 	// data race on the logFile field that a bare nil check had.
 	l.logFileOnce.Do(func() {
-		logPath := GetLogPath()
-		if f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, LogFileMode); err == nil {
-			l.logFile = f
+		l.logFile = openLogFile(GetLogPath())
+		if mirror := GetLogMirrorPath(); mirror != "" {
+			l.mirrorFile = openLogFile(mirror)
 		}
 	})
 	return l.logFile
 }
 
-// Close closes the log file.
-func (l *ConsoleLogger) Close() {
-	if l.logFile != nil {
-		_ = l.logFile.Close()
-		l.logFile = nil
+// openLogFile opens path for append/create, returning nil on failure. A failed
+// open is never fatal: the installer keeps streaming to the terminal.
+func openLogFile(path string) *os.File {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, LogFileMode)
+	if err != nil {
+		return nil
 	}
+	return f
+}
+
+// writeToLogFiles writes one line to every open log destination (primary +
+// optional /shared mirror).
+func (l *ConsoleLogger) writeToLogFiles(line string) {
+	l.getLogFile()
+	for _, f := range []*os.File{l.logFile, l.mirrorFile} {
+		if f != nil {
+			_, _ = fmt.Fprintf(f, "%s\n", line)
+		}
+	}
+}
+
+// Close closes the log files.
+func (l *ConsoleLogger) Close() {
+	for _, f := range []*os.File{l.logFile, l.mirrorFile} {
+		if f != nil {
+			_ = f.Close()
+		}
+	}
+	l.logFile = nil
+	l.mirrorFile = nil
 }
 
 // writeLine formats msg with a timestamp and writes the SAME bytes to both
@@ -87,9 +112,7 @@ func (l *ConsoleLogger) writeLine(msg string) {
 	ts := time.Now().Format(TimestampFormatFull)
 	line := fmt.Sprintf("[%s] %s", ts, msg)
 	fmt.Printf("%s\n", line)
-	if f := l.getLogFile(); f != nil {
-		_, _ = fmt.Fprintf(f, "%s\n", line)
-	}
+	l.writeToLogFiles(line)
 }
 
 // --- Public methods ---------------------------------------------------------
@@ -105,9 +128,7 @@ func (l *ConsoleLogger) Error(format string, args ...interface{}) {
 	fmt.Fprintf(&msg, ErrorPrefix+format, args...)
 	line := fmt.Sprintf("[%s] %s", time.Now().Format(TimestampFormatFull), msg.String())
 	fmt.Fprintf(os.Stderr, "%s\n", line)
-	if f := l.getLogFile(); f != nil {
-		_, _ = fmt.Fprintf(f, "%s\n", line)
-	}
+	l.writeToLogFiles(line)
 }
 
 func (l *ConsoleLogger) Command(line string) {
@@ -190,9 +211,7 @@ func (l *ConsoleLogger) LogToFile(line string) {
 	if line == "" {
 		return
 	}
-	if f := l.getLogFile(); f != nil {
-		_, _ = fmt.Fprintf(f, "%s\n", line)
-	}
+	l.writeToLogFiles(line)
 }
 
 func (l *ConsoleLogger) Write(line string) {
@@ -203,15 +222,9 @@ func (l *ConsoleLogger) Write(line string) {
 }
 
 func (l *ConsoleLogger) WriteErrorLog(stepLabel, errMsg string) {
-	if f := l.getLogFile(); f != nil {
-		_, _ = fmt.Fprintf(f, "\n")
-		_, _ = fmt.Fprintf(f, "=== INSTALLATION ERROR at %s ===\n", time.Now().Format(TimestampFormatFull))
-		_, _ = fmt.Fprintf(f, "Step: %s\n", stepLabel)
-		_, _ = fmt.Fprintf(f, "Error: %s\n", errMsg)
-		_, _ = fmt.Fprintf(f, "Log file: %s\n", GetLogPath())
-		_, _ = fmt.Fprintf(f, "=== END ERROR ===\n")
-		_, _ = fmt.Fprintf(f, "\n")
-	}
+	block := fmt.Sprintf("\n=== INSTALLATION ERROR at %s ===\nStep: %s\nError: %s\nLog file: %s\n=== END ERROR ===\n",
+		time.Now().Format(TimestampFormatFull), stepLabel, errMsg, GetLogPath())
+	l.writeToLogFiles(block)
 }
 
 func escapeJSON(s string) string {

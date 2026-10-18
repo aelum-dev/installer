@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -192,7 +193,9 @@ func TestInstall_ErrorCleanup(t *testing.T) {
 	})
 
 	// Remove any existing log so we can verify it gets written.
-	logPath := shared.GetLogPath()
+	logPath := filepath.Join(t.TempDir(), "install.log")
+	shared.SetLogPath(logPath)
+	t.Cleanup(func() { shared.SetLogPath("") })
 	os.Remove(logPath)
 
 	err := inst.Install()

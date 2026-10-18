@@ -103,10 +103,17 @@ func run(args []string) int {
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
 	lvmFlag := fs.Bool("lvm", false, "Place root and home on LVM logical volumes (aelum VG)")
+	logPathFlag := fs.String("log-path", "", "Installation log path (the GUI passes this; defaults to /var/log/aelum-install-<timestamp>.log)")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		return 1
+	}
+
+	// Pin the log path before any log line is written. The GUI passes the same
+	// path it will show on failure, so the user never sees two locations.
+	if *logPathFlag != "" {
+		shared.SetLogPath(*logPathFlag)
 	}
 
 	if *versionFlag {
@@ -428,6 +435,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  %s --configure-system <disk> [--dry-run]                          Configure system (fstab, bootloader, hostname, locale, greetd, plymouth, zram, services)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --verify-system <disk> [--dry-run]                           Verify the installed system (fstab, kernel, packages, user, hostname)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --cleanup                                                    Unmount /mnt and clean up stale mounts\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install ... --log-path <file>                               Override the log path (default /var/log/aelum-install-<timestamp>.log)\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Username: passed via --username flag or read interactively from the terminal.\n")
 	fmt.Fprintf(os.Stderr, "Password: entered interactively from the terminal (never passed as a flag).\n")

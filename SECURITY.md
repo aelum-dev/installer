@@ -97,7 +97,7 @@ verify it before trusting a signature.
 
 - The CLI binary requires passwordless sudo for privileged operations — ensure the sudoers rule is restricted to the CLI binary path only
 - Disk paths are validated with regex to prevent shell injection, but the CLI still runs commands as root — trust the installer binary
-- The installation log (`~/.local/share/aelum-installer/installation.log`) may contain sensitive information — it is not encrypted
+- The installation log (`/var/log/aelum-install-<timestamp>.log`, mirrored to `/shared` when present) may contain sensitive information — it is not encrypted
 - Passwords are zeroed from memory (`[]byte`) after being copied to `InstallContext` to minimize exposure time
 
 ## Responsible Disclosure Timeline

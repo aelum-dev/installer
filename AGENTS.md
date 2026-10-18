@@ -236,7 +236,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 ## Security
 - Passwords read from stdin (never CLI flags — avoids /proc, ps, shell history).
 - Helper runs via sudo with restricted command whitelists — never full root access.
-- Installation log at `~/.local/share/aelum-installer/installation.log` is not encrypted.
+- Installation log at `/var/log/aelum-install-<timestamp>.log` (mirrored to `/shared` when it exists) is not encrypted.
 
 ## Desktop Environment
 Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.

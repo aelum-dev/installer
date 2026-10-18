@@ -3,6 +3,7 @@ package shared
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -203,13 +204,17 @@ func TestConsoleLogger_Write(t *testing.T) {
 }
 
 func TestConsoleLogger_FileWrites(t *testing.T) {
+	logPath := filepath.Join(t.TempDir(), "install.log")
+	SetLogPath(logPath)
+	t.Cleanup(func() { SetLogPath("") })
+
 	marker := "coverage-marker-9f3c1a"
 	l := NewConsoleLogger()
 	l.LogToFile(marker)
 	l.WriteErrorLog("FormatDisk", "boom")
 	l.Close()
 
-	data, err := os.ReadFile(GetLogPath())
+	data, err := os.ReadFile(logPath)
 	if err != nil {
 		t.Fatalf("read log file: %v", err)
 	}
@@ -225,17 +230,46 @@ func TestConsoleLogger_FileWrites(t *testing.T) {
 }
 
 func TestConsoleLogger_WriteLineMirrorsToFile(t *testing.T) {
+	logPath := filepath.Join(t.TempDir(), "install.log")
+	SetLogPath(logPath)
+	t.Cleanup(func() { SetLogPath("") })
+
 	marker := "mirror-line-4d2b"
 	l := NewConsoleLogger()
 	defer l.Close()
 
 	_, _ = captureOutput(t, func() { l.Info("hello %s", marker) })
 
-	data, err := os.ReadFile(GetLogPath())
+	data, err := os.ReadFile(logPath)
 	if err != nil {
 		t.Fatalf("read log file: %v", err)
 	}
 	if !strings.Contains(string(data), "hello "+marker) {
 		t.Errorf("log file does not mirror stdout line %q", marker)
+	}
+}
+
+func TestConsoleLogger_MirrorsToSharedDir(t *testing.T) {
+	dir := t.TempDir()
+	old := logMirrorDir
+	logMirrorDir = dir
+	t.Cleanup(func() {
+		logMirrorDir = old
+		SetLogPath("")
+	})
+
+	primary := filepath.Join(t.TempDir(), "install.log")
+	SetLogPath(primary)
+
+	l := NewConsoleLogger()
+	l.LogToFile("shared-marker-7a1d")
+	l.Close()
+
+	data, err := os.ReadFile(filepath.Join(dir, "install.log"))
+	if err != nil {
+		t.Fatalf("read shared mirror: %v", err)
+	}
+	if !strings.Contains(string(data), "shared-marker-7a1d") {
+		t.Errorf("shared mirror missing log line")
 	}
 }
