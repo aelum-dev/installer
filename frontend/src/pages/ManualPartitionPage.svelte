@@ -90,6 +90,17 @@
 		const request = ++loadRequest;
 		loading = true;
 		error = null;
+
+		// Re-use the plan already held in the store when it belongs to this disk.
+		// This keeps the user's EFI/System designations (and any added/deleted
+		// rows) when switching automatic <-> manual or navigating back.
+		const saved = installState.manualLayout;
+		if (saved && saved.disk === path) {
+			layout = normalizeManualLayout(saved);
+			loading = false;
+			return;
+		}
+
 		try {
 			const fetched = normalizeManualLayout(await GetManualLayout(path));
 			if (request !== loadRequest) return;

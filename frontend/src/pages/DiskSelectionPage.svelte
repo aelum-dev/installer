@@ -22,15 +22,11 @@
 	type InstallMode = (typeof MODES)[number];
 
 	function setMode(mode: InstallMode): void {
-		if (mode === 'manual') {
-			installState.manualMode = true;
-			// Only reload a fresh layout when a disk is actually selected.
-			if (installState.disk) {
-				installState.manualLayout = null;
-			}
-		} else {
-			installState.manualMode = false;
-		}
+		installState.manualMode = mode === 'manual';
+		// The pending "add partition" preview is not part of the plan; clear it
+		// when leaving/entering manual mode. The layout itself is kept so the
+		// EFI/System roles survive automatic <-> manual toggles.
+		installState.pendingAddMB = 0;
 	}
 
 	const pageIcon = glyph(STEP_ICONS.diskSelection);
@@ -95,6 +91,12 @@
 	// adoptDisk loads a disk into the wizard state and fetches its partitions.
 	// It never toggles: restoring a selection on remount must keep the disk.
 	async function adoptDisk(disk: DiskInfo): Promise<void> {
+		// A saved manual plan belongs to one disk. Keep it when restoring the
+		// same disk; discard it when the user picks a different one.
+		if (installState.manualLayout && installState.manualLayout.disk !== disk.path) {
+			installState.manualLayout = null;
+			installState.pendingAddMB = 0;
+		}
 		installState.diskId = disk.path;
 		installState.disk = disk;
 
