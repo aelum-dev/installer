@@ -14,8 +14,10 @@
 
 	import { PAGE_IDS, TOTAL_PAGES } from '$lib/types';
 	import type { PageID } from '$lib/types';
-	import { goNext, goBack, finish, WIZARD_NAV, type WizardNavigation } from '$lib/navigation';
+	import { goNext, goBack, finish, canGoNext, WIZARD_NAV, type WizardNavigation } from '$lib/navigation';
 	import { navState, setDryRun } from '$lib/store.svelte';
+	import { isPageValid, getPageValidationReasons } from '$lib/page-validation';
+	import { shouldAdvanceOnEnter } from '$lib/enter-advance';
 	import { t, getIsRTL } from '$lib/i18n/index.svelte';
 	import { pageFade } from '$lib/transitions';
 
@@ -71,6 +73,30 @@
 		validationError = reasons;
 	}
 
+	// The single "advance" path for both the footer's Next button and Enter:
+	// validate first, then go (or list why not).
+	function advance(): void {
+		if (isPageValid(navState.currentPage)) {
+			void handleNext();
+		} else {
+			handleValidationFailed(getPageValidationReasons(navState.currentPage));
+		}
+	}
+
+	// Enter is the keyboard equivalent of Next. The predicate yields to controls
+	// that own Enter and to open dialogs; the validation modal is tracked here
+	// because its state is local to this component.
+	function handleGlobalKeydown(event: KeyboardEvent): void {
+		const canAdvance = shouldAdvanceOnEnter(event, {
+			canAdvance: canGoNext(navState.currentPage),
+			blocked: validationError !== null,
+		});
+		if (!canAdvance) return;
+
+		event.preventDefault();
+		advance();
+	}
+
 	function dismissValidationError(): void {
 		validationError = null;
 	}
@@ -124,6 +150,8 @@
 	}
 </script>
 
+<svelte:window onkeydown={handleGlobalKeydown} />
+
 <div class="app-layout" dir={getIsRTL() ? 'rtl' : 'ltr'}>
 	<AppHeader />
 	<main class="content-area">
@@ -142,10 +170,9 @@
 
 	<AppFooter
 		currentPage={navState.currentPage}
-		onNext={handleNext}
+		onNext={advance}
 		onBack={handleBack}
 		onFinish={handleFinish}
-		onValidationFailed={handleValidationFailed}
 	/>
 
 	<!-- Validation error modal -->

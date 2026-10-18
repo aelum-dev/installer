@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { PAGE_IDS, TOTAL_PAGES } from '$lib/types';
-	import { isPageValid, getPageValidationReasons } from '$lib/page-validation';
+	import { canGoNext } from '$lib/navigation';
 	import { t, getIsRTL } from '$lib/i18n';
 
 	let {
@@ -8,20 +8,20 @@
 		onNext,
 		onBack,
 		onFinish,
-		onValidationFailed,
 	}: {
 		currentPage: number;
 		onNext: () => void;
 		onBack: () => void;
 		onFinish: () => void;
-		onValidationFailed?: (reasons: string[]) => void;
 	} = $props();
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
-	const isInstallationPage = $derived(currentPage === PAGE_IDS.INSTALLATION);
+	const canAdvance = $derived(canGoNext(currentPage));
 	const mirrorArrow = $derived(getIsRTL());
-	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && !isLastPage && !isInstallationPage);
-	const showNext = $derived(!isLastPage && !isInstallationPage);
+	// Installation and Finish are terminal, so neither control is shown there;
+	// Welcome additionally has nothing to go back to.
+	const showNext = $derived(canAdvance);
+	const showBack = $derived(currentPage > PAGE_IDS.WELCOME && canAdvance);
 
 	const steps = $derived(Array.from({ length: TOTAL_PAGES }, (_, i) => i));
 
@@ -30,24 +30,27 @@
 		if (index === currentPage) return 'active';
 		return 'pending';
 	}
-
-	// Next button is always enabled, but validates before proceeding. On
-	// failure the modal lists every reason (rendered as a plain-text list).
-	const nextValidationReasons = $derived(getPageValidationReasons(currentPage));
 </script>
 
 <footer class="footer">
-	<div class="footer-left">
-		{#if showBack}
+	<!-- Next is first in the DOM so Tab reaches the primary action before Back;
+	     CSS `order` keeps Back on the leading edge and Next on the trailing
+	     edge, so the visual layout is unchanged. -->
+	<div class="footer-next">
+		{#if showNext}
 			<button
 				type="button"
-				class="nav-btn nav-btn--back"
-				aria-label={t('nav.back')}
-				onclick={onBack}
+				class="nav-btn"
+				aria-label={t('nav.next')}
+				onclick={onNext}
 			>
 				<svg class={['nav-arrow', { 'nav-arrow--mirror': mirrorArrow }]} viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M15 18l-6-6 6-6"/>
+					<path d="M9 18l6-6-6-6"/>
 				</svg>
+			</button>
+		{:else if isLastPage}
+			<button type="button" class="btn-reboot" onclick={onFinish}>
+				{t('page.finish.reboot')}
 			</button>
 		{/if}
 	</div>
@@ -60,27 +63,17 @@
 			></div>
 		{/each}
 	</div>
-	<div class="footer-right">
-		{#if showNext}
+	<div class="footer-back">
+		{#if showBack}
 			<button
 				type="button"
-				class="nav-btn"
-				aria-label={t('nav.next')}
-				onclick={() => {
-					if (isPageValid(currentPage)) {
-						onNext();
-					} else {
-						onValidationFailed?.(nextValidationReasons);
-					}
-				}}
+				class="nav-btn nav-btn--back"
+				aria-label={t('nav.back')}
+				onclick={onBack}
 			>
 				<svg class={['nav-arrow', { 'nav-arrow--mirror': mirrorArrow }]} viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M9 18l6-6-6-6"/>
+					<path d="M15 18l-6-6 6-6"/>
 				</svg>
-			</button>
-		{:else if isLastPage}
-			<button type="button" class="btn-reboot" onclick={onFinish}>
-				{t('page.finish.reboot')}
 			</button>
 		{/if}
 	</div>
@@ -95,11 +88,14 @@
 		min-height: 40px;
 	}
 
-	.footer-left {
+	/* `order` restores the visual sequence (Back, dots, Next) while the DOM
+	   keeps Next first for Tab order. */
+	.footer-back {
 		display: flex;
 		align-items: center;
 		flex: 1;
 		justify-content: flex-start;
+		order: 1;
 	}
 
 	.footer-center {
@@ -108,13 +104,15 @@
 		justify-content: center;
 		gap: var(--spacing-sm);
 		flex: 1;
+		order: 2;
 	}
 
-	.footer-right {
+	.footer-next {
 		display: flex;
 		align-items: center;
 		flex: 1;
 		justify-content: flex-end;
+		order: 3;
 	}
 
 	.step-dot {

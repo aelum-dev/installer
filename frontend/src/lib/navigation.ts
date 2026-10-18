@@ -50,6 +50,14 @@ export function cancelConfirmation(): void {
 	_installationConfirmed = false;
 }
 
+/**
+ * Whether the wizard shows a Next control on this page. Installation is in
+ * progress and Finish is terminal, so neither may advance.
+ */
+export function canGoNext(page: number): boolean {
+	return page !== PAGE_IDS.INSTALLATION && page !== PAGE_IDS.FINISH;
+}
+
 /** Advance one page. Returns an error message to surface, or null on success. */
 export async function goNext(currentPage: number): Promise<string | null> {
 	// The Confirmation page gates advancement behind a destructive-action dialog.
