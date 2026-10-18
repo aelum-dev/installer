@@ -12,12 +12,11 @@
 	let passwordTouched = $state(false);
 	let confirmPasswordTouched = $state(false);
 
-	// Select the prefilled username on mount so typing replaces it. An action
-	// runs exactly once when the node is created — unlike an $effect, it does
-	// not re-run on unrelated reactive updates.
-	function selectOnMount(node: HTMLInputElement): void {
-		node.select();
-	}
+	// The username field is deliberately NOT focused or selected on mount. The
+	// page-change focus lands on the heading, so auto-focusing this field would
+	// immediately blur it — firing handleBlur and marking it touched, which
+	// shows "Username is required." before the user has typed anything. There
+	// is no prefilled username to select anyway.
 
 	const errors = $derived(
 		validateUserAccount(installState.username, installState.password, installState.confirmPassword, {
@@ -71,7 +70,6 @@
 				type="text"
 				class={['line-edit', { 'line-edit--error': !!errors.username }]}
 				placeholder={t('page.userAccount.usernamePlaceholder')}
-				use:selectOnMount
 				bind:value={installState.username}
 				onblur={() => handleBlur('username')}
 			/>
