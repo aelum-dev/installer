@@ -51,6 +51,8 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	/* The document centres text; keep the role label pinned to the pill's left. */
+	text-align: start;
 }
 
 .role-chevron {
@@ -60,21 +62,10 @@
 	width: 14px;
 	height: 14px;
 	flex-shrink: 0;
-}
-
-.role-chevron-arrow {
-	display: block;
-	width: 100%;
-	height: 100%;
-	/* No transition — rotate snaps instantly between states. */
-}
-
-.role-chevron-arrow path {
-	stroke: var(--color-text-muted);
-}
-
-.role-trigger .role-chevron-arrow.open {
-	transform: rotate(180deg);
+	font-family: "NerdFontsSymbols Nerd Font";
+	font-size: 14px;
+	line-height: 1;
+	color: var(--color-text-muted);
 }
 
 /* Role colouring on the trigger — mirrors the menu rows. */
@@ -84,8 +75,8 @@
 	color: var(--color-primary);
 }
 
-.role-trigger.system .role-chevron-arrow path {
-	stroke: var(--color-primary);
+.role-trigger.system .role-chevron {
+	color: var(--color-primary);
 }
 
 .role-trigger.esp {
@@ -94,8 +85,8 @@
 	color: var(--color-primary);
 }
 
-.role-trigger.esp .role-chevron-arrow path {
-	stroke: var(--color-primary);
+.role-trigger.esp .role-chevron {
+	color: var(--color-primary);
 }
 
 /* Menu — light, themed card. */

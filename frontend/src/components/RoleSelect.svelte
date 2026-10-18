@@ -2,6 +2,7 @@
 	import type { PartitionType } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 	import { t } from '$lib/i18n';
+	import { glyph } from '$lib/icons';
 	import './RoleSelect.css';
 
 	// A fully custom role selector so the dropdown menu is themed to the installer's
@@ -67,9 +68,7 @@
 		onkeydown={onKey}
 	>
 		<span class="role-trigger-label">{t(value === '' ? 'manual.type.preserve' : 'manual.type.' + value)}</span>
-		<span class="role-chevron" aria-hidden="true">
-			<svg viewBox="0 0 16 16" width="12" height="12" class={['role-chevron-arrow', { open }]}><path d="M3 8l5 5 5-5" /></svg>
-		</span>
+		<span class="role-chevron" aria-hidden="true">{glyph(open ? 'eab7' : 'eab4')}</span>
 	</button>
 
 	{#if open}
