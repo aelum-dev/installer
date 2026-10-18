@@ -53,7 +53,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		// Existing rows with no role are untouched (dualboot-safe). A brand-new
 		// row with no role is a draft that must never be silently ignored.
 		if p.Path == "" && p.Type == "" {
-			return nil, fmt.Errorf("new partition must be assigned as ESP or System (or deleted)")
+			return nil, fmt.Errorf("new partition must be assigned as Boot or System (or deleted)")
 		}
 		if p.Type != shared.TypeESP && p.Type != shared.TypeSystem {
 			continue // empty type = untouched, never formatted or mounted

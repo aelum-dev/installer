@@ -84,7 +84,7 @@ are the states the tests assert.
 ## Note on the install step
 
 In this dev environment the dry-run CLI validates the synthetic disk's
-partition layout and reports an error ("exactly one ESP partition is required"),
+partition layout and reports an error ("exactly one Boot partition is required"),
 so the automated flow lands on the Installation page's error hint rather than
 the Finish screen. The test accepts either terminal state — it validates that
 the install path is wired correctly (navigation, backend bindings, CLI spawn).

@@ -18,7 +18,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 | Term | What | Key Paths |
 |------|------|-----------|
 | **Live ISO** | Bootable Arch env running the installer. Read-only rootfs (overlay). | Sudoers: user needs passwordless sudo for CLI binary. |
-| **Installed System** | Arch being written to target disk. | Mounted at `/mnt/`. ESP at `/mnt/boot/`. Sudoers: `/etc/sudoers.d/wheel`. Accessed via `arch-chroot /mnt` |
+| **Installed System** | Arch being written to target disk. | Mounted at `/mnt/`. Boot partition at `/mnt/boot/`. Sudoers: `/etc/sudoers.d/wheel`. Accessed via `arch-chroot /mnt` |
 | **Host** | Developer's main machine. | `~/Projects/shared` shared with VM. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
@@ -178,13 +178,13 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 ## Installation Steps (8 top-level)
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
-2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, ESP to `/mnt/boot` (`install/mount/`)
+2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, Boot partition to `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
-8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs), kernel + initrd on the ESP, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
+8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs), kernel + initrd on the Boot partition, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
 
 ## Build & Test
 ```bash
@@ -256,12 +256,12 @@ Welcome (language select)
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
-- ESP floor: new ESP `shared.MinESPSizeBytes` = 512 MiB; reused existing ESP `shared.MinExistingESPSizeBytes` = 100 MiB (Windows-created ESPs are often 100–300 MiB)
-- System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB ESP); LVM uses `shared.MinLvmSystemPartitionBytes` = 16 GiB, plus `shared.LuksHeaderReserveBytes` when LUKS+LVM is enabled
+- Boot floor: new Boot partition `shared.MinESPSizeBytes` = 512 MiB; reused existing Boot partition `shared.MinExistingESPSizeBytes` = 100 MiB (Windows-created boot partitions are often 100–300 MiB)
+- System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition); LVM uses `shared.MinLvmSystemPartitionBytes` = 16 GiB, plus `shared.LuksHeaderReserveBytes` when LUKS+LVM is enabled
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Default username: `shared.DefaultCLIUsername` = "aelum"
 - Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"
-- ESP mount: `shared.BootMountPoint` = "/mnt/boot"
+- Boot mount: `shared.BootMountPoint` = "/mnt/boot"
 - Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=37`, `WeightInstallDesktop=50`, `WeightSetupUsers=2`, `WeightConfigureSystem=4`, `WeightClearCache=1`, `WeightVerifySystem=1` (total 100)

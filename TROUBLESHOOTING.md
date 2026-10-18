@@ -73,11 +73,11 @@ sudo ./aelum-installer-cli --rollback /dev/sda
 
 ### "bootctl install failed"
 
-**Cause**: ESP is not mounted correctly, or firmware doesn't support systemd-boot.
+**Cause**: The Boot partition is not mounted correctly, or firmware doesn't support systemd-boot.
 
 **Fix**:
 ```bash
-# Check ESP is mounted
+# Check the Boot partition is mounted
 ls /mnt/boot/
 
 # Verify EFI firmware

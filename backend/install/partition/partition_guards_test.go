@@ -103,7 +103,7 @@ func TestValidate_ExistingSubMiBESPFails(t *testing.T) {
 		},
 	}
 	err := Validate(layout)
-	if err == nil || !strings.Contains(err.Error(), "ESP partition is too small") {
+	if err == nil || !strings.Contains(err.Error(), "boot partition is too small") {
 		t.Fatalf("Validate() = %v, want sub-MiB ESP error", err)
 	}
 }

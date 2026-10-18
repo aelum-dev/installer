@@ -7,7 +7,7 @@
 | Term | What It Is | Key Paths |
 |------|-----------|-----------|
 | **Live ISO** | Bootable Arch environment running the installer. Read-only rootfs (overlay). | Sudoers: user needs passwordless sudo for CLI binary. |
-| **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. ESP at `/mnt/boot/`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
+| **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. Boot partition at `/mnt/boot/`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
 | **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `~/Projects/shared` shared with VM. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
@@ -107,7 +107,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | # | Step | Weight | Function | Description |
 |---|------|--------|----------|-------------|
 | 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 512MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
-| 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, ESP to `/mnt/boot` |
+| 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, Boot partition to `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
 | 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |

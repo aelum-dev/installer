@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 //
 // Manual mode is reached from the Disk Selection page: pick a disk while in
 // automatic mode, then toggle to Manual. The partition editor then lets you
-// designate one partition as Boot (ESP) and one as Root (System), add new
+// designate one partition as Boot and one as Root (System), add new
 // partitions, and delete rows. Next is always enabled; an invalid layout shows
 // a "Cannot proceed" validation modal instead of blocking navigation.
 //
@@ -74,19 +74,19 @@ test.describe('Manual partitioning', () => {
     await expect(page.locator('.role-trigger').filter({ hasText: 'Preserve' })).toHaveCount(2);
   });
 
-  test('designating ESP + System is reflected on the rows', async ({ page }) => {
+  test('designating Boot + System is reflected on the rows', async ({ page }) => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
     const rows = page.locator('.editor-row');
-    // First partition → Boot (ESP), second → Root (System), via the role menus.
+    // First partition → Boot, second → Root (System), via the role menus.
     await rows.first().locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'ESP' }).click();
+    await page.getByRole('option', { name: 'Boot' }).click();
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'System' }).click();
 
     // The chosen roles are reflected on the row triggers.
-    await expect(rows.first().locator('.role-trigger')).toHaveText('ESP');
+    await expect(rows.first().locator('.role-trigger')).toHaveText('Boot');
     await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
   });
 
@@ -96,10 +96,10 @@ test.describe('Manual partitioning', () => {
 
     const rows = page.locator('.editor-row');
     await rows.first().locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'ESP' }).click();
+    await page.getByRole('option', { name: 'Boot' }).click();
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'System' }).click();
-    await expect(rows.first().locator('.role-trigger')).toHaveText('ESP');
+    await expect(rows.first().locator('.role-trigger')).toHaveText('Boot');
     await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
 
     // Leave manual mode and come back: the plan must be re-used, not rescanned
@@ -107,7 +107,7 @@ test.describe('Manual partitioning', () => {
     await page.getByRole('button', { name: 'Automatic' }).click();
     await page.getByRole('button', { name: 'Manual' }).click();
     await expect(page.locator('.editor-row')).toHaveCount(2);
-    await expect(page.locator('.editor-row').first().locator('.role-trigger')).toHaveText('ESP');
+    await expect(page.locator('.editor-row').first().locator('.role-trigger')).toHaveText('Boot');
     await expect(page.locator('.editor-row').nth(1).locator('.role-trigger')).toHaveText('System');
   });
 
@@ -176,10 +176,10 @@ test.describe('Manual partitioning', () => {
 
     const rows = page.locator('.editor-row');
     await rows.first().locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'ESP' }).click();
+    await page.getByRole('option', { name: 'Boot' }).click();
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'System' }).click();
-    await expect(rows.first().locator('.role-trigger')).toHaveText('ESP');
+    await expect(rows.first().locator('.role-trigger')).toHaveText('Boot');
     await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
 
     // Selecting the active "System" role again in the menu clears it back to

@@ -223,7 +223,7 @@ func verifyBootloaderInstallation(esp string) error {
 	cmd = primitives.Run("find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
 	output, err = cmd.Output()
 	if err == nil {
-		info = append(info, "ESP files: "+strings.TrimSpace(string(output)))
+		info = append(info, "Boot files: "+strings.TrimSpace(string(output)))
 	}
 
 	cmd = primitives.Run("bootctl", "status", "--esp-path="+esp)

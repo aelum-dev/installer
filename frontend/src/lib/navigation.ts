@@ -136,7 +136,7 @@ async function validateCurrentPage(page: number): Promise<string | null> {
 		return null; // Validation passed
 	} catch (err) {
 		// Manual (dualboot) mode: surface the backend's specific reason (e.g.
-		// "exactly one ESP partition is required", partition sizes exceed the disk)
+		// "exactly one Boot partition is required", partition sizes exceed the disk)
 		// instead of a generic prompt about assigning roles.
 		if (page === PAGE_IDS.DISK_SELECTION && installState.manualMode) {
 			if (installState.manualLayout) {

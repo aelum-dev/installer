@@ -45,7 +45,7 @@ func Validate(layout shared.ManualLayout) error {
 		// keeping it in the plan would make validation reserve space for a
 		// partition install never creates. Require a role (or deletion) instead.
 		if p.Path == "" && p.Type == "" {
-			return fmt.Errorf("new partition must be assigned as ESP or System (or deleted)")
+			return fmt.Errorf("new partition must be assigned as Boot or System (or deleted)")
 		}
 		switch p.Type {
 		case shared.TypeESP:
@@ -83,7 +83,7 @@ func Validate(layout shared.ManualLayout) error {
 	}
 
 	if esp != 1 {
-		return fmt.Errorf("exactly one ESP partition is required (found %d)", esp)
+		return fmt.Errorf("exactly one Boot partition is required (found %d)", esp)
 	}
 	if sys != 1 {
 		return fmt.Errorf("exactly one System partition is required (found %d)", sys)
@@ -190,7 +190,7 @@ func validatePartitionSize(p shared.ManualPartition, systemFloorBytes int64) err
 			espFloor = shared.MinExistingESPSizeBytes
 		}
 		if sizeBytes < espFloor {
-			return fmt.Errorf("ESP partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(espFloor))
+			return fmt.Errorf("boot partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(espFloor))
 		}
 	case shared.TypeSystem:
 		if sizeBytes < systemFloorBytes {
