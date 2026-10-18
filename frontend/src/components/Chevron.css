@@ -1,0 +1,20 @@
+.chevron {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+	line-height: 1;
+	font-family: "NerdFontsSymbols Nerd Font";
+	transition: transform 0.15s ease;
+}
+
+/* The base glyph (eab7) points up; rotate it for the other directions.
+   rotate() is clockwise, so rotate(180deg) swings the vertex from top
+   (12 o'clock) to bottom (6 o'clock) → points down, rotate(90deg) swings it
+   to the right, and rotate(-90deg) swings it to the left. */
+.chevron--up { transform: rotate(0deg); }
+.chevron--down { transform: rotate(180deg); }
+.chevron--left { transform: rotate(-90deg); }
+.chevron--right { transform: rotate(90deg); }

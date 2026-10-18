@@ -2,6 +2,7 @@
 	import { PAGE_IDS, TOTAL_PAGES } from '$lib/types';
 	import { canGoNext } from '$lib/navigation';
 	import { t, getIsRTL } from '$lib/i18n';
+	import Chevron from '$components/Chevron.svelte';
 
 	let {
 		currentPage,
@@ -17,7 +18,10 @@
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
 	const canAdvance = $derived(canGoNext(currentPage));
-	const mirrorArrow = $derived(getIsRTL());
+	// The base chevron points down; rotate it to face the travel direction. In
+	// RTL the arrows flip: Next points left, Back points right.
+	const nextArrow = $derived(getIsRTL() ? 'left' : 'right');
+	const backArrow = $derived(getIsRTL() ? 'right' : 'left');
 	// Installation and Finish are terminal, so neither control is shown there;
 	// Welcome additionally has nothing to go back to.
 	const showNext = $derived(canAdvance);
@@ -44,9 +48,7 @@
 				aria-label={t('nav.next')}
 				onclick={onNext}
 			>
-				<svg class={['nav-arrow', { 'nav-arrow--mirror': mirrorArrow }]} viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M9 18l6-6-6-6"/>
-				</svg>
+				<Chevron direction={nextArrow} size={20} />
 			</button>
 		{:else if isLastPage}
 			<button type="button" class="btn-reboot" onclick={onFinish}>
@@ -71,9 +73,7 @@
 				aria-label={t('nav.back')}
 				onclick={onBack}
 			>
-				<svg class={['nav-arrow', { 'nav-arrow--mirror': mirrorArrow }]} viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M15 18l-6-6 6-6"/>
-				</svg>
+				<Chevron direction={backArrow} size={20} />
 			</button>
 		{/if}
 	</div>
@@ -139,23 +139,14 @@
 		background: transparent;
 		border: none;
 		border-radius: 50%;
-		aspect-ratio: 1;
-		padding: 8px;
+		width: 40px;
+		height: 40px;
 		display: flex;
-		justify-content: center;
 		align-items: center;
+		justify-content: center;
 		color: var(--color-text);
 		cursor: pointer;
 		transition: background-color 0.15s ease, color 0.15s ease;
-	}
-
-	.nav-arrow {
-		display: block;
-		transition: transform 0.15s ease;
-	}
-
-	.nav-arrow--mirror {
-		transform: scaleX(-1);
 	}
 
 	.nav-btn:focus-visible {
@@ -166,7 +157,6 @@
 	.nav-btn:hover:not(:disabled) {
 		background-color: var(--color-bg-hover);
 	}
-
 
 	.btn-reboot {
 		font-family: inherit;

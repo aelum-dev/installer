@@ -14,6 +14,7 @@
 	} from '$lib/manual-layout';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
+	import Chevron from '$components/Chevron.svelte';
 	import { groupDigits } from '$lib/format';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import RoleSelect from '$components/RoleSelect.svelte';
@@ -312,9 +313,7 @@
 						<td class="part-size">{groupDigits(unallocatedMB)} {t('unit.mb')}</td>
 						<td></td>
 						<td class="text-right">
-							<span class="unallocated-indicator" aria-hidden="true">
-							{#if showAddControl}{glyph('eab7')}{:else}{glyph('eab4')}{/if}
-						</span>
+							<Chevron class="unallocated-indicator" direction={showAddControl ? 'up' : 'down'} />
 						</td>
 					</tr>
 				{/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { glyph } from '$lib/icons';
+	import Chevron from '$components/Chevron.svelte';
 	import { t } from '$lib/i18n';
 	import './NumberStepper.css';
 
@@ -49,7 +49,7 @@
 		onclick={() => stepBy(step)}
 		aria-label={t('stepper.increase')}
 	>
-		{glyph('eab7')}
+		<Chevron direction="up" />
 	</button>
 	<button
 		type="button"
@@ -58,6 +58,6 @@
 		onclick={() => stepBy(-step)}
 		aria-label={t('stepper.decrease')}
 	>
-		{glyph('eab4')}
+		<Chevron direction="down" />
 	</button>
 </div>

@@ -132,14 +132,14 @@
 	font-weight: 600;
 }
 
-/* Chevron indicator: down when collapsed (click to expand), up when active. */
+/* Chevron indicator: down when collapsed (click to expand), up when active.
+   Sizing, font-family and layout come from the shared .chevron component; only
+   colour (and its fade) is set here, since the component inherits colour from
+   the caller. Both transitions are declared so the colour fade survives even
+   though .chevron sets a transform transition of its own. */
 .unallocated-indicator {
-	display: inline-block;
-	font-family: "NerdFontsSymbols Nerd Font";
-	font-size: 1.05rem;
-	line-height: 1;
 	color: var(--color-text-muted);
-	transition: color 0.2s ease;
+	transition: color 0.2s ease, transform 0.15s ease;
 }
 
 .unallocated-row.is-active .unallocated-indicator {
