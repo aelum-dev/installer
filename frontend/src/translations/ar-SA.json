@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "يرجى اختيار نظام ملفات للمتابعة.",
   "validation.modal.selectLanguage": "يرجى اختيار لغة للمتابعة.",
   "validation.modal.systemRequired": "مطلوب تقسيم واحد فقط للجذر (System) (تم العثور على {n}).",
-  "validation.modal.systemTooSmall": "تقسيم الجذر صغير جداً: {size} ميغابايت (الحد الأدنى 8192 ميغابايت مطلوب).",
+  "validation.modal.systemTooSmall": "تقسيم الجذر صغير جداً: {size} ميغابايت (الحد الأدنى {min} ميغابايت مطلوب).",
   "validation.modal.title": "لا يمكن المتابعة",
   "validation.modal.unsupportedFileSystem": "نظام ملفات غير مدعوم: {fs} (مدعوم: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "يجب أن يحتوي اسم المستخدم على أحرف صغيرة وأرقام وشرطات وشرطات سفلية فقط.",

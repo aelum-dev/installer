@@ -28,11 +28,21 @@ describe('isManualLayoutValid', () => {
 		expect(isManualLayoutValid(baseLayout())).toBe(true);
 	});
 
-	it('rejects a System partition below 8 GiB', () => {
+	it('accepts a 7680 MiB System partition (8 GiB total - 512 MiB ESP)', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
-				{ index: 1, path: '/dev/sda2', sizeMB: 1, type: 'system' },
+				{ index: 1, path: '/dev/sda2', sizeMB: 7680, sizeBytes: 7680 * mib, type: 'system' },
+			],
+		});
+		expect(isManualLayoutValid(layout)).toBe(true);
+	});
+
+	it('rejects a System partition below 7680 MiB', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '/dev/sda2', sizeMB: 7679, sizeBytes: 7679 * mib, type: 'system' },
 			],
 		});
 		expect(isManualLayoutValid(layout)).toBe(false);
@@ -124,16 +134,16 @@ describe('use-all-remaining rows respect the role floor', () => {
 		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 
-	it('rejects a brand-new System whose resolved free space is below 8 GiB', () => {
+	it('rejects a brand-new System whose resolved free space is below 7680 MiB', () => {
 		const layout = baseLayout({
-			diskSizeMB: 8700,
-			diskSizeBytes: 8700 * mib,
+			diskSizeMB: 8000,
+			diskSizeBytes: 8000 * mib,
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
 				{ index: 1, path: '', sizeMB: 0, type: 'system' },
 			],
 		});
-		expect(manualLayoutIssues(layout)).toContainEqual({ kind: 'systemTooSmall', sizeMB: 8186 });
+		expect(manualLayoutIssues(layout)).toContainEqual({ kind: 'systemTooSmall', sizeMB: 7486, minMB: 7680 });
 		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 

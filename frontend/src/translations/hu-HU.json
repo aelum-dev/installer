@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Kérjük, válasszon fájlrendszert a folytatáshoz.",
   "validation.modal.selectLanguage": "Kérjük, válasszon nyelvet a folytatáshoz.",
   "validation.modal.systemRequired": "Pontosan egy Root (System) partíció szükséges (talált: {n}).",
-  "validation.modal.systemTooSmall": "A Root partíció túl kicsi: {size} MB (minimum 8192 MB szükséges).",
+  "validation.modal.systemTooSmall": "A Root partíció túl kicsi: {size} MB (minimum {min} MB szükséges).",
   "validation.modal.title": "Nem folytatható",
   "validation.modal.unsupportedFileSystem": "Nem támogatott fájlrendszer: {fs} (támogatott: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "A felhasználónév csak kisbetűket, számokat, kötőjeleket és aláhúzásjeleket tartalmazhat.",

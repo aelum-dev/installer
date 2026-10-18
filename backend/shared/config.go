@@ -41,20 +41,41 @@ const ReservedAccountNames = "adm,alpm,audio,bin,clock,daemon,dbus,disk,empower,
 	"scanner,sgx,smmsp,storage,sys,systemd-coredump,systemd-imds,systemd-journal,systemd-journal-remote," +
 	"systemd-network,systemd-oom,systemd-resolve,systemd-timesync,tss,tty,users,utmp,uucp,uuidd,video,wheel"
 
-// MinDiskSizeGB is the minimum disk size in gigabytes.
-const MinDiskSizeGB = 8
+// MinDiskSizeBytes is the minimum whole-disk size (8 GiB). The root/system
+// partition floor is derived by subtracting the ESP from this total, so the
+// product requirement and the manual layout agree: 8192 MiB - 512 MiB = 7680 MiB
+// for root. It is reduced from the old 16 GiB target after the on-disk swap file
+// was removed in favor of zram.
+const MinDiskSizeBytes = 8 * 1024 * 1024 * 1024
 
-// MinDiskSizeBytes is the minimum disk size in bytes (8 GiB).
-// Reduced from 16 GiB once the on-disk swap file was removed in favor of zram
-// (compressed RAM-based swap). Accounts for: base system (~1.5GB) + desktop
-// packages (~4GB) + overhead (~1GB).
-const MinDiskSizeBytes = MinDiskSizeGB * 1024 * 1024 * 1024
-
-// MinESPSizeBytes is the smallest size an ESP partition may be (512 MiB). This
-// matches the automatic installer's EFI partition and leaves room for firmware,
-// Windows Boot Manager, multiple kernels/initrds, and FAT32 allocation metadata
-// without squeezing the ESP.
+// MinESPSizeBytes is the smallest size a new ESP partition may be (512 MiB).
+// This matches the automatic installer's EFI partition and leaves room for
+// firmware, Windows Boot Manager, multiple kernels/initrds, and FAT32 allocation
+// metadata without squeezing the ESP.
 const MinESPSizeBytes = 512 * 1024 * 1024
+
+// MinSystemPartitionBytes is the root/system partition floor: 7680 MiB, i.e.
+// the 8 GiB disk minimum minus the 512 MiB ESP. A smaller root cannot hold the
+// base + desktop packages, so the manual layout rejects it before install. A
+// LUKS2 root loses ~16 MiB to its header before mkfs; that is negligible (0.2%
+// of the floor) and the floor is already conservative. When LVM is enabled the
+// System partition becomes a PV and uses the higher
+// MinLvmSystemPartitionBytes floor instead; MinSystemPartitionSize selects it.
+const MinSystemPartitionBytes = MinDiskSizeBytes - MinESPSizeBytes
+
+// GPTPrefixBytes is the leading space a GPT reserves for the protective MBR and
+// the main partition table + header: the first usable 1 MiB, which no partition
+// may occupy. Expressed in bytes so it scales with the disk's logical sector
+// size (2048 sectors at 512 bytes/sector, 256 at 4096). Single source for both
+// the partition package and the frontend (via constants.ts).
+const GPTPrefixBytes = 1024 * 1024
+
+// GPTBackupBytes is the trailing space a GPT reserves for its backup partition
+// table and header. The real default is 33 logical sectors (a 32-entry table
+// plus one header), but a generous 128 KiB is reserved so sgdisk never rejects a
+// partition whose end sits just before the last usable sector. Expressed in
+// bytes so it scales with the logical sector size.
+const GPTBackupBytes = 128 * 1024
 
 // MinExistingESPSizeBytes is the smallest *existing* ESP the manual installer
 // will reuse (100 MiB). Existing ESPs are commonly 100-300 MiB because Windows
@@ -62,16 +83,6 @@ const MinESPSizeBytes = 512 * 1024 * 1024
 // machine with a Windows-made ESP. The bootloader step still has to fit the
 // kernel and initrd, so a full existing ESP can fail later with a clear error.
 const MinExistingESPSizeBytes = 100 * 1024 * 1024
-
-// MinSystemPartitionBytes is the smallest size the OS partition (Boot/System) may
-// be: the same 8 GiB floor as the disk itself. A smaller root cannot hold the
-// base + desktop packages, so the manual layout rejects it before install.
-// Note: a LUKS2 root loses ~16 MiB to its header before mkfs, so the *usable*
-// root floor is marginally lower; that is not adjusted for because it is
-// negligible (0.2% of 8 GiB) and the floor is already conservative. When LVM is
-// enabled the System partition becomes a PV and uses the higher
-// MinLvmSystemPartitionBytes floor instead; MinSystemPartitionSize selects it.
-const MinSystemPartitionBytes = MinDiskSizeBytes
 
 // --- Filesystem types --------------------------------------------------------
 
@@ -171,26 +182,12 @@ const EFIPartitionSizeMB = 512
 // partition.go scales its GPT prefix by the disk's real logical sector size.
 const GPTPartitionStartSector = 2048
 
-// GPTPrefixBytes is the leading space a GPT reserves for the protective MBR and
-// the main partition table + header: the first usable 1 MiB, which no partition
-// may occupy. Expressed in bytes so it scales with the disk's logical sector
-// size (2048 sectors at 512 bytes/sector, 256 at 4096). Single source for both
-// the partition package and the frontend (via constants.ts).
-const GPTPrefixBytes = 1024 * 1024
-
-// GPTBackupBytes is the trailing space a GPT reserves for its backup partition
-// table and header. The real default is 33 logical sectors (a 32-entry table
-// plus one header), but a generous 128 KiB is reserved so sgdisk never rejects a
-// partition whose end sits just before the last usable sector. Expressed in
-// bytes so it scales with the logical sector size.
-const GPTBackupBytes = 128 * 1024
-
-// MinManualDiskSizeBytes is the smallest disk that can hold the smallest valid
-// manual layout: an 8 GiB System partition, an existing 100 MiB ESP, and the
-// GPT prefix/backup. A disk below this can pass the automatic 8 GiB disk check
-// but can never satisfy the manual partition floors, so manual mode rejects it
-// up front with a specific message.
-const MinManualDiskSizeBytes = MinSystemPartitionBytes + MinExistingESPSizeBytes + GPTPrefixBytes + GPTBackupBytes
+// MinManualDiskSizeBytes is the overall disk floor for manual mode: the same
+// 8 GiB product minimum. The individual ESP/System floors are checked
+// separately; an 8 GiB disk can hold 7680 MiB System plus a reused 100 MiB ESP,
+// while a new 512 MiB ESP + 7680 MiB System needs a little more than 8 GiB once
+// the GPT prefix/backup is counted.
+const MinManualDiskSizeBytes = MinDiskSizeBytes
 
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
 var GPTTypeGUIDs = struct {

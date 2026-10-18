@@ -109,7 +109,7 @@ func TestValidate_ExistingSubMiBESPFails(t *testing.T) {
 }
 
 func TestValidate_ManualDiskMinimum(t *testing.T) {
-	layout := shared.ManualLayout{Disk: "/dev/vda", DiskSizeMB: 8192, DiskSizeBytes: 8192 * guardMiB}
+	layout := shared.ManualLayout{Disk: "/dev/vda", DiskSizeMB: 8191, DiskSizeBytes: 8191 * guardMiB}
 	err := Validate(layout)
 	if err == nil || !strings.Contains(err.Error(), "too small for manual partitioning") {
 		t.Fatalf("Validate() = %v, want manual-disk-minimum error", err)

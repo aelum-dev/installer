@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "لطفاً یک سیستم فایل را برای ادامه انتخاب کنید.",
   "validation.modal.selectLanguage": "لطفاً یک زبان را برای ادامه انتخاب کنید.",
   "validation.modal.systemRequired": "دقیقاً یک پارتیشن Root (System) مورد نیاز است ({n} یافت شد).",
-  "validation.modal.systemTooSmall": "پارتیشن Root بسیار کوچک است: {size} مگابایت (حداقل ۸۱۹۲ مگابایت مورد نیاز).",
+  "validation.modal.systemTooSmall": "پارتیشن Root بسیار کوچک است: {size} مگابایت (حداقل {min} مگابایت مورد نیاز).",
   "validation.modal.title": "امکان ادامه وجود ندارد",
   "validation.modal.unsupportedFileSystem": "سیستم فایل پشتیبانی نشده: {fs} (پشتیبانی شده: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "نام کاربری باید فقط شامل حروف کوچک، اعداد، خط تیره و خط زیرین باشد.",

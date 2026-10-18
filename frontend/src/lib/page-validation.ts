@@ -158,7 +158,7 @@ function manualIssueReason(issue: ManualLayoutIssue): string {
 				min: issue.minMB,
 			});
 		case 'systemTooSmall':
-			return t('validation.modal.systemTooSmall', { size: issue.sizeMB });
+			return t('validation.modal.systemTooSmall', { size: issue.sizeMB, min: issue.minMB });
 		case 'lvmSystemTooSmall':
 			return t('validation.modal.lvmSystemTooSmall', {
 				size: issue.sizeMB,

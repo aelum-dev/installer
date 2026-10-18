@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "请选择文件系统以继续。",
   "validation.modal.selectLanguage": "请选择语言以继续。",
   "validation.modal.systemRequired": "需要恰好一个Root（System）分区（找到{n}个）。",
-  "validation.modal.systemTooSmall": "Root分区太小：{size} MB（至少需要8192 MB）。",
+  "validation.modal.systemTooSmall": "Root分区太小：{size} MB（至少需要{min} MB）。",
   "validation.modal.title": "无法继续",
   "validation.modal.unsupportedFileSystem": "不支持的文件系统：{fs}（支持：ext4, btrfs）。",
   "validation.modal.usernameInvalidChars": "用户名只能包含小写字母、数字、连字符和下划线。",

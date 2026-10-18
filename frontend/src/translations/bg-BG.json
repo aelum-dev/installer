@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Моля, изберете файлова система, за да продължите.",
   "validation.modal.selectLanguage": "Моля, изберете език, за да продължите.",
   "validation.modal.systemRequired": "Точен един Root (System) раздел е задължителен (намерен {n}).",
-  "validation.modal.systemTooSmall": "Root разделът е твърде малък: {size} MB (минимум 8192 MB).",
+  "validation.modal.systemTooSmall": "Root разделът е твърде малък: {size} MB (минимум {min} MB).",
   "validation.modal.title": "Не може да се продължи",
   "validation.modal.unsupportedFileSystem": "Неподдържана файлова система: {fs} (поддържат се: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Потребителското име трябва да съдържа само малки букви, цифри, тирета и долни черти.",

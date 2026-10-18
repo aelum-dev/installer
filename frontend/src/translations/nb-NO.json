@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Velg et filsystem for å fortsette.",
   "validation.modal.selectLanguage": "Velg et språk for å fortsette.",
   "validation.modal.systemRequired": "Nøyaktig én Root (System)-partisjon er påkrevd (funnet {n}).",
-  "validation.modal.systemTooSmall": "Root-parisjonen er for liten: {size} MB (minimum 8192 MB kreves).",
+  "validation.modal.systemTooSmall": "Root-parisjonen er for liten: {size} MB (minimum {min} MB kreves).",
   "validation.modal.title": "Kan ikke fortsette",
   "validation.modal.unsupportedFileSystem": "Ustøttet filsystem: {fs} (støttet: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Brukernavnet kan bare inneholde små bokstaver, tall, bindestreker og understreker.",

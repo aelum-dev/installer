@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Välj ett filsystem för att fortsätta.",
   "validation.modal.selectLanguage": "Välj ett språk för att fortsätta.",
   "validation.modal.systemRequired": "Exakt en Root (System)-partition krävs (hittade {n}).",
-  "validation.modal.systemTooSmall": "Root-partitionen är för liten: {size} MB (minst 8192 MB krävs).",
+  "validation.modal.systemTooSmall": "Root-partitionen är för liten: {size} MB (minst {min} MB krävs).",
   "validation.modal.title": "Kan inte fortsätta",
   "validation.modal.unsupportedFileSystem": "Ostött filsystem: {fs} (stödjs: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Användarnamnet får endast innehålla små bokstäver, siffror, bindestreck och understreck.",

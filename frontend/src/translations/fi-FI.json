@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Valitse tiedostojärjestelmä jatkaaksesi.",
   "validation.modal.selectLanguage": "Valitse kiela jatkaaksesi.",
   "validation.modal.systemRequired": "Täsmälleen yksi Root (System) -osio on vaadittu (löytyi {n}).",
-  "validation.modal.systemTooSmall": "Root-osio on liian pieni: {size} MB (vähintään 8192 MB vaaditaan).",
+  "validation.modal.systemTooSmall": "Root-osio on liian pieni: {size} MB (vähintään {min} MB vaaditaan).",
   "validation.modal.title": "Ei voida jatkaa",
   "validation.modal.unsupportedFileSystem": "Ei tuettu tiedostojärjestelmä: {fs} (tuettu: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Käyttäjänimen on sisällettävä vain pieniä kirjaimia, numeroita, väliviivoja ja alaviivoja.",

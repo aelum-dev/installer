@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Vui lòng chọn hệ thống tệp để tiếp tục.",
   "validation.modal.selectLanguage": "Vui lòng chọn ngôn ngữ để tiếp tục.",
   "validation.modal.systemRequired": "Cần chính xác một phân vùng Root (System) (đã tìm thấy {n}).",
-  "validation.modal.systemTooSmall": "Phân vùng Root quá nhỏ: {size} MB (tối thiểu 8192 MB).",
+  "validation.modal.systemTooSmall": "Phân vùng Root quá nhỏ: {size} MB (tối thiểu {min} MB).",
   "validation.modal.title": "Không thể tiếp tục",
   "validation.modal.unsupportedFileSystem": "Hệ thống tệp không được hỗ trợ: {fs} (hỗ trợ: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Tên người dùng chỉ được chứa chữ thường, số, dấu gạch ngang và dấu gạch dưới.",

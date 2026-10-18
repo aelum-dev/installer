@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Si us plau, selecciona un sistema de fitxers per continuar.",
   "validation.modal.selectLanguage": "Si us plau, selecciona un idioma per continuar.",
   "validation.modal.systemRequired": "Es requereix exactament una partició Root (System) (s'ha trobat {n}).",
-  "validation.modal.systemTooSmall": "La partició Root és massa petita: {size} MB (mínim 8192 MB).",
+  "validation.modal.systemTooSmall": "La partició Root és massa petita: {size} MB (mínim {min} MB).",
   "validation.modal.title": "No es pot continuar",
   "validation.modal.unsupportedFileSystem": "Sistema de fitxers no suportat: {fs} (suportats: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "El nom d'usuari ha de contenir només lletres minúscules, números, guions i guions baixos.",

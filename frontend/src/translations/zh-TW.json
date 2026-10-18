@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "請選擇檔案系統以繼續。",
   "validation.modal.selectLanguage": "請選擇語言以繼續。",
   "validation.modal.systemRequired": "需要恰好一個Root（System）分割區（找到{n}個）。",
-  "validation.modal.systemTooSmall": "Root分割區太小：{size} MB（至少需要8192 MB）。",
+  "validation.modal.systemTooSmall": "Root分割區太小：{size} MB（至少需要{min} MB）。",
   "validation.modal.title": "無法繼續",
   "validation.modal.unsupportedFileSystem": "不支援的檔案系統：{fs}（支援：ext4, btrfs）。",
   "validation.modal.usernameInvalidChars": "使用者名稱只能包含小寫字母、數字、連字號和底線。",

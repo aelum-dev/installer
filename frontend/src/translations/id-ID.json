@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Silakan pilih sistem file untuk melanjutkan.",
   "validation.modal.selectLanguage": "Silakan pilih bahasa untuk melanjutkan.",
   "validation.modal.systemRequired": "Tepat satu partisi Root (System) diperlukan (ditemukan {n}).",
-  "validation.modal.systemTooSmall": "Partisi Root terlalu kecil: {size} MB (minimum 8192 MB diperlukan).",
+  "validation.modal.systemTooSmall": "Partisi Root terlalu kecil: {size} MB (minimum {min} MB diperlukan).",
   "validation.modal.title": "Tidak dapat melanjutkan",
   "validation.modal.unsupportedFileSystem": "Sistem file tidak didukung: {fs} (didukung: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Nama pengguna hanya boleh berisi huruf kecil, angka, tanda hubung, dan garis bawah.",

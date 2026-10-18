@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Devam etmek için bir dosya sistemi seçin.",
   "validation.modal.selectLanguage": "Devam etmek için bir dil seçin.",
   "validation.modal.systemRequired": "Tam olarak bir Root (System) bölümü gereklidir (bulunan: {n}).",
-  "validation.modal.systemTooSmall": "Root bölümü çok küçük: {size} MB (minimum 8192 MB gereklidir).",
+  "validation.modal.systemTooSmall": "Root bölümü çok küçük: {size} MB (minimum {min} MB gereklidir).",
   "validation.modal.title": "Devam edilemiyor",
   "validation.modal.unsupportedFileSystem": "Desteklenmeyen dosya sistemi: {fs} (desteklenenler: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Kullanıcı adı yalnızca küçük harf, rakam, kısa çizgi ve alt çizgi içerebilir.",

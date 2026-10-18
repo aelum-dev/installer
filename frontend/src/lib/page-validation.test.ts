@@ -156,8 +156,8 @@ describe('isPageValid — agrees with the modal reasons', () => {
 		expect(reasons.some((reason) => reason.includes('LVM'))).toBe(true);
 	});
 
-	it('rejects an 8 GiB disk in manual mode', () => {
-		installState.disk = { size: 8 * 1024 * mib } as unknown as typeof installState.disk;
+	it('rejects a sub-8-GiB disk in manual mode', () => {
+		installState.disk = { size: 7 * 1024 * mib } as unknown as typeof installState.disk;
 		setManual({
 			disk: '/dev/sda',
 			diskSizeMB: 100000,

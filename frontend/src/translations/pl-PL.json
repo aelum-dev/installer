@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Wybierz system plików, aby kontynuować.",
   "validation.modal.selectLanguage": "Wybierz język, aby kontynuować.",
   "validation.modal.systemRequired": "Wymagana dokładnie jedna partycja Root (System) (znaleziono {n}).",
-  "validation.modal.systemTooSmall": "Partycja Root jest za mała: {size} MB (wymagane minimum 8192 MB).",
+  "validation.modal.systemTooSmall": "Partycja Root jest za mała: {size} MB (wymagane minimum {min} MB).",
   "validation.modal.title": "Nie można kontynuować",
   "validation.modal.unsupportedFileSystem": "Nieobsługiwany system plików: {fs} (obsługiwane: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Nazwa użytkownika może zawierać tylko małe litery, cyfry, myślniki i podkreślenia.",

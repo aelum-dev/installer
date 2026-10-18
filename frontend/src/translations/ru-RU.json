@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Пожалуйста, выберите файловую систему для продолжения.",
   "validation.modal.selectLanguage": "Пожалуйста, выберите язык для продолжения.",
   "validation.modal.systemRequired": "Требуется ровно один раздел Root (System) (найдено {n}).",
-  "validation.modal.systemTooSmall": "Раздел Root слишком маленький: {size} МБ (требуется минимум 8192 МБ).",
+  "validation.modal.systemTooSmall": "Раздел Root слишком маленький: {size} МБ (требуется минимум {min} МБ).",
   "validation.modal.title": "Невозможно продолжить",
   "validation.modal.unsupportedFileSystem": "Неподдерживаемая файловая система: {fs} (поддерживаются: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Имя пользователя может содержать только строчные буквы, цифры, дефисы и подчёркивания.",

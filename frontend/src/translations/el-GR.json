@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Παρακαλώ επιλέξτε ένα σύστημα αρχείων για να συνεχίσετε.",
   "validation.modal.selectLanguage": "Παρακαλώ επιλέξτε μια γλώσσα για να συνεχίσετε.",
   "validation.modal.systemRequired": "Απαιτείται ακριβώς ένα Root (System) partition (βρέθηκαν {n}).",
-  "validation.modal.systemTooSmall": "Το Root partition είναι πολύ μικρό: {size} MB (ελάχιστο 8192 MB).",
+  "validation.modal.systemTooSmall": "Το Root partition είναι πολύ μικρό: {size} MB (ελάχιστο {min} MB).",
   "validation.modal.title": "Αδυναμία συνέχισης",
   "validation.modal.unsupportedFileSystem": "Μη υποστηριζόμενο σύστημα αρχείων: {fs} (υποστηρίζονται: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Το όνομα χρήστη πρέπει να περιέχει μόνο πεζά γράμματα, αριθμούς, παύλες και κάτω παύλες.",

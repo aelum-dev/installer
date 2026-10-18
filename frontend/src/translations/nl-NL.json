@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Selecteer een bestandssysteem om door te gaan.",
   "validation.modal.selectLanguage": "Selecteer een taal om door te gaan.",
   "validation.modal.systemRequired": "Precies één Root (System) partitie is vereist (gevonden: {n}).",
-  "validation.modal.systemTooSmall": "Root-partitie is te klein: {size} MB (minimum 8192 MB vereist).",
+  "validation.modal.systemTooSmall": "Root-partitie is te klein: {size} MB (minimum {min} MB vereist).",
   "validation.modal.title": "Kan niet doorgaan",
   "validation.modal.unsupportedFileSystem": "Niet ondersteund bestandssysteem: {fs} (ondersteund: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Gebruikersnaam mag alleen kleine letters, cijfers, koppeltekens en underscores bevatten.",

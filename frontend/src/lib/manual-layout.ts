@@ -115,7 +115,7 @@ export type ManualLayoutIssue =
 	| { kind: 'newPartNoType' }
 	| { kind: 'espTooSmall'; sizeMB: number }
 	| { kind: 'existingEspTooSmall'; sizeMB: number; minMB: number }
-	| { kind: 'systemTooSmall'; sizeMB: number }
+	| { kind: 'systemTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'lvmSystemTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'invalidType'; type: string }
 	| { kind: 'multipleRemaining' }
@@ -167,7 +167,7 @@ export function manualLayoutIssues(
 				issues.push(
 					lvm
 						? { kind: 'lvmSystemTooSmall', sizeMB: freeMB, minMB: systemFloorMB }
-						: { kind: 'systemTooSmall', sizeMB: freeMB },
+						: { kind: 'systemTooSmall', sizeMB: freeMB, minMB: systemFloorMB },
 				);
 			}
 			continue;
@@ -189,7 +189,7 @@ export function manualLayoutIssues(
 			issues.push(
 				lvm
 					? { kind: 'lvmSystemTooSmall', sizeMB, minMB: systemFloorMB }
-					: { kind: 'systemTooSmall', sizeMB },
+					: { kind: 'systemTooSmall', sizeMB, minMB: systemFloorMB },
 			);
 		}
 		if (p.type && p.type !== TYPE_ESP && p.type !== TYPE_SYSTEM && p.type !== 'preserve') {

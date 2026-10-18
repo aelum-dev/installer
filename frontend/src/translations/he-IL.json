@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "נא לבחור מערכת קבצים כדי להמשיך.",
   "validation.modal.selectLanguage": "נא לבחור שפה כדי להמשיך.",
   "validation.modal.systemRequired": "נדרשת מחיצת Root (System) אחת בדיוק (נמצאה {n}).",
-  "validation.modal.systemTooSmall": "מחיצת Root קטנה מדי: {size} MB (נדרש מינימום 8192 MB).",
+  "validation.modal.systemTooSmall": "מחיצת Root קטנה מדי: {size} MB (נדרש מינימום {min} MB).",
   "validation.modal.title": "לא ניתן להמשיך",
   "validation.modal.unsupportedFileSystem": "מערכת קבצים לא נתמכת: {fs} (נתמכות: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "שם המשתמש חייב להכיל אותיות קטנות, מספרים, מקפים וקווים תחתונים בלבד.",

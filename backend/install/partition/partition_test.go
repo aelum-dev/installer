@@ -503,14 +503,14 @@ func TestValidate_NewPartitionRespectsExactFreeSpace(t *testing.T) {
 
 // TestValidate_MinPartitionSizes checks the enforced floor for designated
 // partitions: a brand-new ESP must be at least 512 MiB, an existing ESP at
-// least 100 MiB, and the system partition at least 8 GiB (the disk floor). A
-// "use all remaining space" row is checked against the resolved free space in
-// TestValidate_UseRemainingRespectsFloor.
+// least 100 MiB, and the system partition at least 7680 MiB (8 GiB total minus
+// the 512 MiB ESP). A "use all remaining space" row is checked against the
+// resolved free space in TestValidate_UseRemainingRespectsFloor.
 func TestValidate_MinPartitionSizes(t *testing.T) {
 	const mib = 1024 * 1024
 	minESP := int64(shared.MinESPSizeBytes / mib)
 	minExistingESP := int64(shared.MinExistingESPSizeBytes / mib)
-	minSys := int64(shared.MinSystemPartitionBytes / mib) // 8192
+	minSys := int64(shared.MinSystemPartitionBytes / mib) // 7680 (8 GiB - 512 MiB ESP)
 
 	make := func(esp, sys shared.ManualPartition) shared.ManualLayout {
 		return shared.ManualLayout{
@@ -545,9 +545,9 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		sys     shared.ManualPartition
 		wantErr bool
 	}{
-		{"system exactly 8 GiB", esp(minESP, false), sys(minSys, false), false},
-		{"existing system below 8 GiB", esp(minESP, false), sys(minSys-1, false), true},
-		{"brand-new system below 8 GiB", esp(minESP, false), sys(4096, true), true},
+		{"system exactly 7680 MiB", esp(minESP, false), sys(minSys, false), false},
+		{"existing system below 7680 MiB", esp(minESP, false), sys(minSys-1, false), true},
+		{"brand-new system below 7680 MiB", esp(minESP, false), sys(4096, true), true},
 		{"system use-remaining resolves above floor", esp(minESP, false), sys(0, true), false},
 		{"existing esp below 100 MiB", esp(minExistingESP-1, false), sys(minSys, false), true},
 		{"existing esp exactly 100 MiB", esp(minExistingESP, false), sys(minSys, false), false},
@@ -587,9 +587,9 @@ func TestValidate_UseRemainingRespectsFloor(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "new System use-remaining below 8 GiB",
+			name: "new System use-remaining below 7680 MiB",
 			layout: shared.ManualLayout{
-				Disk: "/dev/vda", DiskSizeMB: 8700, DiskSizeBytes: 8700 * mib,
+				Disk: "/dev/vda", DiskSizeMB: 8000, DiskSizeBytes: 8000 * mib,
 				Partitions: []shared.ManualPartition{
 					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
 					{Path: "", SizeMB: 0, Type: shared.TypeSystem},
@@ -642,7 +642,7 @@ func TestBuildActions_UseRemainingRespectsFloor(t *testing.T) {
 		{
 			name: "System",
 			layout: shared.ManualLayout{
-				Disk: "/dev/vda", DiskSizeMB: 8700, DiskSizeBytes: 8700 * mib,
+				Disk: "/dev/vda", DiskSizeMB: 8000, DiskSizeBytes: 8000 * mib,
 				Partitions: []shared.ManualPartition{
 					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
 					{Path: "", SizeMB: 0, Type: shared.TypeSystem},

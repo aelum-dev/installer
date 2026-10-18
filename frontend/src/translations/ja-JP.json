@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "続行するにはファイルシステムを選択してください。",
   "validation.modal.selectLanguage": "続行するには言語を選択してください。",
   "validation.modal.systemRequired": "Root (System) パーティションが正確に1つ必要です ({n}個見つかりました)。",
-  "validation.modal.systemTooSmall": "Rootパーティションが小さすぎます: {size} MB (最低8192 MB必要)。",
+  "validation.modal.systemTooSmall": "Rootパーティションが小さすぎます: {size} MB (最低{min} MB必要)。",
   "validation.modal.title": "続行できません",
   "validation.modal.unsupportedFileSystem": "サポートされていないファイルシステム: {fs} (サポート: ext4, btrfs)。",
   "validation.modal.usernameInvalidChars": "ユーザー名は半角小文字、数字、ハイフン、アンダースコアのみ使用できます。",

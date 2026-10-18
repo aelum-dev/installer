@@ -151,7 +151,7 @@
   "validation.modal.selectFileSystem": "Bonvolu elekti dosiersiston por daŭrigi.",
   "validation.modal.selectLanguage": "Bonvolu elekti lingvon por daŭrigi.",
   "validation.modal.systemRequired": "Precize unu Root (System) partio estas postulata (trovita {n}).",
-  "validation.modal.systemTooSmall": "Root-partio estas tro malgranda: {size} MB (minimume 8192 MB postuleblas).",
+  "validation.modal.systemTooSmall": "Root-partio estas tro malgranda: {size} MB (minimume {min} MB postuleblas).",
   "validation.modal.title": "Ne eblas daŭrigi",
   "validation.modal.unsupportedFileSystem": "Nesubtenata dosiersistemo: {fs} (subtenataj: ext4, btrfs).",
   "validation.modal.usernameInvalidChars": "Uzantnomo devas enhavi nur minusklajn literojn, nombrojn, streketojn kaj substrekojn.",
