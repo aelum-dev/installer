@@ -82,7 +82,17 @@
 	border-bottom: none;
 }
 
-/* Name, Size and Type share the table equally; the trailing delete column keeps its own width. */
+/* Name and Size keep fixed shares; the Type column takes the remaining width so
+   localized role labels (e.g. "Завантаження", "Inicialização") are not clipped.
+   The trailing delete column keeps its own width. */
+.editor-table th:first-child {
+	width: 30%;
+}
+
+.editor-table th:nth-child(2) {
+	width: 26%;
+}
+
 .editor-table th:last-child {
 	width: 44px;
 }

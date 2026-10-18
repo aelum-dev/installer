@@ -4,9 +4,10 @@
 .role-select {
 	position: relative;
 	display: inline-block;
-	/* The role selector takes half of the partition-cell width, so it stays a
-	   constant size regardless of which (shorter/longer) role label is shown. */
-	width: 50%;
+	/* The selector takes a bit more than half of the (widened) Type column so
+	   localized role labels fit, while staying a constant size regardless of the
+	   selected role. */
+	width: 55%;
 }
 
 /* Trigger — matches the partition table's other pill controls. */
