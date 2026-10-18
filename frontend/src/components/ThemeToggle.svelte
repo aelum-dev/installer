@@ -48,7 +48,7 @@
 		height: 36px;
 		padding: 0;
 		border-radius: var(--radius-pill);
-		border: 1px solid var(--color-border-subtle);
+		border: 1.5px solid var(--color-border-light);
 		background: var(--color-bg-hover);
 		color: var(--color-text-muted);
 		cursor: pointer;
@@ -61,6 +61,7 @@
 
 	.theme-toggle:hover {
 		transform: translateY(-2px);
+		border-color: var(--color-primary);
 		background: var(--color-surface);
 		color: var(--color-text);
 	}
