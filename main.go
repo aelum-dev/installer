@@ -91,7 +91,12 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1}, // dark blue-grey
+		// Create the window hidden and let main.ts reveal it after the first
+		// paint: otherwise the window is mapped with WebKit's light pre-page
+		// fill still showing (a white flash before the dark page appears).
+		// build.sh patches Wails' Linux Run() so StartHidden actually works.
+		StartHidden:      true,
+		BackgroundColour: &options.RGBA{R: 20, G: 18, B: 24, A: 1}, // #141218, the dark surface
 		OnStartup:        app.StartUp,
 		OnBeforeClose:    app.OnBeforeClose,
 		Bind: []interface{}{

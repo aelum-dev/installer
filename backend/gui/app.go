@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"aelum-installer/backend/shared"
 
@@ -36,6 +37,18 @@ func (a *App) StartUp(ctx context.Context) {
 	if a.dryRun {
 		shared.SetFakeDisks(true)
 	}
+
+	// The window is created hidden (StartHidden) and main.ts reveals it after
+	// its first paint, so the light WebKit pre-page fill is never shown. If the
+	// frontend never reaches that call, reveal it anyway rather than leave a
+	// blank screen; showing an already-visible window is harmless.
+	go func() {
+		select {
+		case <-time.After(3 * time.Second):
+			wailsRuntime.WindowShow(ctx)
+		case <-ctx.Done():
+		}
+	}()
 }
 
 // SetStartPage sets the page to start on (bypasses welcome page).

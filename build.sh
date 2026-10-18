@@ -86,6 +86,31 @@ echo "=== Cleaning previous build ==="
 mkdir -p build/bin
 rm -f build/bin/aelum-installer build/bin/aelum-installer-cli
 
+# ── Patch Wails v2's Linux window startup ─────────────────────────────
+# Wails' Linux Run() hides a StartHidden window *before* calling
+# gtk_widget_show_all(), so the hide is a no-op and the window is mapped while
+# WebKit still shows its light pre-page fill — a white flash before the dark
+# page appears. The dev host wins that race, the live ISO usually loses it.
+# Moving the hide after show_all keeps the window unmapped until main.ts calls
+# WindowShow() from its first painted frame.
+#
+# This edits the module cache, so it is idempotent and fails loudly if the
+# anchor moves — a Wails bump must not silently bring the flash back.
+echo "=== Patching Wails v2 window startup ==="
+WAILS_WINDOW="$(go list -m -f '{{.Dir}}' github.com/wailsapp/wails/v2)/internal/frontend/desktop/linux/window.go"
+if grep -q "AELUM: keep the window hidden" "$WAILS_WINDOW"; then
+  echo "  already patched"
+else
+  chmod u+w "$WAILS_WINDOW" "$(dirname "$WAILS_WINDOW")"
+  perl -0pi -e 's/\tif w\.appoptions\.StartHidden \{\n\t\tw\.Hide\(\)\n\t\}\n(\tC\.gtk_widget_show_all\(w\.asGTKWidget\(\)\))/$1\n\tif w.appoptions.StartHidden {\n\t\t\/\/ AELUM: keep the window hidden until the frontend shows it.\n\t\tw.Hide()\n\t}/' "$WAILS_WINDOW"
+  if grep -q "AELUM: keep the window hidden" "$WAILS_WINDOW"; then
+    echo "  patched"
+  else
+    echo "  ERROR: Wails Run() anchor not found — update this patch for the current Wails version" >&2
+    exit 1
+  fi
+fi
+
 echo "=== Building Go binaries with Wails ==="
 wails build -clean -tags webkit2_41
 
