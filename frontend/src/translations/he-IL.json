@@ -50,7 +50,7 @@
   "manual.addTooSmall": "גודל המחיצה חייב להיות לפחות 1 מגה־בית.",
   "manual.allocated": "משמש",
   "manual.assignHint": "טיפ: הקצה תחילה Boot, ואז Root. נקודות הרכבה מוקצות אוטומטית — לעולם אינן מוגדרות ידנית.",
-  "manual.continueHint": "כדי להמשיך, בחרו מחיצת Boot (ESP, לפחות 512 MB) ומחיצת System (root, לפחות 7680 MB).",
+  "manual.continueHint": "בחרו מחיצת Boot (לפחות 512 MB) ומחיצת System (לפחות 7680 MB).",
   "manual.delete": "מחק מחיצה",
   "manual.deleteConfirm": "הסר",
   "manual.deleteMessage": "פעולה זו מסירה את המחיצה מתוכנית ההתקנה ומשחררת את מרחבה למחיצות אחרות. המחיצה נשארת על הדיסק שלך עד שתריץ את ההתקנה — בטל לפני כן ולא ישתנה דבר.",

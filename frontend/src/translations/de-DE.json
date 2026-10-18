@@ -50,7 +50,7 @@
   "manual.addTooSmall": "Die Partitiongröße muss mindestens 1 MB betragen.",
   "manual.allocated": "Belegt",
   "manual.assignHint": "Tipp: Weisen Sie zuerst Boot zu, dann Root. Einhängepunkte werden automatisch zugewiesen — Sie müssen sie nie manuell festlegen.",
-  "manual.continueHint": "Zum Fortfahren eine ESP-Partition (Boot, mindestens 512 MB) und eine System-Partition (Root, mindestens 7680 MB) auswählen.",
+  "manual.continueHint": "Eine Boot-Partition (mindestens 512 MB) und eine System-Partition (mindestens 7680 MB) auswählen.",
   "manual.delete": "Partition löschen",
   "manual.deleteConfirm": "Entfernen",
   "manual.deleteMessage": "Dies entfernt die Partition aus Ihrem Installationsplan und gibt ihren Speicherplatz für andere Partitionen frei. Die Partition verbleibt auf Ihrer Festplatte, bis Sie die Installation ausführen — wenn Sie vorher abbrechen, ändert sich nichts.",

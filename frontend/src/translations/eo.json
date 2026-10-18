@@ -50,7 +50,7 @@
   "manual.addTooSmall": "Particia grando devas esti almenaŭ 1 MB.",
   "manual.allocated": "Uzata",
   "manual.assignHint": "Konsilo: asignu Boot unue, tiam Root. Muntpunktoj estas asignitaj aŭtomate — vi neniam agordas ilin.",
-  "manual.continueHint": "Por daŭrigi, elektu unu Boot (ESP) partion (minimume 512 MB) kaj unu System (root) partion (minimume 7680 MB).",
+  "manual.continueHint": "Elektu unu Boot-partion (minimume 512 MB) kaj unu System-partion (minimume 7680 MB).",
   "manual.delete": "Forigi particion",
   "manual.deleteConfirm": "Forigi",
   "manual.deleteMessage": "Tio forigas la particion de via instala plano kaj liberigas ĝian spacon por aliaj particioj. La particio restas sur via disko ĝis vi rulas la instaladon — nuligu antaŭ tiam kaj nenio ŝanĝiĝas.",

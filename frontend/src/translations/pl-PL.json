@@ -50,7 +50,7 @@
   "manual.addTooSmall": "Rozmiar partycji musi wynosić co najmniej 1 MB.",
   "manual.allocated": "Użyty",
   "manual.assignHint": "Wskazówka: najpierw przypisz Boot, potem Root. Punkty montowania są przypisywane automatycznie — nigdy ich nie ustawiasz.",
-  "manual.continueHint": "Aby kontynuować, wybierz jedną partycję Boot (ESP, co najmniej 512 MB) i jedną partycję System (root, co najmniej 7680 MB).",
+  "manual.continueHint": "Wybierz jedną partycję Boot (co najmniej 512 MB) i jedną partycję System (co najmniej 7680 MB).",
   "manual.delete": "Usuń partycję",
   "manual.deleteConfirm": "Usuń",
   "manual.deleteMessage": "To usuwa partycję z planu instalacji i zwalnia jej miejsce dla innych partycji. Partycja pozostaje na dysku do momentu uruchomienia instalacji — anuluj przedtem i nic się nie zmieni.",

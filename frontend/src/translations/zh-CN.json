@@ -50,7 +50,7 @@
   "manual.addTooSmall": "分区大小必须至少为 1 MB。",
   "manual.allocated": "已使用",
   "manual.assignHint": "提示：先分配 Boot，再分配 Root。挂载点会自动分配——您无需手动设置。",
-  "manual.continueHint": "继续安装前，请选择一个引导（ESP，至少 512 MB）分区和一个系统（根，至少 7680 MB）分区。",
+  "manual.continueHint": "选择一个 Boot（至少 512 MB）分区和一个 System（至少 7680 MB）分区。",
   "manual.delete": "删除分区",
   "manual.deleteConfirm": "移除",
   "manual.deleteMessage": "这会将分区从您的安装计划中移除并释放其空间供其他分区使用。分区会保留在磁盘上直到您运行安装——在此之前取消则不会有任何更改。",

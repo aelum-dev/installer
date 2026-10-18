@@ -50,7 +50,7 @@
   "manual.addTooSmall": "El tamaño de la partición debe ser de al menos 1 MB.",
   "manual.allocated": "Usado",
   "manual.assignHint": "Consejo: asigne Boot primero, luego Root. Los puntos de montaje se asignan automáticamente — nunca los configura.",
-  "manual.continueHint": "Para continuar, selecciona una partición de arranque (ESP, al menos 512 MB) y una de sistema (raíz, al menos 7680 MB).",
+  "manual.continueHint": "Selecciona una partición Boot (al menos 512 MB) y una partición System (al menos 7680 MB).",
   "manual.delete": "Eliminar partición",
   "manual.deleteConfirm": "Eliminar",
   "manual.deleteMessage": "Esto elimina la partición de su plan de instalación y libera su espacio para otras particiones. La partición permanece en su disco hasta que ejecute la instalación — cancele antes de entonces y nada cambiará.",

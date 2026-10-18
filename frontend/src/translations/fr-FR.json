@@ -50,7 +50,7 @@
   "manual.addTooSmall": "La taille de la partition doit être d'au moins 1 Mo.",
   "manual.allocated": "Utilisé",
   "manual.assignHint": "Astuce : assignez d'abord Boot, puis Root. Les points de montage sont assignés automatiquement — vous ne les définissez jamais.",
-  "manual.continueHint": "Pour continuer, sélectionnez une partition de démarrage (ESP, au moins 512 Mo) et une partition système (racine, au moins 7680 Mo).",
+  "manual.continueHint": "Sélectionnez une partition Boot (au moins 512 Mo) et une partition System (au moins 7680 Mo).",
   "manual.delete": "Supprimer la partition",
   "manual.deleteConfirm": "Supprimer",
   "manual.deleteMessage": "Cela supprime la partition de votre plan d'installation et libère son espace pour d'autres partitions. La partition reste sur votre disque jusqu'à ce que vous lanciez l'installation — annulez avant et rien ne change.",

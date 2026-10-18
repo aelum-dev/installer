@@ -50,7 +50,7 @@
   "manual.addTooSmall": "Partitiegrootte moet minimaal 1 MB zijn.",
   "manual.allocated": "Gebruikt",
   "manual.assignHint": "Tip: wijs eerst Boot toe, dan Root. Aanhechtingspunten worden automatisch toegewezen — je hoeft ze nooit in te stellen.",
-  "manual.continueHint": "Om door te gaan, selecteer één Boot (ESP) partitie (minimaal 512 MB) en één System (root) partitie (minimaal 7680 MB).",
+  "manual.continueHint": "Selecteer één Boot-partitie (minimaal 512 MB) en één System-partitie (minimaal 7680 MB).",
   "manual.delete": "Partitie verwijderen",
   "manual.deleteConfirm": "Verwijderen",
   "manual.deleteMessage": "Dit verwijdert de partitie uit je installatieplan en maakt ruimte vrij voor andere partities. De partitie blijft op je schijf totdat je de installatie uitvoert — annuleer dan ervoor en er verandert niets.",
