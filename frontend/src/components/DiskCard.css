@@ -185,7 +185,7 @@
 
 .part-unknown,
 .part-empty {
-	color: var(--color-border-dark, #ccc);
+	color: var(--color-border-dark);
 }
 
 .part-mount {

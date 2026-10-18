@@ -1,74 +1,124 @@
+/* Material 3 color roles mapped to the Aelum mauve/pink palette.
+   The role structure is Material 3 (primary/container, surface containers,
+   outline, error, …); the actual tones are the original Aelum installer palette
+   and the logo's mauve/pink family, not a different generated seed color. */
 :root {
-    /* DMS Colors — Light Scheme */
-    /* Source: /etc/skel/.cache/DankMaterialShell/dms-colors.json */
+    color-scheme: light;
 
-    /* —— Surface & Background —— */
-    --color-surface: #faf7f6;
-    --color-bg: #faf7f6;
-    --color-bg-white: #ffffff;
-    --color-bg-light: #fefdfd;
+    /* ── M3 color roles — light ── */
+    --md-sys-color-primary: #a67480;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #f2d5da;
+    --md-sys-color-on-primary-container: #3d2430;
+    --md-sys-color-primary-fixed: #f2d5da;
+    --md-sys-color-primary-fixed-dim: #d9aab5;
+    --md-sys-color-on-primary-fixed: #3d2430;
+    --md-sys-color-on-primary-fixed-variant: #6b4450;
+
+    --md-sys-color-secondary: #8e7579;
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: #e8d0d4;
+    --md-sys-color-on-secondary-container: #3d2a2e;
+    --md-sys-color-secondary-fixed: #e8d0d4;
+    --md-sys-color-secondary-fixed-dim: #cbb0b5;
+    --md-sys-color-on-secondary-fixed: #3d2a2e;
+    --md-sys-color-on-secondary-fixed-variant: #5c4348;
+
+    --md-sys-color-tertiary: #a08864;
+    --md-sys-color-on-tertiary: #ffffff;
+    --md-sys-color-tertiary-container: #ecdcc2;
+    --md-sys-color-on-tertiary-container: #3f2f1c;
+    --md-sys-color-tertiary-fixed: #ecdcc2;
+    --md-sys-color-tertiary-fixed-dim: #d1b991;
+    --md-sys-color-on-tertiary-fixed: #3f2f1c;
+    --md-sys-color-on-tertiary-fixed-variant: #665033;
+
+    --md-sys-color-error: #c45858;
+    --md-sys-color-on-error: #ffffff;
+    --md-sys-color-error-container: #f4d2ce;
+    --md-sys-color-on-error-container: #4a0f0f;
+
+    --md-sys-color-surface: #faf7f6;
+    --md-sys-color-on-surface: #3d3234;
+    --md-sys-color-surface-variant: #efe1e2;
+    --md-sys-color-on-surface-variant: #756567;
+    --md-sys-color-surface-dim: #e6dcdc;
+    --md-sys-color-surface-bright: #faf7f6;
+    --md-sys-color-surface-container-lowest: #ffffff;
+    --md-sys-color-surface-container-low: #fefdfd;
+    --md-sys-color-surface-container: #faf7f6;
+    --md-sys-color-surface-container-high: #f5f0f0;
+    --md-sys-color-surface-container-highest: #efe8e9;
+
+    --md-sys-color-outline: #9e8e90;
+    --md-sys-color-outline-variant: #e6d4d6;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #3d3234;
+    --md-sys-color-inverse-on-surface: #faf7f6;
+    --md-sys-color-inverse-primary: #f2d5da;
+    --md-sys-color-surface-tint: #a67480;
+    --md-sys-color-background: #faf7f6;
+    --md-sys-color-on-background: #3d3234;
+
+    /* ── Semantic aliases used by the wizard components ── */
+    --color-surface: var(--md-sys-color-surface);
+    --color-bg: var(--md-sys-color-surface);
+    --color-bg-white: var(--md-sys-color-surface-container-lowest);
+    --color-bg-light: var(--md-sys-color-surface-container-low);
     --color-bg-hover: #8e666600;
     --color-bg-neutral-hover: #f5f5f5;
 
-    /* —— Text —— */
-    --color-text: #3d3234;
-    --color-text-muted: #756567;
+    --color-text: var(--md-sys-color-on-surface);
+    --color-text-muted: var(--md-sys-color-on-surface-variant);
     --color-text-light: #d4c0c2;
 
-    /* —— Primary —— */
-    --color-primary: #a67480;
-    --color-primary-hover: #f2d5da;
-    --color-on-primary: #ffffff;
+    --color-primary: var(--md-sys-color-primary);
+    --color-primary-hover: color-mix(in srgb, var(--md-sys-color-primary) 86%, var(--md-sys-color-shadow));
+    --color-on-primary: var(--md-sys-color-on-primary);
     --color-primary-light: rgba(166, 116, 128, 0.08);
     --color-primary-lighter: rgba(166, 116, 128, 0.02);
     --color-primary-shadow: rgba(166, 116, 128, 0.30);
-    --color-progress: #a67480;
+    --color-progress: var(--md-sys-color-primary);
 
-    /* —— Secondary —— */
-    --color-secondary: #8e7579;
+    --color-secondary: var(--md-sys-color-secondary);
     --color-secondary-hover: #e8d0d4;
-
-    /* —— Tertiary —— */
-    --color-tertiary: #a08864;
+    --color-tertiary: var(--md-sys-color-tertiary);
     --color-tertiary-hover: #d8e6cc;
 
-    /* —— Focus —— */
-    --color-focus: #a67480;
+    --color-focus: var(--md-sys-color-primary);
     --color-focus-strong: #8e5a66;
 
-    /* —— Error —— */
-    --color-danger: #c45858;
-    --color-danger-hover: #f4d2ce;
+    --color-danger: var(--md-sys-color-error);
+    --color-danger-hover: var(--md-sys-color-error-container);
     --color-danger-shadow: rgba(196, 88, 88, 0.28);
     --color-danger-bg: rgba(196, 88, 88, 0.09);
-    --color-danger-text: #ffffff;
+    --color-danger-text: var(--md-sys-color-on-error);
     --color-danger-focus: rgba(196, 88, 88, 0.30);
     --color-danger-error-bg: rgba(196, 88, 88, 0.07);
     --color-danger-error-hover: rgba(196, 88, 88, 0.11);
 
-    /* —— Warning —— */
-    --color-warning: #a08864;
+    --color-warning: var(--md-sys-color-tertiary);
     --color-warning-light: rgba(220, 195, 160, 0.10);
     --color-warning-bg: rgba(220, 195, 160, 0.08);
-    --color-warning-text: #a08864;
+    --color-warning-text: var(--md-sys-color-tertiary);
 
-    /* —— Info —— */
     --color-info-bg: rgba(220, 195, 160, 0.10);
     --color-mauve-light: rgba(220, 195, 160, 0.10);
 
-    /* —— Borders —— */
-    --color-border: #9e8e90;
-    --color-border-light: #e6d4d6;
-    --color-border-dark: #756567;
+    --color-border: var(--md-sys-color-outline);
+    --color-border-light: var(--md-sys-color-outline-variant);
+    --color-border-dark: var(--md-sys-color-on-surface-variant);
     --color-border-subtle: rgba(0, 0, 0, 0.03);
 
-    /* —— Overlay —— */
     --color-overlay: rgba(0, 0, 0, 0.55);
     --color-overlay-shadow: rgba(0, 0, 0, 0.25);
     --color-white-glow: rgba(255, 247, 246, 0.12);
     --color-white-glow-strong: rgba(255, 247, 246, 0.20);
 
     /* ═══ Typography ═══ */
+
+
     /* Base text stack. Script fonts (Arabic/Hebrew) are listed on purpose so RTL
        glyphs resolve per-glyph to the compact Noto variants instead of falling
        back through fontconfig to a taller Naskh/Nastaliq variant — which made
@@ -131,81 +181,132 @@
     --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark palette — same mauve / rose / tan accents on inverted dark surfaces.
-   Overrides every --color-* token above so the whole wizard (scoped component
-   styles included) flips to dark when <html data-theme="dark">. */
+/* Material 3 color scheme — dark.
+   Same M3 roles as the light scheme, with the dark surface family. Elevated
+   cards use surface-container-high so they sit above the surface; the header
+   and hover surfaces use the container-low/high steps. */
+/* Material 3 color roles mapped to the Aelum mauve/pink palette — dark. */
 [data-theme="dark"] {
-    /* —— Surface & Background —— */
-    --color-surface: #1e1720;
-    --color-bg: #151114;
-    --color-bg-white: #1e1720;
-    --color-bg-light: #1a1518;
-    --color-bg-hover: rgba(255, 255, 255, 0.03);
-    --color-bg-neutral-hover: #241d26;
+    color-scheme: dark;
 
-    /* —— Text —— */
-    --color-text: #ece2e3;
-    --color-text-muted: #a59496;
-    --color-text-light: #c8b6b8;
+    /* ── M3 color roles — dark ── */
+    --md-sys-color-primary: #cfa3ae;
+    --md-sys-color-on-primary: #211a1e;
+    --md-sys-color-primary-container: #5a3a43;
+    --md-sys-color-on-primary-container: #ffd9e1;
+    --md-sys-color-primary-fixed: #f2d5da;
+    --md-sys-color-primary-fixed-dim: #cfa3ae;
+    --md-sys-color-on-primary-fixed: #3d2430;
+    --md-sys-color-on-primary-fixed-variant: #6b4450;
 
-    /* —— Primary —— */
+    --md-sys-color-secondary: #b48ea4;
+    --md-sys-color-on-secondary: #2a1b24;
+    --md-sys-color-secondary-container: #5a3f4b;
+    --md-sys-color-on-secondary-container: #f0dbe6;
+    --md-sys-color-secondary-fixed: #e8d0d4;
+    --md-sys-color-secondary-fixed-dim: #b48ea4;
+    --md-sys-color-on-secondary-fixed: #3d2a2e;
+    --md-sys-color-on-secondary-fixed-variant: #5c4348;
+
+    --md-sys-color-tertiary: #c3ab82;
+    --md-sys-color-on-tertiary: #302611;
+    --md-sys-color-tertiary-container: #5a4a33;
+    --md-sys-color-on-tertiary-container: #f5e5c5;
+    --md-sys-color-tertiary-fixed: #ecdcc2;
+    --md-sys-color-tertiary-fixed-dim: #c3ab82;
+    --md-sys-color-on-tertiary-fixed: #3f2f1c;
+    --md-sys-color-on-tertiary-fixed-variant: #665033;
+
+    --md-sys-color-error: #e08585;
+    --md-sys-color-on-error: #1a1514;
+    --md-sys-color-error-container: #8a4a4a;
+    --md-sys-color-on-error-container: #ffdad6;
+
+    /* The live wallpaper (bg-dark.png) is #332e32; keep these in sync. */
+    --md-sys-color-surface: #332e32;
+    --md-sys-color-on-surface: #ece6ea;
+    --md-sys-color-surface-variant: #5b525a;
+    --md-sys-color-on-surface-variant: #cbc3c9;
+    --md-sys-color-surface-dim: #2d292d;
+    --md-sys-color-surface-bright: #4d444a;
+    --md-sys-color-surface-container-lowest: #3d363c;
+    --md-sys-color-surface-container-low: #453d43;
+    --md-sys-color-surface-container: #3d363c;
+    --md-sys-color-surface-container-high: #4d444a;
+    --md-sys-color-surface-container-highest: #574e55;
+
+    --md-sys-color-outline: #a49aa2;
+    --md-sys-color-outline-variant: #5b525a;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #ece6ea;
+    --md-sys-color-inverse-on-surface: #453d43;
+    --md-sys-color-inverse-primary: #a67480;
+    --md-sys-color-surface-tint: #cfa3ae;
+    --md-sys-color-background: #332e32;
+    --md-sys-color-on-background: #ece6ea;
+
+    /* ── Semantic aliases (Aelum mauve/pink dark palette) ── */
+    --color-surface: #574e55;
+    --color-bg: #332e32;
+    --color-bg-white: #4d444a;
+    --color-bg-light: #453d43;
+    --color-bg-hover: rgba(255, 255, 255, 0.08);
+    --color-bg-neutral-hover: #574e55;
+
+    --color-text: #ece6ea;
+    --color-text-muted: #cbc3c9;
+    --color-text-light: #aaa2a8;
+
     --color-primary: #cfa3ae;
-    --color-primary-hover: #b58490;
+    --color-primary-hover: color-mix(in srgb, var(--md-sys-color-primary) 86%, var(--md-sys-color-shadow));
     --color-on-primary: #211a1e;
-    --color-primary-light: rgba(207, 163, 174, 0.12);
-    --color-primary-lighter: rgba(207, 163, 174, 0.06);
+    --color-primary-light: rgba(207, 163, 174, 0.16);
+    --color-primary-lighter: rgba(207, 163, 174, 0.08);
     --color-primary-shadow: rgba(207, 163, 174, 0.25);
     --color-progress: #cfa3ae;
 
-    /* —— Secondary —— */
     --color-secondary: #b48ea4;
     --color-secondary-hover: #9c748c;
-
-    /* —— Tertiary —— */
     --color-tertiary: #c3ab82;
     --color-tertiary-hover: #a8936f;
 
-    /* —— Focus —— */
     --color-focus: #cfa3ae;
     --color-focus-strong: #e0b7bf;
 
-    /* —— Error —— */
     --color-danger: #e08585;
     --color-danger-hover: #8a4a4a;
     --color-danger-shadow: rgba(224, 133, 133, 0.25);
-    --color-danger-bg: rgba(224, 133, 133, 0.12);
+    --color-danger-bg: rgba(224, 133, 133, 0.16);
     --color-danger-text: #1a1514;
     --color-danger-focus: rgba(224, 133, 133, 0.30);
     --color-danger-error-bg: rgba(224, 133, 133, 0.10);
     --color-danger-error-hover: rgba(224, 133, 133, 0.16);
 
-    /* —— Warning —— */
     --color-warning: #c3ab82;
     --color-warning-light: rgba(195, 171, 130, 0.12);
     --color-warning-bg: rgba(195, 171, 130, 0.10);
     --color-warning-text: #c3ab82;
 
-    /* —— Info —— */
     --color-info-bg: rgba(195, 171, 130, 0.12);
     --color-mauve-light: rgba(195, 171, 130, 0.12);
 
-    /* —— Borders —— */
-    --color-border: #3a2d3a;
-    --color-border-light: #2c2330;
-    --color-border-dark: #4a3d4a;
-    --color-border-subtle: rgba(255, 255, 255, 0.03);
+    --color-border: #a49aa2;
+    --color-border-light: #5b525a;
+    --color-border-dark: #d6cfd4;
+    --color-border-subtle: rgba(255, 255, 255, 0.08);
 
-    /* —— Overlay —— */
-    --color-overlay: rgba(0, 0, 0, 0.65);
+    --color-overlay: rgba(0, 0, 0, 0.60);
     --color-overlay-shadow: rgba(0, 0, 0, 0.40);
-    --color-white-glow: rgba(255, 247, 246, 0.08);
-    --color-white-glow-strong: rgba(255, 247, 246, 0.14);
+    --color-white-glow: rgba(255, 247, 246, 0.10);
+    --color-white-glow-strong: rgba(255, 247, 246, 0.18);
 
-    /* —— Shadows —— */
+    /* ═══ Shadows ═══ */
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.30);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
     --shadow-primary: 0 4px 12px rgba(207, 163, 174, 0.20);
 }
+
 
 html, body {
     height: 100%;

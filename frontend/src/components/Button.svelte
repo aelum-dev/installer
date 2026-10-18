@@ -47,7 +47,7 @@
 
 	.btn-primary {
 		background-color: var(--color-primary);
-		color: var(--color-bg-white);
+		color: var(--color-on-primary);
 	}
 
 	.btn-primary:hover:not(:disabled) {
@@ -62,7 +62,7 @@
 	}
 
 	.btn-secondary {
-		background-color: var(--color-bg-white);
+		background-color: var(--color-on-primary);
 		color: var(--color-text);
 		border: 1.5px solid var(--color-border-light);
 	}

@@ -68,7 +68,7 @@
 		align-items: center;
 		padding: 4px 12px;
 		background: var(--color-primary);
-		color: white;
+		color: var(--color-on-primary);
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-700);
 		border-radius: var(--radius-xl);

@@ -39,7 +39,7 @@
 .role-trigger:focus-visible {
 	outline: none;
 	border-color: var(--color-primary);
-	box-shadow: 0 0 0 2px var(--color-primary-hover);
+	box-shadow: 0 0 0 2px var(--color-focus);
 }
 
 .role-trigger-label {

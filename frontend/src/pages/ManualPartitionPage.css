@@ -246,7 +246,7 @@
 	border-radius: 50%;
 	background: #fff;
 	transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-	box-shadow: 0 1px 2px rgba(61, 50, 52, 0.3);
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--md-sys-color-shadow) 30%, transparent);
 }
 
 .add-check input:checked + .add-switch {
@@ -259,7 +259,7 @@
 
 /* Focus ring for keyboard users. */
 .add-check input:focus-visible + .add-switch {
-	outline: 2px solid var(--color-primary-hover);
+	outline: 2px solid var(--color-focus);
 	outline-offset: 2px;
 }
 
@@ -297,14 +297,14 @@
 	height: 18px;
 	border-radius: 50%;
 	background: var(--color-primary);
-	border: 3px solid var(--color-bg-white);
+	border: 3px solid var(--md-sys-color-surface);
 	box-shadow: 0 0 0 1.5px var(--color-primary);
 	cursor: pointer;
 	transition: box-shadow 0.15s ease;
 }
 
 .add-slider::-webkit-slider-thumb:hover {
-	box-shadow: 0 0 0 1.5px var(--color-primary-hover);
+	box-shadow: 0 0 0 1.5px var(--color-focus);
 }
 
 .add-slider::-moz-range-thumb {
@@ -312,7 +312,7 @@
 	height: 18px;
 	border-radius: 50%;
 	background: var(--color-primary);
-	border: 3px solid var(--color-bg-white);
+	border: 3px solid var(--md-sys-color-surface);
 	box-shadow: 0 0 0 1.5px var(--color-primary);
 	cursor: pointer;
 }
@@ -331,7 +331,7 @@
 	border: none;
 	border-radius: var(--radius-xl);
 	background: var(--color-primary);
-	color: var(--color-bg-white);
+	color: var(--color-on-primary);
 	font-family: inherit;
 	font-size: var(--font-size-sm);
 	font-weight: var(--font-weight-600);
@@ -342,7 +342,7 @@
 }
 
 .add-btn:hover:not(:disabled) {
-	background: #8d626c;
+	background: var(--color-primary-hover);
 	box-shadow: var(--shadow-primary);
 }
 

@@ -334,6 +334,6 @@
 
 	.role-tag.system {
 		background: var(--color-progress);
-		color: #fff;
+		color: var(--color-on-primary);
 	}
 </style>
