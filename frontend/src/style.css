@@ -66,7 +66,7 @@
     --color-surface: var(--md-sys-color-surface);
     --color-bg: var(--md-sys-color-surface);
     --color-bg-white: var(--md-sys-color-surface-container-lowest);
-    --color-bg-light: var(--md-sys-color-surface-container-low);
+    --color-bg-light: var(--md-sys-color-surface);
     --color-bg-hover: transparent;
     --color-bg-neutral-hover: var(--md-sys-color-surface-container-high);
 
