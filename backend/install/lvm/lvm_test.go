@@ -218,8 +218,9 @@ func TestDeviceSizeBytes(t *testing.T) {
 	}
 }
 
-// TestTeardown verifies the idempotent cleanup issues vgchange -an, vgremove and
-// pvremove for each non-empty device, skipping empty entries.
+// TestTeardown verifies the idempotent cleanup issues vgchange -an, vgremove,
+// dmsetup remove for both LVs, and pvremove for each non-empty device, skipping
+// empty entries.
 func TestTeardown(t *testing.T) {
 	rec := primitivestest.NewRecorder()
 	defer primitives.SetCommandRunner(rec)()
@@ -231,6 +232,30 @@ func TestTeardown(t *testing.T) {
 	}
 	if calls := rec.CallsFor("vgremove"); len(calls) != 1 {
 		t.Errorf("vgremove calls = %v, want one", calls)
+	}
+	dm := rec.CallsFor("dmsetup")
+	if len(dm) != 2 {
+		t.Fatalf("dmsetup calls = %v, want two (root and home LVs)", dm)
+	}
+	wantDM := map[string]bool{
+		Path(shared.LvmVolumeGroup, shared.LvmRootVolume): false,
+		Path(shared.LvmVolumeGroup, shared.LvmHomeVolume): false,
+	}
+	for _, c := range dm {
+		if len(c) != 3 || c[1] != "remove" {
+			t.Errorf("dmsetup argv = %v, want [dmsetup remove <lv>]", c)
+			continue
+		}
+		if _, ok := wantDM[c[2]]; ok {
+			wantDM[c[2]] = true
+		} else {
+			t.Errorf("dmsetup remove issued for unexpected device %q", c[2])
+		}
+	}
+	for device, seen := range wantDM {
+		if !seen {
+			t.Errorf("dmsetup remove not issued for %s", device)
+		}
 	}
 	pv := rec.CallsFor("pvremove")
 	if len(pv) != 2 {

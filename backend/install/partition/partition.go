@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"aelum-installer/backend/install/format"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -121,6 +122,13 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 	// Unmount anything left behind by a prior attempt.
 	_ = primitives.CleanupMounts(ctx.Logger)
+
+	// A previous LVM install leaves the `aelum` volume group active on the
+	// target. Its device-mapper holders keep the System partition busy, so
+	// mkfs and cryptsetup — which open with O_EXCL — fail with EBUSY. Remove the
+	// group before touching the partition table (lvm.Apply does the same before
+	// recreating it on the LVM path).
+	lvm.Teardown(shared.LvmVolumeGroup, nil)
 
 	// Remove any partitions the user deleted from the layout before reading the
 	// disk geometry or creating new partitions. Deleting first frees their space

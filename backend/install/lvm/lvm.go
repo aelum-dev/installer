@@ -251,6 +251,13 @@ func DeviceSizeBytes(device string) (int64, error) {
 func Teardown(vg string, devices []string) {
 	_ = primitives.Run(vgChangeArgs(false, vg)...).Run()
 	_ = primitives.Run(vgRemoveArgs(vg)...).Run()
+	// vgremove can leave the LV device-mapper nodes behind when vgchange -an
+	// could not close them, or when they are already orphaned. They keep the
+	// underlying device busy for exclusive opens (pvcreate, mkfs) — "Device or
+	// resource busy" / "Can't open exclusively" — so remove them explicitly.
+	for _, lv := range []string{shared.LvmRootVolume, shared.LvmHomeVolume} {
+		_ = primitives.Run("dmsetup", "remove", Path(vg, lv)).Run()
+	}
 	for _, device := range devices {
 		if device != "" {
 			_ = primitives.Run(pvRemoveArgs(device)...).Run()

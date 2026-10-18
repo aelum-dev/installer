@@ -55,6 +55,13 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		// If /mnt is still mounted, format operations will fail with a clear error
 	}
 
+	// A previous LVM install leaves the `aelum` volume group active on the
+	// target. Its device-mapper holders keep the partitions busy, so mkfs and
+	// cryptsetup — which open with O_EXCL — fail with EBUSY. Remove the group
+	// before partitioning (the manual path does the same); its PV label is
+	// wiped by FormatPartition's wipefs on the new partitions.
+	lvm.Teardown(shared.LvmVolumeGroup, nil)
+
 	// Clear partition table (GPT backup, etc.) for a clean slate
 	clearOut, err := primitives.Run("sgdisk", "-Z", diskID).CombinedOutput()
 	if err != nil {
