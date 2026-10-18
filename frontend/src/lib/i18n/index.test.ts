@@ -39,3 +39,37 @@ describe('i18n locale registry', () => {
 		expect(t('missing.translation.key')).toBe('missing.translation.key');
 	});
 });
+
+// Bundled exactly like the runtime (see index.svelte.ts) so the audit covers
+// every shipped locale, including ones added later.
+const translationModules = import.meta.glob<Record<string, string>>('../../translations/*.json', {
+	eager: true,
+	import: 'default',
+});
+
+const translationsByLocale = Object.fromEntries(
+	Object.entries(translationModules).map(([path, messages]) => [
+		path.slice(path.lastIndexOf('/') + 1, -'.json'.length),
+		messages,
+	]),
+);
+
+function placeholders(message: string): string[] {
+	return [...message.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+}
+
+describe('translation completeness', () => {
+	const english = translationsByLocale['en-US'];
+	const englishKeys = Object.keys(english).sort();
+
+	for (const [locale, messages] of Object.entries(translationsByLocale)) {
+		it(`${locale} matches en-US keys and placeholders`, () => {
+			expect(Object.keys(messages).sort()).toEqual(englishKeys);
+			for (const key of englishKeys) {
+				expect(placeholders(messages[key]), `${locale} ${key}`).toEqual(
+					placeholders(english[key]),
+				);
+			}
+		});
+	}
+});
