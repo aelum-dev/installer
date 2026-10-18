@@ -106,6 +106,12 @@
 	gap: 2px;
 }
 
+/* The menu is focused programmatically (roving via aria-activedescendant), so
+   it needs no visible focus ring of its own. */
+.role-menu:focus {
+	outline: none;
+}
+
 .role-option {
 	display: flex;
 	align-items: center;
@@ -124,7 +130,8 @@
 	transition: background-color 0.12s ease;
 }
 
-.role-option:hover {
+.role-option:hover,
+.role-option.active {
 	background: var(--color-primary-light);
 }
 

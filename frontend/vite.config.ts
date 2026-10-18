@@ -6,6 +6,11 @@ import path from 'path'
 export default defineConfig({
   plugins: [svelte()],
   resolve: {
+    // Vitest must resolve Svelte's browser (client) build so component tests
+    // can call mount(); with the default conditions it picks the server build
+    // and every mount() throws lifecycle_function_unavailable. Guarded by the
+    // VITEST flag so the app build keeps Vite's normal resolution.
+    ...(process.env.VITEST ? { conditions: ['browser'] } : {}),
     alias: {
       $components: path.resolve('./src/components'),
       $pages: path.resolve('./src/pages'),

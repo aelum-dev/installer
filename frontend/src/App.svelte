@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
-	import { setContext, type Component } from 'svelte';
+	import { setContext, tick, type Component } from 'svelte';
 
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
@@ -101,6 +101,25 @@
 		finish: handleFinish,
 	});
 
+	// Move focus to the new page's heading when the wizard transitions, so
+	// keyboard users land at the top of the content instead of on a detached
+	// control (or the start of the document). This is an action on the keyed
+	// page element, so it runs once per page mount; the initial mount is skipped
+	// to leave boot focus alone.
+	let initialPageFocused = false;
+
+	function focusPageHeading(node: HTMLElement): void {
+		if (!initialPageFocused) {
+			initialPageFocused = true;
+			return;
+		}
+		void tick().then(() => {
+			const heading = node.querySelector<HTMLElement>('h1, h2');
+			const target = heading ?? node;
+			if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+			target.focus();
+		});
+	}
 </script>
 
 <div class="app-layout" dir={getIsRTL() ? 'rtl' : 'ltr'}>
@@ -109,6 +128,8 @@
 		{#key navState.currentPage}
 			<div
 				class="page"
+				use:focusPageHeading
+				tabindex="-1"
 				transition:fly={{ x: navState.direction === 'forward' ? -80 : 80, duration: 350, easing: backOut }}
 			>
 				<CurrentPage />
@@ -172,5 +193,13 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+	}
+
+	/* Navigation moves focus here programmatically, so no focus ring is needed on
+	   the page container or its heading (interactive controls keep their ring). */
+	.page:focus,
+	.page :global(h1:focus),
+	.page :global(h2:focus) {
+		outline: none;
 	}
 </style>
