@@ -143,16 +143,23 @@
 						<p class="disk-extra">
 							{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{installState.fileSystem || '—'}</span>
 						</p>
-						{#if installState.luksEnabled}
-							<p class="disk-extra">
-								<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
-							</p>
-						{/if}
-						{#if installState.lvmEnabled}
-							<p class="disk-extra">
-								<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
-							</p>
-						{/if}
+					{/if}
+
+					{#if installState.luksEnabled}
+						<div class="option-row">
+							<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
+							{#if installState.manualMode}
+								<span class="option-hint">{t('disk.encryptHint')}</span>
+							{/if}
+						</div>
+					{/if}
+					{#if installState.lvmEnabled}
+						<div class="option-row">
+							<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
+							{#if installState.manualMode}
+								<span class="option-hint">{t('disk.lvmHint')}</span>
+							{/if}
+						</div>
 					{/if}
 				</div>
 			{:else}
@@ -315,6 +322,19 @@
 		font-family: var(--font-sans);
 		font-size: 0.75rem;
 		font-weight: 600;
+	}
+
+	.option-row {
+		display: flex;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: var(--spacing-xs) var(--spacing-sm);
+	}
+
+	.option-hint {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+		line-height: 1.45;
 	}
 
 	.luks-tag {
