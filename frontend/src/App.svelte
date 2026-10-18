@@ -17,7 +17,7 @@
 	import { goNext, goBack, finish, WIZARD_NAV, type WizardNavigation } from '$lib/navigation';
 	import { navState, setDryRun } from '$lib/store.svelte';
 	import { t, getIsRTL } from '$lib/i18n/index.svelte';
-	import { pageSlide } from '$lib/transitions';
+	import { pageFade } from '$lib/transitions';
 
 	import { GetStartPage, ClearStartPage, GetDryRun } from '$lib/backend';
 
@@ -33,11 +33,6 @@
 	};
 
 	const CurrentPage = $derived(PAGES[navState.currentPage as PageID]);
-
-	// Forward moves the wizard one way, Back the other; the page transition
-	// reads it to push the incoming page in from the correct side. The sign is
-	// flipped for RTL so "forward" still comes from the trailing edge.
-	const slideDir = $derived((navState.direction === 'forward' ? 1 : -1) * (getIsRTL() ? -1 : 1));
 
 	// Jump to start page on init if configured
 	async function initStartPage(): Promise<void> {
@@ -121,9 +116,9 @@
 			const heading = node.querySelector<HTMLElement>('h1, h2');
 			const target = heading ?? node;
 			if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
-			// preventScroll: the page is still translated by its transition when
-			// this runs, and a scrolling focus() would drag the overflow:hidden
-			// ancestors along with it.
+			// preventScroll: the page is still faded by its transition when
+			// this runs, and a scrolling focus() would drag the
+			// overflow:hidden ancestors along with it.
 			target.focus({ preventScroll: true });
 		});
 	}
@@ -137,8 +132,8 @@
 				class="page"
 				use:focusPageHeading
 				tabindex="-1"
-				in:pageSlide={{ distance: 64 * slideDir, duration: 320, fade: 1, zIndex: 2 }}
-				out:pageSlide={{ distance: -52 * slideDir, duration: 220, fade: 0, zIndex: 1, exiting: true }}
+				in:pageFade={{ duration: 200, delay: 140, zIndex: 2 }}
+				out:pageFade={{ duration: 140, zIndex: 1, exiting: true }}
 			>
 				<CurrentPage />
 			</div>
@@ -198,8 +193,8 @@
 	.page {
 		/* Absolute so the outgoing and incoming pages overlap during the
 		   transition instead of stacking to 200% height (which caused a layout
-		   jump when the outgoing one unmounted). The incoming page slides in
-		   opaque above the outgoing one (see zIndex in the transition). */
+		   jump when the outgoing one unmounted). The incoming page is held at
+		   opacity 0 until the outgoing one has faded, so they never blend. */
 		position: absolute;
 		inset: 0;
 		z-index: 1;

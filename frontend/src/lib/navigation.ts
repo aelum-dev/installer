@@ -65,7 +65,6 @@ export async function goNext(currentPage: number): Promise<string | null> {
 		const nextPage = currentPage + 1;
 		await setCurrentPage(nextPage);
 
-		navState.direction = 'forward';
 		navState.currentPage = nextPage;
 	} catch (err) {
 		return errorMessage(err);
@@ -83,7 +82,6 @@ export async function goBack(currentPage: number): Promise<string | null> {
 		return errorMessage(err);
 	}
 
-	navState.direction = 'backward';
 	navState.currentPage = prevPage;
 
 	return null;

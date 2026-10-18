@@ -44,7 +44,6 @@ export const installState = $state({
 
 export const navState = $state({
 	currentPage: 0,
-	direction: 'forward' as 'forward' | 'backward',
 });
 
 // ── Actions ──

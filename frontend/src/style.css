@@ -395,8 +395,8 @@ body {
     outline-offset: -2px;
 }
 
-/* Wizard page crossfade: while a page is sliding out it gets [data-exiting]
-   (set by the pageSlide transition), which hides the scrollbars inside it. A
+/* Wizard page transition: while a page is fading out it gets [data-exiting]
+   (set by the pageFade transition), which hides the scrollbars inside it. A
    native overlay scrollbar fades on its own timer and would otherwise linger
    over the incoming page. Only the outgoing page is marked, so the live page
    keeps its scrollbars. */
