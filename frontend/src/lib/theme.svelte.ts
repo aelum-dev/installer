@@ -2,8 +2,8 @@
 //
 // The active scheme lives on <html data-theme> (set by a no-flash inline script
 // in index.html before first paint, and by setTheme on every toggle). The choice
-// is persisted to localStorage under `aelum-theme`; when unset the OS
-// prefers-color-scheme is followed. Mirrors the website's theme.js / theme-toggle.js.
+// is persisted to localStorage under `aelum-theme`; when unset the installer
+// starts dark. Mirrors the website's theme.js / theme-toggle.js.
 
 export const STORAGE_KEY = 'aelum-theme';
 export type Theme = 'light' | 'dark';
