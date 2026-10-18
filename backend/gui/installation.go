@@ -22,6 +22,7 @@ const (
 
 // InstallationProgress is emitted as an event to the frontend.
 type InstallationProgress struct {
+	StepID  string `json:"stepId"` // stable step identifier, localized by the UI
 	Label   string `json:"label"`
 	Percent int    `json:"percent"`
 	Phase   string `json:"phase"` // "running" | "done" | "error"

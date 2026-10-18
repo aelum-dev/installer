@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { installState, commitLuksPassphrase } from '$lib/store.svelte';
+	import { commitLuksPassphrase } from '$lib/store.svelte';
+	import { uiState } from '$lib/ui.svelte';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
 	import Dialog from '$components/Dialog.svelte';
 
 	let {
-		// Drives visibility; binds back to the shared luks dialog flag.
-		show = $bindable(installState.luksDialogOpen),
+		// Drives visibility; binds back to the shared LUKS dialog flag.
+		show = $bindable(uiState.luksDialogOpen),
 	}: {
 		show?: boolean;
 	} = $props();

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { DiskInfo, FileSystem } from '$lib/types';
+	import type { DiskInfo, FileSystem, InstallMode } from '$lib/types';
 	import { FILESYSTEMS } from '$lib/types';
+	import { mbToGB } from '$lib/format';
 	import { t } from '$lib/i18n';
+	import ToggleSwitch from '$components/ToggleSwitch.svelte';
 	import './DiskTopBar.css';
-
-	type InstallMode = 'automatic' | 'manual';
 
 	let {
 		pageIcon,
@@ -52,51 +52,7 @@
 			showDiskHint = entering;
 		}
 	}
-
-	// Convert MB to GB and format with one decimal (e.g. 1536 MB -> "1.5 GB").
-	function formatGB(mb: number): number {
-		const gb = mb / 1024;
-		return Math.round(gb * 10) / 10;
-	}
 </script>
-
-<!-- LUKS2 root encryption toggle. Off → opens the passphrase popup; on → opens
-	the disable confirm. Reflects luksEnabled only. -->
-{#snippet luksSwitch()}
-	<button
-		type="button"
-		class={['luks-switch', { on: luksEnabled }]}
-		role="switch"
-		aria-checked={luksEnabled}
-		aria-label={t('disk.encryptLabel')}
-		title={t('disk.encryptHint')}
-		onclick={() => {
-			if (luksEnabled) {
-				onDisableLuks?.();
-			} else {
-				onEnableLuks?.();
-			}
-		}}
-	>
-		<span class="luks-slider"></span>
-	</button>
-{/snippet}
-
-<!-- LVM toggle: place root and home on logical volumes in the `aelum` volume
-	group. No passphrase (unlike LUKS). -->
-{#snippet lvmSwitch()}
-	<button
-		type="button"
-		class={['luks-switch', { on: lvmEnabled }]}
-		role="switch"
-		aria-checked={lvmEnabled}
-		aria-label={t('disk.lvmLabel')}
-		title={t('disk.lvmHint')}
-		onclick={() => onToggleLvm?.()}
-	>
-		<span class="luks-slider"></span>
-	</button>
-{/snippet}
 
 <div class={['top-bar', { 'top-bar--auto': !manualMode }]}>
 	<!-- Left slot: disk title in manual mode; nothing in automatic mode. -->
@@ -117,9 +73,9 @@
 							<div class="manual-space-used" style="--pct: {spaceUsedPct}%"></div>
 						</div>
 						<div class="manual-space-labels">
-							<span>{t('manual.allocated')} {formatGB(spaceUsedMB)} {t('unit.gb')}</span>
-							<span class="manual-space-of">{t('manual.of')} {formatGB(spaceTotalMB)} {t('unit.gb')}</span>
-							<span class="manual-space-free">{t('manual.free')} {formatGB(spaceFreeMB)} {t('unit.gb')}</span>
+							<span>{t('manual.allocated')} {mbToGB(spaceUsedMB)} {t('unit.gb')}</span>
+							<span class="manual-space-of">{t('manual.of')} {mbToGB(spaceTotalMB)} {t('unit.gb')}</span>
+							<span class="manual-space-free">{t('manual.free')} {mbToGB(spaceFreeMB)} {t('unit.gb')}</span>
 						</div>
 					</div>
 				{/if}
@@ -181,18 +137,39 @@
 	{#if onEnableLuks || onDisableLuks}
 		<span class="control-row-label">{t('disk.encryptLabel')}</span>
 		<div class="toggle-row">
-			{@render luksSwitch()}
+			<ToggleSwitch
+				checked={luksEnabled}
+				label={t('disk.encryptLabel')}
+				title={t('disk.encryptHint')}
+				onToggle={() => {
+					if (luksEnabled) {
+						onDisableLuks?.();
+					} else {
+						onEnableLuks?.();
+					}
+				}}
+			/>
 			{#if onToggleLvm}
 				<div class="toggle-group">
 					<span class="control-row-label">{t('disk.lvmLabel')}</span>
-					{@render lvmSwitch()}
+					<ToggleSwitch
+						checked={lvmEnabled}
+						label={t('disk.lvmLabel')}
+						title={t('disk.lvmHint')}
+						onToggle={() => onToggleLvm?.()}
+					/>
 				</div>
 			{/if}
 		</div>
 	{:else if onToggleLvm}
 		<span class="control-row-label">{t('disk.lvmLabel')}</span>
 		<div class="toggle-row">
-			{@render lvmSwitch()}
+			<ToggleSwitch
+				checked={lvmEnabled}
+				label={t('disk.lvmLabel')}
+				title={t('disk.lvmHint')}
+				onToggle={() => onToggleLvm?.()}
+			/>
 		</div>
 	{/if}
 </div>

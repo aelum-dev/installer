@@ -15,6 +15,7 @@ import (
 
 // InstallationProgress is emitted as an event to the frontend.
 type InstallationProgress struct {
+	StepID  string `json:"stepId"` // stable step identifier, localized by the UI
 	Label   string `json:"label"`
 	Percent int    `json:"percent"`
 	Phase   string `json:"phase"` // "running" | "done" | "error"
@@ -46,7 +47,7 @@ type Installer struct {
 	Logger shared.Logger
 
 	// Progress callback (nil for CLI, sets up UI events for GUI)
-	OnProgress func(label string, percent int, phase string)
+	OnProgress func(stepID, label string, percent int, phase string)
 
 	// interrupted is set to true when SIGINT is received. Used by the CLI to
 	// decide the exit code (130 for SIGINT vs 1 for other errors).
@@ -141,6 +142,7 @@ func (inst *Installer) Install() error {
 	cumulativePercent := 0
 
 	for idx, step := range steps {
+		stepID := step.Name()
 		label := step.Label()
 		if inst.dryRun {
 			label = "[DRY RUN] " + label
@@ -162,10 +164,10 @@ func (inst *Installer) Install() error {
 		ctx.ProgressCallback = func(percent int) {
 			// Convert step-relative percentage (0-100) to absolute percentage (startPercent-endPercent)
 			absPercent := int(float64(startPercent) + (float64(percent) * float64(endPercent-startPercent) / 100.0))
-			inst.raiseProgress(label, &high, absPercent)
+			inst.raiseProgress(stepID, label, &high, absPercent)
 		}
 
-		inst.emitProgress(label, startPercent, "running")
+		inst.emitProgress(stepID, label, startPercent, "running")
 		inst.logInfo("Starting step: %s", step.Label())
 
 		// Launch tick goroutine: slowly advances percentage during long steps.
@@ -175,7 +177,7 @@ func (inst *Installer) Install() error {
 		if inst.dryRun {
 			stepDuration = time.Duration(shared.DryRunStepDurationMs) * time.Millisecond
 		}
-		go inst.tickProgress(label, startPercent, endPercent, stepDuration, stopTick, &high)
+		go inst.tickProgress(stepID, label, startPercent, endPercent, stepDuration, stopTick, &high)
 
 		var err error
 		if inst.dryRun {
@@ -190,7 +192,7 @@ func (inst *Installer) Install() error {
 		}
 
 		inst.logInfo("Step completed: %s", step.Label())
-		inst.emitProgress(label, endPercent, "done")
+		inst.emitProgress(stepID, label, endPercent, "done")
 	}
 
 	inst.logInfo("Installation completed successfully")
@@ -206,7 +208,7 @@ func (inst *Installer) Install() error {
 // overtaking the parsed progress (which raises the same mark). In dry-run mode
 // stepDuration controls the total sleep time and tick interval is calculated so
 // that 1% is emitted per tick (e.g. 22s step → ~1 tick/sec).
-func (inst *Installer) tickProgress(label string, start, end int, stepDuration time.Duration, stopTick chan struct{}, high *atomic.Int32) {
+func (inst *Installer) tickProgress(stepID, label string, start, end int, stepDuration time.Duration, stopTick chan struct{}, high *atomic.Int32) {
 	if start >= end {
 		return
 	}
@@ -254,7 +256,7 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 			}
 			if inst.Logger != nil {
 				inst.Logger.SetProgressContext(label, next)
-				inst.Logger.ProgressJSON(label, next, "running")
+				inst.Logger.ProgressJSON(stepID, label, next, "running")
 			}
 		case <-stopTick:
 			return
@@ -265,7 +267,7 @@ func (inst *Installer) tickProgress(label string, start, end int, stepDuration t
 // raiseProgress records pct as the step's high-water mark, and when it advances
 // updates the log context and emits a JSON progress event. Returns true when the
 // mark advanced.
-func (inst *Installer) raiseProgress(label string, high *atomic.Int32, pct int) bool {
+func (inst *Installer) raiseProgress(stepID, label string, high *atomic.Int32, pct int) bool {
 	for {
 		cur := high.Load()
 		if int32(pct) <= cur {
@@ -277,7 +279,7 @@ func (inst *Installer) raiseProgress(label string, high *atomic.Int32, pct int) 
 	}
 	if inst.Logger != nil {
 		inst.Logger.SetProgressContext(label, pct)
-		inst.Logger.ProgressJSON(label, pct, "running")
+		inst.Logger.ProgressJSON(stepID, label, pct, "running")
 	}
 	return true
 }
@@ -305,7 +307,7 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 			if inst.dryRun {
 				label = "[DRY RUN] " + label
 			}
-			inst.emitProgress(label, 0, "running")
+			inst.emitProgress(s.Name(), label, 0, "running")
 			inst.logInfo("Starting step: %s", s.Label())
 			ctx := inst.context()
 			var stepErr error
@@ -317,7 +319,7 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 			if stepErr != nil {
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.Label(), stepErr)
 			}
-			inst.emitProgress(label, 100, "done")
+			inst.emitProgress(s.Name(), label, 100, "done")
 			inst.logInfo("Step completed: %s", s.Label())
 			return label, 100, nil
 		}
@@ -395,9 +397,9 @@ func (inst *Installer) Cancel() {
 }
 
 // emitProgress reports progress to the UI.
-func (inst *Installer) emitProgress(label string, percent int, phase string) {
+func (inst *Installer) emitProgress(stepID, label string, percent int, phase string) {
 	if inst.OnProgress != nil {
-		inst.OnProgress(label, percent, phase)
+		inst.OnProgress(stepID, label, percent, phase)
 	}
 }
 

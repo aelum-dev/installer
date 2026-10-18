@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import PageInfo from '$components/PageInfo.svelte';
 
 	/**
 	 * The two-column wizard page shell: a centered info rail (icon, title,
@@ -32,16 +33,7 @@
 </script>
 
 <div class={['page-layout', { 'page-layout--wide': wideInset }]}>
-	<div class="page-info">
-		{#if icon}
-			<span class="nf-icon page-icon" aria-hidden="true">{icon}</span>
-		{/if}
-		<h2 class="page-info-title">{title}</h2>
-		{#if subtitle}
-			<p class="page-info-subtitle">{subtitle}</p>
-		{/if}
-		{@render info?.()}
-	</div>
+	<PageInfo {icon} {title} {subtitle} {info} />
 	<div class={['page-content', `page-content--${variant}`]} bind:this={contentEl}>
 		{@render children()}
 	</div>
@@ -60,14 +52,6 @@
 
 	.page-layout--wide {
 		padding-inline: calc(var(--spacing-xl) + 8px);
-	}
-
-	.page-info {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: var(--spacing-2xl);
-		flex: 1;
 	}
 
 	.page-content {

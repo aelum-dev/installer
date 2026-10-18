@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
+	import PageInfo from '$components/PageInfo.svelte';
 	import './DiskInfoSidebar.css';
 
 	let { pageIcon, minDiskSizeFormatted, hidden = false }: {
@@ -9,9 +10,13 @@
 	} = $props();
 </script>
 
-<div class={['page-info', { 'manual-hidden': hidden }]}>
-	<span class="nf-icon page-icon" aria-hidden="true">{pageIcon}</span>
-	<h2 class="page-info-title">{t('page.diskSelection.title')}</h2>
-	<p class="page-info-subtitle">{t('page.diskSelection.subtitle')}</p>
-	<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
-</div>
+<PageInfo
+	icon={pageIcon}
+	title={t('page.diskSelection.title')}
+	subtitle={t('page.diskSelection.subtitle')}
+	{hidden}
+>
+	{#snippet info()}
+		<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
+	{/snippet}
+</PageInfo>

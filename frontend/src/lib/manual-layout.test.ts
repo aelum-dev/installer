@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
+	addPartition,
 	computeFreeMB,
 	computeUsedMB,
 	isManualLayoutValid,
 	manualLayoutIssues,
+	nextPartitionIndex,
 	normalizeManualLayout,
+	removePartition,
+	withPartitionType,
 } from './manual-layout';
 import type { ManualLayout } from './types';
 
@@ -281,5 +285,49 @@ describe('empty disk payload', () => {
 		expect(manualLayoutIssues(emptyLayout()).map((issue) => issue.kind)).toEqual(
 			expect.arrayContaining(['espCount', 'systemCount']),
 		);
+	});
+});
+
+describe('immutable layout updates', () => {
+	it('nextPartitionIndex returns max index + 1', () => {
+		const layout = baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, type: 'esp' },
+				{ index: 3, path: '/dev/sda3', sizeMB: 1024, type: 'system' },
+			],
+		});
+		expect(nextPartitionIndex(layout)).toBe(4);
+	});
+
+	it('nextPartitionIndex returns 0 for an empty plan', () => {
+		expect(nextPartitionIndex(baseLayout({ partitions: [] }))).toBe(0);
+	});
+
+	it('addPartition appends without mutating the original', () => {
+		const original = baseLayout({ partitions: [] });
+		const next = addPartition(original, { index: 0, path: '', sizeMB: 1024, type: 'system' });
+		expect(next.partitions).toHaveLength(1);
+		expect(original.partitions).toHaveLength(0);
+	});
+
+	it('removePartition moves the row to deletedPartitions without mutating the original', () => {
+		const original = baseLayout();
+		const next = removePartition(original, 1);
+		expect(next.partitions.map((p) => p.index)).toEqual([0]);
+		expect(next.deletedPartitions?.map((p) => p.index)).toEqual([1]);
+		expect(original.partitions.map((p) => p.index)).toEqual([0, 1]);
+	});
+
+	it('removePartition is a no-op for an unknown index', () => {
+		const original = baseLayout();
+		expect(removePartition(original, 99)).toBe(original);
+	});
+
+	it('withPartitionType changes only the target row', () => {
+		const original = baseLayout();
+		const next = withPartitionType(original, 1, '');
+		expect(next.partitions[1].type).toBe('');
+		expect(next.partitions[0].type).toBe('esp');
+		expect(original.partitions[1].type).toBe('system');
 	});
 });

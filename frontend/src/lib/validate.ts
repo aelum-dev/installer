@@ -97,22 +97,6 @@ export interface ValidationMessages {
 	passwordsNoMatch: string;
 }
 
-const DEFAULT_MESSAGES: ValidationMessages = {
-	usernameRequired: 'Username is required',
-	usernameTooLong: `Username must be at most ${MaxUsernameLength} characters`,
-	usernameDotNames: 'Username cannot be "." or ".."',
-	usernameDigitsOnly: 'Username cannot consist only of digits',
-	usernameInvalidStart: 'Username must start with a letter, number, underscore, or dot',
-	usernameInvalidCharacters:
-		'Username may only contain letters, numbers, dots, hyphens, and underscores (with an optional trailing \'$\')',
-	usernameReserved: 'Username \'{name}\' is reserved',
-	passwordRequired: 'Password is required',
-	passwordTooLong: `Password must be at most ${MaxPasswordLength} UTF-8 bytes`,
-	passwordInvalidCharacters: 'Password cannot contain newlines or NUL characters',
-	passwordsMatch: 'Please confirm your password',
-	passwordsNoMatch: 'Passwords do not match',
-};
-
 function messageFor(rule: ValidationMessageKey, messages: ValidationMessages, username = ''): string {
 	const text = messages[rule];
 	return text.replace('{name}', username);
@@ -127,7 +111,7 @@ export function validateUserAccount(
 	password: string,
 	confirmPassword: string,
 	state: ValidationState,
-	messages: ValidationMessages = DEFAULT_MESSAGES,
+	messages: ValidationMessages,
 ): ValidationResult {
 	const usernameFailure = state.usernameTouched ? usernameRule(username) : null;
 	const passwordFailure = state.passwordTouched ? passwordRule(password) : null;

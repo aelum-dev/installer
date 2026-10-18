@@ -31,10 +31,10 @@ type Logger interface {
 	// UpdateContext updates the progress label and percentage without writing
 	// to stdout. Used by the tick goroutine so Command() uses the latest %.
 	UpdateContext(label string, percent int)
-	Progress(label string, percent int)
-	ProgressLine(label string, percent int)
+	Progress(stepID, label string, percent int)
+	ProgressLine(stepID, label string, percent int)
 	ProgressDone()
-	ProgressJSON(label string, percent int, phase string)
+	ProgressJSON(stepID, label string, percent int, phase string)
 	Write(line string)
 	// Close flushes any buffered log entries and waits for the writer goroutine.
 	Close()
@@ -179,18 +179,18 @@ func (l *ConsoleLogger) UpdateContext(label string, percent int) {
 	l.progressPercent.Store(int32(percent))
 }
 
-func (l *ConsoleLogger) Progress(label string, percent int) {
+func (l *ConsoleLogger) Progress(stepID, label string, percent int) {
 	l.progressLabel.Store(&label)
 	l.progressPercent.Store(int32(percent))
 	l.writeLine(fmt.Sprintf("[%d%%] %s", percent, label))
-	l.ProgressJSON(label, percent, "running")
+	l.ProgressJSON(stepID, label, percent, "running")
 }
 
-func (l *ConsoleLogger) ProgressLine(label string, percent int) {
+func (l *ConsoleLogger) ProgressLine(stepID, label string, percent int) {
 	l.progressLabel.Store(&label)
 	l.progressPercent.Store(int32(percent))
 	l.writeLine(fmt.Sprintf("[%d%%] %s", percent, label))
-	l.ProgressJSON(label, percent, "running")
+	l.ProgressJSON(stepID, label, percent, "running")
 }
 
 func (l *ConsoleLogger) ProgressDone() {
@@ -199,12 +199,15 @@ func (l *ConsoleLogger) ProgressDone() {
 	l.progressPercent.Store(0)
 }
 
-func (l *ConsoleLogger) ProgressJSON(label string, percent int, phase string) {
+// ProgressJSON emits one machine-readable progress event on stderr. stepID is
+// the stable step identifier (e.g. "format_disk") the frontend localizes;
+// label is the human-readable English text, kept for logs/debugging.
+func (l *ConsoleLogger) ProgressJSON(stepID, label string, percent int, phase string) {
 	if term.IsTerminal(int(os.Stderr.Fd())) {
 		return
 	}
-	_, _ = fmt.Fprintf(os.Stderr, `{"label":"%s","percent":%d,"phase":"%s"}
-`, escapeJSON(label), percent, phase)
+	_, _ = fmt.Fprintf(os.Stderr, `{"stepId":"%s","label":"%s","percent":%d,"phase":"%s"}
+`, escapeJSON(stepID), escapeJSON(label), percent, phase)
 }
 
 func (l *ConsoleLogger) LogToFile(line string) {

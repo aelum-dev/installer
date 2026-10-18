@@ -142,11 +142,11 @@ func TestConsoleLogger_Progress(t *testing.T) {
 	l := NewConsoleLogger()
 	defer l.Close()
 
-	out, errOut := captureOutput(t, func() { l.Progress("installing base", 42) })
+	out, errOut := captureOutput(t, func() { l.Progress("install_base", "installing base", 42) })
 	if !strings.Contains(out, "[42%] installing base") {
 		t.Errorf("Progress stdout = %q", out)
 	}
-	if !strings.Contains(errOut, `{"label":"installing base","percent":42,"phase":"running"}`) {
+	if !strings.Contains(errOut, `{"stepId":"install_base","label":"installing base","percent":42,"phase":"running"}`) {
 		t.Errorf("Progress stderr = %q, want progress JSON", errOut)
 	}
 	// Progress context is now current for subsequent Command lines.
@@ -160,7 +160,7 @@ func TestConsoleLogger_ProgressLine(t *testing.T) {
 	l := NewConsoleLogger()
 	defer l.Close()
 
-	out, _ := captureOutput(t, func() { l.ProgressLine("halfway", 50) })
+	out, _ := captureOutput(t, func() { l.ProgressLine("install_base", "halfway", 50) })
 	if !strings.Contains(out, "[50%] halfway") {
 		t.Errorf("ProgressLine stdout = %q", out)
 	}
@@ -186,8 +186,8 @@ func TestConsoleLogger_ProgressJSON_EscapesLabel(t *testing.T) {
 	l := NewConsoleLogger()
 	defer l.Close()
 
-	_, errOut := captureOutput(t, func() { l.ProgressJSON(`say "hi"`, 10, "running") })
-	want := `{"label":"say \"hi\"","percent":10,"phase":"running"}`
+	_, errOut := captureOutput(t, func() { l.ProgressJSON(`format_disk`, `say "hi"`, 10, "running") })
+	want := `{"stepId":"format_disk","label":"say \"hi\"","percent":10,"phase":"running"}`
 	if !strings.Contains(errOut, want) {
 		t.Errorf("ProgressJSON stderr = %q, want %q", errOut, want)
 	}

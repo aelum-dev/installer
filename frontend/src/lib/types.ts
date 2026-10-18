@@ -12,12 +12,13 @@ export type PageID = (typeof PAGE_IDS)[keyof typeof PAGE_IDS];
 
 export const TOTAL_PAGES = 6;
 
-// Pages that require validation before advancing
-export const PAGES_NEEDING_VALIDATION = new Set<PageID>([PAGE_IDS.USER_ACCOUNT, PAGE_IDS.DISK_SELECTION]);
-
 // Filesystem type options for root partition.
 export const FILESYSTEMS = ['btrfs', 'ext4'] as const;
 export type FileSystem = (typeof FILESYSTEMS)[number];
+
+// Installation mode: automatic (whole disk) vs manual (dualboot-safe).
+export const INSTALL_MODES = ['automatic', 'manual'] as const;
+export type InstallMode = (typeof INSTALL_MODES)[number];
 
 // Manual-partitioning types (dualboot-safe). Mirrors backend shared.PartitionType.
 export const TYPE_ESP = 'esp';

@@ -11,11 +11,13 @@
 	let usernameTouched = $state(false);
 	let passwordTouched = $state(false);
 	let confirmPasswordTouched = $state(false);
-	let usernameInput = $state<HTMLInputElement | null>(null);
 
-	$effect(() => {
-		usernameInput?.select();
-	});
+	// Select the prefilled username on mount so typing replaces it. An action
+	// runs exactly once when the node is created — unlike an $effect, it does
+	// not re-run on unrelated reactive updates.
+	function selectOnMount(node: HTMLInputElement): void {
+		node.select();
+	}
 
 	const errors = $derived(
 		validateUserAccount(installState.username, installState.password, installState.confirmPassword, {
@@ -69,7 +71,7 @@
 				type="text"
 				class={['line-edit', { 'line-edit--error': !!errors.username }]}
 				placeholder={t('page.userAccount.usernamePlaceholder')}
-				bind:this={usernameInput}
+				use:selectOnMount
 				bind:value={installState.username}
 				onblur={() => handleBlur('username')}
 			/>

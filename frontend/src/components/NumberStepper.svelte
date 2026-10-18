@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { glyph } from '$lib/icons';
+	import { t } from '$lib/i18n';
 	import './NumberStepper.css';
 
 	let {
@@ -46,7 +47,7 @@
 		class="stepper-btn stepper-up"
 		disabled={disabled}
 		onclick={() => stepBy(step)}
-		aria-label="Increase"
+		aria-label={t('stepper.increase')}
 	>
 		{glyph('eab7')}
 	</button>
@@ -55,7 +56,7 @@
 		class="stepper-btn stepper-down"
 		disabled={disabled}
 		onclick={() => stepBy(-step)}
-		aria-label="Decrease"
+		aria-label={t('stepper.decrease')}
 	>
 		{glyph('eab4')}
 	</button>

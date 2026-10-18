@@ -301,11 +301,11 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 
 	// JSON progress events go to stderr (GUI reads them there).
 	// Human-readable output goes to stdout (terminal users see clean logs).
-	installer.OnProgress = func(label string, percent int, phase string) {
+	installer.OnProgress = func(stepID, label string, percent int, phase string) {
 		if phase == "done" {
 			log.ProgressDone()
 		} else {
-			log.Progress(label, percent)
+			log.Progress(stepID, label, percent)
 		}
 	}
 

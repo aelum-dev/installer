@@ -14,7 +14,7 @@
 		onNext: () => void;
 		onBack: () => void;
 		onFinish: () => void;
-		onValidationFailed?: (reason: string) => void;
+		onValidationFailed?: (reasons: string[]) => void;
 	} = $props();
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
@@ -31,9 +31,9 @@
 		return 'pending';
 	}
 
-	// Next button is always enabled, but validates before proceeding.
-	// `<br>` (not '\n') because the dialog renders this through {@html}.
-	const nextDisabledReason = $derived(getPageValidationReasons(currentPage).join('<br>'));
+	// Next button is always enabled, but validates before proceeding. On
+	// failure the modal lists every reason (rendered as a plain-text list).
+	const nextValidationReasons = $derived(getPageValidationReasons(currentPage));
 </script>
 
 <footer class="footer">
@@ -70,7 +70,7 @@
 					if (isPageValid(currentPage)) {
 						onNext();
 					} else {
-						onValidationFailed?.(nextDisabledReason);
+						onValidationFailed?.(nextValidationReasons);
 					}
 				}}
 			>

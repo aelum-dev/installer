@@ -1,18 +1,19 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { commitLuksPassphrase, disableLuks, requestEnableLuks, installState } from './store.svelte';
+import { uiState } from './ui.svelte';
 
 afterEach(() => {
 	// Reset LUKS state between tests.
 	installState.luksEnabled = false;
 	installState.luksPassphrase = '';
-	installState.luksDialogOpen = false;
-	installState.luksError = '';
+	uiState.luksDialogOpen = false;
+	uiState.luksError = '';
 });
 
 describe('requestEnableLuks', () => {
 	it('opens the passphrase popup without enabling encryption', () => {
 		requestEnableLuks();
-		expect(installState.luksDialogOpen).toBe(true);
+		expect(uiState.luksDialogOpen).toBe(true);
 		expect(installState.luksEnabled).toBe(false);
 	});
 });
@@ -22,22 +23,22 @@ describe('commitLuksPassphrase', () => {
 		commitLuksPassphrase('s3cret', 's3cret');
 		expect(installState.luksEnabled).toBe(true);
 		expect(installState.luksPassphrase).toBe('s3cret');
-		expect(installState.luksDialogOpen).toBe(false);
-		expect(installState.luksError).toBe('');
+		expect(uiState.luksDialogOpen).toBe(false);
+		expect(uiState.luksError).toBe('');
 	});
 
 	it('keeps the popup open and errors when the fields diverge', () => {
 		commitLuksPassphrase('s3cret', 'different');
 		expect(installState.luksEnabled).toBe(false);
-		expect(installState.luksDialogOpen).toBe(true);
-		expect(installState.luksError).not.toBe('');
+		expect(uiState.luksDialogOpen).toBe(true);
+		expect(uiState.luksError).not.toBe('');
 	});
 
 	it('keeps the popup open and errors when empty', () => {
 		commitLuksPassphrase('', '');
 		expect(installState.luksEnabled).toBe(false);
-		expect(installState.luksDialogOpen).toBe(true);
-		expect(installState.luksError).not.toBe('');
+		expect(uiState.luksDialogOpen).toBe(true);
+		expect(uiState.luksError).not.toBe('');
 	});
 });
 

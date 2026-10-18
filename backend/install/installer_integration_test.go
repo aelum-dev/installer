@@ -40,7 +40,7 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 	})
 
 	var progressEvents []string
-	inst.OnProgress = func(label string, percent int, phase string) {
+	inst.OnProgress = func(_ string, label string, percent int, phase string) {
 		progressEvents = append(progressEvents, fmt.Sprintf("%s:%d:%s", label, percent, phase))
 	}
 
@@ -81,7 +81,7 @@ func TestInstall_DryRun_Btrfs(t *testing.T) {
 	})
 
 	var stepLabels []string
-	inst.OnProgress = func(label string, _ int, phase string) {
+	inst.OnProgress = func(_ string, label string, _ int, phase string) {
 		if phase == "running" {
 			// Strip the [DRY RUN] prefix for counting.
 			stepLabels = append(stepLabels, strings.TrimPrefix(label, "[DRY RUN] "))
@@ -154,7 +154,7 @@ func TestInstall_ProgressPercentages(t *testing.T) {
 	})
 
 	var percentages []int
-	inst.OnProgress = func(_ string, percent int, phase string) {
+	inst.OnProgress = func(_ string, _ string, percent int, phase string) {
 		if phase == "running" || phase == "done" {
 			percentages = append(percentages, percent)
 		}

@@ -259,3 +259,47 @@ export function setPartitionType(
 	const part = partitions.find((p) => p.index === index);
 	if (part) part.type = type;
 }
+
+// ── Immutable layout updates ────────────────────────────────────────────────
+//
+// Layouts are treated as immutable values: each update returns a new object so
+// Svelte reactivity sees the change and in-place mutation bugs can't creep in.
+// The page assigns the result back to the store (its single owner).
+
+/** Next free row index (highest existing index + 1). */
+export function nextPartitionIndex(layout: ManualLayout): number {
+	const partitions = layout.partitions ?? [];
+	return partitions.reduce((max, p) => Math.max(max, p.index), -1) + 1;
+}
+
+/** Append a new row, returning a new layout. */
+export function addPartition(layout: ManualLayout, part: ManualPartition): ManualLayout {
+	return { ...layout, partitions: [...(layout.partitions ?? []), part] };
+}
+
+/**
+ * Move the row with `index` into deletedPartitions (keeping its path/number so
+ * Apply can delete it from the disk at install time). Returns a new layout.
+ */
+export function removePartition(layout: ManualLayout, index: number): ManualLayout {
+	const partitions = layout.partitions ?? [];
+	const removed = partitions.find((p) => p.index === index);
+	if (!removed) return layout;
+	return {
+		...layout,
+		partitions: partitions.filter((p) => p.index !== index),
+		deletedPartitions: [...(layout.deletedPartitions ?? []), removed],
+	};
+}
+
+/** Set a row's role by index, returning a new layout. */
+export function withPartitionType(
+	layout: ManualLayout,
+	index: number,
+	type: PartitionType,
+): ManualLayout {
+	return {
+		...layout,
+		partitions: (layout.partitions ?? []).map((p) => (p.index === index ? { ...p, type } : p)),
+	};
+}
