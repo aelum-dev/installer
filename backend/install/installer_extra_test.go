@@ -85,6 +85,76 @@ func TestInstaller_RunCleanup(t *testing.T) {
 	}
 }
 
+// flakyCloseRunner fails the first `failures` cryptsetup calls. It exercises
+// the LUKS close retry without real devices.
+type flakyCloseRunner struct {
+	failures int
+	calls    int
+	output   []byte
+}
+
+func (r *flakyCloseRunner) Run(*primitives.Command) error { return nil }
+func (r *flakyCloseRunner) Output(*primitives.Command) ([]byte, error) {
+	return nil, nil
+}
+func (r *flakyCloseRunner) CombinedOutput(*primitives.Command) ([]byte, error) {
+	r.calls++
+	if r.calls <= r.failures {
+		out := r.output
+		if len(out) == 0 {
+			out = []byte("Device aelum is still in use.")
+		}
+		return out, errors.New("exit status 5")
+	}
+	return nil, nil
+}
+
+func withFastLUKSRetry(t *testing.T) {
+	t.Helper()
+	old := luksCloseRetryDelay
+	luksCloseRetryDelay = 0
+	t.Cleanup(func() { luksCloseRetryDelay = old })
+}
+
+func TestCloseLuksMapperWithRetry_TransientThenSuccess(t *testing.T) {
+	withFastLUKSRetry(t)
+	runner := &flakyCloseRunner{failures: 2}
+	defer primitives.SetCommandRunner(runner)()
+
+	if err := closeLuksMapperWithRetry(); err != nil {
+		t.Fatalf("closeLuksMapperWithRetry() = %v, want nil after retries", err)
+	}
+	if runner.calls != 3 {
+		t.Errorf("close attempts = %d, want 3 (2 transient failures + success)", runner.calls)
+	}
+}
+
+func TestCloseLuksMapperWithRetry_NonTransientFailsFast(t *testing.T) {
+	withFastLUKSRetry(t)
+	runner := &flakyCloseRunner{failures: 10, output: []byte("Device aelum does not exist.")}
+	defer primitives.SetCommandRunner(runner)()
+
+	if err := closeLuksMapperWithRetry(); err == nil {
+		t.Fatal("closeLuksMapperWithRetry() = nil, want the non-transient error")
+	}
+	if runner.calls != 1 {
+		t.Errorf("close attempts = %d, want 1 (no retry for a non-transient error)", runner.calls)
+	}
+}
+
+func TestCloseLuksMapperWithRetry_GivesUp(t *testing.T) {
+	withFastLUKSRetry(t)
+	runner := &flakyCloseRunner{failures: 100}
+	defer primitives.SetCommandRunner(runner)()
+
+	if err := closeLuksMapperWithRetry(); err == nil {
+		t.Fatal("closeLuksMapperWithRetry() = nil, want an error after exhausting retries")
+	}
+	if runner.calls != luksCloseRetryAttempts {
+		t.Errorf("close attempts = %d, want %d", runner.calls, luksCloseRetryAttempts)
+	}
+}
+
 func TestDiscoverPartitions(t *testing.T) {
 	rec := primitivestest.NewRecorder().OnOutput("lsblk",
 		"vda      disk\n"+

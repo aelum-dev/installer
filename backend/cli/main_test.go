@@ -5,11 +5,35 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"aelum-installer/backend/install"
 )
 
 // ============================================================================
 // Test resolveDiskAndStep
 // ============================================================================
+
+// TestInstallStepFlags_NamesExist verifies every single-step flag maps to a step
+// name that install.Steps() actually defines. A typo here used to make
+// --install-system fail with "unknown step".
+func TestInstallStepFlags_NamesExist(t *testing.T) {
+	empty := ""
+	valid := make(map[string]bool)
+	var names []string
+	for _, s := range install.Steps() {
+		valid[s.Name()] = true
+		names = append(names, s.Name())
+	}
+
+	for _, f := range installStepFlags(&empty, &empty, &empty, &empty, &empty, &empty, &empty) {
+		if f.step == "" {
+			continue // full installation
+		}
+		if !valid[f.step] {
+			t.Errorf("flag maps to unknown step %q; valid steps are %v", f.step, names)
+		}
+	}
+}
 
 func TestResolveDiskAndStep_Empty(t *testing.T) {
 	disk, stepName := resolveDiskAndStep()

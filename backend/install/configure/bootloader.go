@@ -1,8 +1,9 @@
 package configure
 
 import (
+	"errors"
 	"fmt"
-	"path/filepath"
+	"io/fs"
 	"regexp"
 	"strconv"
 	"strings"
@@ -80,7 +81,14 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 	if files == "" {
 		return "", "", fmt.Errorf("no %s* files found in %s", shared.KernelFilePrefix, shared.BootMountPoint)
 	}
-	kernel = filepath.Base(strings.Split(files, "\n")[0])
+	// Prefer the kernel this installer actually installed. A reused ESP (dualboot)
+	// can also hold another distribution's kernel, and find(1) lists entries in
+	// filesystem order — picking the wrong one writes a boot entry that points
+	// Aelum's root flags at an unrelated kernel.
+	kernel = shared.PickKernelFile(strings.Split(files, "\n"))
+	if kernel == "" {
+		return "", "", fmt.Errorf("no %s* files found in %s", shared.KernelFilePrefix, shared.BootMountPoint)
+	}
 	base := strings.TrimPrefix(kernel, shared.KernelFilePrefix)
 	initrd = shared.InitrdFilePrefix + base + shared.InitrdFileExtension
 	cmd = primitives.Run("test", "-f", shared.BootMountPoint+"/"+initrd)
@@ -164,7 +172,13 @@ func setDefaultBootEntry(esp, entryID string) error {
 	confPath := esp + "/loader/loader.conf"
 	data, err := primitives.ReadFile(confPath)
 	if err != nil {
-		return fmt.Errorf("failed to read loader.conf: %w", err)
+		// bootctl install creates loader.conf, but --graceful can skip writing
+		// it on unusual firmware/ESP setups. A missing loader.conf is not fatal:
+		// start from empty content and write the default entry + timeout.
+		if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to read loader.conf: %w", err)
+		}
+		data = nil
 	}
 	content := applyLoaderConfDefaults(string(data), entryID)
 	if err := primitives.WriteFile(confPath, content); err != nil {

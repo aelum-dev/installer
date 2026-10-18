@@ -12,17 +12,16 @@ import (
 // "Configuring system" step. It runs in order:
 //
 //  1. Generate fstab
-//  2. Configure bootloader
-//  3. System configuration (hostname, timezone, locale, keymap, NTP, mirrors)
-//  4. greetd + DMS greeter setup
-//  5. Aelum LUKS unlock Plymouth theme (matches the live ISO)
-//  6. zram swap configuration
-//  7. Enable systemd services
+//  2. System configuration (hostname, timezone, locale, keymap, NTP, mirrors)
+//  3. Configure the initramfs HOOKS and regenerate the initramfs images
+//  4. Configure bootloader (must run after the initramfs exists, since the boot
+//     entry references the kernel + initrd it produces)
+//  5. greetd + DMS greeter setup
+//  6. Aelum LUKS unlock Plymouth theme (matches the live ISO)
+//  7. zram swap configuration
+//  8. Enable systemd services
 func Run(ctx *shared.InstallContext) error {
 	if err := GenerateFstab(ctx); err != nil {
-		return err
-	}
-	if err := ConfigureBootloader(ctx); err != nil {
 		return err
 	}
 	if err := ConfigureSystemBase(ctx); err != nil {
@@ -32,7 +31,12 @@ func Run(ctx *shared.InstallContext) error {
 	// ConfigurePlymouth runs unconditionally), and, when LUKS is enabled, the
 	// sd-encrypt hook so the initramfs unlocks the root before mounting it. This
 	// runs before greetd/plymouth so the later plymouth regen preserves the hook.
+	// It also runs before the bootloader so the entry it writes always references
+	// an initrd that has already been generated.
 	if err := configureInitramfs(ctx); err != nil {
+		return err
+	}
+	if err := ConfigureBootloader(ctx); err != nil {
 		return err
 	}
 	if err := ConfigureGreetd(ctx); err != nil {

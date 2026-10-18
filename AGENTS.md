@@ -66,7 +66,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       users/
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
-        configure.go            — Run() step orchestrator (GenerateFstab→bootloader→system→greetd→plymouth→zram→services)
+        configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
         fstab.go                — fstab generation + verification (btrfs/ext4/LVM variants)
         bootloader.go           — systemd-boot install + boot entry (LUKS/LVM-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS

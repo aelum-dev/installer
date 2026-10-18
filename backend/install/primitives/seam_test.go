@@ -95,6 +95,27 @@ func TestCleanupMounts_KillsHolders(t *testing.T) {
 	}
 }
 
+// TestCleanupMounts_KillFailureStillUnmounts verifies a kill failure (the PID
+// exited between fuser and kill) does not skip the unmount. Previously the
+// cleanup returned early, leaving /mnt mounted and breaking a retry.
+func TestCleanupMounts_KillFailureStillUnmounts(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnOutput("fuser", "4242\n").
+		OnArgs([]string{"kill", "-KILL"}, primitivestest.Result{
+			Output: []byte("kill: (4242) - No such process"),
+			Err:    errors.New("exit status 1"),
+		}).
+		OnOutput("umount", "")
+	defer primitives.SetCommandRunner(rec)()
+
+	if err := primitives.CleanupMounts(nil); err != nil {
+		t.Fatalf("CleanupMounts() = %v, want nil when the holder is already gone", err)
+	}
+	if !rec.Called("umount") {
+		t.Error("umount was skipped after a harmless kill failure")
+	}
+}
+
 // TestCleanupMounts_UnmountFails verifies a genuine umount failure is surfaced.
 func TestCleanupMounts_UnmountFails(t *testing.T) {
 	rec := primitivestest.NewRecorder().

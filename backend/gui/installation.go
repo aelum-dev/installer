@@ -69,6 +69,11 @@ func (a *App) StartInstallation() error {
 	if diskID == "" && a.dryRun {
 		diskID = "/dev/loop0"
 	}
+	// Without a disk the CLI prints usage and exits 1, surfacing as an opaque
+	// "installation failed" at 0%. Refuse up front with the real cause.
+	if diskID == "" {
+		return fmt.Errorf("no target disk selected")
+	}
 
 	args := []string{"--install", diskID, "--username", a.userAccount.Username, "--filesystem", a.fileSystem, "--language", a.selectedLanguage}
 	if a.luks {

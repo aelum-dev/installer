@@ -58,6 +58,15 @@ func TestReadPartitionUUID_Error(t *testing.T) {
 	}
 }
 
+func TestReadPartitionUUID_Empty(t *testing.T) {
+	rec := primitivestest.NewRecorder().OnOutput("blkid", "  \n")
+	defer primitives.SetCommandRunner(rec)()
+
+	if _, err := ReadPartitionUUID("/dev/vda2"); err == nil || !strings.Contains(err.Error(), "no filesystem UUID") {
+		t.Fatalf("ReadPartitionUUID() error = %v, want an empty-UUID failure", err)
+	}
+}
+
 // --- NewPartitionInfo / applyRootSetup ---------------------------------------
 
 func TestNewPartitionInfo(t *testing.T) {
@@ -334,6 +343,39 @@ func TestRun_PlainExt4(t *testing.T) {
 	}
 }
 
+func TestRun_ProbesPartitionTableBeforeFormattingESP(t *testing.T) {
+	fakeLsblk(t, lsblkExt4)
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda1"}, "EFI-UUID\n").
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda2"}, "ROOT-UUID\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{DiskID: "/dev/vda", FileSystem: shared.FileSystemExt4}
+	if err := Run(ctx); err != nil {
+		t.Fatalf("Run() = %v", err)
+	}
+
+	probe, format := -1, -1
+	for i, c := range rec.Calls() {
+		switch c.Args[0] {
+		case "partprobe":
+			if probe == -1 {
+				probe = i
+			}
+		case "mkfs.fat":
+			if format == -1 {
+				format = i
+			}
+		}
+	}
+	if probe == -1 || format == -1 {
+		t.Fatalf("partprobe=%d mkfs.fat=%d, want both to run", probe, format)
+	}
+	if probe > format {
+		t.Errorf("partprobe ran at %d, after mkfs.fat at %d; the new partition nodes may not exist yet", probe, format)
+	}
+}
+
 func TestRun_EFIByIndexFallback(t *testing.T) {
 	fakeLsblk(t, lsblkNoFstype)
 	rec := primitivestest.NewRecorder().
@@ -352,7 +394,9 @@ func TestRun_EFIByIndexFallback(t *testing.T) {
 
 func TestRun_NoEFIPartition(t *testing.T) {
 	fakeLsblk(t, lsblkNoEFI)
-	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda2"}, "ROOT-UUID\n")
+	defer primitives.SetCommandRunner(rec)()
 
 	ctx := &shared.InstallContext{DiskID: "/dev/vda", FileSystem: shared.FileSystemExt4}
 	err := Run(ctx)

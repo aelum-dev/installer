@@ -67,20 +67,35 @@ func calculateZramSizeMiB() int {
 // Service management
 // ============================================================================
 
-var servicesToEnable = []string{"NetworkManager", "greetd", "bluetooth"}
+// requiredServices must be enabled for a usable installed system: without
+// NetworkManager there is no network, and without greetd there is no login.
+var requiredServices = []string{"NetworkManager", "greetd"}
+
+// optionalServices add functionality but must not abort an otherwise complete
+// install when their unit is missing or their enable fails.
+var optionalServices = []string{"bluetooth"}
 
 // EnableServices enables all essential systemd services in the installed system.
 func EnableServices(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
-	for _, svc := range servicesToEnable {
+	for _, svc := range requiredServices {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Enabling service: %s", svc)
 		}
 		output, err := primitives.RunChroot("systemctl", "enable", svc)
 		if err != nil {
 			return fmt.Errorf("failed to enable service %q: %w: %s", svc, err, string(output))
+		}
+	}
+	for _, svc := range optionalServices {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("Enabling service: %s", svc)
+		}
+		output, err := primitives.RunChroot("systemctl", "enable", svc)
+		if err != nil && ctx.Logger != nil {
+			ctx.Logger.Error("Warning: failed to enable optional service %q (non-fatal): %v: %s", svc, err, strings.TrimSpace(string(output)))
 		}
 	}
 	if ctx.Logger != nil {

@@ -292,9 +292,32 @@ func TestSetDefaultBootEntry(t *testing.T) {
 	}
 }
 
-func TestSetDefaultBootEntry_Missing(t *testing.T) {
+func TestSetDefaultBootEntry_CreatesWhenMissing(t *testing.T) {
 	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
-	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	fs := primitivestest.NewMemFS()
+	defer primitives.SetFileSystem(fs)()
+
+	// bootctl install --graceful can skip loader.conf on unusual firmware/ESP
+	// setups. A missing file must not abort the install; write a fresh one.
+	if err := setDefaultBootEntry(shared.BootMountPoint, "aelum.conf"); err != nil {
+		t.Fatalf("setDefaultBootEntry() = %v, want nil", err)
+	}
+	got, ok := fs.Read(shared.BootMountPoint + "/loader/loader.conf")
+	if !ok {
+		t.Fatal("loader.conf was not created")
+	}
+	for _, want := range []string{"default aelum.conf", "timeout 0"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("loader.conf missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestSetDefaultBootEntry_ReadError(t *testing.T) {
+	const confPath = shared.BootMountPoint + "/loader/loader.conf"
+	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
+	fs := primitivestest.NewMemFS().WithReadError(confPath, errors.New("input/output error"))
+	defer primitives.SetFileSystem(fs)()
 
 	err := setDefaultBootEntry(shared.BootMountPoint, "aelum.conf")
 	if err == nil || !strings.Contains(err.Error(), "failed to read loader.conf") {
@@ -433,7 +456,7 @@ func TestEnableServices(t *testing.T) {
 	if err := EnableServices(&shared.InstallContext{}); err != nil {
 		t.Fatalf("EnableServices() = %v, want nil", err)
 	}
-	for _, svc := range servicesToEnable {
+	for _, svc := range append(append([]string{}, requiredServices...), optionalServices...) {
 		if !hasCall(rec.CallsFor("arch-chroot"), "arch-chroot", shared.MountRoot, "systemctl", "enable", svc) {
 			t.Errorf("service %q not enabled: %v", svc, rec.CallsFor("arch-chroot"))
 		}
@@ -445,6 +468,15 @@ func TestEnableServices(t *testing.T) {
 	defer primitives.SetCommandRunner(rec2)()
 	if err := EnableServices(&shared.InstallContext{}); err == nil || !strings.Contains(err.Error(), "greetd") {
 		t.Fatalf("EnableServices() error = %v, want a greetd failure", err)
+	}
+
+	// An optional service (bluetooth) failing must not abort the install.
+	rec3 := primitivestest.NewRecorder().
+		OnOutput("findmnt", "/dev/vda2\n").
+		OnArgsError([]string{"arch-chroot", shared.MountRoot, "systemctl", "enable", "bluetooth"}, errors.New("exit status 1"))
+	defer primitives.SetCommandRunner(rec3)()
+	if err := EnableServices(&shared.InstallContext{}); err != nil {
+		t.Fatalf("EnableServices() = %v, want nil when an optional service fails", err)
 	}
 }
 
@@ -516,10 +548,52 @@ func TestConfigureSystemBase_LocaleNotInGen(t *testing.T) {
 	fs := primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/locale.gen", "#de_DE.UTF-8 UTF-8\n")
 	defer primitives.SetFileSystem(fs)()
 
+	// A locale.gen without the locale must not abort the install after the
+	// (long) pacstrap steps: append the UTF-8 line and let locale-gen verify it.
 	ctx := &shared.InstallContext{Username: "alice", Hostname: "aelum", Region: shared.Regions["en_US"]}
-	err := ConfigureSystemBase(ctx)
-	if err == nil || !strings.Contains(err.Error(), "not found") {
-		t.Fatalf("error = %v, want locale-not-found", err)
+	if err := ConfigureSystemBase(ctx); err != nil {
+		t.Fatalf("ConfigureSystemBase() = %v, want nil", err)
+	}
+	got, _ := fs.Read(shared.MountRoot + "/etc/locale.gen")
+	if !strings.Contains(got, "en_US.UTF-8 UTF-8") {
+		t.Errorf("locale.gen missing appended locale: %q", got)
+	}
+}
+
+func TestConfigureSystemBase_AlreadyEnabledLocale(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	fs := primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/locale.gen", "en_US.UTF-8 UTF-8\n#de_DE.UTF-8 UTF-8\n")
+	defer primitives.SetFileSystem(fs)()
+
+	ctx := &shared.InstallContext{Username: "alice", Hostname: "aelum", Region: shared.Regions["en_US"]}
+	if err := ConfigureSystemBase(ctx); err != nil {
+		t.Fatalf("ConfigureSystemBase() = %v, want nil for an already-enabled locale", err)
+	}
+	got, _ := fs.Read(shared.MountRoot + "/etc/locale.gen")
+	if strings.Count(got, "en_US.UTF-8 UTF-8") != 1 {
+		t.Errorf("locale.gen should contain the locale exactly once: %q", got)
+	}
+}
+
+func TestEnableLocale_Forms(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{"commented no space", "#en_US.UTF-8 UTF-8\n", "en_US.UTF-8 UTF-8\n"},
+		{"commented with space", "# en_US.UTF-8 UTF-8\n", "en_US.UTF-8 UTF-8\n"},
+		{"already enabled", "en_US.UTF-8 UTF-8\n", "en_US.UTF-8 UTF-8\n"},
+		{"appended when absent", "#de_DE.UTF-8 UTF-8\n", "#de_DE.UTF-8 UTF-8\nen_US.UTF-8 UTF-8\n"},
+		{"similar locale untouched", "#en_US.ISO-8859-1 ISO-8859-1\n", "#en_US.ISO-8859-1 ISO-8859-1\nen_US.UTF-8 UTF-8\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := enableLocale(tt.content, "en_US.UTF-8"); got != tt.want {
+				t.Errorf("enableLocale() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

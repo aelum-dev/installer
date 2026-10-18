@@ -65,7 +65,7 @@ func TestUncommentMirrors_RealMirrorList(t *testing.T) {
 func TestServicesToEnable(t *testing.T) {
 	want := map[string]bool{"NetworkManager": false, "greetd": false, "bluetooth": false}
 	seen := map[string]bool{}
-	for _, svc := range servicesToEnable {
+	for _, svc := range append(append([]string{}, requiredServices...), optionalServices...) {
 		if seen[svc] {
 			t.Errorf("duplicate service %q", svc)
 		}

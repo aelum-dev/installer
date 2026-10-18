@@ -78,6 +78,21 @@ func TestSetupBtrfsSubvolumes_Success(t *testing.T) {
 	}
 }
 
+func TestSetupBtrfsSubvolumes_UnmountFails(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"btrfs", "subvolume", "list"}, listOutput).
+		OnArgs([]string{"umount"}, primitivestest.Result{
+			Output: []byte("umount: /tmp/btrfs-setup: target is busy"),
+			Err:    errors.New("exit status 32"),
+		})
+	defer primitives.SetCommandRunner(rec)()
+
+	err := SetupBtrfsSubvolumes(&shared.InstallContext{}, "/dev/vda2", shared.GetBtrfsSubvolumes())
+	if err == nil || !strings.Contains(err.Error(), "unmount btrfs top-level") {
+		t.Fatalf("SetupBtrfsSubvolumes() error = %v, want unmount failure", err)
+	}
+}
+
 func TestSetupBtrfsSubvolumes_MountFails(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsError([]string{"mount", "-o"}, errors.New("exit status 32"))

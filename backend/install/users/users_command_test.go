@@ -7,6 +7,7 @@ import (
 
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/install/primitives/primitivestest"
+	"aelum-installer/backend/shared"
 )
 
 // TestExecuteCopyJobs_RunsEveryJob verifies every ISO copy job produces a mkdir
@@ -50,6 +51,48 @@ func TestExecuteCopyJobs_MkdirFailure(t *testing.T) {
 	}
 	if rec.Called("cp") {
 		t.Error("cp ran even though mkdir failed")
+	}
+}
+
+// TestExecuteCopyJobs_SkipsMissingOptionalSource verifies a cosmetic file that
+// is absent from the live ISO is skipped instead of aborting the install.
+func TestExecuteCopyJobs_SkipsMissingOptionalSource(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsError([]string{"test", "-e", shared.WallpaperSourceDark}, errors.New("missing"))
+	defer primitives.SetCommandRunner(rec)()
+
+	if err := ExecuteCopyJobs(); err != nil {
+		t.Fatalf("ExecuteCopyJobs() = %v, want nil for a missing optional file", err)
+	}
+	for _, argv := range rec.CallsFor("cp") {
+		if len(argv) >= 2 && argv[len(argv)-2] == shared.WallpaperSourceDark {
+			t.Error("cp ran for a source that does not exist")
+		}
+	}
+}
+
+// TestExecuteCopyJobs_MissingRequiredSourceFails verifies a required file (the
+// skel dotfiles) still fails loudly when the ISO does not ship it.
+func TestExecuteCopyJobs_MissingRequiredSourceFails(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsError([]string{"test", "-e", "/etc/skel/."}, errors.New("missing"))
+	defer primitives.SetCommandRunner(rec)()
+
+	err := ExecuteCopyJobs()
+	if err == nil || !strings.Contains(err.Error(), "copy job") || !strings.Contains(err.Error(), "required file missing") {
+		t.Fatalf("ExecuteCopyJobs() error = %v, want a required-file failure", err)
+	}
+}
+
+// TestExecuteCopyJobs_CopyFailureOfOptionalFileFails verifies an optional file
+// that exists but cannot be copied is still a real error (the optional flag
+// only covers absence, not copy failures).
+func TestExecuteCopyJobs_CopyFailureOfOptionalFileFails(t *testing.T) {
+	rec := primitivestest.NewRecorder().OnArgsError([]string{"cp"}, errors.New("exit status 1"))
+	defer primitives.SetCommandRunner(rec)()
+
+	if err := ExecuteCopyJobs(); err == nil {
+		t.Fatal("ExecuteCopyJobs() = nil, want a copy failure")
 	}
 }
 

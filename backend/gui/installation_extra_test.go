@@ -54,6 +54,18 @@ func TestFindCLIBinary_FallsBackToPath(t *testing.T) {
 	}
 }
 
+// TestStartInstallation_NoDisk verifies the GUI refuses to start a real
+// (non-dry-run) install without a target disk instead of spawning a CLI that
+// exits immediately with usage text.
+func TestStartInstallation_NoDisk(t *testing.T) {
+	a := NewApp(false)
+
+	err := a.StartInstallation()
+	if err == nil || !strings.Contains(err.Error(), "no target disk selected") {
+		t.Fatalf("StartInstallation() error = %v, want no-disk rejection", err)
+	}
+}
+
 func TestStartInstallation_AlreadyRunning(t *testing.T) {
 	a := NewApp(true)
 	a.installationRunning.Store(true)

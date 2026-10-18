@@ -44,10 +44,7 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to read locale.gen: %w", err)
 	}
-	localeGenContent := strings.Replace(string(data), "#"+region.Locale, region.Locale, 1)
-	if localeGenContent == string(data) {
-		return fmt.Errorf("locale %q not found (commented out) in /etc/locale.gen; cannot generate it", region.Locale)
-	}
+	localeGenContent := enableLocale(string(data), region.Locale)
 	if err := primitives.WriteFile("/etc/locale.gen", localeGenContent); err != nil {
 		return err
 	}
@@ -155,6 +152,51 @@ func configureInitramfs(ctx *shared.InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 	return nil
+}
+
+// enableLocale makes sure locale is enabled (uncommented) in the target's
+// /etc/locale.gen. It accepts the standard forms of the file:
+//
+//	#en_US.UTF-8 UTF-8      (commented, no space)
+//	# en_US.UTF-8 UTF-8     (commented, with space)
+//	en_US.UTF-8 UTF-8       (already enabled)
+//
+// An already-enabled locale is left untouched. When the file has no entry for
+// the locale at all, a UTF-8 line is appended rather than aborting the install:
+// locale-gen will then either generate it or report the real problem. The
+// installer must not fail at ~90% over a cosmetic mismatch in locale.gen.
+func enableLocale(content, locale string) string {
+	lines := strings.Split(content, "\n")
+	found := false
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		commented := strings.HasPrefix(trimmed, "#")
+		body := strings.TrimSpace(strings.TrimPrefix(trimmed, "#"))
+		fields := strings.Fields(body)
+		if len(fields) == 0 || fields[0] != locale {
+			continue
+		}
+		found = true
+		if commented {
+			lines[i] = body
+		}
+		break
+	}
+	if !found {
+		newLine := locale + " UTF-8"
+		// Keep the file's trailing newline: append before the empty element that
+		// a trailing "\n" produces, then restore it.
+		if n := len(lines); n > 0 && lines[n-1] == "" {
+			lines[n-1] = newLine
+			lines = append(lines, "")
+		} else {
+			lines = append(lines, newLine)
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func uncommentMirrors(content string) string {

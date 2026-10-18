@@ -109,12 +109,10 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		}
 	}
 
-	// Format EFI
-	if err := FormatPartition(shared.DerivePartitionPath(diskID, 1), shared.FileSystemVfat, "EFI"); err != nil {
-		return err
-	}
-
-	// Refresh kernel partition table
+	// Refresh the kernel partition table before touching any partition node.
+	// sgdisk issues BLKRRPART, but the /dev entries are created asynchronously
+	// by udev; partprobe waits for the kernel/udev to expose the new partitions.
+	// Formatting /dev/vda1 before that can fail with "No such file or directory".
 	cmd = primitives.Run("partprobe", diskID)
 	probeOut, probeErr := cmd.CombinedOutput()
 	if probeErr != nil {
@@ -122,6 +120,11 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 			ctx.Logger.Error("partprobe failed: %v (%s)", probeErr, string(probeOut))
 		}
 		return fmt.Errorf("partprobe: %w", probeErr)
+	}
+
+	// Format EFI
+	if err := FormatPartition(shared.DerivePartitionPath(diskID, 1), shared.FileSystemVfat, "EFI"); err != nil {
+		return err
 	}
 
 	part2 := shared.DerivePartitionPath(diskID, 2)
@@ -461,6 +464,14 @@ func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolume
 		}
 	}
 
+	// Unmount explicitly so a failure is reported (a leaked temp mount would
+	// keep the device busy for the mount/cleanup steps). The deferred unmount
+	// above remains as a safety net for the early-error returns.
+	if out, err := primitives.Run("umount", tmp).CombinedOutput(); err != nil {
+		if !strings.Contains(strings.ToLower(string(out)), "not mounted") {
+			return fmt.Errorf("unmount btrfs top-level %s: %w: %s", tmp, err, strings.TrimSpace(string(out)))
+		}
+	}
 	_ = primitives.Run("rmdir", tmp).Run()
 	return nil
 }
@@ -497,14 +508,20 @@ func findPartitionsByIndex(parts []shared.PartitionEntry) (*shared.PartitionEntr
 }
 
 // ReadPartitionUUID returns the filesystem UUID of a device (via blkid),
-// trimmed of surrounding whitespace.
+// trimmed of surrounding whitespace. An empty UUID is treated as an error: a
+// device without one cannot be referenced by fstab or the boot entry, and
+// silently returning "" would defer the failure to a much later step.
 func ReadPartitionUUID(partition string) (string, error) {
 	cmd := primitives.Run("blkid", "-s", "UUID", "-o", "value", partition)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("blkid %s: %w", partition, err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	uuid := strings.TrimSpace(string(out))
+	if uuid == "" {
+		return "", fmt.Errorf("blkid %s returned no filesystem UUID (format may have failed)", partition)
+	}
+	return uuid, nil
 }
 
 // partitionTypes returns a human-readable list of partition types found on the disk.

@@ -50,6 +50,22 @@ func TestCheckKernelImages_Success(t *testing.T) {
 	}
 }
 
+func TestCheckKernelImages_PrefersAelumKernelOnSharedESP(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"find", shared.BootMountPoint}, "vmlinuz-linux\nvmlinuz-linux-lts\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	var issues, info []string
+	checkKernelImages(&shared.InstallContext{}, &issues, &info)
+	if len(issues) != 0 {
+		t.Fatalf("issues = %v, want none", issues)
+	}
+	joined := strings.Join(info, "\n")
+	if !strings.Contains(joined, "vmlinuz-linux-lts") || !strings.Contains(joined, "initramfs-linux-lts.img") {
+		t.Errorf("info = %v, want the Aelum kernel and its initrd", info)
+	}
+}
+
 func TestCheckKernelImages_NoKernel(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"find", shared.BootMountPoint}, "")

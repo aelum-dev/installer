@@ -2,7 +2,9 @@ package installbase
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -84,7 +86,9 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 	}
 
 	var stderrBuf strings.Builder
+	stderrDone := make(chan struct{})
 	go func() {
+		defer close(stderrDone)
 		buf := bufio.NewReader(stderr)
 		for {
 			line, err := buf.ReadString('\n')
@@ -104,47 +108,62 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 	// Track progress across pacstrap's multiple phases.
 	tracker := progress.NewPacstrapProgressTracker()
 
-	// Large buffer for the "Packages (N) pkg1 pkg2 ..." line which can exceed
-	// the default 64KB scanner buffer when installing many packages.
-	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-
-	// Run scanner in a goroutine so we can select on ctx.cancel for clean
-	// interrupt handling. Without this, SIGINT would leave the scanner
-	// blocked on Read() until pacstrap exits on its own.
+	// Scan stdout with a bufio.Reader instead of bufio.Scanner: pacstrap's
+	// "Packages (N) pkg1 pkg2 ..." line grows with the package list, and Scanner
+	// aborts on a token larger than its buffer. That would stop draining the
+	// pipe, leaving pacstrap blocked on a full stdout pipe forever.
 	scanDone := make(chan struct{})
 	var scanErr error
 	go func() {
-		for scanner.Scan() {
-			line := scanner.Text()
+		defer close(scanDone)
+		reader := bufio.NewReaderSize(stdout, 64*1024)
+		for {
+			line, err := reader.ReadString('\n')
+			if line != "" {
+				line = strings.TrimSuffix(line, "\n")
+				line = strings.TrimSuffix(line, "\r")
 
-			// Process all line types: Packages count, downloading, verifying,
-			// installing, and (N/M) hook progress.
-			pct := tracker.ProcessLine(line)
-			if ctx.ProgressCallback != nil {
-				ctx.ProgressCallback(pct)
+				// Process all line types: Packages count, downloading, verifying,
+				// installing, and (N/M) hook progress.
+				pct := tracker.ProcessLine(line)
+				if ctx.ProgressCallback != nil {
+					ctx.ProgressCallback(pct)
+				}
+
+				// Command output appends to the progress line via => prefix.
+				if ctx.Logger != nil {
+					ctx.Logger.Command(line)
+				}
 			}
-
-			// Command output appends to the progress line via => prefix.
-			if ctx.Logger != nil {
-				ctx.Logger.Command(line)
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					scanErr = err
+				}
+				return
 			}
 		}
-		scanErr = scanner.Err()
-		close(scanDone)
 	}()
 
 	select {
 	case <-scanDone:
 		if scanErr != nil {
+			// Stop the child: with its stdout reader gone it could block on a
+			// full pipe and never exit.
+			_ = cmd.Process.Kill()
+		}
+		// Wait for the stderr reader to finish before reading stderrBuf: the
+		// strings.Builder it writes is not safe for concurrent access.
+		<-stderrDone
+		waitErr := cmd.Wait()
+		if scanErr != nil {
 			return fmt.Errorf("pacstrap stdout scan: %w", scanErr)
 		}
-		if err := cmd.Wait(); err != nil {
+		if waitErr != nil {
 			errMsg := strings.TrimSpace(stderrBuf.String())
 			if errMsg != "" {
 				return fmt.Errorf("pacstrap failed:\n%s", errMsg)
 			}
-			return fmt.Errorf("pacstrap failed: %w", err)
+			return fmt.Errorf("pacstrap failed: %w", waitErr)
 		}
 		return nil
 	case <-ctx.Cancel:
@@ -152,6 +171,7 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 		// Cleanup is handled by the Installer's defer, not here.
 		_ = cmd.Process.Kill()
 		<-scanDone
+		<-stderrDone
 		// Reap the killed child so it does not linger as a zombie.
 		_ = cmd.Wait()
 		return fmt.Errorf("interrupted")

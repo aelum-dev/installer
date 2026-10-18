@@ -138,6 +138,18 @@ func TestRun_CopyJobsFail(t *testing.T) {
 	}
 }
 
+func TestRun_DconfUpdateFailureIsNonFatal(t *testing.T) {
+	rec := mountedRunner().OnArgsError([]string{"arch-chroot", shared.MountRoot, "dconf"}, errors.New("dconf: not found"))
+	defer primitives.SetCommandRunner(rec)()
+	defer primitives.SetFileSystem(mountedFS())()
+
+	// dconf is only a transitive desktop dependency; losing it must not abort
+	// the install after both pacstrap steps have completed.
+	if err := Run(&shared.InstallContext{Username: "alice", Password: []byte("secret")}); err != nil {
+		t.Fatalf("Run() = %v, want nil when dconf update fails", err)
+	}
+}
+
 // hasArgv reports whether calls contains argv exactly.
 func hasArgv(calls [][]string, want ...string) bool {
 	for _, argv := range calls {

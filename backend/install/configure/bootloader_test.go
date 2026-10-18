@@ -146,6 +146,25 @@ func TestDiscoverKernelFiles_Success(t *testing.T) {
 	}
 }
 
+func TestDiscoverKernelFiles_PrefersAelumKernelOnSharedESP(t *testing.T) {
+	// A reused ESP can also hold another distribution's kernel. The Aelum
+	// kernel must win even when find(1) lists the other one first.
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"find", shared.BootMountPoint}, "vmlinuz-linux\nvmlinuz-linux-lts\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	kernel, initrd, err := discoverKernelFiles()
+	if err != nil {
+		t.Fatalf("discoverKernelFiles() = %v, want nil", err)
+	}
+	if kernel != "vmlinuz-linux-lts" {
+		t.Errorf("kernel = %q, want vmlinuz-linux-lts (not the other ESP kernel)", kernel)
+	}
+	if initrd != "initramfs-linux-lts.img" {
+		t.Errorf("initrd = %q, want initramfs-linux-lts.img", initrd)
+	}
+}
+
 func TestDiscoverKernelFiles_UsesFirstLineAndFallbackInitrd(t *testing.T) {
 	// The main initrd check fails; the -fallback one succeeds.
 	rec := primitivestest.NewRecorder().

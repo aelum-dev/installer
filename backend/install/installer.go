@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -467,13 +468,54 @@ func (inst *Installer) RunCleanup() {
 		}
 		// Close the LUKS mapper (if any) so a failed install can be retried
 		// without a leaked dm device. Best-effort — a closed mapper errors.
+		// Retried briefly because udev/blkid can hold the device for a moment
+		// right after the unmount, and "Device or resource busy" would leave the
+		// mapper open, making the next attempt's luksFormat fail with EBUSY.
 		if inst.luks {
-			if err := luks.LuksClose(shared.LuksMapperName); err != nil && inst.Logger != nil {
+			if err := closeLuksMapperWithRetry(); err != nil && inst.Logger != nil {
 				inst.logInfo("Cleanup: LUKS mapper close (non-fatal): %v", err)
 			}
 		}
 		inst.logInfo("Cleanup: done")
 	})
+}
+
+// luksCloseRetryDelay is the wait between close attempts. A variable so tests
+// can shorten it.
+var luksCloseRetryDelay = 200 * time.Millisecond
+
+// luksCloseRetryAttempts is how many times the root mapper close is attempted.
+const luksCloseRetryAttempts = 5
+
+// closeLuksMapperWithRetry closes the root LUKS mapper, retrying while the
+// device is transiently busy. Non-transient errors (e.g. "not active") are
+// returned immediately so cleanup stays fast.
+func closeLuksMapperWithRetry() error {
+	var err error
+	for attempt := 0; attempt < luksCloseRetryAttempts; attempt++ {
+		if err = luks.LuksClose(shared.LuksMapperName); err == nil {
+			return nil
+		}
+		if !isTransientCloseError(err) {
+			return err
+		}
+		if attempt < luksCloseRetryAttempts-1 {
+			time.Sleep(luksCloseRetryDelay)
+		}
+	}
+	return err
+}
+
+// isTransientCloseError reports whether a cryptsetup close failure is worth
+// retrying: the mapper still has a holder that is about to go away.
+func isTransientCloseError(err error) bool {
+	msg := strings.ToLower(err.Error())
+	for _, s := range []string{"in use", "busy", "resource temporarily unavailable"} {
+		if strings.Contains(msg, s) {
+			return true
+		}
+	}
+	return false
 }
 
 // Interrupted reports whether SIGINT was received during installation.

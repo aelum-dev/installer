@@ -260,7 +260,13 @@ func CleanupMounts(logger shared.Logger) error {
 
 	if len(pids) > 0 {
 		if err := killAndVerifyPIDs(pids); err != nil {
-			return fmt.Errorf("kill PIDs %s: %w", strings.Join(pids, ", "), err)
+			// A holder can exit between fuser and kill. Killing is
+			// best-effort: failing to signal a dead PID must never prevent
+			// the unmount below (that would leave /mnt mounted and make the
+			// next install attempt fail with EBUSY).
+			if logger != nil {
+				logger.Error("Cleanup: could not kill all holders (continuing): %v", err)
+			}
 		}
 	}
 
@@ -290,11 +296,14 @@ func findHoldingPIDs(mountPoint string) ([]string, error) {
 
 func killAndVerifyPIDs(pids []string) error {
 	for _, pid := range pids {
-		if err := Run("kill", "-KILL", pid).Run(); err != nil {
-			if strings.Contains(err.Error(), "No such process") {
+		out, err := Run("kill", "-KILL", pid).CombinedOutput()
+		if err != nil {
+			// The process may have exited between fuser(1) and kill(1). That is
+			// success for cleanup purposes; only a real kill failure is reported.
+			if isHarmlessKillError(out) {
 				continue
 			}
-			return fmt.Errorf("kill -KILL %s: %w", pid, err)
+			return fmt.Errorf("kill -KILL %s: %w: %s", pid, err, strings.TrimSpace(string(out)))
 		}
 		for i := 0; i < 50; i++ {
 			if err := Run("kill", "-0", pid).Run(); err != nil {
@@ -304,6 +313,18 @@ func killAndVerifyPIDs(pids []string) error {
 		}
 	}
 	return nil
+}
+
+// isHarmlessKillError reports whether a kill(1) failure is safe to ignore: the
+// target PID is already gone. kill prints "No such process" to stderr; when a
+// runner discards stderr (or a thin kill implementation returns a bare status),
+// there is no diagnostic and the unmount that follows is the real test.
+func isHarmlessKillError(output []byte) bool {
+	msg := strings.ToLower(string(output))
+	if strings.TrimSpace(msg) == "" {
+		return true
+	}
+	return strings.Contains(msg, "no such process") || strings.Contains(msg, "no process")
 }
 
 func unmountRecursive(mountPoint string) error {

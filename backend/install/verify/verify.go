@@ -2,7 +2,6 @@ package verify
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -232,7 +231,14 @@ func checkKernelImages(ctx *shared.InstallContext, issues, info *[]string) {
 		*issues = append(*issues, "no kernel (vmlinuz-*) image found in "+shared.BootMountPoint)
 		return
 	}
-	kernel := filepath.Base(strings.Split(files, "\n")[0])
+	// Match the bootloader step's choice: prefer the kernel the installer
+	// installed, so a reused ESP with another distribution's kernel still
+	// verifies the image the boot entry actually references.
+	kernel := shared.PickKernelFile(strings.Split(files, "\n"))
+	if kernel == "" {
+		*issues = append(*issues, "no kernel (vmlinuz-*) image found in "+shared.BootMountPoint)
+		return
+	}
 	*info = append(*info, "kernel image: "+kernel)
 
 	// Verify the matching initrd exists (try the standard name, then -fallback).

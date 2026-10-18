@@ -70,6 +70,19 @@ func TestInstallPackages_Success(t *testing.T) {
 	}
 }
 
+// TestInstallPackages_LongOutputLine verifies a package-list line larger than
+// bufio.Scanner's default maximum is consumed without stalling the install.
+// The old Scanner buffer aborted with ErrTooLong and stopped draining the pipe,
+// which could leave pacstrap blocked on a full stdout pipe.
+func TestInstallPackages_LongOutputLine(t *testing.T) {
+	fakePacstrap(t, `printf ':: Packages (2) '; head -c 2000000 /dev/zero | tr '\0' 'a'; echo; echo "installing base..."; exit 0`)
+	mounted(t)
+
+	if err := InstallPackages(&shared.InstallContext{}, []string{"base"}, "base system"); err != nil {
+		t.Fatalf("InstallPackages() = %v, want nil for a long output line", err)
+	}
+}
+
 // TestRun_PacstrapArgs verifies Run drives pacstrap with the offline flag, the
 // install root, and the base package list.
 func TestRun_PacstrapArgs(t *testing.T) {

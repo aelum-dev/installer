@@ -1,6 +1,7 @@
 package users
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -18,26 +19,51 @@ type CopyJob struct {
 	Source string
 	Dest   string
 	Flags  []string
+	// Optional marks a cosmetic/branding file: if the live ISO does not ship it,
+	// the copy is skipped with a warning instead of aborting the install. Files
+	// without Optional are required (e.g. /etc/skel, the greeter config): a
+	// missing one means the installed desktop would be broken, so the step fails
+	// loudly.
+	Optional bool
 }
 
 // ISOCopyJobs lists all files to copy from the live ISO to the installed system.
 var ISOCopyJobs = []CopyJob{
 	{Source: "/etc/skel/.", Dest: "/mnt/etc/skel/", Flags: []string{"-a"}},
-	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}},
-	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}},
-	{Source: "/etc/dconf/db/local.d/02-nautilus-terminal", Dest: "/mnt/etc/dconf/db/local.d/02-nautilus-terminal", Flags: []string{"-a"}}, // nautilus-open-any-terminal: default terminal=kitty
-	{Source: "/etc/os-release", Dest: "/mnt/etc/os-release", Flags: []string{}},                                                           // Aelum branding, overwrites the archlinux-release default
-	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}},
+	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}, Optional: true},
+	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}, Optional: true},
+	{Source: "/etc/dconf/db/local.d/02-nautilus-terminal", Dest: "/mnt/etc/dconf/db/local.d/02-nautilus-terminal", Flags: []string{"-a"}, Optional: true}, // nautilus-open-any-terminal: default terminal=kitty
+	{Source: "/etc/os-release", Dest: "/mnt/etc/os-release", Flags: []string{}, Optional: true},                                                           // Aelum branding, overwrites the archlinux-release default
+	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}, Optional: true},
 	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
-	{Source: "/usr/lib/firefox/distribution/policies.json", Dest: "/mnt/usr/lib/firefox/distribution/policies.json", Flags: []string{}},
-	{Source: shared.WallpaperSourceDark, Dest: "/mnt" + shared.WallpaperSourceDark, Flags: []string{}},
-	{Source: shared.WallpaperSourceLight, Dest: "/mnt" + shared.WallpaperSourceLight, Flags: []string{}},
+	{Source: "/usr/lib/firefox/distribution/policies.json", Dest: "/mnt/usr/lib/firefox/distribution/policies.json", Flags: []string{}, Optional: true},
+	{Source: shared.WallpaperSourceDark, Dest: "/mnt" + shared.WallpaperSourceDark, Flags: []string{}, Optional: true},
+	{Source: shared.WallpaperSourceLight, Dest: "/mnt" + shared.WallpaperSourceLight, Flags: []string{}, Optional: true},
 }
 
 // ExecuteCopyJobs copies all static files from the live ISO to the installed system.
 func ExecuteCopyJobs() error {
+	return executeCopyJobs(nil)
+}
+
+// executeCopyJobs is ExecuteCopyJobs with a logger for skipped optional files.
+func executeCopyJobs(logger shared.Logger) error {
 	var errs []error
 	for _, job := range ISOCopyJobs {
+		// A source missing from the live ISO is a different failure from a failed
+		// copy: for optional branding files it is simply skipped, so a missing
+		// wallpaper or Firefox policy cannot abort a nearly complete install.
+		if !isoSourceExists(job.Source) {
+			if job.Optional {
+				if logger != nil {
+					logger.Error("Warning: optional file missing from the live ISO, skipping: %s", job.Source)
+				}
+				continue
+			}
+			errs = append(errs, fmt.Errorf("required file missing from the live ISO: %s", job.Source))
+			continue
+		}
+
 		parentDir := filepath.Dir(job.Dest)
 		if _, err := primitives.Run("mkdir", "-p", parentDir).CombinedOutput(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to create dir %s: %w", parentDir, err))
@@ -54,13 +80,18 @@ func ExecuteCopyJobs() error {
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("%d copy job(s) failed", len(errs))
+		return fmt.Errorf("%d copy job(s) failed: %w", len(errs), errors.Join(errs...))
 	}
 	return nil
 }
 
-func copyISOFiles() error {
-	return ExecuteCopyJobs()
+// isoSourceExists reports whether a copy job's source exists on the live ISO.
+func isoSourceExists(path string) bool {
+	return primitives.Run("test", "-e", path).Run() == nil
+}
+
+func copyISOFiles(logger shared.Logger) error {
+	return executeCopyJobs(logger)
 }
 
 // ============================================================================
@@ -133,13 +164,20 @@ func Run(ctx *shared.InstallContext) error {
 	var output []byte
 	var err error
 
-	if err := copyISOFiles(); err != nil {
+	if err := copyISOFiles(ctx.Logger); err != nil {
 		return err
 	}
 
+	// Compile the dconf databases copied from the ISO. This is best-effort: if
+	// the dconf binary is not present (it is only a transitive dependency of the
+	// desktop packages), the copied keyfiles are inert and the desktop still
+	// works with its defaults. A malformed keyfile is surfaced as a warning too,
+	// rather than aborting a nearly complete install.
 	output, err = primitives.RunChroot("dconf", "update")
 	if err != nil {
-		return fmt.Errorf("failed to compile dconf: %w: %s", err, string(output))
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Warning: dconf update failed (non-fatal): %v: %s", err, strings.TrimSpace(string(output)))
+		}
 	}
 
 	output, err = primitives.RunChroot("useradd", "-m", "-G", "wheel", "--", ctx.Username)

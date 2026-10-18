@@ -145,15 +145,15 @@ func run(args []string) int {
 	}
 
 	// Determine which flag was provided (first one wins).
-	disk, stepName := resolveDiskAndStep(
-		stepFlag{installFlag, ""},
-		stepFlag{formatDiskFlag, "format_disk"},
-		stepFlag{mountFsFlag, "mount_filesystem"},
-		stepFlag{installSystemFlag, "install"},
-		stepFlag{setupUsersFlag, "setup_users"},
-		stepFlag{configureSysFlag, "configure_system"},
-		stepFlag{verifySystemFlag, "verify_system"},
-	)
+	disk, stepName := resolveDiskAndStep(installStepFlags(
+		installFlag,
+		formatDiskFlag,
+		mountFsFlag,
+		installSystemFlag,
+		setupUsersFlag,
+		configureSysFlag,
+		verifySystemFlag,
+	)...)
 
 	if disk == "" {
 		printUsage()
@@ -410,6 +410,22 @@ func main() {
 type stepFlag struct {
 	disk *string
 	step string
+}
+
+// installStepFlags returns the single-step flags in priority order, each paired
+// with the internal step name it selects. The names MUST match install.Steps();
+// an unknown name makes the CLI fail with "unknown step" before doing any work
+// (TestInstallStepFlags_NamesExist guards this).
+func installStepFlags(installFlag, formatDiskFlag, mountFsFlag, installSystemFlag, setupUsersFlag, configureSysFlag, verifySystemFlag *string) []stepFlag {
+	return []stepFlag{
+		{installFlag, ""}, // full installation
+		{formatDiskFlag, "format_disk"},
+		{mountFsFlag, "mount_filesystem"},
+		{installSystemFlag, "install_base"},
+		{setupUsersFlag, "setup_users"},
+		{configureSysFlag, "configure_system"},
+		{verifySystemFlag, "verify_system"},
+	}
 }
 
 // resolveDiskAndStep returns the disk path and internal step name of the first
