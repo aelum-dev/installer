@@ -5,7 +5,7 @@ Graphical Arch Linux installer. **Wails v2** (Go backend + Svelte 5 frontend). A
 
 ## Connection to the Aelum ISO repo
 
-This repo is the **installer**; the [Aelum](https://gitlab.com/aelum/Aelum) repo builds the **live ISO**. They are two halves of one product:
+This repo is the **installer**; the [Aelum](https://github.com/aelum-dev/live-iso) repo builds the **live ISO**. They are two halves of one product:
 
 - The ISO is barebones — on boot, greetd starts a minimal Hyprland that auto-launches `aelum-installer`.
 - Built binaries are baked into the ISO at `airootfs/usr/local/bin/` (`aelum-installer`, `aelum-installer-cli`), via `BIN_DIR` in `build.sh`.

@@ -1,6 +1,6 @@
 # Aelum Installer
 
-A graphical installer for [Aelum](https://gitlab.com/aelum/live-iso), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
+A graphical installer for [Aelum](https://github.com/aelum-dev/live-iso), an Arch Linux distro. The install works fully offline — no network needed to install it. Built with [Wails v2](https://wails.io/) (Go + Svelte 5).
 
 Just boot the ISO and run the installer — a few clicks in the GUI, no terminal or network needed to install.
 
@@ -48,7 +48,7 @@ Here's how to use it, step by step:
 
 ## Getting started with building
 
-1. Clone this repo and the [Aelum](https://gitlab.com/aelum/live-iso) live-ISO repo (side by side, e.g. `~/Projects/Aelum-Installer` and `~/Projects/Aelum`).
+1. Clone this repo and the [Aelum](https://github.com/aelum-dev/live-iso) live-ISO repo (side by side, e.g. `~/Projects/Aelum-Installer` and `~/Projects/Aelum`).
 2. Build the installer (outputs `build/bin/aelum-installer` and `build/bin/aelum-installer-cli`):
 
    ```bash

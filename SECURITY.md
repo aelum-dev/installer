@@ -11,7 +11,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 **Do not open a public issue.** Instead, choose one of these channels:
 
 1. **Email**: Send a description to the project maintainer's email (see [README](README.md))
-2. **GitLab**: Report through [GitLab's vulnerability reporting](https://docs.gitlab.com/ee/user/application_security/advisories/#reporting-vulnerabilities), or email the maintainer directly.
+2. **GitHub**: Report through [GitHub's private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability), or email the maintainer directly.
 
 ### What to Include
 
@@ -76,7 +76,7 @@ build-time mirror, never to the installed system.
 
 ### Verifying a released ISO
 
-ISOs are published to Cloudflare R2 (too large for GitLab releases) and linked
+ISOs are published to Cloudflare R2 (too large for GitHub releases) and linked
 from the website. Each release ships:
 
 - `SHA-256` and `SHA-512` checksum files

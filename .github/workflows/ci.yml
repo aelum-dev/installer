@@ -1,0 +1,114 @@
+# GitHub Actions CI for the Aelum Installer.
+#
+# Same gates the previous GitLab pipeline ran on every push/merge request:
+#   - backend : go mod tidy check, gofmt, frontend build, golangci-lint, go vet, go test -race
+#   - frontend: svelte-check (typecheck) + vitest
+#   - security: gitleaks (secret scan)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ── backend: Go + frontend build gates ──────────────────────────────────────
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # golangci-lint v2.13.2 bundles honnef.co/go/tools v0.8.1, whose staticcheck
+      # IR builder handles the rewritten stdlib `internal/poll` in Go 1.26+.
+      # Installed via `go install` rather than the official install.sh, whose
+      # embedded checksum verification is flaky on some releases.
+      - name: Install golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Check go.mod/go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code
+
+      - name: Check gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "$unformatted"
+            echo "Go code is not gofmt-formatted"
+            exit 1
+          fi
+
+      # Frontend must build (Wails embeds it into the binary).
+      - name: Build frontend
+        run: cd frontend && npm install && npm run build
+
+      - name: Lint
+        run: golangci-lint run ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (race detector)
+        run: go test -race ./...
+
+  # ── frontend: typecheck + unit tests ────────────────────────────────────────
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # frontend/src/lib/constants.ts is committed to the repo, so the typecheck
+      # and tests use the versioned file (constants are regenerated locally by
+      # build.sh before committing).
+      - name: Install dependencies
+        run: cd frontend && npm install
+
+      - name: Typecheck
+        run: cd frontend && npm run check
+
+      - name: Unit tests
+        run: cd frontend && npm run test
+
+  # ── security: secret scanning ───────────────────────────────────────────────
+  # gitleaks no longer publishes a Docker image, so install the binary directly.
+  # Pinned to v8.30.1; bump the version and the asset name together.
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -fsSL -o /tmp/gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+
+      - name: Scan for secrets
+        run: gitleaks detect --source . --redact --exit-code=1

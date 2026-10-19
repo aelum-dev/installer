@@ -155,4 +155,4 @@ When reporting a bug, include:
    - Filesystem selected (ext4 / btrfs)
    - Any custom flags used
 
-Report issues on [GitLab](https://gitlab.com/aelum/installer/-/issues).
+Report issues on [GitHub](https://github.com/aelum-dev/installer/issues).
