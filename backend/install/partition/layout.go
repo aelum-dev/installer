@@ -251,8 +251,8 @@ func roleLabel(fstype string) string {
 
 // minPartitionSizeMB returns the enforced minimum size in MiB for a brand-new
 // partition role: the new-ESP floor (512 MiB) and the System floor (8 GiB, or
-// 16 GiB / 16 GiB + LUKS header when LVM is enabled). Existing ESPs are checked
-// against the lower 100 MiB reuse floor in Validate. Other roles have no floor
+// 16 GiB / 16 GiB + LUKS header when LVM is enabled). Reused ESPs have no size
+// floor (Validate accepts any FAT partition), and other roles have no floor
 // (0). This backstops the *resolved* size of a use-remaining row so a too-small
 // partition can never reach sgdisk.
 func minPartitionSizeMB(pt shared.PartitionType, lvm, luks bool) int64 {

@@ -74,18 +74,24 @@ sudo ./aelum-installer-cli --rollback /dev/sda
 2. Rebuild mirrorlists: `go run ./backend/shared/mirrorlist_gen.go`
 3. Rebuild the installer: `./build.sh`
 
-### "bootctl install failed"
+### "bootloader verification failed" (rEFInd)
 
-**Cause**: The Boot partition is not mounted correctly, or firmware doesn't support systemd-boot.
+**Cause**: The Boot partition is not mounted correctly, the `refind` package is
+missing from the offline mirror, or firmware rejected the NVRAM boot entry.
 
 **Fix**:
 ```bash
-# Check the Boot partition is mounted
-ls /mnt/boot/
+# Check the Boot partition is mounted and rEFInd was copied
+ls /mnt/boot/EFI/refind/
+cat /mnt/boot/EFI/refind/refind.conf
 
-# Verify EFI firmware
-efibootmgr --version
+# Verify EFI firmware / boot entries
+efibootmgr -v
 ```
+
+A missing NVRAM entry is logged as a warning (the install still completes); the
+system remains bootable through the firmware boot menu or by selecting
+`EFI/refind/refind_x64.efi` manually.
 
 ### "root UUID is empty" / "partitions not initialized"
 

@@ -43,6 +43,7 @@ func Run(ctx *shared.InstallContext) error {
 	if ctx.Lvm {
 		checkLvm(ctx, &issues, &info)
 	}
+	checkBootloader(ctx, &issues, &info)
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
@@ -110,31 +111,31 @@ func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 }
 
 // checkLuks verifies LUKS-related configuration in the installed system when
-// encryption is enabled: the boot entry maps the LUKS header to the "aelum"
+// encryption is enabled: the rEFInd stanza maps the LUKS header to the "aelum"
 // mapper via rd.luks.name=, the mapper UUID is in fstab, and the dm-crypt hook
 // is present in mkinitcpio.
 func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
-	// The boot entry maps the header to the mapper with
+	// The rEFInd stanza maps the header to the mapper with
 	// rd.luks.name=<header-uuid>=<mapper>, consumed by sd-encrypt. The root is
 	// then referenced indirectly: root=UUID=<mapper fs uuid> when root is the
 	// mapper, or root=/dev/mapper/aelum-root when LVM sits on top. Assert the
 	// mapping argument itself rather than a literal /dev/mapper path, which
 	// only the LVM root happens to contain as a substring.
-	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
-	if data, err := primitives.ReadFile(entryPath); err == nil {
+	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		switch {
 		case !luksEntryMapsMapper(content, ctx.Partitions.LuksUUID):
 			if strings.Contains(content, "rd.luks.name=") {
-				*issues = append(*issues, "boot entry LUKS mapping does not target "+shared.LuksMapperName)
+				*issues = append(*issues, "rEFInd config LUKS mapping does not target "+shared.LuksMapperName)
 			} else {
-				*issues = append(*issues, "boot entry missing rd.luks.name= for LUKS")
+				*issues = append(*issues, "rEFInd config missing rd.luks.name= for LUKS")
 			}
 		default:
-			*info = append(*info, "boot entry maps LUKS header to "+shared.LuksMapperName+" ✓")
+			*info = append(*info, "rEFInd config maps LUKS header to "+shared.LuksMapperName+" ✓")
 		}
 	} else {
-		*issues = append(*issues, "failed to read boot entry "+entryPath)
+		*issues = append(*issues, "failed to read rEFInd config "+confPath)
 	}
 
 	// Mapper UUID present in fstab (RootUUID is the mapper filesystem UUID).
@@ -144,7 +145,7 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 	}
 
 	// dm-crypt hook present in mkinitcpio.conf.
-	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
+	confPath = shared.MountRoot + "/etc/mkinitcpio.conf"
 	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, "sd-encrypt") {
@@ -174,20 +175,20 @@ func luksEntryMapsMapper(options, luksUUID string) bool {
 }
 
 // checkLvm verifies LVM-related configuration in the installed system when LVM
-// is enabled: the boot entry points root at the root logical volume, fstab lists
-// the home LV, and the lvm2 hook is present in mkinitcpio.
+// is enabled: the rEFInd stanza points root at the root logical volume, fstab
+// lists the home LV, and the lvm2 hook is present in mkinitcpio.
 func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
-	// Boot entry references the root logical volume (not the PV).
-	entryPath := shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
-	if data, err := primitives.ReadFile(entryPath); err == nil {
+	// The rEFInd stanza references the root logical volume (not the PV).
+	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, shared.LvmRootLvPath) {
-			*issues = append(*issues, "boot entry does not reference the root LV "+shared.LvmRootLvPath)
+			*issues = append(*issues, "rEFInd config does not reference the root LV "+shared.LvmRootLvPath)
 		} else {
-			*info = append(*info, "boot entry references root LV ✓")
+			*info = append(*info, "rEFInd config references root LV ✓")
 		}
 	} else {
-		*issues = append(*issues, "failed to read boot entry "+entryPath)
+		*issues = append(*issues, "failed to read rEFInd config "+confPath)
 	}
 
 	// Home LV filesystem UUID present in fstab (RootUUID is the root LV's UUID,
@@ -204,7 +205,7 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 	}
 
 	// lvm2 hook present in mkinitcpio.conf.
-	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
+	confPath = shared.MountRoot + "/etc/mkinitcpio.conf"
 	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, shared.LvmInitramfsHook) {
@@ -215,6 +216,30 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 	} else {
 		*issues = append(*issues, "failed to read "+confPath)
 	}
+}
+
+// checkBootloader verifies that rEFInd's EFI binary and configuration (with the
+// Aelum menu entry) are present on the ESP. The stanza's root/LUKS/LVM options
+// are checked by checkLuks/checkLvm when those features are enabled.
+func checkBootloader(ctx *shared.InstallContext, issues, info *[]string) {
+	binaryPath := shared.BootMountPoint + "/" + shared.RefindBinaryPath
+	if err := primitives.Run("test", "-f", binaryPath).Run(); err != nil {
+		*issues = append(*issues, "rEFInd binary not found at "+binaryPath)
+	} else {
+		*info = append(*info, "rEFInd binary present ✓")
+	}
+
+	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	data, err := primitives.ReadFile(confPath)
+	if err != nil {
+		*issues = append(*issues, "rEFInd config not found or unreadable at "+confPath)
+		return
+	}
+	if !strings.Contains(string(data), shared.BootEntryTitle) {
+		*issues = append(*issues, "rEFInd config is missing the "+shared.BootEntryTitle+" menu entry")
+		return
+	}
+	*info = append(*info, "rEFInd config present ✓")
 }
 
 // checkKernelImages verifies that a kernel image and its matching initrd exist

@@ -17,7 +17,7 @@ func TestValidate_RejectsUntypedNewRow(t *testing.T) {
 		DiskSizeMB:    20480,
 		DiskSizeBytes: 20480 * guardMiB,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 8192, Type: shared.TypeSystem},
 			{Index: 2, Path: "", SizeMB: 1024, Type: ""},
 		},
@@ -43,7 +43,7 @@ func TestValidate_LvmSystemFloor(t *testing.T) {
 			Lvm:           lvm,
 			Luks:          luks,
 			Partitions: []shared.ManualPartition{
-				{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP},
+				{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
 				{Index: 1, Path: "", SizeMB: sizeMB, Type: shared.TypeSystem},
 			},
 		}
@@ -76,7 +76,7 @@ func TestValidate_LvmUseRemainingFloor(t *testing.T) {
 		DiskSizeBytes: 12000 * guardMiB,
 		Lvm:           true,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
 		},
 	}
@@ -92,19 +92,21 @@ func TestValidate_LvmUseRemainingFloor(t *testing.T) {
 	}
 }
 
-func TestValidate_ExistingSubMiBESPFails(t *testing.T) {
+// TestValidate_ExistingSubMiBESPAccepted confirms the reused-ESP rule has no
+// size floor at all: an existing FAT boot partition smaller than 1 MiB is still
+// reusable as-is (only brand-new ESPs must meet the 512 MiB floor).
+func TestValidate_ExistingSubMiBESPAccepted(t *testing.T) {
 	layout := shared.ManualLayout{
 		Disk:          "/dev/vda",
 		DiskSizeMB:    20480,
 		DiskSizeBytes: 20480 * guardMiB,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 0, SizeBytes: 512 * 1024, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 0, SizeBytes: 512 * 1024, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * guardMiB, Type: shared.TypeSystem},
 		},
 	}
-	err := Validate(layout)
-	if err == nil || !strings.Contains(err.Error(), "boot partition is too small") {
-		t.Fatalf("Validate() = %v, want sub-MiB ESP error", err)
+	if err := Validate(layout); err != nil {
+		t.Fatalf("Validate() = %v, want nil (existing ESP has no size floor)", err)
 	}
 }
 
@@ -129,7 +131,7 @@ func TestApply_LvmTooSmallFailsBeforeDelete(t *testing.T) {
 		SectorSizeBytes: 512,
 		Lvm:             true,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 8192, Type: shared.TypeSystem},
 		},
 		DeletedPartitions: []shared.ManualPartition{{Index: 2, Path: "/dev/vda3"}},
@@ -172,7 +174,7 @@ func TestApply_PreflightBeforeDelete(t *testing.T) {
 		DiskSizeBytes:   diskMB * guardMiB,
 		SectorSizeBytes: 512,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "/dev/vda2", SizeMB: 20480, SizeBytes: (keptEnd - keptStart + 1) * 512},
 			{Index: 2, Path: "", SizeMB: 14398, Type: shared.TypeSystem},
 		},

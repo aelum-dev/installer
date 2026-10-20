@@ -43,6 +43,10 @@ var BasePackages = []string{
 	"power-profiles-daemon",
 	"zram-generator",
 
+	// Bootloader (installed onto the ESP by the configure step; efibootmgr is
+	// pulled in as its dependency)
+	"refind",
+
 	// Editor
 	"vim",
 	"nano",

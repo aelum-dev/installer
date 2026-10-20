@@ -24,7 +24,8 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 	fs := primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\n").
 		WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0::/root:/bin/bash\nalice:x:1000:1000::/home/alice:/bin/bash\n").
-		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n")
+		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
+		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, `menuentry "`+shared.BootEntryTitle+`" {`+"\n    options root=UUID=ROOT-UUID\n}\n")
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
 	defer primitives.SetCommandRunner(rec)()
@@ -42,13 +43,13 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 }
 
 func TestRun_PassesWithLuksAndLvm(t *testing.T) {
-	entry := "rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath + " rw quiet splash rootflags=subvol=@\n"
+	entry := `menuentry "` + shared.BootEntryTitle + `" {` + "\n    options rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath + " rw quiet splash rootflags=subvol=@\n}\n"
 	fs := primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\nUUID=HOME-UUID /home ext4 rw 0 2\n").
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt lvm2 filesystems)\n").
-		WithFile(shared.BootMountPoint+"/loader/entries/"+shared.BootEntryFileName+".conf", entry)
+		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, entry)
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
 	defer primitives.SetCommandRunner(rec)()
@@ -131,7 +132,7 @@ func TestCheckFstab(t *testing.T) {
 
 func TestCheckLuks(t *testing.T) {
 	const (
-		entryPath = shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
+		entryPath = shared.BootMountPoint + "/" + shared.RefindConfigPath
 		confPath  = shared.MountRoot + "/etc/mkinitcpio.conf"
 	)
 	ctx := &shared.InstallContext{Luks: true, Partitions: &shared.PartitionInfo{LuksUUID: "LUKS-UUID", RootUUID: "ROOT-UUID"}}
@@ -142,9 +143,9 @@ func TestCheckLuks(t *testing.T) {
 		wantIssue string
 	}{
 		{
-			name:      "missing boot entry",
+			name:      "missing rEFInd config",
 			fs:        primitivestest.NewMemFS().WithFile(confPath, "HOOKS=(sd-encrypt)\n"),
-			wantIssue: "failed to read boot entry",
+			wantIssue: "failed to read rEFInd config",
 		},
 		{
 			name: "entry without mapping",
@@ -197,7 +198,7 @@ func TestCheckLuks(t *testing.T) {
 
 func TestCheckLvm(t *testing.T) {
 	const (
-		entryPath = shared.BootMountPoint + "/loader/entries/" + shared.BootEntryFileName + ".conf"
+		entryPath = shared.BootMountPoint + "/" + shared.RefindConfigPath
 		confPath  = shared.MountRoot + "/etc/mkinitcpio.conf"
 		fstabPath = shared.MountRoot + "/etc/fstab"
 	)
@@ -209,9 +210,9 @@ func TestCheckLvm(t *testing.T) {
 		wantIssue string
 	}{
 		{
-			name:      "missing boot entry",
+			name:      "missing rEFInd config",
 			fs:        primitivestest.NewMemFS().WithFile(confPath, "HOOKS=(lvm2)\n"),
-			wantIssue: "failed to read boot entry",
+			wantIssue: "failed to read rEFInd config",
 		},
 		{
 			name: "entry lacks root LV",
@@ -251,6 +252,62 @@ func TestCheckLvm(t *testing.T) {
 			defer primitives.SetFileSystem(tt.fs)()
 			var issues, info []string
 			checkLvm(ctx, &issues, &info)
+			if tt.wantIssue == "" {
+				if len(issues) != 0 {
+					t.Fatalf("issues = %v, want none", issues)
+				}
+				return
+			}
+			if len(issues) != 1 || !strings.Contains(issues[0], tt.wantIssue) {
+				t.Fatalf("issues = %v, want one containing %q", issues, tt.wantIssue)
+			}
+		})
+	}
+}
+
+// --- checkBootloader ---------------------------------------------------------
+
+func TestCheckBootloader(t *testing.T) {
+	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	ctx := &shared.InstallContext{}
+
+	tests := []struct {
+		name      string
+		fs        *primitivestest.MemFS
+		rec       *primitivestest.Recorder
+		wantIssue string
+	}{
+		{
+			name:      "missing binary",
+			fs:        primitivestest.NewMemFS().WithFile(confPath, `menuentry "Aelum" {}`),
+			rec:       primitivestest.NewRecorder().OnArgsError([]string{"test", "-f"}, errors.New("missing")),
+			wantIssue: "rEFInd binary not found",
+		},
+		{
+			name:      "missing config",
+			fs:        primitivestest.NewMemFS(),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "rEFInd config not found",
+		},
+		{
+			name:      "missing menu entry",
+			fs:        primitivestest.NewMemFS().WithFile(confPath, "timeout 5\n"),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "missing the Aelum menu entry",
+		},
+		{
+			name: "complete",
+			fs:   primitivestest.NewMemFS().WithFile(confPath, `menuentry "`+shared.BootEntryTitle+`" {}`),
+			rec:  primitivestest.NewRecorder(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer primitives.SetFileSystem(tt.fs)()
+			defer primitives.SetCommandRunner(tt.rec)()
+			var issues, info []string
+			checkBootloader(ctx, &issues, &info)
 			if tt.wantIssue == "" {
 				if len(issues) != 0 {
 					t.Fatalf("issues = %v, want none", issues)

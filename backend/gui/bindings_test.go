@@ -107,7 +107,7 @@ func TestBindings_ValidateManualLayoutClearsDisabledLvm(t *testing.T) {
 		DiskSizeBytes: 20480 * 1024 * 1024,
 		Lvm:           true, // stale value from a layout loaded before the toggle was turned off
 		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP},
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * 1024 * 1024, Type: shared.TypeSystem},
 		},
 	}

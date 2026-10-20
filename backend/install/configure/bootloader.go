@@ -1,10 +1,7 @@
 package configure
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -13,10 +10,15 @@ import (
 )
 
 // ============================================================================
-// Bootloader configuration
+// Bootloader configuration (rEFInd)
 // ============================================================================
 
-// ConfigureBootloader installs systemd-boot and writes the boot entry configuration.
+// ConfigureBootloader installs rEFInd onto the ESP and writes its configuration.
+//
+// The whole rEFInd asset tree is copied from the package installed in the live
+// ISO (/usr/share/refind), so nothing is downloaded. rEFInd replaces
+// systemd-boot for every install (automatic and manual) and auto-detects other
+// OS boot loaders on a shared ESP, which is what makes a dualboot menu work.
 func ConfigureBootloader(ctx *shared.InstallContext) error {
 	esp := ctx.ESP
 	if esp == "" {
@@ -38,35 +40,38 @@ func ConfigureBootloader(ctx *shared.InstallContext) error {
 		return fmt.Errorf("root UUID not set. FormatDisk may have failed")
 	}
 
-	if err := installSystemdBoot(esp); err != nil {
+	if err := installRefind(esp); err != nil {
 		return err
 	}
 	kernel, initrd, err := discoverKernelFiles()
 	if err != nil {
 		return err
 	}
-	if err := writeBootEntry(esp, ctx, kernel, initrd); err != nil {
+	if err := writeRefindConfig(esp, ctx, kernel, initrd); err != nil {
 		return err
 	}
-	if err := setDefaultBootEntry(esp, shared.BootEntryFileName+".conf"); err != nil {
-		return err
-	}
-	if err := cleanupEsp(esp); err != nil {
-		return err
-	}
-	if err := generateRandomSeed(esp); err != nil {
-		if ctx.Logger != nil {
-			ctx.Logger.Error("Warning: random seed generation failed (non-fatal): %v", err)
-		}
+	// NVRAM registration is best-effort, mirroring systemd-boot's --graceful:
+	// some firmware (and some virtual machines) reject efibootmgr writes, but
+	// the installed system is still bootable via the firmware boot menu. Log the
+	// failure instead of failing an otherwise complete install.
+	if err := registerRefindBootEntry(ctx); err != nil && ctx.Logger != nil {
+		ctx.Logger.Error("Warning: could not register the rEFInd NVRAM boot entry (non-fatal): %v", err)
 	}
 	return verifyBootloaderInstallation(esp)
 }
 
-func installSystemdBoot(esp string) error {
-	cmd := primitives.Run("bootctl", "install", "--esp-path="+esp, "--graceful", "--efi-boot-option-description="+shared.BootOptionDescription)
-	output, err := cmd.CombinedOutput()
+// installRefind copies the packaged rEFInd tree (binary, icons, drivers, tools,
+// keys, sample config) onto the ESP. The destination directory is created
+// explicitly: `cp -a` only creates the final component of a missing path, and
+// EFI/ may not exist on a reused ESP assumed from another OS.
+func installRefind(esp string) error {
+	dest := esp + "/" + shared.RefindDir
+	if err := primitives.Run("mkdir", "-p", dest).Run(); err != nil {
+		return fmt.Errorf("failed to create rEFInd directory %s: %w", dest, err)
+	}
+	out, err := primitives.Run("cp", "-r", shared.RefindSourceDir+"/.", dest+"/").CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("bootctl install failed: %w: %s", err, string(output))
+		return fmt.Errorf("failed to copy rEFInd from %s: %w: %s", shared.RefindSourceDir, err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
@@ -103,28 +108,52 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 	return kernel, initrd, nil
 }
 
-// writeBootEntry writes the systemd-boot entry. The root device depends on the
-// layout: the root LV when LVM is enabled, otherwise the LUKS mapper (encrypted)
-// or the root partition UUID. When LUKS is enabled the rd.luks.name= argument
-// maps the header to the "aelum" mapper (consumed by sd-encrypt).
-func writeBootEntry(esp string, ctx *shared.InstallContext, kernel, initrd string) error {
-	options := bootEntryOptions(ctx)
-	entryContent := fmt.Sprintf("title   %s\nlinux   /%s\ninitrd  /%s\noptions %s\n", shared.BootEntryTitle, kernel, initrd, options)
-	entryPath := esp + "/" + shared.BootLoaderEntriesDir + "/" + shared.BootEntryFileName + ".conf"
-	cmd := primitives.Run("mkdir", "-p", esp+"/"+shared.BootLoaderEntriesDir)
-	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to create boot entry dir: %w", err)
-	}
-	if err := primitives.WriteFile(esp+"/"+shared.BootLoaderEntriesDir+"/"+shared.BootEntryFileName+".conf", entryContent); err != nil {
-		return fmt.Errorf("failed to write boot entry to %s: %w", entryPath, err)
+// writeRefindConfig writes <ESP>/EFI/refind/refind.conf with a single Aelum
+// menu entry. Paths inside the entry are ESP-relative, matching where pacstrap
+// puts the kernel and initrd (the ESP is mounted at /boot).
+func writeRefindConfig(esp string, ctx *shared.InstallContext, kernel, initrd string) error {
+	path := esp + "/" + shared.RefindConfigPath
+	if err := primitives.WriteFile(path, refindConfig(ctx, kernel, initrd)); err != nil {
+		return fmt.Errorf("failed to write rEFInd config to %s: %w", path, err)
 	}
 	return nil
 }
 
-// bootEntryOptions builds the kernel command line for the systemd-boot entry.
-// The root device is the root LV (LVM), the decrypted LUKS mapper (encrypted),
-// or the root filesystem UUID. LUKS entries carry rd.luks.name= so sd-encrypt
-// maps the header to the "aelum" mapper before the root is mounted.
+// refindConfig renders refind.conf. The kernel command line is the same one the
+// old systemd-boot entry used (bootEntryOptions), so LUKS, LVM, and btrfs root
+// handling is unchanged.
+//
+// scan_all_linux_kernels is disabled so rEFInd shows exactly one Aelum entry
+// instead of also auto-listing every kernel on a shared ESP. EFI loaders from
+// other OSes (Windows Boot Manager, GRUB) are still auto-detected. The
+// dont_scan_* lines suppress leftovers from a previous systemd-boot install
+// without deleting any files that may belong to another OS.
+func refindConfig(ctx *shared.InstallContext, kernel, initrd string) string {
+	var b strings.Builder
+	b.WriteString("# Generated by the Aelum installer. Do not edit by hand.\n")
+	fmt.Fprintf(&b, "timeout %d\n", shared.RefindTimeoutSeconds)
+	fmt.Fprintf(&b, "default_selection %s\n", shared.BootEntryTitle)
+	b.WriteString("scan_all_linux_kernels false\n")
+	b.WriteString("dont_scan_dirs EFI/systemd\n")
+	b.WriteString("dont_scan_files systemd-bootx64.efi,BOOTX64.EFI,bootx64.efi\n")
+	b.WriteString("\n")
+	fmt.Fprintf(&b, "menuentry %q {\n", shared.BootEntryTitle)
+	fmt.Fprintf(&b, "    icon /%s\n", shared.RefindIconPath)
+	fmt.Fprintf(&b, "    loader /%s\n", kernel)
+	fmt.Fprintf(&b, "    initrd /%s\n", initrd)
+	// The options string must be quoted: rEFInd tokenizes refind.conf and
+	// without quotes it keeps only the first whitespace-separated word (and
+	// rewrites unquoted slashes). That would drop `rw`, `splash`, and the LUKS
+	// rd.luks.name= argument, producing an unbootable entry.
+	fmt.Fprintf(&b, "    options %q\n", bootEntryOptions(ctx))
+	b.WriteString("}\n")
+	return b.String()
+}
+
+// bootEntryOptions builds the kernel command line for the rEFInd entry. The
+// root device is the root LV (LVM), the decrypted LUKS mapper (encrypted), or
+// the root filesystem UUID. LUKS entries carry rd.luks.name= so sd-encrypt maps
+// the header to the "aelum" mapper before the root is mounted.
 func bootEntryOptions(ctx *shared.InstallContext) string {
 	root := "UUID=" + ctx.Partitions.RootUUID
 	if ctx.Lvm {
@@ -147,103 +176,104 @@ func bootEntryOptions(ctx *shared.InstallContext) string {
 	return options
 }
 
-func cleanupEsp(esp string) error {
-	cmd := primitives.Run("bootctl", "cleanup", "--esp-path="+esp, "--graceful")
-	output, err := cmd.CombinedOutput()
+// registerRefindBootEntry adds (or leaves alone) the firmware boot entry for
+// rEFInd. efibootmgr runs in the live environment and writes the host's NVRAM,
+// exactly as archiso and bootctl do; it is not run inside arch-chroot.
+func registerRefindBootEntry(ctx *shared.InstallContext) error {
+	if ctx.Partitions == nil || ctx.Partitions.EFIPart == "" {
+		return fmt.Errorf("EFI partition path not set")
+	}
+	if refindNvramEntryExists(ctx.Partitions.EFIPart) {
+		return nil
+	}
+	partNum := partitionNumber(ctx.DiskID, ctx.Partitions.EFIPart)
+	if partNum <= 0 {
+		return fmt.Errorf("could not derive the ESP partition number from %s", ctx.Partitions.EFIPart)
+	}
+	out, err := primitives.Run(
+		"efibootmgr",
+		"--create",
+		"--disk", ctx.DiskID,
+		"--part", strconv.Itoa(partNum),
+		"--loader", shared.RefindNvramLoader,
+		"--label", shared.BootEntryTitle,
+	).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("bootctl cleanup failed: %w: %s", err, strings.TrimSpace(string(output)))
+		return fmt.Errorf("efibootmgr --create failed: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
 
-func generateRandomSeed(esp string) error {
-	cmd := primitives.Run("bootctl", "random-seed", "--esp-path="+esp)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to generate random seed (non-fatal): %w", err)
-	}
-	return nil
-}
-
-func setDefaultBootEntry(esp, entryID string) error {
-	// Write the default= line directly to loader.conf instead of using
-	// `bootctl set-default`, which fails when the live ISO was not booted
-	// with systemd-boot (e.g. Ventoy/GRUB). The file write is all that's
-	// needed — systemd-boot reads it at boot time.
-	confPath := esp + "/loader/loader.conf"
-	data, err := primitives.ReadFile(confPath)
+// refindNvramEntryExists reports whether the firmware already has a boot entry
+// pointing at this ESP's rEFInd binary. Re-creating it on every reinstall would
+// pile up duplicate entries. The loader path alone is not enough to identify the
+// entry: a dualboot machine may have another rEFInd on a different ESP with the
+// same \EFI\refind\refind_x64.efi path. When the ESP's PARTUUID is readable,
+// require the existing entry to reference it as well.
+func refindNvramEntryExists(espPart string) bool {
+	out, err := primitives.Run("efibootmgr", "-v").Output()
 	if err != nil {
-		// bootctl install creates loader.conf, but --graceful can skip writing
-		// it on unusual firmware/ESP setups. A missing loader.conf is not fatal:
-		// start from empty content and write the default entry + timeout.
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to read loader.conf: %w", err)
-		}
-		data = nil
+		return false
 	}
-	content := applyLoaderConfDefaults(string(data), entryID)
-	if err := primitives.WriteFile(confPath, content); err != nil {
-		return fmt.Errorf("failed to write default entry to loader.conf: %w", err)
+	entries := strings.ToLower(string(out))
+	if !strings.Contains(entries, strings.ToLower(shared.RefindNvramLoader)) {
+		return false
 	}
-	return nil
+	partUUID, err := primitives.Run("blkid", "-s", "PARTUUID", "-o", "value", espPart).Output()
+	if err != nil || strings.TrimSpace(string(partUUID)) == "" {
+		// Can't identify the ESP; the loader path is the best signal available.
+		return true
+	}
+	return strings.Contains(entries, strings.ToLower(strings.TrimSpace(string(partUUID))))
 }
 
-// applyLoaderConfDefaults returns loader.conf with the systemd-boot default
-// entry and selection timeout set, replacing the existing lines when present or
-// appending them when absent. A timeout is important because systemd-boot
-// defaults to 0 (no menu) when it is unset, so the user can still pick an entry.
-func applyLoaderConfDefaults(content, entryID string) string {
-	re := regexp.MustCompile(`(?m)^default .*$`)
-	if re.MatchString(content) {
-		content = re.ReplaceAllString(content, "default "+entryID)
-	} else {
-		content += "default " + entryID + "\n"
+// partitionNumber extracts the partition number from an existing device path by
+// stripping the disk prefix and the optional "p" separator used by NVMe/mmcblk
+// devices: /dev/vda1 → 1, /dev/nvme0n1p1 → 1.
+func partitionNumber(diskID, partPath string) int {
+	if diskID == "" || partPath == "" {
+		return 0
 	}
-
-	timeRe := regexp.MustCompile(`(?m)^timeout .*$`)
-	if timeRe.MatchString(content) {
-		content = timeRe.ReplaceAllString(content, "timeout "+strconv.Itoa(shared.BootLoaderTimeout))
-	} else {
-		content += "timeout " + strconv.Itoa(shared.BootLoaderTimeout) + "\n"
+	suffix := strings.TrimPrefix(partPath, diskID)
+	if suffix == partPath {
+		return 0
 	}
-	return content
+	suffix = strings.TrimPrefix(suffix, "p")
+	n, err := strconv.Atoi(suffix)
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 func verifyBootloaderInstallation(esp string) error {
 	var issues []string
 	var info []string
 
-	cmd := primitives.Run("bootctl", "is-installed", "--esp-path="+esp)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		issues = append(issues, fmt.Sprintf("bootctl is-installed failed: %s", strings.TrimSpace(string(output))))
-	}
-
-	cmd = primitives.Run("test", "-f", esp+"/loader/loader.conf")
-	if err := cmd.Run(); err != nil {
-		issues = append(issues, "loader.conf is MISSING")
-	}
-
-	entryPath := esp + "/" + shared.BootLoaderEntriesDir + "/" + shared.BootEntryFileName + ".conf"
-	cmd = primitives.Run("test", "-f", entryPath)
-	if err := cmd.Run(); err != nil {
-		issues = append(issues, "boot entry file is MISSING: "+entryPath)
+	binaryPath := esp + "/" + shared.RefindBinaryPath
+	if err := primitives.Run("test", "-f", binaryPath).Run(); err != nil {
+		issues = append(issues, "rEFInd binary is MISSING: "+binaryPath)
 	} else {
-		data, err := primitives.ReadFile(entryPath)
-		if err == nil {
-			info = append(info, "boot entry contents: "+strings.TrimSpace(string(data)))
+		info = append(info, "rEFInd binary: "+binaryPath)
+	}
+
+	confPath := esp + "/" + shared.RefindConfigPath
+	if err := primitives.Run("test", "-f", confPath).Run(); err != nil {
+		issues = append(issues, "rEFInd config is MISSING: "+confPath)
+	} else if data, err := primitives.ReadFile(confPath); err != nil {
+		issues = append(issues, "failed to read rEFInd config "+confPath)
+	} else {
+		content := string(data)
+		if !strings.Contains(content, fmt.Sprintf("menuentry %q", shared.BootEntryTitle)) {
+			issues = append(issues, "rEFInd config is missing the "+shared.BootEntryTitle+" menu entry")
+		} else {
+			info = append(info, "rEFInd config contents: "+strings.TrimSpace(content))
 		}
 	}
 
-	cmd = primitives.Run("find", esp, "-name", "*.conf", "-o", "-name", "*.efi", "-o", "-name", "loader.conf")
-	output, err = cmd.Output()
-	if err == nil {
-		info = append(info, "Boot files: "+strings.TrimSpace(string(output)))
-	}
-
-	cmd = primitives.Run("bootctl", "status", "--esp-path="+esp)
-	output, err = cmd.CombinedOutput()
-	if err == nil {
-		info = append(info, "bootctl status:\n"+strings.TrimSpace(string(output)))
+	cmd := primitives.Run("find", esp+"/"+shared.RefindDir, "-maxdepth", "1", "-type", "f")
+	if output, err := cmd.Output(); err == nil {
+		info = append(info, "rEFInd files: "+strings.TrimSpace(string(output)))
 	}
 
 	if len(issues) > 0 {

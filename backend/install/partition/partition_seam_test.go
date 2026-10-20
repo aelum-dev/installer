@@ -357,7 +357,7 @@ func TestValidateFeasible(t *testing.T) {
 			DiskSizeBytes:   21474836480,
 			SectorSizeBytes: 512,
 			Partitions: []shared.ManualPartition{
-				{Path: "/dev/vda1", Type: shared.TypeESP, SizeMB: 512, SizeBytes: 512 * 1024 * 1024},
+				{Path: "/dev/vda1", Type: shared.TypeESP, SizeMB: 512, SizeBytes: 512 * 1024 * 1024, ExistingFstype: "vfat"},
 				{Path: "/dev/vda2", Type: shared.TypeSystem, SizeMB: 10000, SizeBytes: 10000 * 1024 * 1024},
 			},
 		}
@@ -420,6 +420,51 @@ func TestApply_PlainExt4BrandNewPartitions(t *testing.T) {
 	}
 	if !rec.Called("mkfs.fat") || !rec.Called("mkfs.ext4") {
 		t.Error("partitions not formatted")
+	}
+}
+
+// TestApply_ReusedESPNotFormatted is the dualboot safety contract: an existing
+// Boot (ESP) partition is mounted as-is. Apply must not format it (another OS's
+// boot loaders may live there), while the System partition is still formatted.
+func TestApply_ReusedESPNotFormatted(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"sgdisk", "-p", "/dev/vda"}, "").
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda1"}, "EFI-UUID\n").
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda2"}, "ROOT-UUID\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	layout := shared.ManualLayout{
+		Disk:            "/dev/vda",
+		DiskSizeMB:      20480,
+		DiskSizeBytes:   21474836480,
+		SectorSizeBytes: 512,
+		Partitions: []shared.ManualPartition{
+			{Path: "/dev/vda1", SizeMB: 256, SizeBytes: 256 * 1024 * 1024, Type: shared.TypeESP, ExistingFstype: "vfat"},
+			{Path: "/dev/vda2", SizeMB: 10000, SizeBytes: 10000 * 1024 * 1024, Type: shared.TypeSystem, ExistingFstype: "ext4"},
+		},
+	}
+	ctx := &shared.InstallContext{DiskID: "/dev/vda", FileSystem: shared.FileSystemExt4}
+	if err := Apply(ctx, &layout); err != nil {
+		t.Fatalf("Apply() = %v", err)
+	}
+	if ctx.Partitions == nil {
+		t.Fatal("ctx.Partitions not populated")
+	}
+	if ctx.Partitions.EFIPart != "/dev/vda1" || ctx.Partitions.RootPart != "/dev/vda2" {
+		t.Errorf("partition paths wrong: %+v", ctx.Partitions)
+	}
+	if got := len(callsForArg(rec, "sgdisk", "-n")); got != 0 {
+		t.Errorf("sgdisk -n calls = %d, want 0 (no partition created)", got)
+	}
+	if rec.Called("mkfs.fat") {
+		t.Error("reused ESP was formatted; it must be left untouched")
+	}
+	if !rec.Called("mkfs.ext4") {
+		t.Error("System partition was not formatted")
+	}
+	// The reused ESP is still stamped with the ESP type GUID so firmware finds it.
+	if got := len(callsForArg(rec, "sgdisk", "-t")); got != 2 {
+		t.Errorf("sgdisk -t calls = %d, want 2 (per reused ESP/System row)", got)
 	}
 }
 

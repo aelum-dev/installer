@@ -216,11 +216,10 @@ func TestVerifyFstab_ReadError(t *testing.T) {
 	}
 }
 
-// --- writeBootEntry / setDefaultBootEntry ------------------------------------
+// --- writeRefindConfig -------------------------------------------------------
 
-func TestWriteBootEntry(t *testing.T) {
-	rec := primitivestest.NewRecorder()
-	defer primitives.SetCommandRunner(rec)()
+func TestWriteRefindConfig(t *testing.T) {
+	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
 	fs := primitivestest.NewMemFS()
 	defer primitives.SetFileSystem(fs)()
 
@@ -228,100 +227,38 @@ func TestWriteBootEntry(t *testing.T) {
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
 	}
-	if err := writeBootEntry(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img"); err != nil {
-		t.Fatalf("writeBootEntry() = %v, want nil", err)
+	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img"); err != nil {
+		t.Fatalf("writeRefindConfig() = %v, want nil", err)
 	}
 
-	// The entries directory must be created before writing.
-	dir := shared.BootMountPoint + "/" + shared.BootLoaderEntriesDir
-	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", dir) {
-		t.Errorf("entries dir not created: %v", rec.CallsFor("mkdir"))
-	}
-
-	path := dir + "/" + shared.BootEntryFileName + ".conf"
+	path := shared.BootMountPoint + "/" + shared.RefindConfigPath
 	content, ok := fs.Read(path)
 	if !ok {
-		t.Fatalf("boot entry not written at %s", path)
+		t.Fatalf("rEFInd config not written at %s", path)
 	}
-	for _, want := range []string{"title   " + shared.BootEntryTitle, "linux   /vmlinuz-linux-lts", "initrd  /initramfs-linux-lts.img", "options root=UUID=ROOT-UUID"} {
+	for _, want := range []string{
+		`menuentry "` + shared.BootEntryTitle + `"`,
+		"icon /" + shared.RefindIconPath,
+		"loader /vmlinuz-linux-lts",
+		"initrd /initramfs-linux-lts.img",
+		`options "root=UUID=ROOT-UUID`,
+	} {
 		if !strings.Contains(content, want) {
-			t.Errorf("entry missing %q:\n%s", want, content)
+			t.Errorf("refind.conf missing %q:\n%s", want, content)
 		}
 	}
 }
 
-func TestWriteBootEntry_MkdirFails(t *testing.T) {
-	rec := primitivestest.NewRecorder().OnError("mkdir", errors.New("permission denied"))
-	defer primitives.SetCommandRunner(rec)()
-	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+func TestWriteRefindConfig_WriteFails(t *testing.T) {
+	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
+	path := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	fs := primitivestest.NewMemFS().WithWriteError(path, errors.New("read-only fs"))
+	defer primitives.SetFileSystem(fs)()
 
 	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"}}
-	err := writeBootEntry(shared.BootMountPoint, ctx, "vmlinuz-linux", "initramfs-linux.img")
-	if err == nil || !strings.Contains(err.Error(), "boot entry dir") {
-		t.Fatalf("writeBootEntry() error = %v, want mkdir failure", err)
-	}
-}
-
-func TestSetDefaultBootEntry(t *testing.T) {
-	const confPath = shared.BootMountPoint + "/loader/loader.conf"
-	tests := []struct {
-		name    string
-		content string
-		want    []string
-	}{
-		{"replaces existing lines", "default old.conf\ntimeout 9\n", []string{"default " + shared.BootEntryFileName + ".conf", "timeout 0"}},
-		{"appends when absent", "editor 1\n", []string{"default " + shared.BootEntryFileName + ".conf", "timeout 0", "editor 1"}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
-			fs := primitivestest.NewMemFS().WithFile(confPath, tt.content)
-			defer primitives.SetFileSystem(fs)()
-
-			if err := setDefaultBootEntry(shared.BootMountPoint, shared.BootEntryFileName+".conf"); err != nil {
-				t.Fatalf("setDefaultBootEntry() = %v, want nil", err)
-			}
-			got, _ := fs.Read(confPath)
-			for _, want := range tt.want {
-				if !strings.Contains(got, want) {
-					t.Errorf("loader.conf missing %q:\n%s", want, got)
-				}
-			}
-		})
-	}
-}
-
-func TestSetDefaultBootEntry_CreatesWhenMissing(t *testing.T) {
-	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
-	fs := primitivestest.NewMemFS()
-	defer primitives.SetFileSystem(fs)()
-
-	// bootctl install --graceful can skip loader.conf on unusual firmware/ESP
-	// setups. A missing file must not abort the install; write a fresh one.
-	if err := setDefaultBootEntry(shared.BootMountPoint, "aelum.conf"); err != nil {
-		t.Fatalf("setDefaultBootEntry() = %v, want nil", err)
-	}
-	got, ok := fs.Read(shared.BootMountPoint + "/loader/loader.conf")
-	if !ok {
-		t.Fatal("loader.conf was not created")
-	}
-	for _, want := range []string{"default aelum.conf", "timeout 0"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("loader.conf missing %q:\n%s", want, got)
-		}
-	}
-}
-
-func TestSetDefaultBootEntry_ReadError(t *testing.T) {
-	const confPath = shared.BootMountPoint + "/loader/loader.conf"
-	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
-	fs := primitivestest.NewMemFS().WithReadError(confPath, errors.New("input/output error"))
-	defer primitives.SetFileSystem(fs)()
-
-	err := setDefaultBootEntry(shared.BootMountPoint, "aelum.conf")
-	if err == nil || !strings.Contains(err.Error(), "failed to read loader.conf") {
-		t.Fatalf("setDefaultBootEntry() error = %v, want read failure", err)
+	err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux", "initramfs-linux.img")
+	if err == nil || !strings.Contains(err.Error(), "failed to write rEFInd config") {
+		t.Fatalf("writeRefindConfig() error = %v, want write failure", err)
 	}
 }
 

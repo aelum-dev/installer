@@ -158,6 +158,16 @@
 	font-weight: 600;
 }
 
+/* Reused Boot (ESP) hint: the partition is mounted as-is, never formatted. */
+.reuse-hint {
+	display: block;
+	margin-top: 2px;
+	font-size: 0.68rem;
+	font-weight: 500;
+	line-height: 1.3;
+	color: var(--color-text-muted);
+}
+
 .part-size {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;

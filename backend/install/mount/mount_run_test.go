@@ -51,7 +51,7 @@ func TestRun_Ext4(t *testing.T) {
 	if !hasCall(mounts, "mount", "--mkdir", "/dev/vda2", shared.MountRoot) {
 		t.Errorf("root mount not issued; mount calls = %v", mounts)
 	}
-	if !hasCall(mounts, "mount", "/dev/vda1", shared.BootMountPoint) {
+	if !hasCall(mounts, "mount", "-t", shared.FileSystemVfat, "/dev/vda1", shared.BootMountPoint) {
 		t.Errorf("EFI mount not issued; mount calls = %v", mounts)
 	}
 	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", shared.BootMountPoint) {
@@ -209,7 +209,7 @@ func TestRun_VerifyRootMismatch(t *testing.T) {
 // TestRun_EfiMountFails verifies a failed ESP mount is surfaced.
 func TestRun_EfiMountFails(t *testing.T) {
 	rec := findmntRule(primitivestest.NewRecorder(), shared.MountRoot, "/dev/vda2")
-	rec.OnArgs([]string{"mount", "/dev/vda1"}, primitivestest.Result{
+	rec.OnArgs([]string{"mount", "-t", shared.FileSystemVfat, "/dev/vda1"}, primitivestest.Result{
 		Output: []byte("wrong fs type"),
 		Err:    errors.New("exit status 32"),
 	})

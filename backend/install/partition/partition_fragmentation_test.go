@@ -27,7 +27,7 @@ func TestBuildActions_ClampedRootBelowMinimumErrors(t *testing.T) {
 		DiskSizeMB:    diskMB,
 		DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP}, // existing ESP kept
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"}, // existing ESP kept
 			// SizeBytes matches the exact sector span (48000000-12000000+1) so Validate
 			// and buildActions agree on how much space the kept partition occupies.
 			{Path: "/dev/vda2", SizeMB: 17578, SizeBytes: 36000001 * 512}, // kept, preserve (empty type)
@@ -66,7 +66,7 @@ func TestBuildActions_ClampedRootFitsNoError(t *testing.T) {
 		DiskSizeMB:    diskMB,
 		DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Path: "/dev/vda2", SizeMB: 12000, SizeBytes: keptSpan * 512}, // kept, preserve (empty type)
 			{Path: "", SizeMB: 9000, Type: shared.TypeSystem},             // fits the rear gap, above the 8 GiB floor
 		},

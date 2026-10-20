@@ -11,7 +11,6 @@ import {
 	GPTBackupBytes,
 	GPTPrefixBytes,
 	MinESPSizeBytes,
-	MinExistingESPSizeBytes,
 	MinLvmLuksSystemPartitionBytes,
 	MinLvmSystemPartitionBytes,
 	MinSystemPartitionBytes,
@@ -114,7 +113,6 @@ export type ManualLayoutIssue =
 	| { kind: 'systemCount'; count: number }
 	| { kind: 'newPartNoType' }
 	| { kind: 'espTooSmall'; sizeMB: number }
-	| { kind: 'existingEspTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'systemTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'lvmSystemTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'invalidType'; type: string }
@@ -173,16 +171,13 @@ export function manualLayoutIssues(
 			continue;
 		}
 
-		if (p.type === TYPE_ESP) {
-			// Existing ESPs are often Windows-created at 100-300 MiB; only require
-			// the full 512 MiB floor for a brand-new ESP.
-			const floorMB = (p.path ? MinExistingESPSizeBytes : MinESPSizeBytes) / BYTES_PER_MB;
+		if (p.type === TYPE_ESP && !p.path) {
+			// A reused ESP is mounted as-is and has no size floor (Windows-created
+			// ESPs are often 100-300 MiB). Only a brand-new ESP must fit the
+			// kernel, initrd, and bootloader, so it keeps the 512 MiB floor.
+			const floorMB = MinESPSizeBytes / BYTES_PER_MB;
 			if (sizeMB < floorMB) {
-				issues.push(
-					p.path
-						? { kind: 'existingEspTooSmall', sizeMB, minMB: floorMB }
-						: { kind: 'espTooSmall', sizeMB },
-				);
+				issues.push({ kind: 'espTooSmall', sizeMB });
 			}
 		}
 		if (p.type === TYPE_SYSTEM && sizeMB < systemFloorMB) {

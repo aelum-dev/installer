@@ -152,11 +152,6 @@ function manualIssueReason(issue: ManualLayoutIssue): string {
 			return t('validation.modal.newPartNoType');
 		case 'espTooSmall':
 			return t('validation.modal.espTooSmall', { size: issue.sizeMB });
-		case 'existingEspTooSmall':
-			return t('validation.modal.existingEspTooSmall', {
-				size: issue.sizeMB,
-				min: issue.minMB,
-			});
 		case 'systemTooSmall':
 			return t('validation.modal.systemTooSmall', { size: issue.sizeMB, min: issue.minMB });
 		case 'lvmSystemTooSmall':

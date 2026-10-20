@@ -49,7 +49,7 @@ func TestValidate(t *testing.T) {
 			Disk:       "/dev/sda",
 			DiskSizeMB: 100000,
 			Partitions: []shared.ManualPartition{
-				{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
+				{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 				{Index: 1, Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
 				{Index: 2, Path: "/dev/sda3", SizeMB: 0}, // empty role = untouched
 			},
@@ -71,7 +71,7 @@ func TestValidate(t *testing.T) {
 				DiskSizeMB:    488387,
 				DiskSizeBytes: 512110984960,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/nvme0n1p1", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/nvme0n1p1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "/dev/nvme0n1p2", SizeMB: 487875, Type: shared.TypeSystem},
 				},
 			},
@@ -97,8 +97,8 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
-					{Path: "/dev/sda2", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
+					{Path: "/dev/sda2", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
@@ -109,7 +109,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 				},
 			},
 			wantErr: true,
@@ -119,7 +119,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "/dev/sda2", SizeMB: 50000, Type: shared.TypeSystem},
 					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
@@ -131,7 +131,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 60000, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 60000, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "/dev/sda2", SizeMB: 60000, Type: shared.TypeSystem},
 				},
 			},
@@ -142,7 +142,7 @@ func TestValidate(t *testing.T) {
 			layout: shared.ManualLayout{
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/sda1", SizeMB: 0, Type: shared.TypeESP},
+					{Path: "/dev/sda1", SizeMB: 0, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "/dev/sda2", SizeMB: 0, Type: shared.TypeSystem},
 				},
 			},
@@ -154,7 +154,7 @@ func TestValidate(t *testing.T) {
 				DiskSizeMB: 100000,
 				Partitions: []shared.ManualPartition{
 					{Path: "/dev/sda1", SizeMB: 512, Type: shared.PartitionType("swap")},
-					{Path: "/dev/sda2", SizeMB: 512, Type: shared.TypeESP},
+					{Path: "/dev/sda2", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "/dev/sda3", SizeMB: 50000, Type: shared.TypeSystem},
 				},
 			},
@@ -257,7 +257,7 @@ func TestBuildActions_BtrfsRoot(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
 		},
 	}
@@ -356,9 +356,9 @@ func TestBuildActions_NoOverlapWithExisting(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP}, // kept ESP
-			{Index: 1, Path: "/dev/sda2", SizeMB: 40000},                     // Windows, preserve (empty type)
-			{Index: 2, Path: "", SizeMB: 20000, Type: shared.TypeSystem},     // NEW Linux root
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"}, // kept ESP
+			{Index: 1, Path: "/dev/sda2", SizeMB: 40000},                                             // Windows, preserve (empty type)
+			{Index: 2, Path: "", SizeMB: 20000, Type: shared.TypeSystem},                             // NEW Linux root
 		},
 	}
 
@@ -485,7 +485,7 @@ func TestValidate_NewPartitionRespectsExactFreeSpace(t *testing.T) {
 		DiskSizeMB:    100000,
 		DiskSizeBytes: 100000 * mib,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "/dev/sda2", SizeMB: 90000, SizeBytes: 90000*mib + 500000, Type: shared.TypeSystem},
 			{Index: 2, Path: "", SizeMB: 9488, Type: shared.TypeSystem},
 		},
@@ -502,14 +502,14 @@ func TestValidate_NewPartitionRespectsExactFreeSpace(t *testing.T) {
 }
 
 // TestValidate_MinPartitionSizes checks the enforced floor for designated
-// partitions: a brand-new ESP must be at least 512 MiB, an existing ESP at
-// least 100 MiB, and the system partition at least 7680 MiB (8 GiB total minus
-// the 512 MiB ESP). A "use all remaining space" row is checked against the
-// resolved free space in TestValidate_UseRemainingRespectsFloor.
+// partitions: a brand-new ESP must be at least 512 MiB, a reused ESP has no
+// size floor (Windows-created ESPs are often 100-300 MiB), and the system
+// partition must be at least 7680 MiB (8 GiB total minus the 512 MiB ESP). A
+// "use all remaining space" row is checked against the resolved free space in
+// TestValidate_UseRemainingRespectsFloor.
 func TestValidate_MinPartitionSizes(t *testing.T) {
 	const mib = 1024 * 1024
 	minESP := int64(shared.MinESPSizeBytes / mib)
-	minExistingESP := int64(shared.MinExistingESPSizeBytes / mib)
 	minSys := int64(shared.MinSystemPartitionBytes / mib) // 7680 (8 GiB - 512 MiB ESP)
 
 	make := func(esp, sys shared.ManualPartition) shared.ManualLayout {
@@ -528,6 +528,7 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		}
 		part.Path = "/dev/sda1"
 		part.SizeBytes = sizeMB * mib
+		part.ExistingFstype = "vfat"
 		return part
 	}
 	sys := func(sizeMB int64, brandNew bool) shared.ManualPartition {
@@ -549,8 +550,8 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		{"existing system below 7680 MiB", esp(minESP, false), sys(minSys-1, false), true},
 		{"brand-new system below 7680 MiB", esp(minESP, false), sys(4096, true), true},
 		{"system use-remaining resolves above floor", esp(minESP, false), sys(0, true), false},
-		{"existing esp below 100 MiB", esp(minExistingESP-1, false), sys(minSys, false), true},
-		{"existing esp exactly 100 MiB", esp(minExistingESP, false), sys(minSys, false), false},
+		{"existing 32 MiB esp is reusable (no floor)", esp(32, false), sys(minSys, false), false},
+		{"existing 1 MiB esp is reusable (no floor)", esp(1, false), sys(minSys, false), false},
 		{"existing 256 MiB esp is reusable", esp(256, false), sys(minSys, false), false},
 		{"brand-new esp below 512 MiB", esp(minESP-1, true), sys(minSys, false), true},
 		{"brand-new esp exactly 512 MiB", esp(minESP, true), sys(minSys, false), false},
@@ -559,6 +560,46 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := Validate(make(tc.esp, tc.sys)); (err != nil) != tc.wantErr {
 				t.Fatalf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// TestValidate_ExistingBootMustBeFAT verifies the dualboot guard: a reused Boot
+// partition is mounted as-is, so it must already be FAT. The "fat32" alias is
+// accepted because fake-disk data and some tools report it that way.
+func TestValidate_ExistingBootMustBeFAT(t *testing.T) {
+	const mib = 1024 * 1024
+	minSys := int64(shared.MinSystemPartitionBytes / mib)
+
+	make := func(fstype string) shared.ManualLayout {
+		return shared.ManualLayout{
+			Disk:          "/dev/sda",
+			DiskSizeMB:    100000,
+			DiskSizeBytes: 100000 * mib,
+			Partitions: []shared.ManualPartition{
+				{Index: 0, Path: "/dev/sda1", SizeMB: 256, SizeBytes: 256 * mib, Type: shared.TypeESP, ExistingFstype: fstype},
+				{Index: 1, Path: "/dev/sda2", SizeMB: minSys, SizeBytes: minSys * mib, Type: shared.TypeSystem},
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		fstype  string
+		wantErr bool
+	}{
+		{"vfat accepted", "vfat", false},
+		{"fat32 alias accepted", "fat32", false},
+		{"upper-case VFAT accepted", "VFAT", false},
+		{"ext4 rejected", "ext4", true},
+		{"empty fstype rejected", "", true},
+		{"nil fstype rejected", "nil", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := Validate(make(tc.fstype)); (err != nil) != tc.wantErr {
+				t.Fatalf("Validate(fstype=%q) error = %v, wantErr %v", tc.fstype, err, tc.wantErr)
 			}
 		})
 	}
@@ -591,7 +632,7 @@ func TestValidate_UseRemainingRespectsFloor(t *testing.T) {
 			layout: shared.ManualLayout{
 				Disk: "/dev/vda", DiskSizeMB: 8000, DiskSizeBytes: 8000 * mib,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "", SizeMB: 0, Type: shared.TypeSystem},
 				},
 			},
@@ -644,7 +685,7 @@ func TestBuildActions_UseRemainingRespectsFloor(t *testing.T) {
 			layout: shared.ManualLayout{
 				Disk: "/dev/vda", DiskSizeMB: 8000, DiskSizeBytes: 8000 * mib,
 				Partitions: []shared.ManualPartition{
-					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+					{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 					{Path: "", SizeMB: 0, Type: shared.TypeSystem},
 				},
 			},
@@ -674,7 +715,7 @@ func TestValidate_NewPartitionFreesSpaceFromDeletedRow(t *testing.T) {
 		DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
 			// Existing ESP kept verbatim.
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			// Brand-new System replacing a partition the user deleted (deletedPartitions
 			// are excluded from Partitions, so their space is genuinely freed).
 			{Index: 1, Path: "", SizeMB: 19960, Type: shared.TypeSystem},
@@ -692,7 +733,7 @@ func TestValidate_UseAllOrdering(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
 			{Index: 2, Path: "", SizeMB: 500, Type: shared.TypeSystem},
 		},
@@ -712,7 +753,7 @@ func TestBuildActions_ExplicitNewPartitionTooLargeErrors(t *testing.T) {
 		DiskSizeMB:    100000,
 		DiskSizeBytes: 100000 * 1024 * 1024,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 99999, Type: shared.TypeSystem},
 		},
 	}
@@ -808,7 +849,7 @@ func TestBuildActions_FragmentedExplicitSizeErrors(t *testing.T) {
 	layout := shared.ManualLayout{
 		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 5120, SizeBytes: 5120 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 5120, SizeBytes: 5120 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "/dev/vda2", SizeMB: 20480, SizeBytes: 20480 * mib},
 			{Index: 2, Path: "", SizeMB: 14398, Type: shared.TypeSystem}, // fits in total, no single gap
 		},
@@ -846,7 +887,7 @@ func TestFeasible_DeletedPartitionFreesSpace(t *testing.T) {
 	layout := shared.ManualLayout{
 		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 5120, SizeBytes: 5120 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 5120, SizeBytes: 5120 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Index: 1, Path: "", SizeMB: 20000, Type: shared.TypeSystem}, // replaces vda2
 		},
 		DeletedPartitions: []shared.ManualPartition{{Index: 1, Path: "/dev/vda2"}},
@@ -919,7 +960,7 @@ func TestValidate_RejectsRequestThatOnlyFitsWithGPTPrefix(t *testing.T) {
 	layout := shared.ManualLayout{
 		Disk: "/dev/vda", DiskSizeMB: diskMB, DiskSizeBytes: diskMB * mib,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP},
+			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			// Exactly total-free-minus-1 MiB: the old check allowed this by
 			// counting the 1 MiB GPT prefix as allocatable.
 			{Index: 1, Path: "", SizeMB: diskMB - 512 - 1, Type: shared.TypeSystem},

@@ -302,7 +302,8 @@ the current `mkinitcpio.conf` defaults, and cryptsetup's documented 2.4.0+ defau
 - **`--key-size 512`** — XTS splits the key into two AES keys, so 512 = AES-256
   (256 would be AES-128). Explicitly pinned to guarantee AES-256. ✓
 - **`sha256`** hash for KDF — default and secure; sha512's only downside (GRUB
-  slowness) doesn't apply since we use systemd-boot. ✓
+  slowness) doesn't apply because decryption happens in the initramfs
+  (`sd-encrypt`), not in the bootloader (rEFInd). ✓
 - **`--iter-time 2000`** ms — the modern minimum default for the volume-key KDF. ✓
 - **initramfs hook** — `sd-encrypt` (systemd-based default), placed after `block`,
   before `filesystems`. `sd-vconsole` already precedes it, so the user's keymap

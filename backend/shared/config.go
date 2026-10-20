@@ -77,13 +77,6 @@ const GPTPrefixBytes = 1024 * 1024
 // bytes so it scales with the logical sector size.
 const GPTBackupBytes = 128 * 1024
 
-// MinExistingESPSizeBytes is the smallest *existing* ESP the manual installer
-// will reuse (100 MiB). Existing ESPs are commonly 100-300 MiB because Windows
-// created them; requiring the new-ESP 512 MiB floor would reject every dual-boot
-// machine with a Windows-made ESP. The bootloader step still has to fit the
-// kernel and initrd, so a full existing ESP can fail later with a clear error.
-const MinExistingESPSizeBytes = 100 * 1024 * 1024
-
 // --- Filesystem types --------------------------------------------------------
 
 // DefaultFileSystem is the default root filesystem when none is specified.
@@ -195,9 +188,9 @@ const GPTPartitionStartSector = 2048
 
 // MinManualDiskSizeBytes is the overall disk floor for manual mode: the same
 // 8 GiB product minimum. The individual ESP/System floors are checked
-// separately; an 8 GiB disk can hold 7680 MiB System plus a reused 100 MiB ESP,
-// while a new 512 MiB ESP + 7680 MiB System needs a little more than 8 GiB once
-// the GPT prefix/backup is counted.
+// separately; a reused ESP has no size floor, while a new 512 MiB ESP +
+// 7680 MiB System needs a little more than 8 GiB once the GPT prefix/backup is
+// counted.
 const MinManualDiskSizeBytes = MinDiskSizeBytes
 
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.
@@ -257,21 +250,41 @@ const InitrdFileExtension = ".img"
 // KernelPresetName is the mkinitcpio preset used for regeneration.
 const KernelPresetName = "linux-lts"
 
-// BootEntryFileName is the name of the systemd-boot entry file (without .conf).
-const BootEntryFileName = "aelum"
-
 // BootEntryTitle is the human-readable title shown in the boot menu.
 const BootEntryTitle = "Aelum"
 
-// BootOptionDescription is the custom description passed to bootctl install.
-const BootOptionDescription = "Aelum"
+// RefindDir is rEFInd's installation directory on the ESP, relative to the ESP
+// root (the ESP is mounted at BootMountPoint during install).
+const RefindDir = "EFI/refind"
 
-// BootLoaderEntriesDir is the subdirectory under the ESP for boot entries.
-const BootLoaderEntriesDir = "loader/entries"
+// RefindBinaryName is the x86_64 rEFInd EFI binary shipped by the refind
+// package.
+const RefindBinaryName = "refind_x64.efi"
 
-// BootLoaderTimeout is the systemd-boot selection timeout (in seconds) written
-// to loader.conf, giving the user a window to choose a boot entry at startup.
-const BootLoaderTimeout = 0
+// RefindBinaryPath is the ESP-relative path of the installed rEFInd binary.
+const RefindBinaryPath = RefindDir + "/" + RefindBinaryName
+
+// RefindConfigFileName is the name of rEFInd's configuration file.
+const RefindConfigFileName = "refind.conf"
+
+// RefindConfigPath is the ESP-relative path of rEFInd's configuration file.
+const RefindConfigPath = RefindDir + "/" + RefindConfigFileName
+
+// RefindSourceDir is the read-only asset directory shipped by the refind
+// package inside the live ISO. The whole tree (binary, icons, drivers, tools)
+// is copied onto the ESP, so no network access is needed during install.
+const RefindSourceDir = "/usr/share/refind"
+
+// RefindNvramLoader is the firmware loader path registered in NVRAM. UEFI
+// firmware expects backslash-separated paths relative to the ESP root.
+const RefindNvramLoader = "\\EFI\\refind\\refind_x64.efi"
+
+// RefindTimeoutSeconds is how long the rEFInd menu waits before booting the
+// default entry, giving the user a window to pick another OS (dualboot).
+const RefindTimeoutSeconds = 5
+
+// RefindIconPath is the ESP-relative icon rEFInd shows for the Aelum entry.
+const RefindIconPath = RefindDir + "/icons/os_arch.png"
 
 // --- Progress tick ----------------------------------------------------------
 

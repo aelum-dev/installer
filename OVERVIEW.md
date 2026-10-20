@@ -34,7 +34,7 @@ It also ships a **CLI installer** (`aelum-installer-cli`) for headless/automated
 | **Frontend** | Svelte 5 (TypeScript), Vite, Tailwind-like CSS variables |
 | **Target OS** | Arch Linux (installed via `pacstrap`) |
 | **Desktop** | Hyprland + DankMaterialShell (based on Quickshell) + DMS Greeter (greetd) |
-| **Bootloader** | systemd-boot (bootctl) |
+| **Bootloader** | rEFInd (auto-detects other OSes for dualboot) |
 | **Filesystems** | ext4 or btrfs (with subvolumes) |
 | **Boot Splash** | Plymouth, branded Aelum theme (silent boot; LUKS passphrase unlock) |
 
@@ -118,7 +118,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | # | Sub-step | Function | Description |
 |---|----------|----------|-------------|
 | 6.1 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes) |
-| 6.2 | Configure Bootloader | `ConfigureBootloader` | systemd-boot install, boot entry, random seed |
+| 6.2 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, `refind.conf` menu entry, NVRAM boot entry |
 | 6.3 | Configure System | `ConfigureSystemBase` | Hostname, timezone, locale, keymap, NTP, mirrorlist |
 | 6.4 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
 | 6.5 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
@@ -287,7 +287,7 @@ Aelum-Installer/
 │   │   ├── install_desktop.go   # pacstrap desktop packages
 │   │   ├── install.go           # Pacstrap progress tracking
 │   │   ├── fstab.go             # fstab generation + verification
-│   │   ├── bootloader.go        # systemd-boot install + boot entries
+│   │   ├── bootloader.go        # rEFInd install + refind.conf boot entry
 │   │   ├── users.go             # User account creation + ISO copy
 │   │   ├── system.go            # Hostname, locale, timezone, mirrors
 │   │   ├── greetd.go            # Login manager config + DMS sync

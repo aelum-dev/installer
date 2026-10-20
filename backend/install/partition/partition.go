@@ -175,10 +175,15 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 	// Format each Boot/Root partition. When LUKS or LVM is enabled the System
 	// partition is not formatted directly (EncryptRoot / SetupRootFilesystem
-	// below create the filesystem, and for LVM the PV/VG/LVs), so only the ESP
-	// is formatted here.
+	// below create the filesystem, and for LVM the PV/VG/LVs). A reused Boot
+	// (ESP) partition is never formatted: it may hold another OS's boot loaders
+	// and must be left exactly as-is for dualboot. Only brand-new ESPs are
+	// created and formatted by this step.
 	for _, a := range actions {
 		if a.pType == shared.TypeSystem && (ctx.Luks || ctx.Lvm) {
+			continue
+		}
+		if a.pType == shared.TypeESP && !a.isNew {
 			continue
 		}
 		label := "aelum"
@@ -234,8 +239,10 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 // applyPartitionTable creates every brand-new partition, then sets the expected
 // GPT type GUID on each existing ESP/System action. Existing partitions are
-// never recreated or renumbered; only their type is adjusted so firmware and
-// bootloader discovery see the role the user assigned.
+// never recreated, renumbered, or formatted; only their type is adjusted so
+// firmware and bootloader discovery see the role the user assigned. Stamping
+// the ESP GUID on a reused Boot partition is harmless and leaves its contents
+// (including other OSes' boot loaders) untouched.
 func applyPartitionTable(diskID string, actions []formatAction) error {
 	for _, a := range actions {
 		if !a.isNew {

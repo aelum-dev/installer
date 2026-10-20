@@ -14,7 +14,7 @@ import (
 //
 // For standard layouts (ext4/default):
 //   - /mnt: root partition
-//   - /mnt/boot: EFI partition (ESP, where kernel/initrd live for systemd-boot)
+//   - /mnt/boot: EFI partition (ESP, where kernel/initrd and rEFInd live)
 //
 // For btrfs subvolume layouts:
 //   - /mnt: subvolume with MountPoint "/" (e.g. @), with properties from layout
@@ -130,7 +130,12 @@ func Run(ctx *shared.InstallContext) error {
 		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
 	}
 
-	cmd = primitives.Run("mount", p.EFIPart, bootMount)
+	// The filesystem type is given explicitly: without it the kernel probes
+	// every filesystem it knows, and a FAT partition can be rejected when the
+	// vfat module has not been loaded yet (the probe then fails with a
+	// confusing "Can't find ext4 filesystem"/squashfs error). Naming the type
+	// makes the kernel load the module on demand.
+	cmd = primitives.Run("mount", "-t", shared.FileSystemVfat, p.EFIPart, bootMount)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("mount EFI failed: %w: %s", err, string(output))

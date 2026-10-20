@@ -68,7 +68,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
         fstab.go                — fstab generation + verification (btrfs/ext4/LVM variants)
-        bootloader.go           — systemd-boot install + boot entry (LUKS/LVM-aware root options)
+        bootloader.go           — rEFInd install + refind.conf menu entry (LUKS/LVM-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
@@ -184,7 +184,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
-8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs), kernel + initrd on the Boot partition, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
+8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs), kernel + initrd on the Boot partition, the rEFInd binary and its Aelum menu entry, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
 
 ## Build & Test
 ```bash
@@ -256,7 +256,7 @@ Welcome (language select)
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
-- Boot floor: new Boot partition `shared.MinESPSizeBytes` = 512 MiB; reused existing Boot partition `shared.MinExistingESPSizeBytes` = 100 MiB (Windows-created boot partitions are often 100–300 MiB)
+- Boot floor: only a brand-new Boot partition has a floor, `shared.MinESPSizeBytes` = 512 MiB. A reused existing Boot partition has **no size floor** (Windows-created boot partitions are often 100–300 MiB) but must already be FAT (`vfat`/`fat32`); it is mounted as-is and never formatted.
 - System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition); LVM uses `shared.MinLvmSystemPartitionBytes` = 16 GiB, plus `shared.LuksHeaderReserveBytes` when LUKS+LVM is enabled
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.

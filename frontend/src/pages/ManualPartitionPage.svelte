@@ -273,7 +273,10 @@
 						<tr class={['editor-row', { designated: part.type === TYPE_ESP || part.type === TYPE_SYSTEM }]}>
 							<td class="part-name">
 								{#if part.path}
-									{part.path}
+									<span class="part-path">{part.path}</span>
+									{#if part.type === TYPE_ESP}
+										<span class="reuse-hint">{t('manual.reuseBootHint')}</span>
+									{/if}
 								{:else}
 									<span class="part-new">{t('manual.newPart')}</span>
 								{/if}

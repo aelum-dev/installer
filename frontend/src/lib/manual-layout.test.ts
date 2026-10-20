@@ -62,14 +62,14 @@ describe('isManualLayoutValid', () => {
 		expect(isManualLayoutValid(layout)).toBe(true);
 	});
 
-	it('rejects an existing ESP below 100 MiB', () => {
+	it('accepts an existing ESP below 100 MiB (no reuse floor)', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 99, sizeBytes: 99 * mib, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
-		expect(isManualLayoutValid(layout)).toBe(false);
+		expect(isManualLayoutValid(layout)).toBe(true);
 	});
 
 	it('rejects a brand-new ESP below 512 MiB', () => {
@@ -190,14 +190,12 @@ describe('manual layout geometry', () => {
 	it('reports structured issues in the same order the modal renders them', () => {
 		const layout = baseLayout({
 			partitions: [
+				// A reused ESP has no size floor; only the tiny System is a problem.
 				{ index: 0, path: '/dev/sda1', sizeMB: 64, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 1, type: 'system' },
 			],
 		});
-		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toEqual([
-			'existingEspTooSmall',
-			'systemTooSmall',
-		]);
+		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toEqual(['systemTooSmall']);
 	});
 });
 
@@ -248,14 +246,16 @@ describe('manual layout guards', () => {
 		);
 	});
 
-	it('rejects an existing sub-1-MiB ESP instead of treating it as use-remaining', () => {
+	it('accepts an existing sub-1-MiB ESP without treating it as use-remaining', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 0, sizeBytes: 512 * 1024, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
-		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('existingEspTooSmall');
+		// Reused boot partitions have no size floor, so the tiny ESP is valid and
+		// must not be mistaken for a brand-new "use all remaining space" row.
+		expect(manualLayoutIssues(layout)).toEqual([]);
 	});
 });
 
