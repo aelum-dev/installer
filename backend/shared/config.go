@@ -283,8 +283,35 @@ const RefindNvramLoader = "\\EFI\\refind\\refind_x64.efi"
 // default entry, giving the user a window to pick another OS (dualboot).
 const RefindTimeoutSeconds = 5
 
-// RefindIconPath is the ESP-relative icon rEFInd shows for the Aelum entry.
-const RefindIconPath = RefindDir + "/icons/os_arch.png"
+// RefindThemeName is the directory name of the branded Aelum boot-menu theme.
+const RefindThemeName = "aelum"
+
+// RefindThemeDir is the ESP-relative directory of the branded rEFInd theme.
+const RefindThemeDir = RefindDir + "/themes/" + RefindThemeName
+
+// RefindThemeSourceDir is the read-only theme directory shipped inside the
+// live ISO (/usr/share/aelum/...). ConfigureBootloader copies it onto the ESP,
+// so the branded menu needs no network access.
+const RefindThemeSourceDir = "/usr/share/aelum/refind/themes/" + RefindThemeName
+
+// RefindThemeConfigFileName is the name of the theme's option file.
+const RefindThemeConfigFileName = "theme.conf"
+
+// RefindThemeConfigPath is the ESP-relative path of the theme's option file.
+const RefindThemeConfigPath = RefindThemeDir + "/" + RefindThemeConfigFileName
+
+// RefindThemeInclude is the path refind.conf passes to the "include" token.
+// rEFInd resolves included files relative to its own directory (EFI/refind),
+// so this deliberately omits the RefindDir prefix.
+const RefindThemeInclude = "themes/" + RefindThemeName + "/" + RefindThemeConfigFileName
+
+// RefindThemeBackgroundPath is the ESP-relative full-screen boot background
+// referenced by theme.conf.
+const RefindThemeBackgroundPath = RefindThemeDir + "/background.png"
+
+// RefindIconPath is the ESP-relative icon rEFInd shows for the Aelum entry. It
+// lives in the branded theme so the menu icon matches the boot background.
+const RefindIconPath = RefindThemeDir + "/icons/os_arch.png"
 
 // --- Progress tick ----------------------------------------------------------
 

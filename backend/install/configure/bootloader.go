@@ -43,6 +43,9 @@ func ConfigureBootloader(ctx *shared.InstallContext) error {
 	if err := installRefind(esp); err != nil {
 		return err
 	}
+	if err := installRefindTheme(esp); err != nil {
+		return err
+	}
 	kernel, initrd, err := discoverKernelFiles()
 	if err != nil {
 		return err
@@ -72,6 +75,27 @@ func installRefind(esp string) error {
 	out, err := primitives.Run("cp", "-r", shared.RefindSourceDir+"/.", dest+"/").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to copy rEFInd from %s: %w: %s", shared.RefindSourceDir, err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// installRefindTheme copies the branded Aelum theme (background, font, icons,
+// selection highlight) from the live ISO onto the ESP. It is installed next to
+// rEFInd rather than into the package's own tree so an rEFInd package upgrade
+// cannot overwrite it. A theme shipped with the ISO is a hard requirement: the
+// installer and the theme are baked into the same ISO, so a missing source
+// means the ISO was built without it.
+func installRefindTheme(esp string) error {
+	if err := primitives.Run("test", "-d", shared.RefindThemeSourceDir).Run(); err != nil {
+		return fmt.Errorf("rEFInd theme not found on ISO at %s (rebuild the ISO with the theme)", shared.RefindThemeSourceDir)
+	}
+	dest := esp + "/" + shared.RefindThemeDir
+	if err := primitives.Run("mkdir", "-p", dest).Run(); err != nil {
+		return fmt.Errorf("failed to create rEFInd theme directory %s: %w", dest, err)
+	}
+	out, err := primitives.Run("cp", "-r", shared.RefindThemeSourceDir+"/.", dest+"/").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to copy Aelum rEFInd theme from %s: %w: %s", shared.RefindThemeSourceDir, err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
@@ -136,6 +160,12 @@ func refindConfig(ctx *shared.InstallContext, kernel, initrd string) string {
 	b.WriteString("scan_all_linux_kernels false\n")
 	b.WriteString("dont_scan_dirs EFI/systemd\n")
 	b.WriteString("dont_scan_files systemd-bootx64.efi,BOOTX64.EFI,bootx64.efi\n")
+	b.WriteString("\n")
+	// The branded theme is a separate file so refind.conf stays readable and
+	// the theme can be swapped without touching the boot entry. rEFInd resolves
+	// this path relative to EFI/refind.
+	fmt.Fprintf(&b, "# Branded Aelum boot-menu theme (background, font, icons, selection).\n")
+	fmt.Fprintf(&b, "include %s\n", shared.RefindThemeInclude)
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "menuentry %q {\n", shared.BootEntryTitle)
 	fmt.Fprintf(&b, "    icon /%s\n", shared.RefindIconPath)
@@ -269,6 +299,25 @@ func verifyBootloaderInstallation(esp string) error {
 		} else {
 			info = append(info, "rEFInd config contents: "+strings.TrimSpace(content))
 		}
+		if !strings.Contains(content, "include "+shared.RefindThemeInclude) {
+			issues = append(issues, "rEFInd config does not include the Aelum theme ("+shared.RefindThemeInclude+")")
+		}
+	}
+
+	// The theme is what makes the menu Aelum-branded; confirm the files the
+	// include line depends on actually made it onto the ESP.
+	for _, rel := range []string{
+		shared.RefindThemeConfigPath,
+		shared.RefindThemeBackgroundPath,
+		shared.RefindIconPath,
+	} {
+		path := esp + "/" + rel
+		if err := primitives.Run("test", "-f", path).Run(); err != nil {
+			issues = append(issues, "Aelum rEFInd theme file is MISSING: "+path)
+		}
+	}
+	if len(issues) == 0 {
+		info = append(info, "Aelum rEFInd theme installed at "+esp+"/"+shared.RefindThemeDir)
 	}
 
 	cmd := primitives.Run("find", esp+"/"+shared.RefindDir, "-maxdepth", "1", "-type", "f")

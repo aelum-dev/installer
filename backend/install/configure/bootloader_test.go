@@ -101,6 +101,7 @@ func TestRefindConfig(t *testing.T) {
 		"scan_all_linux_kernels false",
 		"dont_scan_dirs EFI/systemd",
 		"dont_scan_files systemd-bootx64.efi,BOOTX64.EFI,bootx64.efi",
+		"include " + shared.RefindThemeInclude,
 		`menuentry "` + shared.BootEntryTitle + `" {`,
 		"icon /" + shared.RefindIconPath,
 		"loader /vmlinuz-linux-lts",
@@ -244,6 +245,49 @@ func TestInstallRefind_MkdirFailure(t *testing.T) {
 	}
 }
 
+func TestInstallRefindTheme(t *testing.T) {
+	rec := primitivestest.NewRecorder()
+	defer primitives.SetCommandRunner(rec)()
+
+	if err := installRefindTheme(shared.BootMountPoint); err != nil {
+		t.Fatalf("installRefindTheme() = %v, want nil", err)
+	}
+	dest := shared.BootMountPoint + "/" + shared.RefindThemeDir
+	calls := rec.CallsFor("mkdir")
+	wantMkdir := []string{"mkdir", "-p", dest}
+	if len(calls) != 1 || !reflect.DeepEqual(calls[0], wantMkdir) {
+		t.Fatalf("mkdir argv = %v, want %v", calls, wantMkdir)
+	}
+	calls = rec.CallsFor("cp")
+	wantCp := []string{"cp", "-r", shared.RefindThemeSourceDir + "/.", dest + "/"}
+	if len(calls) != 1 || !reflect.DeepEqual(calls[0], wantCp) {
+		t.Fatalf("cp argv = %v, want %v", calls, wantCp)
+	}
+}
+
+func TestInstallRefindTheme_MissingOnISO(t *testing.T) {
+	rec := primitivestest.NewRecorder().OnArgsError([]string{"test", "-d"}, errors.New("missing"))
+	defer primitives.SetCommandRunner(rec)()
+
+	err := installRefindTheme(shared.BootMountPoint)
+	if err == nil || !strings.Contains(err.Error(), "theme not found on ISO") {
+		t.Fatalf("installRefindTheme() error = %v, want missing-theme failure", err)
+	}
+	if calls := rec.CallsFor("cp"); len(calls) != 0 {
+		t.Fatalf("cp ran without a theme source: %v", calls)
+	}
+}
+
+func TestInstallRefindTheme_CopyFailure(t *testing.T) {
+	rec := primitivestest.NewRecorder().OnError("cp", errors.New("exit status 1"))
+	defer primitives.SetCommandRunner(rec)()
+
+	err := installRefindTheme(shared.BootMountPoint)
+	if err == nil || !strings.Contains(err.Error(), "failed to copy Aelum rEFInd theme") {
+		t.Fatalf("installRefindTheme() error = %v, want copy failure", err)
+	}
+}
+
 func TestPartitionNumber(t *testing.T) {
 	tests := []struct {
 		disk, part string
@@ -357,7 +401,7 @@ func TestVerifyBootloaderInstallation_Success(t *testing.T) {
 	rec := primitivestest.NewRecorder()
 	defer primitives.SetCommandRunner(rec)()
 	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
-	fs := primitivestest.NewMemFS().WithFile(confPath, `menuentry "`+shared.BootEntryTitle+`" {`+"\n}\n")
+	fs := primitivestest.NewMemFS().WithFile(confPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {`+"\n}\n")
 	defer primitives.SetFileSystem(fs)()
 
 	if err := verifyBootloaderInstallation(shared.BootMountPoint); err != nil {
@@ -481,6 +525,7 @@ func TestConfigureBootloader_Success(t *testing.T) {
 		t.Fatalf("refind.conf not written at %s", shared.BootMountPoint+"/"+shared.RefindConfigPath)
 	}
 	for _, want := range []string{
+		"include " + shared.RefindThemeInclude,
 		`menuentry "` + shared.BootEntryTitle + `"`,
 		"loader /vmlinuz-linux-lts",
 		"initrd /initramfs-linux-lts.img",

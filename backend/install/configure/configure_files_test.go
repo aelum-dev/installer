@@ -237,6 +237,7 @@ func TestWriteRefindConfig(t *testing.T) {
 		t.Fatalf("rEFInd config not written at %s", path)
 	}
 	for _, want := range []string{
+		"include " + shared.RefindThemeInclude,
 		`menuentry "` + shared.BootEntryTitle + `"`,
 		"icon /" + shared.RefindIconPath,
 		"loader /vmlinuz-linux-lts",

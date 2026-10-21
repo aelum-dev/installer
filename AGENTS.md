@@ -68,7 +68,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
         fstab.go                — fstab generation + verification (btrfs/ext4/LVM variants)
-        bootloader.go           — rEFInd install + refind.conf menu entry (LUKS/LVM-aware root options)
+        bootloader.go           — rEFInd install + branded theme + refind.conf menu entry (LUKS/LVM-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)

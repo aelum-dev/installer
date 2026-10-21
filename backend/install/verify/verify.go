@@ -239,7 +239,18 @@ func checkBootloader(ctx *shared.InstallContext, issues, info *[]string) {
 		*issues = append(*issues, "rEFInd config is missing the "+shared.BootEntryTitle+" menu entry")
 		return
 	}
+	if !strings.Contains(string(data), "include "+shared.RefindThemeInclude) {
+		*issues = append(*issues, "rEFInd config is missing the Aelum theme include")
+		return
+	}
 	*info = append(*info, "rEFInd config present ✓")
+
+	themeConfPath := shared.BootMountPoint + "/" + shared.RefindThemeConfigPath
+	if _, err := primitives.ReadFile(themeConfPath); err != nil {
+		*issues = append(*issues, "Aelum rEFInd theme not found at "+themeConfPath)
+		return
+	}
+	*info = append(*info, "Aelum rEFInd theme present ✓")
 }
 
 // checkKernelImages verifies that a kernel image and its matching initrd exist

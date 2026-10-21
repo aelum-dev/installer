@@ -287,7 +287,7 @@ Aelum-Installer/
 │   │   ├── install_desktop.go   # pacstrap desktop packages
 │   │   ├── install.go           # Pacstrap progress tracking
 │   │   ├── fstab.go             # fstab generation + verification
-│   │   ├── bootloader.go        # rEFInd install + refind.conf boot entry
+│   │   ├── bootloader.go        # rEFInd install + branded theme + refind.conf boot entry
 │   │   ├── users.go             # User account creation + ISO copy
 │   │   ├── system.go            # Hostname, locale, timezone, mirrors
 │   │   ├── greetd.go            # Login manager config + DMS sync

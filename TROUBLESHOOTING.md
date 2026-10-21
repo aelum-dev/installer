@@ -77,13 +77,18 @@ sudo ./aelum-installer-cli --rollback /dev/sda
 ### "bootloader verification failed" (rEFInd)
 
 **Cause**: The Boot partition is not mounted correctly, the `refind` package is
-missing from the offline mirror, or firmware rejected the NVRAM boot entry.
+missing from the offline mirror, the Aelum rEFInd theme was not shipped in the
+ISO, or firmware rejected the NVRAM boot entry.
 
 **Fix**:
 ```bash
 # Check the Boot partition is mounted and rEFInd was copied
 ls /mnt/boot/EFI/refind/
 cat /mnt/boot/EFI/refind/refind.conf
+
+# The branded menu lives in EFI/refind/themes/aelum (background, font, icons).
+# If it is missing, rebuild the ISO with live-iso/.../aelum/refind/themes/aelum.
+ls /mnt/boot/EFI/refind/themes/aelum/
 
 # Verify EFI firmware / boot entries
 efibootmgr -v

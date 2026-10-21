@@ -25,7 +25,8 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 		WithFile(shared.MountRoot+"/etc/fstab", "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\n").
 		WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0::/root:/bin/bash\nalice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
-		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, `menuentry "`+shared.BootEntryTitle+`" {`+"\n    options root=UUID=ROOT-UUID\n}\n")
+		WithFile(shared.BootMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
+		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {`+"\n    options root=UUID=ROOT-UUID\n}\n")
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
 	defer primitives.SetCommandRunner(rec)()
@@ -43,12 +44,13 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 }
 
 func TestRun_PassesWithLuksAndLvm(t *testing.T) {
-	entry := `menuentry "` + shared.BootEntryTitle + `" {` + "\n    options rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath + " rw quiet splash rootflags=subvol=@\n}\n"
+	entry := "include " + shared.RefindThemeInclude + "\n" + `menuentry "` + shared.BootEntryTitle + `" {` + "\n    options rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath + " rw quiet splash rootflags=subvol=@\n}\n"
 	fs := primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\nUUID=HOME-UUID /home ext4 rw 0 2\n").
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt lvm2 filesystems)\n").
+		WithFile(shared.BootMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, entry)
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
@@ -269,6 +271,7 @@ func TestCheckLvm(t *testing.T) {
 
 func TestCheckBootloader(t *testing.T) {
 	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	themeConfPath := shared.BootMountPoint + "/" + shared.RefindThemeConfigPath
 	ctx := &shared.InstallContext{}
 
 	tests := []struct {
@@ -278,8 +281,10 @@ func TestCheckBootloader(t *testing.T) {
 		wantIssue string
 	}{
 		{
-			name:      "missing binary",
-			fs:        primitivestest.NewMemFS().WithFile(confPath, `menuentry "Aelum" {}`),
+			name: "missing binary",
+			fs: primitivestest.NewMemFS().
+				WithFile(confPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "Aelum" {}`).
+				WithFile(themeConfPath, "banner themes/aelum/background.png\n"),
 			rec:       primitivestest.NewRecorder().OnArgsError([]string{"test", "-f"}, errors.New("missing")),
 			wantIssue: "rEFInd binary not found",
 		},
@@ -296,9 +301,24 @@ func TestCheckBootloader(t *testing.T) {
 			wantIssue: "missing the Aelum menu entry",
 		},
 		{
+			name:      "missing theme include",
+			fs:        primitivestest.NewMemFS().WithFile(confPath, `menuentry "`+shared.BootEntryTitle+`" {}`),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "missing the Aelum theme include",
+		},
+		{
+			name: "missing theme files",
+			fs: primitivestest.NewMemFS().WithFile(confPath,
+				"include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {}`),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "Aelum rEFInd theme not found",
+		},
+		{
 			name: "complete",
-			fs:   primitivestest.NewMemFS().WithFile(confPath, `menuentry "`+shared.BootEntryTitle+`" {}`),
-			rec:  primitivestest.NewRecorder(),
+			fs: primitivestest.NewMemFS().
+				WithFile(confPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {}`).
+				WithFile(themeConfPath, "banner themes/aelum/background.png\n"),
+			rec: primitivestest.NewRecorder(),
 		},
 	}
 
