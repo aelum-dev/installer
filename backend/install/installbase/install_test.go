@@ -48,7 +48,7 @@ func TestBasePackages_NoDuplicatesOrEmpty(t *testing.T) {
 // TestRun_NotMounted checks the step fails cleanly when the installed system is
 // not mounted (the normal state during unit tests).
 func TestRun_NotMounted(t *testing.T) {
-	if err := Run(&shared.InstallContext{}); err == nil {
+	if err := Run(&shared.InstallContext{ESP: t.TempDir()}); err == nil {
 		t.Error("expected an error when /mnt is not mounted")
 	}
 }

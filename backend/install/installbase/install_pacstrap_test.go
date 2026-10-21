@@ -89,7 +89,7 @@ func TestRun_PacstrapArgs(t *testing.T) {
 	dir := fakePacstrap(t, `printf '%s\n' "$@" > "$(dirname "$0")/args"; exit 0`)
 	mounted(t)
 
-	if err := Run(&shared.InstallContext{}); err != nil {
+	if err := Run(&shared.InstallContext{ESP: t.TempDir()}); err != nil {
 		t.Fatalf("Run() = %v, want nil", err)
 	}
 

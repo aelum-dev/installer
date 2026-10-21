@@ -74,6 +74,22 @@ sudo ./aelum-installer-cli --rollback /dev/sda
 2. Rebuild mirrorlists: `go run ./backend/shared/mirrorlist_gen.go`
 3. Rebuild the installer: `./build.sh`
 
+### "conflicting files" when reusing an existing ESP
+
+**Cause**: The reused ESP already contains `memtest86+` binaries from another
+installation. pacman refuses to overwrite files it does not own in the target
+database:
+
+```text
+memtest86+-efi: /mnt/boot/memtest86+/memtest86x64.efi exists in filesystem
+```
+
+**Fix**: The installer handles this automatically by renaming the existing
+files to `*.aelum-backup` before pacstrap runs, then installing the packaged
+version. The old binaries remain on the ESP for recovery. If the install failed
+before this fix was applied, remove or rename `/boot/memtest86+` manually and
+retry.
+
 ### "bootloader verification failed" (rEFInd)
 
 **Cause**: The Boot partition is not mounted correctly, the `refind` package is
