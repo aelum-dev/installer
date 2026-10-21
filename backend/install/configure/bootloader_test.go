@@ -3,6 +3,8 @@ package configure
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -93,9 +95,10 @@ func TestRefindConfig(t *testing.T) {
 		Lvm:        true,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID"},
 	}
-	got := refindConfig(ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img")
+	got := refindConfig(ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{Width: 1920, Height: 1080}, true, false)
 
 	for _, want := range []string{
+		"resolution 1920 1080",
 		"timeout 5",
 		"default_selection " + shared.BootEntryTitle,
 		"scan_all_linux_kernels false",
@@ -113,6 +116,163 @@ func TestRefindConfig(t *testing.T) {
 			t.Errorf("refind.conf missing %q:\n%s", want, got)
 		}
 	}
+	if strings.Contains(got, "font "+shared.RefindThemeFont2x) {
+		t.Errorf("1080p refind.conf unexpectedly selects the 2x font:\n%s", got)
+	}
+}
+
+func TestRefindConfig_HiDPI(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
+	}
+
+	for _, tc := range []struct {
+		name string
+		mode displayMode
+	}{
+		{"2K", displayMode{Width: 2560, Height: 1440}},
+		{"4K", displayMode{Width: 3840, Height: 2160}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := refindConfig(ctx, "vmlinuz-linux", "initramfs-linux.img", tc.mode, true, true)
+
+			for _, want := range []string{
+				fmt.Sprintf("resolution %d %d", tc.mode.Width, tc.mode.Height),
+				"font " + shared.RefindThemeFont2x,
+			} {
+				if !strings.Contains(got, want) {
+					t.Fatalf("%s refind.conf missing %q:\n%s", tc.name, want, got)
+				}
+			}
+		})
+	}
+}
+
+func TestRefindConfig_NoDetectedMode(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
+	}
+	got := refindConfig(ctx, "vmlinuz-linux", "initramfs-linux.img", displayMode{}, false, false)
+
+	if !strings.Contains(got, "resolution max") {
+		t.Fatalf("fallback refind.conf missing \"resolution max\":\n%s", got)
+	}
+	if strings.Contains(got, "font "+shared.RefindThemeFont2x) {
+		t.Fatalf("1x fallback unexpectedly selects the 2x font:\n%s", got)
+	}
+}
+
+// --- display detection -------------------------------------------------------
+
+func writeDRMConnector(t *testing.T, root, connector, status, enabled, modes string) {
+	t.Helper()
+	dir := filepath.Join(root, connector)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if status != "" {
+		if err := os.WriteFile(filepath.Join(dir, "status"), []byte(status+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if enabled != "" {
+		if err := os.WriteFile(filepath.Join(dir, "enabled"), []byte(enabled+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modes"), []byte(modes), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPreferredDisplayMode(t *testing.T) {
+	t.Run("uses first advertised mode", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "2560x1440\n3840x2160\n")
+		mode, ok := preferredDisplayMode(root)
+		if !ok || mode != (displayMode{Width: 2560, Height: 1440}) {
+			t.Fatalf("preferredDisplayMode() = %+v, %v; want 2560x1440, true", mode, ok)
+		}
+	})
+
+	t.Run("ignores disconnected connectors", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "1920x1080\n")
+		writeDRMConnector(t, root, "card0-DP-1", "disconnected", "enabled", "3840x2160\n")
+		mode, ok := preferredDisplayMode(root)
+		if !ok || mode != (displayMode{Width: 1920, Height: 1080}) {
+			t.Fatalf("preferredDisplayMode() = %+v, %v; want 1920x1080, true", mode, ok)
+		}
+	})
+
+	t.Run("prefers largest enabled connector", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "1920x1080\n")
+		writeDRMConnector(t, root, "card0-DP-1", "connected", "enabled", "3840x2160\n")
+		mode, ok := preferredDisplayMode(root)
+		if !ok || mode != (displayMode{Width: 3840, Height: 2160}) {
+			t.Fatalf("preferredDisplayMode() = %+v, %v; want 3840x2160, true", mode, ok)
+		}
+	})
+
+	t.Run("ignores disabled connectors", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "1920x1080\n")
+		writeDRMConnector(t, root, "card0-DP-1", "connected", "disabled", "3840x2160\n")
+		mode, ok := preferredDisplayMode(root)
+		if !ok || mode != (displayMode{Width: 1920, Height: 1080}) {
+			t.Fatalf("preferredDisplayMode() = %+v, %v; want 1920x1080, true", mode, ok)
+		}
+	})
+
+	t.Run("falls back to connected connector", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-eDP-1", "connected", "disabled", "1920x1080\n")
+		mode, ok := preferredDisplayMode(root)
+		if !ok || mode != (displayMode{Width: 1920, Height: 1080}) {
+			t.Fatalf("preferredDisplayMode() = %+v, %v; want 1920x1080, true", mode, ok)
+		}
+	})
+
+	t.Run("missing sysfs", func(t *testing.T) {
+		if _, ok := preferredDisplayMode(filepath.Join(t.TempDir(), "absent")); ok {
+			t.Fatal("preferredDisplayMode() ok = true, want false when /sys/class/drm is absent")
+		}
+	})
+}
+
+func TestDisplayIsHiDPI(t *testing.T) {
+	t.Run("4K", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-DP-1", "connected", "enabled", "1920x1080\n3840x2160\n")
+		if !displayIsHiDPI(root) {
+			t.Fatal("displayIsHiDPI() = false, want true for a 4K mode")
+		}
+	})
+
+	t.Run("ultrawide", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-HDMI-A-1", "connected", "enabled", "3440x1440\n")
+		if !displayIsHiDPI(root) {
+			t.Fatal("displayIsHiDPI() = false, want true for a 3440px mode")
+		}
+	})
+
+	t.Run("1080p", func(t *testing.T) {
+		root := t.TempDir()
+		writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "1920x1080\n1280x720\n")
+		if displayIsHiDPI(root) {
+			t.Fatal("displayIsHiDPI() = true, want false for a 1920px mode")
+		}
+	})
+
+	t.Run("missing sysfs", func(t *testing.T) {
+		if displayIsHiDPI(filepath.Join(t.TempDir(), "absent")) {
+			t.Fatal("displayIsHiDPI() = true, want false when /sys/class/drm is absent")
+		}
+	})
 }
 
 // --- discoverKernelFiles -----------------------------------------------------

@@ -2,12 +2,18 @@ package configure
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
+
+// hiDPIMinWidth mirrors rEFInd's HIDPI_MIN (global.h). At this width and
+// above, rEFInd doubles icon sizes; the theme then also needs its 2x font.
+const hiDPIMinWidth = 1921
 
 // ============================================================================
 // Bootloader configuration (rEFInd)
@@ -50,7 +56,16 @@ func ConfigureBootloader(ctx *shared.InstallContext) error {
 	if err != nil {
 		return err
 	}
-	if err := writeRefindConfig(esp, ctx, kernel, initrd); err != nil {
+	// Use the live display's preferred mode for the installed boot menu. An
+	// explicit mode avoids rEFInd's "max" heuristic, which only grows when both
+	// dimensions increase; QEMU's VESA mode list otherwise makes it pick a
+	// 4:3 or 1:1 mode. Pick the font to match the selected mode.
+	mode, haveMode := preferredDisplayMode("/sys/class/drm")
+	hiDPI := haveMode && mode.Width >= hiDPIMinWidth
+	if !haveMode {
+		hiDPI = displayIsHiDPI("/sys/class/drm")
+	}
+	if err := writeRefindConfig(esp, ctx, kernel, initrd, mode, haveMode, hiDPI); err != nil {
 		return err
 	}
 	// NVRAM registration is best-effort, mirroring systemd-boot's --graceful:
@@ -132,12 +147,115 @@ func discoverKernelFiles() (kernel, initrd string, err error) {
 	return kernel, initrd, nil
 }
 
+// displayMode is a display resolution in pixels.
+type displayMode struct {
+	Width  int
+	Height int
+}
+
+// parseDisplayMode parses a DRM mode line ("1920x1080").
+func parseDisplayMode(line string) (displayMode, bool) {
+	width, height, ok := strings.Cut(strings.TrimSpace(line), "x")
+	if !ok {
+		return displayMode{}, false
+	}
+	w, err := strconv.Atoi(width)
+	if err != nil || w <= 0 {
+		return displayMode{}, false
+	}
+	h, err := strconv.Atoi(height)
+	if err != nil || h <= 0 {
+		return displayMode{}, false
+	}
+	return displayMode{Width: w, Height: h}, true
+}
+
+// preferredDisplayMode returns the preferred (first advertised) mode of the
+// largest enabled, connected DRM connector. The live ISO runs on the same
+// monitor and firmware as the installed rEFInd, so this is the mode the boot
+// menu should use. "Preferred" is the monitor's native mode, not the largest
+// mode: a 4K panel's list also contains 1080p/720p fallbacks.
+func preferredDisplayMode(drmRoot string) (displayMode, bool) {
+	paths, err := filepath.Glob(filepath.Join(drmRoot, "card*-*/modes"))
+	if err != nil {
+		return displayMode{}, false
+	}
+
+	var enabledMode, connectedMode displayMode
+	var haveEnabled, haveConnected bool
+
+	for _, modesPath := range paths {
+		connector := filepath.Dir(modesPath)
+
+		// A disconnected output can still have a stale modes file; ignore it.
+		status, err := os.ReadFile(filepath.Join(connector, "status"))
+		if err == nil && strings.TrimSpace(string(status)) != "connected" {
+			continue
+		}
+
+		data, err := os.ReadFile(modesPath)
+		if err != nil {
+			continue
+		}
+		var mode displayMode
+		var ok bool
+		for _, line := range strings.Split(string(data), "\n") {
+			if mode, ok = parseDisplayMode(line); ok {
+				break
+			}
+		}
+		if !ok {
+			continue
+		}
+
+		// A connected-but-disabled output (lid closed, dock output off) is a
+		// weaker candidate than an enabled one. Missing "enabled" files are
+		// treated as enabled (some virtual connectors omit it).
+		enabled, err := os.ReadFile(filepath.Join(connector, "enabled"))
+		isEnabled := err != nil || strings.TrimSpace(string(enabled)) == "enabled"
+		if isEnabled {
+			if !haveEnabled || mode.Width*mode.Height > enabledMode.Width*enabledMode.Height {
+				enabledMode, haveEnabled = mode, true
+			}
+		} else if !haveConnected || mode.Width*mode.Height > connectedMode.Width*connectedMode.Height {
+			connectedMode, haveConnected = mode, true
+		}
+	}
+
+	if haveEnabled {
+		return enabledMode, true
+	}
+	return connectedMode, haveConnected
+}
+
+// displayIsHiDPI is the font-selection fallback when no preferred mode could be
+// detected and rEFInd will use "resolution max". It reports whether any DRM
+// connector advertises a mode at least as wide as rEFInd's HIDPI_MIN.
+func displayIsHiDPI(drmRoot string) bool {
+	paths, err := filepath.Glob(filepath.Join(drmRoot, "card*-*/modes"))
+	if err != nil {
+		return false
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			if mode, ok := parseDisplayMode(line); ok && mode.Width >= hiDPIMinWidth {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // writeRefindConfig writes <ESP>/EFI/refind/refind.conf with a single Aelum
 // menu entry. Paths inside the entry are ESP-relative, matching where pacstrap
 // puts the kernel and initrd (the ESP is mounted at /boot).
-func writeRefindConfig(esp string, ctx *shared.InstallContext, kernel, initrd string) error {
+func writeRefindConfig(esp string, ctx *shared.InstallContext, kernel, initrd string, mode displayMode, modeOK, hiDPI bool) error {
 	path := esp + "/" + shared.RefindConfigPath
-	if err := primitives.WriteFile(path, refindConfig(ctx, kernel, initrd)); err != nil {
+	if err := primitives.WriteFile(path, refindConfig(ctx, kernel, initrd, mode, modeOK, hiDPI)); err != nil {
 		return fmt.Errorf("failed to write rEFInd config to %s: %w", path, err)
 	}
 	return nil
@@ -152,9 +270,18 @@ func writeRefindConfig(esp string, ctx *shared.InstallContext, kernel, initrd st
 // other OSes (Windows Boot Manager, GRUB) are still auto-detected. The
 // dont_scan_* lines suppress leftovers from a previous systemd-boot install
 // without deleting any files that may belong to another OS.
-func refindConfig(ctx *shared.InstallContext, kernel, initrd string) string {
+func refindConfig(ctx *shared.InstallContext, kernel, initrd string, mode displayMode, modeOK, hiDPI bool) string {
 	var b strings.Builder
 	b.WriteString("# Generated by the Aelum installer. Do not edit by hand.\n")
+	// Use the monitor's preferred mode instead of inheriting the firmware
+	// default (often 1024x768 even on a 1080p/4K panel). "max" is only a
+	// fallback: rEFInd's implementation only grows when both dimensions
+	// increase, so firmware with non-native VESA modes can select 4:3 or 1:1.
+	if modeOK {
+		fmt.Fprintf(&b, "resolution %d %d\n", mode.Width, mode.Height)
+	} else {
+		b.WriteString("resolution max\n")
+	}
 	fmt.Fprintf(&b, "timeout %d\n", shared.RefindTimeoutSeconds)
 	fmt.Fprintf(&b, "default_selection %s\n", shared.BootEntryTitle)
 	b.WriteString("scan_all_linux_kernels false\n")
@@ -166,6 +293,12 @@ func refindConfig(ctx *shared.InstallContext, kernel, initrd string) string {
 	// this path relative to EFI/refind.
 	fmt.Fprintf(&b, "# Branded Aelum boot-menu theme (background, font, icons, selection).\n")
 	fmt.Fprintf(&b, "include %s\n", shared.RefindThemeInclude)
+	// theme.conf ships the 1x font. rEFInd does not scale custom fonts, so
+	// override it on HiDPI screens with the matching 2x sheet. A later "font"
+	// token wins because rEFInd processes includes inline.
+	if hiDPI {
+		fmt.Fprintf(&b, "font %s\n", shared.RefindThemeFont2x)
+	}
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "menuentry %q {\n", shared.BootEntryTitle)
 	fmt.Fprintf(&b, "    icon /%s\n", shared.RefindIconPath)
@@ -310,6 +443,8 @@ func verifyBootloaderInstallation(esp string) error {
 		shared.RefindThemeConfigPath,
 		shared.RefindThemeBackgroundPath,
 		shared.RefindIconPath,
+		shared.RefindThemeDir + "/font.png",
+		shared.RefindThemeDir + "/font-2x.png",
 	} {
 		path := esp + "/" + rel
 		if err := primitives.Run("test", "-f", path).Run(); err != nil {

@@ -68,6 +68,7 @@ export const RefindThemeSourceDir = ("/usr/share/aelum/refind/themes/" + RefindT
 export const RefindThemeConfigFileName = "theme.conf";
 export const RefindThemeConfigPath = ((RefindThemeDir + "/") + RefindThemeConfigFileName);
 export const RefindThemeInclude = ((("themes/" + RefindThemeName) + "/") + RefindThemeConfigFileName);
+export const RefindThemeFont2x = (("themes/" + RefindThemeName) + "/font-2x.png");
 export const RefindThemeBackgroundPath = (RefindThemeDir + "/background.png");
 export const RefindIconPath = (RefindThemeDir + "/icons/os_arch.png");
 export const DryRunStepDurationMs = 1000;

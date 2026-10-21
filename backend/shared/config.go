@@ -305,6 +305,11 @@ const RefindThemeConfigPath = RefindThemeDir + "/" + RefindThemeConfigFileName
 // so this deliberately omits the RefindDir prefix.
 const RefindThemeInclude = "themes/" + RefindThemeName + "/" + RefindThemeConfigFileName
 
+// RefindThemeFont2x is the 2x font sheet, relative to EFI/refind. rEFInd does
+// not scale custom fonts, so the installer selects this sheet on HiDPI
+// displays (the same threshold at which rEFInd doubles icon sizes).
+const RefindThemeFont2x = "themes/" + RefindThemeName + "/font-2x.png"
+
 // RefindThemeBackgroundPath is the ESP-relative full-screen boot background
 // referenced by theme.conf.
 const RefindThemeBackgroundPath = RefindThemeDir + "/background.png"

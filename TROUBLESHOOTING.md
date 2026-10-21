@@ -98,6 +98,33 @@ A missing NVRAM entry is logged as a warning (the install still completes); the
 system remains bootable through the firmware boot menu or by selecting
 `EFI/refind/refind_x64.efi` manually.
 
+### Boot menu is stretched or at a low resolution
+
+The installer writes the live display's preferred (native) mode as an explicit
+`resolution <width> <height>` in `refind.conf`. If no DRM mode can be detected,
+it falls back to `resolution max`. This is not limited to 1080p and 4K: 2K
+(2560×1440), ultrawide, and other native modes are written as-is. The theme
+background is 3840×2160 with `banner_scale fillscreen`, so it scales to the
+chosen mode; the 2× icons are native on 2K/4K and downscaled on 1080p.
+
+`resolution max` is not an aspect-ratio choice. rEFInd only switches to a
+larger mode when both dimensions increase, so firmware that exposes non-native
+VESA modes can select a 4:3 or 1:1 mode instead of 16:9. QEMU's emulated VGA is
+a common example. If the menu looks stretched or square, set an explicit mode
+in `/boot/EFI/refind/refind.conf`, e.g. `resolution 1920 1080` or
+`resolution 3840 2160`.
+
+If the explicit mode is not in the firmware's GOP list, rEFInd pauses at boot
+with `Error setting graphics mode ...`. Boot the live ISO and change the line
+to `resolution max` to recover.
+
+rEFInd does not scale custom fonts. The installer therefore writes
+`font themes/aelum/font-2x.png` on HiDPI displays (the same 1921px threshold
+at which rEFInd doubles icon sizes) and leaves the 1× font from `theme.conf` on
+1080p. If the labels are too small or too large, switch between
+`themes/aelum/font.png` and `themes/aelum/font-2x.png` with a `font` line in
+`/boot/EFI/refind/refind.conf`.
+
 ### "root UUID is empty" / "partitions not initialized"
 
 **Cause**: `FormatDisk` was skipped or failed before populating partition info.
