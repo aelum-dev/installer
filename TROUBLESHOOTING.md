@@ -177,7 +177,17 @@ rEFInd does not scale custom fonts. The installer therefore writes
 at which rEFInd doubles icon sizes) and leaves the 1× font from `theme.conf` on
 1080p. If the labels are too small or too large, switch between
 `themes/aelum/font.png` and `themes/aelum/font-2x.png` with a `font` line in
-`/boot/EFI/refind/refind.conf`.
+`/efi/EFI/refind/refind.conf`.
+
+### rEFInd prints "Booting ..." / "Using load options ..." before boot
+
+**Cause**: By default rEFInd switches to text mode for Linux and prints those
+pre-launch diagnostics on a black screen.
+
+**Fix**: The installer writes `use_graphics_for osx,linux` to `refind.conf`, so
+rEFInd stays in graphics mode and the themed menu remains visible until the
+kernel and Plymouth take over. On an older install, add that line to
+`/efi/EFI/refind/refind.conf`.
 
 ### "root UUID is empty" / "partitions not initialized"
 

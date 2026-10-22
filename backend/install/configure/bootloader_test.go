@@ -104,6 +104,7 @@ func TestRefindConfig(t *testing.T) {
 		fmt.Sprintf("default_selection %q", shared.RefindEntryTitle("/dev/sda2")),
 		"scan_all_linux_kernels false",
 		"dont_scan_files + BOOTX64.EFI,bootx64.efi",
+		"use_graphics_for osx,linux",
 		"include " + shared.RefindThemeInclude,
 		"include aelum/aaaa1111.conf",
 		"include aelum/bbbb2222.conf",

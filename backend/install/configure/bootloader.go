@@ -350,6 +350,11 @@ func refindConfig(ctx *shared.InstallContext, mode displayMode, modeOK, hiDPI bo
 	fmt.Fprintf(&b, "default_selection %q\n", shared.RefindEntryTitle(ctx.Partitions.RootPart))
 	b.WriteString("scan_all_linux_kernels false\n")
 	b.WriteString("dont_scan_files + BOOTX64.EFI,bootx64.efi\n")
+	// Keep the firmware in graphics mode when launching Linux. Otherwise rEFInd
+	// switches to text mode and prints its "Booting ..." / "Using load options
+	// ..." diagnostic over a black screen before the kernel starts. osx is
+	// rEFInd's default, so listing it preserves macOS behaviour.
+	b.WriteString("use_graphics_for osx,linux\n")
 	b.WriteString("\n")
 	// The branded theme is a separate file so refind.conf stays readable and
 	// the theme can be swapped without touching the boot entries. rEFInd resolves
