@@ -280,6 +280,44 @@ func (fs *MemFS) Chmod(p string, mode os.FileMode) error {
 	return nil
 }
 
+// ReadDirNames implements primitives.FileSystem. Names are derived from the
+// registered files and directories, so WithFile is enough to populate a
+// directory for tests.
+func (fs *MemFS) ReadDirNames(p string) ([]string, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	if !fs.existsLocked(p) {
+		return nil, os.ErrNotExist
+	}
+	prefix := strings.TrimSuffix(p, "/") + "/"
+	seen := map[string]bool{}
+	add := func(full string) {
+		rest := strings.TrimPrefix(full, prefix)
+		if i := strings.IndexByte(rest, '/'); i >= 0 {
+			rest = rest[:i]
+		}
+		if rest != "" {
+			seen[rest] = true
+		}
+	}
+	for f := range fs.files {
+		if strings.HasPrefix(f, prefix) {
+			add(f)
+		}
+	}
+	for d := range fs.dirs {
+		if strings.HasPrefix(d, prefix) {
+			add(d)
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for name := range seen {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
 // memFileInfo is a minimal os.FileInfo for MemFS entries.
 type memFileInfo struct {
 	name string

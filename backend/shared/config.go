@@ -104,8 +104,22 @@ const DefaultBtrfsCompression = "zstd"
 // MountRoot is the root mount point for the installed system.
 const MountRoot = "/mnt"
 
-// BootMountPoint is the EFI System Partition (ESP) mount point.
+// BootMountPoint is where the installed system's /boot lives during install.
+// It is a bind mount of this installation's directory on the ESP, so two Aelum
+// installations that share an ESP each keep their own kernel and initramfs.
 const BootMountPoint = "/mnt/boot"
+
+// ESPMountPoint is where the EFI System Partition itself is mounted during
+// install. rEFInd and the per-install boot directories live here.
+const ESPMountPoint = "/mnt/efi"
+
+// InstalledESPMountPoint is where the installed system mounts the ESP. /boot is
+// a bind mount of InstalledESPMountPoint/<EspInstallDirName>/<id>.
+const InstalledESPMountPoint = "/efi"
+
+// EspInstallDirName is the directory at the ESP root that holds one boot
+// directory per Aelum installation (kernel + initramfs).
+const EspInstallDirName = "aelum"
 
 // LogDir is the directory that holds the installation log.
 const LogDir = "/var/log"
@@ -254,7 +268,7 @@ const KernelPresetName = "linux-lts"
 const BootEntryTitle = "Aelum"
 
 // RefindDir is rEFInd's installation directory on the ESP, relative to the ESP
-// root (the ESP is mounted at BootMountPoint during install).
+// root (the ESP is mounted at ESPMountPoint during install).
 const RefindDir = "EFI/refind"
 
 // RefindBinaryName is the x86_64 rEFInd EFI binary shipped by the refind
@@ -269,6 +283,16 @@ const RefindConfigFileName = "refind.conf"
 
 // RefindConfigPath is the ESP-relative path of rEFInd's configuration file.
 const RefindConfigPath = RefindDir + "/" + RefindConfigFileName
+
+// RefindEntriesDirName is the directory under EFI/refind that holds one menu
+// fragment per Aelum installation. Keeping each installation's menuentry in
+// its own file means installing Aelum a second time on the same ESP adds an
+// entry instead of overwriting the first one's configuration.
+const RefindEntriesDirName = "aelum"
+
+// RefindEntriesDir is the ESP-relative directory of the per-install menu
+// fragments.
+const RefindEntriesDir = RefindDir + "/" + RefindEntriesDirName
 
 // RefindSourceDir is the read-only asset directory shipped by the refind
 // package inside the live ISO. The whole tree (binary, icons, drivers, tools)

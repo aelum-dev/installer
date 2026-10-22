@@ -40,7 +40,7 @@ func TestGenerateLvmFstab_SplitsHomeOntoHomeLV(t *testing.T) {
 	}
 
 	// EFI entry present.
-	if !strings.Contains(content, "UUID=efi-uuid-456  /boot  vfat") {
+	if !strings.Contains(content, "UUID=efi-uuid-456  /efi  vfat") {
 		t.Errorf("expected EFI entry, got:\n%s", content)
 	}
 
@@ -60,7 +60,7 @@ func TestGenerateLvmFstab_SplitsHomeOntoHomeLV(t *testing.T) {
 // exactly once.
 func TestGenerateLvmFstab_NoDuplicateMountPoints(t *testing.T) {
 	content := generateLvmFstab(lvmContext())
-	for _, mp := range []string{"/boot", "/", "/srv", "/var/cache", "/var/tmp", "/var/log", "/home"} {
+	for _, mp := range []string{"/boot", "/efi", "/", "/srv", "/var/cache", "/var/tmp", "/var/log", "/home"} {
 		// Count data lines whose mount-point column matches.
 		count := 0
 		for _, line := range strings.Split(content, "\n") {
@@ -153,8 +153,11 @@ func TestGenerateLvmExt4Fstab(t *testing.T) {
 		t.Errorf("expected home LV mounted at /home as ext4, got %v:\n%s", home, content)
 	}
 	efi := lvmFstabLineForUUID(content, "efi-uuid-456")
-	if efi == nil || efi[1] != "/boot" || efi[2] != "vfat" {
+	if efi == nil || efi[1] != "/efi" || efi[2] != "vfat" {
 		t.Errorf("expected EFI entry, got %v:\n%s", efi, content)
+	}
+	if !strings.Contains(content, "/efi/"+shared.InstallBootDir("rootlvuu")+"  /boot  none  bind") {
+		t.Errorf("expected per-install /boot bind mount, got:\n%s", content)
 	}
 	if strings.Contains(content, "btrfs") {
 		t.Errorf("ext4 LVM fstab must not contain btrfs entries:\n%s", content)

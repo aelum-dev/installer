@@ -17,6 +17,7 @@ func baseCtx() *shared.InstallContext {
 			Disk:        "/dev/vda",
 			EFIPart:     "/dev/vda1",
 			RootPart:    "/dev/vda2",
+			RootUUID:    "ROOT-UUID",
 			MountPoints: map[string]string{},
 		},
 	}

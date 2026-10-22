@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -116,6 +117,8 @@ type FileSystem interface {
 	RemoveAll(path string) error
 	// Chmod changes path's permission bits.
 	Chmod(path string, mode os.FileMode) error
+	// ReadDirNames lists the immediate entries of a directory, sorted.
+	ReadDirNames(path string) ([]string, error)
 }
 
 // defaultFS is the process-wide FileSystem. Only tests swap it.
@@ -155,6 +158,19 @@ func (osFS) Stat(path string) (os.FileInfo, error)        { return os.Stat(path)
 func (osFS) RemoveAll(path string) error                  { return os.RemoveAll(path) }
 func (osFS) Chmod(path string, mode os.FileMode) error    { return os.Chmod(path, mode) }
 
+func (osFS) ReadDirNames(path string) ([]string, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
 // ReadFile reads a host path through the active FileSystem seam.
 func ReadFile(path string) ([]byte, error) { return defaultFS.ReadFile(path) }
 
@@ -168,6 +184,18 @@ func RemoveAll(path string) error { return defaultFS.RemoveAll(path) }
 // Chmod changes a host path's permission bits through the active FileSystem
 // seam.
 func Chmod(path string, mode os.FileMode) error { return defaultFS.Chmod(path, mode) }
+
+// ReadDirNames lists the immediate entries of a host directory through the
+// active FileSystem seam. The result is sorted so callers that render it (for
+// example refind.conf include lines) are deterministic.
+func ReadDirNames(path string) ([]string, error) {
+	names, err := defaultFS.ReadDirNames(path)
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(names)
+	return names, nil
+}
 
 // WriteFileMode writes content to an absolute host path with the given
 // permissions through the active FileSystem seam. Unlike WriteFile it applies no

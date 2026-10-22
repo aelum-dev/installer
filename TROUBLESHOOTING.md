@@ -87,7 +87,7 @@ memtest86+-efi: /mnt/boot/memtest86+/memtest86x64.efi exists in filesystem
 **Fix**: The installer handles this automatically by renaming the existing
 files to `*.aelum-backup` before pacstrap runs, then installing the packaged
 version. The old binaries remain on the ESP for recovery. If the install failed
-before this fix was applied, remove or rename `/boot/memtest86+` manually and
+before this fix was applied, remove or rename `/mnt/efi/memtest86+` manually and
 retry.
 
 ### "bootloader verification failed" (rEFInd)
@@ -98,13 +98,21 @@ ISO, or firmware rejected the NVRAM boot entry.
 
 **Fix**:
 ```bash
-# Check the Boot partition is mounted and rEFInd was copied
-ls /mnt/boot/EFI/refind/
-cat /mnt/boot/EFI/refind/refind.conf
+# Check the ESP is mounted and rEFInd was copied
+ls /mnt/efi/EFI/refind/
+cat /mnt/efi/EFI/refind/refind.conf
+
+# The Aelum menu entry is a per-install fragment included by refind.conf.
+# Its name is the first eight characters of the root filesystem UUID.
+ls /mnt/efi/EFI/refind/aelum/
+cat /mnt/efi/EFI/refind/aelum/*.conf
 
 # The branded menu lives in EFI/refind/themes/aelum (background, font, icons).
 # If it is missing, rebuild the ISO with live-iso/.../aelum/refind/themes/aelum.
-ls /mnt/boot/EFI/refind/themes/aelum/
+ls /mnt/efi/EFI/refind/themes/aelum/
+
+# This install's kernel and initramfs live in their own ESP directory.
+ls /mnt/efi/aelum/*/
 
 # Verify EFI firmware / boot entries
 efibootmgr -v
@@ -113,6 +121,36 @@ efibootmgr -v
 A missing NVRAM entry is logged as a warning (the install still completes); the
 system remains bootable through the firmware boot menu or by selecting
 `EFI/refind/refind_x64.efi` manually.
+
+### rEFInd does not show Arch (or another OS) from a shared ESP
+
+rEFInd scans every readable ESP and volume, so all bootable OSes should appear.
+Aelum's generated config suppresses only the duplicate fallback loaders
+(`dont_scan_files + BOOTX64.EFI,bootx64.efi`); it must not hide
+`EFI/systemd` or `systemd-bootx64.efi`, otherwise a systemd-boot Arch install
+on the same or another ESP disappears from the menu. If Arch is still missing,
+confirm its loader exists on the ESP (often mounted at `/boot` or `/efi` in the
+Arch install) at `EFI/systemd/systemd-bootx64.efi` (or a `linux*` loader entry
+under `loader/entries`), and check that `refind.conf` has no
+`dont_scan_dirs`/`dont_scan_files` line covering it.
+
+### Installing Aelum twice on the same ESP
+
+Every install is fully isolated, including its kernel files:
+
+- The ESP is mounted at `/efi` in the installed system.
+- Each install owns a directory `aelum/<id>/` on the ESP, where `<id>` is the
+  first eight alphanumeric characters of its root filesystem UUID.
+- That directory is bind-mounted at `/boot`, so pacman, mkinitcpio, and kernel
+  updates keep writing to `/boot` as usual, but the files physically stay in
+  this install's own directory.
+- The rEFInd fragment `EFI/refind/aelum/<id>.conf` loads
+  `/aelum/<id>/vmlinuz-…` and `/aelum/<id>/initramfs-….img`, and the shared
+  `refind.conf` includes every install's fragment.
+
+Two installs can therefore share one ESP without overwriting each other's menu
+entry, kernel, or initramfs. The menu shows both as
+`Aelum (<root partition>)`, e.g. `Aelum (sda2)` and `Aelum (sda3)`.
 
 ### Boot menu is stretched or at a low resolution
 

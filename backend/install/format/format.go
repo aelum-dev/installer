@@ -41,7 +41,7 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		Fstype     string
 		MountPoint string
 	}{
-		{Name: shared.PartitionLayoutEFI, SizeMB: shared.EFIPartitionSizeMB, Fstype: shared.FileSystemVfat, MountPoint: shared.BootMountPoint},
+		{Name: shared.PartitionLayoutEFI, SizeMB: shared.EFIPartitionSizeMB, Fstype: shared.FileSystemVfat, MountPoint: shared.ESPMountPoint},
 		{Name: shared.PartitionLayoutRoot, SizeMB: 0, Fstype: fsType, MountPoint: shared.MountRoot},
 	}
 

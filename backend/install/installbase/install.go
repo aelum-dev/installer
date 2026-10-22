@@ -95,7 +95,7 @@ func Run(ctx *shared.InstallContext) error {
 
 	bootMount := ctx.ESP
 	if bootMount == "" {
-		bootMount = shared.BootMountPoint
+		bootMount = shared.ESPMountPoint
 	}
 	backedUp, err := backupReusedEspMemtest(bootMount)
 	if err != nil {

@@ -27,11 +27,16 @@ func TestGenerateExt4Fstab_Contents(t *testing.T) {
 	}
 
 	// Should contain EFI entry
-	if !strings.Contains(content, "UUID=efi-uuid-456  /boot") {
+	if !strings.Contains(content, "UUID=efi-uuid-456  /efi") {
 		t.Errorf("expected EFI entry with UUID, got:\n%s", content)
 	}
 	if !strings.Contains(content, "vfat") {
 		t.Errorf("expected vfat filesystem type, got:\n%s", content)
+	}
+
+	// The install's per-install boot directory should be bind-mounted at /boot.
+	if !strings.Contains(content, "/efi/"+shared.InstallBootDir("rootuuid")+"  /boot  none  bind") {
+		t.Errorf("expected per-install /boot bind mount, got:\n%s", content)
 	}
 }
 
@@ -79,8 +84,13 @@ func TestGenerateBtrfsFstab_Contents(t *testing.T) {
 	}
 
 	// Should contain EFI entry
-	if !strings.Contains(content, "UUID=efi-uuid-456  /boot") {
+	if !strings.Contains(content, "UUID=efi-uuid-456  /efi") {
 		t.Errorf("expected EFI entry, got:\n%s", content)
+	}
+
+	// The install's per-install boot directory should be bind-mounted at /boot.
+	if !strings.Contains(content, "/efi/"+shared.InstallBootDir("rootuuid")+"  /boot  none  bind") {
+		t.Errorf("expected per-install /boot bind mount, got:\n%s", content)
 	}
 
 	// Should NOT contain any swap entries
@@ -101,7 +111,7 @@ func TestGenerateBtrfsFstab_NoDuplicateEntries(t *testing.T) {
 	content := generateBtrfsFstab(ctx)
 
 	// Each mount point should appear exactly once
-	mountPoints := []string{"/", "/home", "/srv", "/var/cache", "/var/tmp", "/var/log", "/boot"}
+	mountPoints := []string{"/", "/home", "/srv", "/var/cache", "/var/tmp", "/var/log"}
 	for _, mp := range mountPoints {
 		count := 0
 		for _, line := range strings.Split(content, "\n") {
@@ -109,7 +119,7 @@ func TestGenerateBtrfsFstab_NoDuplicateEntries(t *testing.T) {
 				count++
 			}
 			// Also check for the UUID format
-			if strings.Contains(line, mp+"  btrfs") || (mp == "/boot" && strings.Contains(line, "vfat")) {
+			if strings.Contains(line, mp+"  btrfs") {
 				count++
 			}
 		}
@@ -117,6 +127,14 @@ func TestGenerateBtrfsFstab_NoDuplicateEntries(t *testing.T) {
 		if count == 0 {
 			t.Errorf("expected at least 1 entry for %s, got 0:\n%s", mp, content)
 		}
+	}
+
+	// /boot is a single bind mount line, and the ESP itself is mounted at /efi.
+	if got := strings.Count(content, " /boot "); got != 1 {
+		t.Errorf("expected exactly 1 /boot entry, got %d:\n%s", got, content)
+	}
+	if got := strings.Count(content, " /efi "); got != 1 {
+		t.Errorf("expected exactly 1 /efi entry, got %d:\n%s", got, content)
 	}
 }
 
@@ -196,15 +214,20 @@ func TestGenerateBtrfsFstab_EFIFirst(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(content), "\n")
 
 	// Skip comment line
-	if len(lines) < 2 {
-		t.Fatalf("expected at least 2 lines, got %d", len(lines))
+	if len(lines) < 3 {
+		t.Fatalf("expected at least 3 lines, got %d", len(lines))
 	}
 
 	// First data line should be EFI
-	if !strings.Contains(lines[1], "/boot") {
-		t.Errorf("expected /boot as first entry, got:\n%s", content)
+	if !strings.Contains(lines[1], " /efi ") {
+		t.Errorf("expected /efi as first entry, got:\n%s", content)
 	}
 	if !strings.Contains(lines[1], "vfat") {
 		t.Errorf("expected vfat for first entry, got:\n%s", content)
+	}
+
+	// Second data line should be this install's boot dir bind-mounted at /boot.
+	if !strings.Contains(lines[2], " /boot ") || !strings.Contains(lines[2], "bind") {
+		t.Errorf("expected /boot bind mount as second entry, got:\n%s", content)
 	}
 }

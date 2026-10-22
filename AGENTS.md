@@ -18,7 +18,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 | Term | What | Key Paths |
 |------|------|-----------|
 | **Live ISO** | Bootable Arch env running the installer. Read-only rootfs (overlay). | Sudoers: user needs passwordless sudo for CLI binary. |
-| **Installed System** | Arch being written to target disk. | Mounted at `/mnt/`. Boot partition at `/mnt/boot/`. Sudoers: `/etc/sudoers.d/wheel`. Accessed via `arch-chroot /mnt` |
+| **Installed System** | Arch being written to target disk. | Mounted at `/mnt/`. ESP at `/mnt/efi`; this install's ESP boot dir (`aelum/<id>/`) bind-mounted at `/mnt/boot`. Sudoers: `/etc/sudoers.d/wheel`. Accessed via `arch-chroot /mnt` |
 | **Host** | Developer's main machine. | `~/Projects/shared` shared with VM. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
@@ -67,8 +67,8 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
-        fstab.go                — fstab generation + verification (btrfs/ext4/LVM variants)
-        bootloader.go           — rEFInd install + branded theme + refind.conf menu entry (LUKS/LVM-aware root options)
+        fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4/LVM variants)
+        bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS/LVM-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
@@ -178,13 +178,13 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 ## Installation Steps (8 top-level)
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
-2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, Boot partition to `/mnt/boot` (`install/mount/`)
+2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, the ESP to `/mnt/efi`, then bind this install's `aelum/<id>/` ESP directory at `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
-8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs), kernel + initrd on the Boot partition, the rEFInd binary and its Aelum menu entry, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
+8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs, ESP at `/efi`, per-install `/boot` bind), kernel + initrd in this install's ESP boot directory (via the `/mnt/boot` bind), the rEFInd binary and its Aelum menu entry, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
 
 ## Build & Test
 ```bash
@@ -263,5 +263,8 @@ Welcome (language select)
 - Default username: `shared.DefaultCLIUsername` = "aelum"
 - Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"
-- Boot mount: `shared.BootMountPoint` = "/mnt/boot"
+- ESP mount during install: `shared.ESPMountPoint` = "/mnt/efi"
+- Boot mount: `shared.BootMountPoint` = "/mnt/boot" (bind mount of `<ESP>/aelum/<id>`)
+- Installed ESP mount: `shared.InstalledESPMountPoint` = "/efi"
+- Per-install ESP boot directory: `shared.EspInstallDirName` = "aelum"; each install uses `aelum/<id>` where `<id>` is the first 8 alphanumeric characters of the root filesystem UUID
 - Step weights: `shared.WeightFormatDisk=3`, `WeightMountFilesystem=2`, `WeightInstallBase=37`, `WeightInstallDesktop=50`, `WeightSetupUsers=2`, `WeightConfigureSystem=4`, `WeightClearCache=1`, `WeightVerifySystem=1` (total 100)

@@ -43,7 +43,7 @@ func GenerateFstab(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
-	return verifyFstab(p.RootUUID, p.EFIUUID)
+	return verifyFstab(p.RootUUID, p.EFIUUID, shared.InstallID(p.RootUUID))
 }
 
 func generateBtrfsFstab(ctx *shared.InstallContext) string {
@@ -52,7 +52,7 @@ func generateBtrfsFstab(ctx *shared.InstallContext) string {
 
 	var lines []string
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
-	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, shared.EfiPartitionUmask))
+	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
 
 	for _, sv := range subvolumes {
 		opts := primitives.BuildMountOpts(&sv)
@@ -68,10 +68,26 @@ func generateExt4Fstab(ctx *shared.InstallContext) string {
 	if ctx.FileSystem != "" {
 		rootFstype = ctx.FileSystem
 	}
-	return fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
-UUID=%s  /              %s    %s        0  1
-UUID=%s  /boot          vfat    %s 0 2
-`, p.RootUUID, rootFstype, shared.DefaultMountOptions, p.EFIUUID, shared.EfiPartitionUmask)
+	lines := []string{
+		"# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>",
+		fmt.Sprintf("UUID=%s  /              %s    %s        0  1", p.RootUUID, rootFstype, shared.DefaultMountOptions),
+	}
+	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// efiFstabLines returns the fstab entries that give one installation its own
+// boot directory on a shared ESP: the ESP is mounted at /efi, and this
+// installation's subdirectory is bind-mounted at /boot. Keeping /boot a bind
+// mount means pacman and mkinitcpio keep writing to /boot unchanged, while the
+// files physically live in aelum/<id>/ and cannot collide with another install.
+// x-systemd.requires-mounts-for makes the bind wait for the ESP mount.
+func efiFstabLines(p *shared.PartitionInfo, id string) []string {
+	src := shared.InstalledESPMountPoint + "/" + shared.InstallBootDir(id)
+	return []string{
+		fmt.Sprintf("UUID=%s  %s  vfat  %s  0 2", p.EFIUUID, shared.InstalledESPMountPoint, shared.EfiPartitionUmask),
+		fmt.Sprintf("%s  /boot  none  bind,x-systemd.requires-mounts-for=%s  0 0", src, shared.InstalledESPMountPoint),
+	}
 }
 
 func writeBtrfsFstab(ctx *shared.InstallContext) error {
@@ -79,7 +95,7 @@ func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
-	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID)
+	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID))
 }
 
 // generateLvmFstab builds the fstab for an LVM layout. For btrfs it is the
@@ -96,7 +112,7 @@ func generateLvmFstab(ctx *shared.InstallContext) string {
 
 	var lines []string
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
-	lines = append(lines, fmt.Sprintf("UUID=%s  /boot  vfat    %s  0  2", p.EFIUUID, shared.EfiPartitionUmask))
+	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
 
 	for _, sv := range shared.GetLvmBtrfsSubvolumes() {
 		opts := primitives.BuildMountOpts(&sv)
@@ -114,11 +130,13 @@ func generateLvmFstab(ctx *shared.InstallContext) string {
 // mounted at / and the home LV at /home, both ext4.
 func generateLvmExt4Fstab(ctx *shared.InstallContext) string {
 	p := ctx.Partitions
-	return fmt.Sprintf(`# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>
-UUID=%s  /              ext4    %s        0  1
-UUID=%s  /home          ext4    %s        0  2
-UUID=%s  /boot          vfat    %s 0 2
-`, p.RootUUID, shared.DefaultMountOptions, p.HomeUUID, shared.DefaultMountOptions, p.EFIUUID, shared.EfiPartitionUmask)
+	lines := []string{
+		"# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>",
+		fmt.Sprintf("UUID=%s  /              ext4    %s        0  1", p.RootUUID, shared.DefaultMountOptions),
+		fmt.Sprintf("UUID=%s  /home          ext4    %s        0  2", p.HomeUUID, shared.DefaultMountOptions),
+	}
+	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
+	return strings.Join(lines, "\n") + "\n"
 }
 
 func writeLvmFstab(ctx *shared.InstallContext) error {
@@ -126,10 +144,10 @@ func writeLvmFstab(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
-	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID)
+	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID))
 }
 
-func verifyFstab(rootUUID, efiUUID string) error {
+func verifyFstab(rootUUID, efiUUID, installID string) error {
 	if rootUUID == "" {
 		return fmt.Errorf("root UUID is empty — cannot verify fstab")
 	}
@@ -153,6 +171,13 @@ func verifyFstab(rootUUID, efiUUID string) error {
 	}
 	if !strings.Contains(content, "/ ") && !strings.Contains(content, "/\t") {
 		return fmt.Errorf("fstab missing / mount point")
+	}
+	bootSrc := shared.InstalledESPMountPoint + "/" + shared.InstallBootDir(installID)
+	if installID != "" && !strings.Contains(content, bootSrc) {
+		return fmt.Errorf("fstab missing this installation's boot directory %s", bootSrc)
+	}
+	if !strings.Contains(content, "bind") {
+		return fmt.Errorf("fstab missing the /boot bind mount")
 	}
 	return nil
 }

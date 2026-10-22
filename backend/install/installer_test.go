@@ -51,15 +51,15 @@ func TestInstaller_Context(t *testing.T) {
 		username: "testuser",
 		password: []byte("testpass"),
 		region:   shared.GetRegion("en_US"),
-		esp:      "/mnt/boot",
+		esp:      shared.ESPMountPoint,
 	}
 
 	ctx := inst.context()
 	if ctx.DiskID != "/dev/sda" {
 		t.Errorf("expected DiskID /dev/sda, got %s", ctx.DiskID)
 	}
-	if ctx.ESP != "/mnt/boot" {
-		t.Errorf("expected ESP /mnt/boot, got %s", ctx.ESP)
+	if ctx.ESP != shared.ESPMountPoint {
+		t.Errorf("expected ESP %s, got %s", shared.ESPMountPoint, ctx.ESP)
 	}
 	if ctx.Username != "testuser" {
 		t.Errorf("expected username testuser, got %s", ctx.Username)

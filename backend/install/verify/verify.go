@@ -85,7 +85,8 @@ func capitalizeFirst(s string) string {
 }
 
 // checkFstab verifies that /etc/fstab exists, is non-empty, and (when the
-// partition UUIDs are known) lists the root and EFI partitions.
+// partition UUIDs are known) lists the root and EFI partitions plus this
+// installation's /boot bind mount on the ESP.
 func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 	path := shared.MountRoot + "/etc/fstab"
 	data, err := primitives.ReadFile(path)
@@ -107,7 +108,37 @@ func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 		if ctx.Partitions.EFIUUID != "" && !strings.Contains(content, ctx.Partitions.EFIUUID) {
 			*issues = append(*issues, "fstab missing EFI UUID "+ctx.Partitions.EFIUUID)
 		}
+		if ctx.Partitions.RootUUID != "" {
+			id := shared.InstallID(ctx.Partitions.RootUUID)
+			bootSrc := shared.InstalledESPMountPoint + "/" + shared.InstallBootDir(id)
+			if !strings.Contains(content, bootSrc) {
+				*issues = append(*issues, "fstab missing this installation's boot directory "+bootSrc)
+			}
+			if !strings.Contains(content, "bind") {
+				*issues = append(*issues, "fstab missing the /boot bind mount")
+			}
+		}
 	}
+}
+
+// espRoot returns the ESP mount point for this installation. The ESP itself is
+// mounted at ESPMountPoint; BootMountPoint is only this install's bind-mounted
+// kernel directory.
+func espRoot(ctx *shared.InstallContext) string {
+	if ctx != nil && ctx.ESP != "" {
+		return ctx.ESP
+	}
+	return shared.ESPMountPoint
+}
+
+// bootEntryPath returns the host path of the rEFInd menu fragment belonging to
+// this installation. Each install has its own fragment, so a shared ESP with
+// several Aelum installations keeps one entry per install.
+func bootEntryPath(ctx *shared.InstallContext) string {
+	if ctx == nil || ctx.Partitions == nil {
+		return espRoot(ctx) + "/" + shared.RefindConfigPath
+	}
+	return espRoot(ctx) + "/" + shared.RefindEntryPath(shared.InstallID(ctx.Partitions.RootUUID))
 }
 
 // checkLuks verifies LUKS-related configuration in the installed system when
@@ -121,7 +152,7 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 	// mapper, or root=/dev/mapper/aelum-root when LVM sits on top. Assert the
 	// mapping argument itself rather than a literal /dev/mapper path, which
 	// only the LVM root happens to contain as a substring.
-	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	confPath := bootEntryPath(ctx)
 	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		switch {
@@ -179,7 +210,7 @@ func luksEntryMapsMapper(options, luksUUID string) bool {
 // lists the home LV, and the lvm2 hook is present in mkinitcpio.
 func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 	// The rEFInd stanza references the root logical volume (not the PV).
-	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	confPath := bootEntryPath(ctx)
 	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
 		if !strings.Contains(content, shared.LvmRootLvPath) {
@@ -222,21 +253,26 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 // Aelum menu entry) are present on the ESP. The stanza's root/LUKS/LVM options
 // are checked by checkLuks/checkLvm when those features are enabled.
 func checkBootloader(ctx *shared.InstallContext, issues, info *[]string) {
-	binaryPath := shared.BootMountPoint + "/" + shared.RefindBinaryPath
+	esp := espRoot(ctx)
+	binaryPath := esp + "/" + shared.RefindBinaryPath
 	if err := primitives.Run("test", "-f", binaryPath).Run(); err != nil {
 		*issues = append(*issues, "rEFInd binary not found at "+binaryPath)
 	} else {
 		*info = append(*info, "rEFInd binary present ✓")
 	}
 
-	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
+	confPath := esp + "/" + shared.RefindConfigPath
 	data, err := primitives.ReadFile(confPath)
 	if err != nil {
 		*issues = append(*issues, "rEFInd config not found or unreadable at "+confPath)
 		return
 	}
-	if !strings.Contains(string(data), shared.BootEntryTitle) {
-		*issues = append(*issues, "rEFInd config is missing the "+shared.BootEntryTitle+" menu entry")
+	id := ""
+	if ctx.Partitions != nil {
+		id = shared.InstallID(ctx.Partitions.RootUUID)
+	}
+	if id == "" || !strings.Contains(string(data), "include "+shared.RefindEntryInclude(id)) {
+		*issues = append(*issues, "rEFInd config is missing the include for this installation's menu entry")
 		return
 	}
 	if !strings.Contains(string(data), "include "+shared.RefindThemeInclude) {
@@ -245,7 +281,30 @@ func checkBootloader(ctx *shared.InstallContext, issues, info *[]string) {
 	}
 	*info = append(*info, "rEFInd config present ✓")
 
-	themeConfPath := shared.BootMountPoint + "/" + shared.RefindThemeConfigPath
+	entryPath := bootEntryPath(ctx)
+	entryData, err := primitives.ReadFile(entryPath)
+	if err != nil {
+		*issues = append(*issues, "rEFInd menu entry not found at "+entryPath)
+		return
+	}
+	title := shared.BootEntryTitle
+	if ctx.Partitions != nil {
+		title = shared.RefindEntryTitle(ctx.Partitions.RootPart)
+	}
+	if !strings.Contains(string(entryData), fmt.Sprintf("menuentry %q", title)) {
+		*issues = append(*issues, "rEFInd menu entry is missing the "+title+" stanza")
+		return
+	}
+	if ctx.Partitions != nil {
+		kernelDir := "/" + shared.InstallBootDir(shared.InstallID(ctx.Partitions.RootUUID)) + "/"
+		if !strings.Contains(string(entryData), "loader "+kernelDir) {
+			*issues = append(*issues, "rEFInd menu entry does not load a kernel from this installation's boot directory ("+kernelDir+")")
+			return
+		}
+	}
+	*info = append(*info, "rEFInd menu entry present ✓")
+
+	themeConfPath := esp + "/" + shared.RefindThemeConfigPath
 	if _, err := primitives.ReadFile(themeConfPath); err != nil {
 		*issues = append(*issues, "Aelum rEFInd theme not found at "+themeConfPath)
 		return

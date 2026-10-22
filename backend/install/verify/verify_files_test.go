@@ -21,41 +21,34 @@ func recorderMounted() *primitivestest.Recorder {
 // --- Run end to end ----------------------------------------------------------
 
 func TestRun_PassesWhenEverythingMatches(t *testing.T) {
-	fs := primitivestest.NewMemFS().
-		WithFile(shared.MountRoot+"/etc/fstab", "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\n").
-		WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0::/root:/bin/bash\nalice:x:1000:1000::/home/alice:/bin/bash\n").
-		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
-		WithFile(shared.BootMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
-		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {`+"\n    options root=UUID=ROOT-UUID\n}\n")
-	defer primitives.SetFileSystem(fs)()
-	rec := recorderMounted()
-	defer primitives.SetCommandRunner(rec)()
-
 	ctx := &shared.InstallContext{
 		DiskID:     "/dev/vda",
 		Username:   "alice",
 		Hostname:   "aelum",
 		FileSystem: shared.FileSystemExt4,
-		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", EFIUUID: "EFI-UUID"},
+		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", EFIUUID: "EFI-UUID", RootPart: "/dev/vda2"},
 	}
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	fstab := "UUID=ROOT-UUID / ext4 rw 0 1\n" +
+		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
+		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n"
+	fs := primitivestest.NewMemFS().
+		WithFile(shared.MountRoot+"/etc/fstab", fstab).
+		WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0::/root:/bin/bash\nalice:x:1000:1000::/home/alice:/bin/bash\n").
+		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), `menuentry "`+shared.RefindEntryTitle("/dev/vda2")+`" {`+"\n    loader /"+shared.InstallBootFilePath(id, "vmlinuz-linux-lts")+"\n    options root=UUID=ROOT-UUID\n}\n")
+	defer primitives.SetFileSystem(fs)()
+	rec := recorderMounted()
+	defer primitives.SetCommandRunner(rec)()
+
 	if err := Run(ctx); err != nil {
 		t.Fatalf("Run() = %v, want nil", err)
 	}
 }
 
 func TestRun_PassesWithLuksAndLvm(t *testing.T) {
-	entry := "include " + shared.RefindThemeInclude + "\n" + `menuentry "` + shared.BootEntryTitle + `" {` + "\n    options rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath + " rw quiet splash rootflags=subvol=@\n}\n"
-	fs := primitivestest.NewMemFS().
-		WithFile(shared.MountRoot+"/etc/fstab", "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\nUUID=HOME-UUID /home ext4 rw 0 2\n").
-		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
-		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
-		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt lvm2 filesystems)\n").
-		WithFile(shared.BootMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
-		WithFile(shared.BootMountPoint+"/"+shared.RefindConfigPath, entry)
-	defer primitives.SetFileSystem(fs)()
-	rec := recorderMounted()
-	defer primitives.SetCommandRunner(rec)()
-
 	ctx := &shared.InstallContext{
 		DiskID:     "/dev/vda",
 		Username:   "alice",
@@ -68,8 +61,30 @@ func TestRun_PassesWithLuksAndLvm(t *testing.T) {
 			EFIUUID:  "EFI-UUID",
 			LuksUUID: "LUKS-UUID",
 			HomeUUID: "HOME-UUID",
+			RootPart: "/dev/vda2",
 		},
 	}
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	entry := `menuentry "` + shared.RefindEntryTitle("/dev/vda2") + `" {` +
+		"\n    loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts") +
+		"\n    options rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath +
+		" rw quiet splash rootflags=subvol=@\n}\n"
+	fstab := "UUID=ROOT-UUID / ext4 rw 0 1\n" +
+		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
+		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n" +
+		"UUID=HOME-UUID /home ext4 rw 0 2\n"
+	fs := primitivestest.NewMemFS().
+		WithFile(shared.MountRoot+"/etc/fstab", fstab).
+		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
+		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
+		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt lvm2 filesystems)\n").
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry)
+	defer primitives.SetFileSystem(fs)()
+	rec := recorderMounted()
+	defer primitives.SetCommandRunner(rec)()
+
 	if err := Run(ctx); err != nil {
 		t.Fatalf("Run() = %v, want nil", err)
 	}
@@ -80,6 +95,7 @@ func TestRun_PassesWithLuksAndLvm(t *testing.T) {
 func TestCheckFstab(t *testing.T) {
 	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", EFIUUID: "EFI-UUID"}}
 	const path = shared.MountRoot + "/etc/fstab"
+	const bootLines = "UUID=EFI-UUID /efi vfat rw 0 2\n/efi/aelum/rootuuid /boot none bind 0 0\n"
 
 	tests := []struct {
 		name      string
@@ -98,17 +114,27 @@ func TestCheckFstab(t *testing.T) {
 		},
 		{
 			name:      "missing root UUID",
-			fs:        primitivestest.NewMemFS().WithFile(path, "UUID=EFI-UUID /boot vfat rw 0 2\n"),
+			fs:        primitivestest.NewMemFS().WithFile(path, bootLines),
 			wantIssue: "fstab missing root UUID ROOT-UUID",
 		},
 		{
 			name:      "missing EFI UUID",
-			fs:        primitivestest.NewMemFS().WithFile(path, "UUID=ROOT-UUID / ext4 rw 0 1\n"),
+			fs:        primitivestest.NewMemFS().WithFile(path, "UUID=ROOT-UUID / ext4 rw 0 1\n/efi/aelum/rootuuid /boot none bind 0 0\n"),
 			wantIssue: "fstab missing EFI UUID EFI-UUID",
 		},
 		{
+			name:      "missing install boot directory",
+			fs:        primitivestest.NewMemFS().WithFile(path, "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /efi vfat rw 0 2\n/efi/aelum/other /boot none bind 0 0\n"),
+			wantIssue: "fstab missing this installation's boot directory /efi/aelum/rootuuid",
+		},
+		{
+			name:      "missing boot bind",
+			fs:        primitivestest.NewMemFS().WithFile(path, "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /efi vfat rw 0 2\n/efi/aelum/rootuuid /boot none defaults 0 0\n"),
+			wantIssue: "fstab missing the /boot bind mount",
+		},
+		{
 			name: "complete",
-			fs:   primitivestest.NewMemFS().WithFile(path, "UUID=ROOT-UUID / ext4 rw 0 1\nUUID=EFI-UUID /boot vfat rw 0 2\n"),
+			fs:   primitivestest.NewMemFS().WithFile(path, "UUID=ROOT-UUID / ext4 rw 0 1\n"+bootLines),
 		},
 	}
 
@@ -133,11 +159,9 @@ func TestCheckFstab(t *testing.T) {
 // --- checkLuks ---------------------------------------------------------------
 
 func TestCheckLuks(t *testing.T) {
-	const (
-		entryPath = shared.BootMountPoint + "/" + shared.RefindConfigPath
-		confPath  = shared.MountRoot + "/etc/mkinitcpio.conf"
-	)
+	const confPath = shared.MountRoot + "/etc/mkinitcpio.conf"
 	ctx := &shared.InstallContext{Luks: true, Partitions: &shared.PartitionInfo{LuksUUID: "LUKS-UUID", RootUUID: "ROOT-UUID"}}
+	entryPath := bootEntryPath(ctx)
 
 	tests := []struct {
 		name      string
@@ -200,11 +224,11 @@ func TestCheckLuks(t *testing.T) {
 
 func TestCheckLvm(t *testing.T) {
 	const (
-		entryPath = shared.BootMountPoint + "/" + shared.RefindConfigPath
 		confPath  = shared.MountRoot + "/etc/mkinitcpio.conf"
 		fstabPath = shared.MountRoot + "/etc/fstab"
 	)
-	ctx := &shared.InstallContext{Lvm: true, Partitions: &shared.PartitionInfo{HomeUUID: "HOME-UUID"}}
+	ctx := &shared.InstallContext{Lvm: true, Partitions: &shared.PartitionInfo{HomeUUID: "HOME-UUID", RootUUID: "ROOT-UUID"}}
+	entryPath := bootEntryPath(ctx)
 
 	tests := []struct {
 		name      string
@@ -270,9 +294,13 @@ func TestCheckLvm(t *testing.T) {
 // --- checkBootloader ---------------------------------------------------------
 
 func TestCheckBootloader(t *testing.T) {
-	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
-	themeConfPath := shared.BootMountPoint + "/" + shared.RefindThemeConfigPath
-	ctx := &shared.InstallContext{}
+	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", RootPart: "/dev/vda2"}}
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	confPath := shared.ESPMountPoint + "/" + shared.RefindConfigPath
+	entryPath := shared.ESPMountPoint + "/" + shared.RefindEntryPath(id)
+	themeConfPath := shared.ESPMountPoint + "/" + shared.RefindThemeConfigPath
+	includes := "include " + shared.RefindThemeInclude + "\ninclude " + shared.RefindEntryInclude(id) + "\n"
+	entry := `menuentry "` + shared.RefindEntryTitle("/dev/vda2") + `" {` + "\n    loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts") + "\n}"
 
 	tests := []struct {
 		name      string
@@ -283,7 +311,8 @@ func TestCheckBootloader(t *testing.T) {
 		{
 			name: "missing binary",
 			fs: primitivestest.NewMemFS().
-				WithFile(confPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "Aelum" {}`).
+				WithFile(confPath, includes).
+				WithFile(entryPath, entry).
 				WithFile(themeConfPath, "banner themes/aelum/background.png\n"),
 			rec:       primitivestest.NewRecorder().OnArgsError([]string{"test", "-f"}, errors.New("missing")),
 			wantIssue: "rEFInd binary not found",
@@ -295,28 +324,53 @@ func TestCheckBootloader(t *testing.T) {
 			wantIssue: "rEFInd config not found",
 		},
 		{
-			name:      "missing menu entry",
+			name:      "missing menu entry include",
 			fs:        primitivestest.NewMemFS().WithFile(confPath, "timeout 5\n"),
 			rec:       primitivestest.NewRecorder(),
-			wantIssue: "missing the Aelum menu entry",
+			wantIssue: "missing the include for this installation's menu entry",
 		},
 		{
 			name:      "missing theme include",
-			fs:        primitivestest.NewMemFS().WithFile(confPath, `menuentry "`+shared.BootEntryTitle+`" {}`),
+			fs:        primitivestest.NewMemFS().WithFile(confPath, "include "+shared.RefindEntryInclude(id)+"\n"),
 			rec:       primitivestest.NewRecorder(),
 			wantIssue: "missing the Aelum theme include",
 		},
 		{
+			name: "missing menu entry file",
+			fs: primitivestest.NewMemFS().
+				WithFile(confPath, includes),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "rEFInd menu entry not found",
+		},
+		{
+			name: "wrong menu entry title",
+			fs: primitivestest.NewMemFS().
+				WithFile(confPath, includes).
+				WithFile(entryPath, `menuentry "`+shared.BootEntryTitle+`" {}`),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "is missing the " + shared.RefindEntryTitle("/dev/vda2") + " stanza",
+		},
+		{
+			name: "entry loads another install's kernel",
+			fs: primitivestest.NewMemFS().
+				WithFile(confPath, includes).
+				WithFile(entryPath, `menuentry "`+shared.RefindEntryTitle("/dev/vda2")+`" {`+"\n    loader /aelum/other0000/vmlinuz-linux-lts\n}"),
+			rec:       primitivestest.NewRecorder(),
+			wantIssue: "does not load a kernel from this installation's boot directory",
+		},
+		{
 			name: "missing theme files",
-			fs: primitivestest.NewMemFS().WithFile(confPath,
-				"include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {}`),
+			fs: primitivestest.NewMemFS().
+				WithFile(confPath, includes).
+				WithFile(entryPath, entry),
 			rec:       primitivestest.NewRecorder(),
 			wantIssue: "Aelum rEFInd theme not found",
 		},
 		{
 			name: "complete",
 			fs: primitivestest.NewMemFS().
-				WithFile(confPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {}`).
+				WithFile(confPath, includes).
+				WithFile(entryPath, entry).
 				WithFile(themeConfPath, "banner themes/aelum/background.png\n"),
 			rec: primitivestest.NewRecorder(),
 		},

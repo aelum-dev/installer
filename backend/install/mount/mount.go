@@ -14,17 +14,20 @@ import (
 //
 // For standard layouts (ext4/default):
 //   - /mnt: root partition
-//   - /mnt/boot: EFI partition (ESP, where kernel/initrd and rEFInd live)
+//   - /mnt/efi: EFI partition (ESP; rEFInd and per-install boot dirs live here)
+//   - /mnt/boot: bind mount of <ESP>/aelum/<id> (this install's kernel/initrd)
 //
 // For btrfs subvolume layouts:
 //   - /mnt: subvolume with MountPoint "/" (e.g. @), with properties from layout
 //   - /mnt/<mountPoint>: each additional subvolume, with properties from layout
-//   - /mnt/boot: EFI partition (ESP)
+//   - /mnt/efi: EFI partition (ESP)
+//   - /mnt/boot: bind mount of this installation's ESP boot directory
 //
 // For ext4 LVM layouts:
 //   - /mnt: root logical volume
 //   - /mnt/home: home logical volume
-//   - /mnt/boot: EFI partition (ESP)
+//   - /mnt/efi: EFI partition (ESP)
+//   - /mnt/boot: bind mount of this installation's ESP boot directory
 //
 // If ctx.Partitions is nil (standalone invocation), it derives partition paths
 // from the disk ID. This matches the layout created by format.Run.
@@ -43,6 +46,9 @@ func Run(ctx *shared.InstallContext) error {
 	// Validate that partitions exist (from FormatDisk) or can be derived
 	if ctx.Partitions.EFIPart == "" || ctx.Partitions.RootPart == "" {
 		return fmt.Errorf("partition paths not set. FormatDisk may have failed")
+	}
+	if ctx.Partitions.RootUUID == "" {
+		return fmt.Errorf("root UUID not set, cannot name this installation's boot directory. FormatDisk may have failed")
 	}
 
 	p := ctx.Partitions
@@ -120,14 +126,17 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 
-	// ── Mount EFI partition at /mnt/boot ──
+	// ── Mount EFI partition and this install's boot directory ──
+	//
+	// The ESP is mounted at /mnt/efi so rEFInd and every installation's kernel
+	// directory share one filesystem. This install's directory
+	// (aelum/<id>/ on the ESP) is bind-mounted at /mnt/boot, which is where
+	// pacstrap and mkinitcpio expect the kernel and initramfs. Two installs on
+	// the same ESP therefore never write to the same kernel files.
 
-	bootMount := shared.BootMountPoint
-
-	cmd = primitives.Run("mkdir", "-p", bootMount)
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("create boot mount point failed: %w: %s", err, string(output))
+	espMount := shared.ESPMountPoint
+	if err := primitives.Run("mkdir", "-p", espMount).Run(); err != nil {
+		return fmt.Errorf("create ESP mount point %s failed: %w", espMount, err)
 	}
 
 	// The filesystem type is given explicitly: without it the kernel probes
@@ -135,7 +144,7 @@ func Run(ctx *shared.InstallContext) error {
 	// vfat module has not been loaded yet (the probe then fails with a
 	// confusing "Can't find ext4 filesystem"/squashfs error). Naming the type
 	// makes the kernel load the module on demand.
-	cmd = primitives.Run("mount", "-t", shared.FileSystemVfat, p.EFIPart, bootMount)
+	cmd = primitives.Run("mount", "-t", shared.FileSystemVfat, p.EFIPart, espMount)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("mount EFI failed: %w: %s", err, string(output))
@@ -144,8 +153,23 @@ func Run(ctx *shared.InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	// Verify EFI mount
-	if err := verifyMount(bootMount, p.EFIPart); err != nil {
+	if err := verifyMount(espMount, p.EFIPart); err != nil {
+		return err
+	}
+
+	bootDir := espMount + "/" + shared.InstallBootDir(shared.InstallID(p.RootUUID))
+	if err := primitives.Run("mkdir", "-p", bootDir).Run(); err != nil {
+		return fmt.Errorf("create per-install boot directory %s failed: %w", bootDir, err)
+	}
+	if err := primitives.Run("mkdir", "-p", shared.BootMountPoint).Run(); err != nil {
+		return fmt.Errorf("create boot mount point %s failed: %w", shared.BootMountPoint, err)
+	}
+	cmd = primitives.Run("mount", "--bind", bootDir, shared.BootMountPoint)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("bind per-install boot directory failed: %w: %s", err, string(output))
+	}
+	if err := verifyBindMount(bootDir, shared.BootMountPoint); err != nil {
 		return err
 	}
 
@@ -257,6 +281,24 @@ func isLuksMapperOpen(mapperName string) bool {
 
 // BuildMountOpts is an alias for primitives.BuildMountOpts.
 var BuildMountOpts = primitives.BuildMountOpts
+
+// verifyBindMount checks that target really is a bind mount of source by
+// comparing the device/inode pair of both directories. A plain directory at the
+// target has a different inode, so a silently failed bind is caught here.
+func verifyBindMount(source, target string) error {
+	srcInfo, err := primitives.Run("stat", "-c", "%d:%i", source).Output()
+	if err != nil {
+		return fmt.Errorf("mount verification failed: cannot stat %s: %w", source, err)
+	}
+	tgtInfo, err := primitives.Run("stat", "-c", "%d:%i", target).Output()
+	if err != nil {
+		return fmt.Errorf("mount verification failed: cannot stat %s: %w", target, err)
+	}
+	if strings.TrimSpace(string(srcInfo)) != strings.TrimSpace(string(tgtInfo)) {
+		return fmt.Errorf("mount verification failed: %s is not a bind mount of %s", target, source)
+	}
+	return nil
+}
 
 // verifyMount checks that a mountpoint is actually mounted and references the expected device.
 // Uses findmnt which is more reliable than mountpoint (works even if mountpoint package is absent).

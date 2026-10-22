@@ -36,11 +36,11 @@ func hasCall(calls [][]string, want ...string) bool {
 }
 
 // TestRun_Ext4 verifies the standard ext4 flow: mount root, verify it, mount the
-// ESP at /mnt/boot, verify it.
+// ESP at /mnt/efi, then bind this install's boot directory at /mnt/boot.
 func TestRun_Ext4(t *testing.T) {
 	rec := findmntRule(findmntRule(primitivestest.NewRecorder(),
 		shared.MountRoot, "/dev/vda2"),
-		shared.BootMountPoint, "/dev/vda1")
+		shared.ESPMountPoint, "/dev/vda1")
 	defer primitives.SetCommandRunner(rec)()
 
 	if err := Run(baseCtx()); err != nil {
@@ -51,8 +51,18 @@ func TestRun_Ext4(t *testing.T) {
 	if !hasCall(mounts, "mount", "--mkdir", "/dev/vda2", shared.MountRoot) {
 		t.Errorf("root mount not issued; mount calls = %v", mounts)
 	}
-	if !hasCall(mounts, "mount", "-t", shared.FileSystemVfat, "/dev/vda1", shared.BootMountPoint) {
+	if !hasCall(mounts, "mount", "-t", shared.FileSystemVfat, "/dev/vda1", shared.ESPMountPoint) {
 		t.Errorf("EFI mount not issued; mount calls = %v", mounts)
+	}
+	bootDir := shared.ESPMountPoint + "/" + shared.InstallBootDir(shared.InstallID(baseCtx().Partitions.RootUUID))
+	if !hasCall(mounts, "mount", "--bind", bootDir, shared.BootMountPoint) {
+		t.Errorf("per-install boot bind mount not issued; mount calls = %v", mounts)
+	}
+	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", shared.ESPMountPoint) {
+		t.Errorf("ESP mount point was not created: %v", rec.CallsFor("mkdir"))
+	}
+	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", bootDir) {
+		t.Errorf("per-install boot directory was not created: %v", rec.CallsFor("mkdir"))
 	}
 	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", shared.BootMountPoint) {
 		t.Errorf("boot mount point was not created: %v", rec.CallsFor("mkdir"))
@@ -71,7 +81,7 @@ func TestRun_BtrfsSubvolumes(t *testing.T) {
 
 	rec := findmntRule(findmntRule(primitivestest.NewRecorder(),
 		shared.MountRoot, "/dev/vda2"),
-		shared.BootMountPoint, "/dev/vda1")
+		shared.ESPMountPoint, "/dev/vda1")
 	defer primitives.SetCommandRunner(rec)()
 
 	if err := Run(ctx); err != nil {
@@ -98,7 +108,7 @@ func TestRun_LvmExt4Home(t *testing.T) {
 	rec := findmntRule(findmntRule(findmntRule(primitivestest.NewRecorder(),
 		shared.MountRoot, shared.LvmRootLvPath),
 		shared.MountRoot+"/home", shared.LvmHomeLvPath),
-		shared.BootMountPoint, "/dev/vda1")
+		shared.ESPMountPoint, "/dev/vda1")
 	defer primitives.SetCommandRunner(rec)()
 
 	if err := Run(ctx); err != nil {
@@ -127,7 +137,7 @@ func TestRun_LuksAlreadyOpen(t *testing.T) {
 
 	rec := findmntRule(findmntRule(primitivestest.NewRecorder(),
 		shared.MountRoot, shared.LuksMapperPath),
-		shared.BootMountPoint, "/dev/vda1")
+		shared.ESPMountPoint, "/dev/vda1")
 	rec.OnOutput("cryptsetup", "") // status succeeds → mapper already open
 	defer primitives.SetCommandRunner(rec)()
 
@@ -155,7 +165,7 @@ func TestRun_LuksOpensMapper(t *testing.T) {
 
 	rec := findmntRule(findmntRule(primitivestest.NewRecorder(),
 		shared.MountRoot, shared.LuksMapperPath),
-		shared.BootMountPoint, "/dev/vda1")
+		shared.ESPMountPoint, "/dev/vda1")
 	rec.OnArgsError([]string{"cryptsetup", "status"}, errors.New("exit status 1"))
 	defer primitives.SetCommandRunner(rec)()
 
@@ -237,5 +247,41 @@ func TestRun_BtrfsSubvolumeMountFails(t *testing.T) {
 	err := Run(ctx)
 	if err == nil || !strings.Contains(err.Error(), "subvolume") {
 		t.Fatalf("Run() error = %v, want subvolume mount failure", err)
+	}
+}
+
+func TestRun_RequiresRootUUID(t *testing.T) {
+	ctx := baseCtx()
+	ctx.Partitions.RootUUID = ""
+	if err := Run(ctx); err == nil || !strings.Contains(err.Error(), "root UUID not set") {
+		t.Fatalf("Run() error = %v, want a missing-root-UUID error", err)
+	}
+}
+
+func TestVerifyBindMount_Mismatch(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"stat", "-c", "%d:%i", "/src"}, "8:1\n").
+		OnArgsOutput([]string{"stat", "-c", "%d:%i", "/dst"}, "8:2\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	err := verifyBindMount("/src", "/dst")
+	if err == nil || !strings.Contains(err.Error(), "not a bind mount") {
+		t.Fatalf("verifyBindMount() error = %v, want a bind-mount mismatch", err)
+	}
+}
+
+// TestRun_BindMountVerificationFails verifies a silently failed bind mount is
+// caught before pacstrap writes kernels into an unrelated directory.
+func TestRun_BindMountVerificationFails(t *testing.T) {
+	rec := findmntRule(findmntRule(primitivestest.NewRecorder(),
+		shared.MountRoot, "/dev/vda2"),
+		shared.ESPMountPoint, "/dev/vda1")
+	rec.OnOutput("stat", "8:1\n")
+	rec.OnArgsOutput([]string{"stat", "-c", "%d:%i", shared.BootMountPoint}, "8:2\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	err := Run(baseCtx())
+	if err == nil || !strings.Contains(err.Error(), "not a bind mount") {
+		t.Fatalf("Run() error = %v, want bind-mount verification to fail", err)
 	}
 }

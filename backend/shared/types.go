@@ -4,7 +4,7 @@ package shared
 // PartitionInfo is populated by FormatDisk and consumed by subsequent steps.
 type InstallContext struct {
 	DiskID     string
-	ESP        string // ESP mount point, e.g. "/mnt/boot"
+	ESP        string // ESP mount point, e.g. "/mnt/efi"
 	Partitions *PartitionInfo
 	Helper     string
 	Username   string

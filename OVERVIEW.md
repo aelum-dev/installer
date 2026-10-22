@@ -7,7 +7,7 @@
 | Term | What It Is | Key Paths |
 |------|-----------|-----------|
 | **Live ISO** | Bootable Arch environment running the installer. Read-only rootfs (overlay). | Sudoers: user needs passwordless sudo for CLI binary. |
-| **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. Boot partition at `/mnt/boot/`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
+| **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. ESP at `/mnt/efi`; this install's `aelum/<id>/` boot directory bind-mounted at `/mnt/boot`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
 | **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `~/Projects/shared` shared with VM. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
@@ -107,7 +107,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | # | Step | Weight | Function | Description |
 |---|------|--------|----------|-------------|
 | 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 512MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
-| 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, Boot partition to `/mnt/boot` |
+| 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, the ESP to `/mnt/efi`, and this install's `aelum/<id>/` ESP directory at `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
 | 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
@@ -117,8 +117,8 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 
 | # | Sub-step | Function | Description |
 |---|----------|----------|-------------|
-| 6.1 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes) |
-| 6.2 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, `refind.conf` menu entry, NVRAM boot entry |
+| 6.1 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes): ESP at `/efi`, this install's `aelum/<id>/` boot dir bind-mounted at `/boot` |
+| 6.2 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, per-install `aelum/<id>.conf` menu fragment (loads this install's own `aelum/<id>/` kernel), NVRAM boot entry |
 | 6.3 | Configure System | `ConfigureSystemBase` | Hostname, timezone, locale, keymap, NTP, mirrorlist |
 | 6.4 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
 | 6.5 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
@@ -287,7 +287,7 @@ Aelum-Installer/
 │   │   ├── install_desktop.go   # pacstrap desktop packages
 │   │   ├── install.go           # Pacstrap progress tracking
 │   │   ├── fstab.go             # fstab generation + verification
-│   │   ├── bootloader.go        # rEFInd install + branded theme + refind.conf boot entry
+│   │   ├── bootloader.go        # rEFInd install + branded theme + per-install menu fragment
 │   │   ├── users.go             # User account creation + ISO copy
 │   │   ├── system.go            # Hostname, locale, timezone, mirrors
 │   │   ├── greetd.go            # Login manager config + DMS sync

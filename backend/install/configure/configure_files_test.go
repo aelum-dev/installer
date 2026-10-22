@@ -92,7 +92,11 @@ func TestGenerateFstab(t *testing.T) {
 			if !ok {
 				t.Fatal("fstab was not written")
 			}
-			for _, want := range tt.want {
+			for _, want := range append(tt.want,
+				shared.InstalledESPMountPoint,
+				shared.InstalledESPMountPoint+"/"+shared.InstallBootDir(shared.InstallID(tt.ctx.Partitions.RootUUID)),
+				"/boot  none  bind",
+			) {
 				if !strings.Contains(content, want) {
 					t.Errorf("fstab missing %q:\n%s", want, content)
 				}
@@ -166,7 +170,9 @@ func TestGenerateFstab_WriteError(t *testing.T) {
 
 func TestVerifyFstab(t *testing.T) {
 	const path = shared.MountRoot + "/etc/fstab"
-	valid := "UUID=ROOT-UUID  /  ext4  defaults  0 1\nUUID=EFI-UUID  /boot  vfat  umask=0077 0 2\n"
+	valid := "UUID=ROOT-UUID  /  ext4  defaults  0 1\n" +
+		"UUID=EFI-UUID  /efi  vfat  umask=0077 0 2\n" +
+		"/efi/aelum/rootuuid  /boot  none  bind,x-systemd.requires-mounts-for=/efi  0 0\n"
 
 	tests := []struct {
 		name      string
@@ -182,10 +188,24 @@ func TestVerifyFstab(t *testing.T) {
 		{"missing efi", valid, "ROOT-UUID", "OTHER", "missing EFI UUID OTHER"},
 		{
 			name:    "missing root mount point",
-			content: "UUID=ROOT-UUID\nUUID=EFI-UUID\n" + strings.Repeat("x", 50),
+			content: "UUID=ROOT-UUID\nUUID=EFI-UUID\n/efi/aelum/rootuuid /boot none bind\n" + strings.Repeat("x", 50),
 			root:    "ROOT-UUID",
 			efi:     "EFI-UUID",
 			wantMsg: "missing / mount point",
+		},
+		{
+			name:    "missing per-install boot directory",
+			content: "UUID=ROOT-UUID  /  ext4  defaults  0 1\nUUID=EFI-UUID  /efi  vfat  umask=0077 0 2\n" + strings.Repeat("x", 50),
+			root:    "ROOT-UUID",
+			efi:     "EFI-UUID",
+			wantMsg: "missing this installation's boot directory",
+		},
+		{
+			name:    "missing boot bind mount",
+			content: "UUID=ROOT-UUID  /  ext4  defaults  0 1\nUUID=EFI-UUID  /efi  vfat  umask=0077 0 2\n/efi/aelum/rootuuid  /boot  none  defaults  0 0\n",
+			root:    "ROOT-UUID",
+			efi:     "EFI-UUID",
+			wantMsg: "missing the /boot bind mount",
 		},
 	}
 
@@ -194,7 +214,7 @@ func TestVerifyFstab(t *testing.T) {
 			fs := primitivestest.NewMemFS().WithFile(path, tt.content)
 			defer primitives.SetFileSystem(fs)()
 
-			err := verifyFstab(tt.root, tt.efi)
+			err := verifyFstab(tt.root, tt.efi, "rootuuid")
 			if tt.wantMsg == "" {
 				if err != nil {
 					t.Fatalf("verifyFstab() = %v, want nil", err)
@@ -210,7 +230,7 @@ func TestVerifyFstab(t *testing.T) {
 
 func TestVerifyFstab_ReadError(t *testing.T) {
 	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
-	err := verifyFstab("ROOT-UUID", "EFI-UUID")
+	err := verifyFstab("ROOT-UUID", "EFI-UUID", "rootuuid")
 	if err == nil || !strings.Contains(err.Error(), "failed to read fstab") {
 		t.Fatalf("verifyFstab() error = %v, want read failure", err)
 	}
@@ -225,12 +245,13 @@ func TestWriteRefindConfig(t *testing.T) {
 
 	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemExt4,
-		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
+		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", RootPart: "/dev/sda2"},
 	}
 	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{Width: 1920, Height: 1080}, true, false); err != nil {
 		t.Fatalf("writeRefindConfig() = %v, want nil", err)
 	}
 
+	id := shared.InstallID(ctx.Partitions.RootUUID)
 	path := shared.BootMountPoint + "/" + shared.RefindConfigPath
 	content, ok := fs.Read(path)
 	if !ok {
@@ -238,15 +259,73 @@ func TestWriteRefindConfig(t *testing.T) {
 	}
 	for _, want := range []string{
 		"include " + shared.RefindThemeInclude,
-		`menuentry "` + shared.BootEntryTitle + `"`,
-		"icon /" + shared.RefindIconPath,
-		"loader /vmlinuz-linux-lts",
-		"initrd /initramfs-linux-lts.img",
-		`options "root=UUID=ROOT-UUID`,
+		"include " + shared.RefindEntryInclude(id),
 	} {
 		if !strings.Contains(content, want) {
 			t.Errorf("refind.conf missing %q:\n%s", want, content)
 		}
+	}
+
+	entryPath := shared.BootMountPoint + "/" + shared.RefindEntryPath(id)
+	entry, ok := fs.Read(entryPath)
+	if !ok {
+		t.Fatalf("rEFInd menu entry not written at %s", entryPath)
+	}
+	for _, want := range []string{
+		`menuentry "` + shared.RefindEntryTitle("/dev/sda2") + `"`,
+		"icon /" + shared.RefindIconPath,
+		"loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts"),
+		"initrd /" + shared.InstallBootFilePath(id, "initramfs-linux-lts.img"),
+		`options "root=UUID=ROOT-UUID`,
+	} {
+		if !strings.Contains(entry, want) {
+			t.Errorf("menu entry missing %q:\n%s", want, entry)
+		}
+	}
+}
+
+// TestWriteRefindConfig_PreservesOtherInstalls covers installing Aelum twice on
+// the same ESP: the second install must add its own fragment without deleting
+// the first install's entry.
+func TestWriteRefindConfig_PreservesOtherInstalls(t *testing.T) {
+	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
+	firstCtx := &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Partitions: &shared.PartitionInfo{RootUUID: "1111AAAA-0000-0000-0000-000000000000", RootPart: "/dev/sda2"},
+	}
+	firstID := shared.InstallID(firstCtx.Partitions.RootUUID)
+	firstEntryPath := shared.BootMountPoint + "/" + shared.RefindEntryPath(firstID)
+	fs := primitivestest.NewMemFS().WithFile(firstEntryPath, `menuentry "Aelum (sda2)" {`+"\n}\n")
+	defer primitives.SetFileSystem(fs)()
+
+	secondCtx := &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Partitions: &shared.PartitionInfo{RootUUID: "2222BBBB-0000-0000-0000-000000000000", RootPart: "/dev/sda3"},
+	}
+	if err := writeRefindConfig(shared.BootMountPoint, secondCtx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{}, false, false); err != nil {
+		t.Fatalf("writeRefindConfig() = %v, want nil", err)
+	}
+
+	if _, ok := fs.Read(firstEntryPath); !ok {
+		t.Fatalf("first install's menu entry was removed: %s", firstEntryPath)
+	}
+	conf, _ := fs.Read(shared.BootMountPoint + "/" + shared.RefindConfigPath)
+	for _, id := range []string{firstID, shared.InstallID(secondCtx.Partitions.RootUUID)} {
+		if !strings.Contains(conf, "include "+shared.RefindEntryInclude(id)) {
+			t.Errorf("refind.conf missing include for %s:\n%s", id, conf)
+		}
+	}
+
+	secondID := shared.InstallID(secondCtx.Partitions.RootUUID)
+	secondEntry, ok := fs.Read(shared.BootMountPoint + "/" + shared.RefindEntryPath(secondID))
+	if !ok {
+		t.Fatalf("second install's menu entry was not written")
+	}
+	if want := "loader /" + shared.InstallBootFilePath(secondID, "vmlinuz-linux-lts"); !strings.Contains(secondEntry, want) {
+		t.Errorf("second install's entry missing %q:\n%s", want, secondEntry)
+	}
+	if strings.Contains(secondEntry, shared.InstallBootFilePath(firstID, "vmlinuz-linux-lts")) {
+		t.Errorf("second install's entry points at the first install's kernel:\n%s", secondEntry)
 	}
 }
 

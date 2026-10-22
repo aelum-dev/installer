@@ -35,7 +35,7 @@ type Installer struct {
 	luksPassphrase []byte // zeroed after being copied to InstallContext
 	lvm            bool
 	dryRun         bool
-	esp            string // ESP mount point (default: /mnt/boot)
+	esp            string // ESP mount point (default: /mnt/efi)
 
 	// manualMode enables dualboot-safe manual partitioning. When set, the
 	// format step runs partition.Apply with manualLayout instead of the
@@ -98,7 +98,7 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		luksPassphrase: []byte(cfg.LuksPassphrase),
 		lvm:            cfg.Lvm,
 		dryRun:         cfg.DryRun,
-		esp:            shared.BootMountPoint,
+		esp:            shared.ESPMountPoint,
 		Logger:         shared.NewConsoleLogger(),
 	}
 }

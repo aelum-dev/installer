@@ -93,31 +93,58 @@ func TestRefindConfig(t *testing.T) {
 		FileSystem: shared.FileSystemBtrfs,
 		Luks:       true,
 		Lvm:        true,
-		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID"},
+		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID", RootPart: "/dev/sda2"},
 	}
-	got := refindConfig(ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{Width: 1920, Height: 1080}, true, false)
+	includes := []string{"aelum/aaaa1111.conf", "aelum/bbbb2222.conf"}
+	got := refindConfig(ctx, displayMode{Width: 1920, Height: 1080}, true, false, includes)
 
 	for _, want := range []string{
 		"resolution 1920 1080",
 		"timeout 5",
-		"default_selection " + shared.BootEntryTitle,
+		fmt.Sprintf("default_selection %q", shared.RefindEntryTitle("/dev/sda2")),
 		"scan_all_linux_kernels false",
-		"dont_scan_dirs EFI/systemd",
-		"dont_scan_files systemd-bootx64.efi,BOOTX64.EFI,bootx64.efi",
+		"dont_scan_files + BOOTX64.EFI,bootx64.efi",
 		"include " + shared.RefindThemeInclude,
-		`menuentry "` + shared.BootEntryTitle + `" {`,
-		"icon /" + shared.RefindIconPath,
-		"loader /vmlinuz-linux-lts",
-		"initrd /initramfs-linux-lts.img",
-		fmt.Sprintf("    options %q", bootEntryOptions(ctx)),
-		"rootflags=subvol=@",
+		"include aelum/aaaa1111.conf",
+		"include aelum/bbbb2222.conf",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("refind.conf missing %q:\n%s", want, got)
 		}
 	}
+	// Other OS loaders are auto-detected: rEFInd's own directory is skipped by
+	// rEFInd, and only the fallback BOOTX64.EFI copies are suppressed.
+	for _, unwanted := range []string{"dont_scan_dirs", "systemd-bootx64.efi", "menuentry"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("refind.conf unexpectedly contains %q:\n%s", unwanted, got)
+		}
+	}
 	if strings.Contains(got, "font "+shared.RefindThemeFont2x) {
 		t.Errorf("1080p refind.conf unexpectedly selects the 2x font:\n%s", got)
+	}
+}
+
+func TestRefindEntry(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem: shared.FileSystemBtrfs,
+		Luks:       true,
+		Lvm:        true,
+		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID", RootPart: "/dev/sda2"},
+	}
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	got := refindEntry(ctx, id, "vmlinuz-linux-lts", "initramfs-linux-lts.img")
+
+	for _, want := range []string{
+		`menuentry "` + shared.RefindEntryTitle("/dev/sda2") + `" {`,
+		"icon /" + shared.RefindIconPath,
+		"loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts"),
+		"initrd /" + shared.InstallBootFilePath(id, "initramfs-linux-lts.img"),
+		fmt.Sprintf("    options %q", bootEntryOptions(ctx)),
+		"rootflags=subvol=@",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("rEFInd menu entry missing %q:\n%s", want, got)
+		}
 	}
 }
 
@@ -135,7 +162,7 @@ func TestRefindConfig_HiDPI(t *testing.T) {
 		{"4K", displayMode{Width: 3840, Height: 2160}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := refindConfig(ctx, "vmlinuz-linux", "initramfs-linux.img", tc.mode, true, true)
+			got := refindConfig(ctx, tc.mode, true, true, nil)
 
 			for _, want := range []string{
 				fmt.Sprintf("resolution %d %d", tc.mode.Width, tc.mode.Height),
@@ -154,13 +181,37 @@ func TestRefindConfig_NoDetectedMode(t *testing.T) {
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
 	}
-	got := refindConfig(ctx, "vmlinuz-linux", "initramfs-linux.img", displayMode{}, false, false)
+	got := refindConfig(ctx, displayMode{}, false, false, nil)
 
 	if !strings.Contains(got, "resolution max") {
 		t.Fatalf("fallback refind.conf missing \"resolution max\":\n%s", got)
 	}
 	if strings.Contains(got, "font "+shared.RefindThemeFont2x) {
 		t.Fatalf("1x fallback unexpectedly selects the 2x font:\n%s", got)
+	}
+}
+
+func TestRefindEntryIncludes(t *testing.T) {
+	dir := shared.BootMountPoint + "/" + shared.RefindEntriesDir
+	fs := primitivestest.NewMemFS().
+		WithFile(dir+"/bbbb2222.conf", "").
+		WithFile(dir+"/aaaa1111.conf", "").
+		WithFile(dir+"/notes.txt", "")
+	defer primitives.SetFileSystem(fs)()
+
+	got, err := refindEntryIncludes(shared.BootMountPoint)
+	if err != nil {
+		t.Fatalf("refindEntryIncludes() = %v, want nil", err)
+	}
+	want := []string{"aelum/aaaa1111.conf", "aelum/bbbb2222.conf"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("refindEntryIncludes() = %v, want %v", got, want)
+	}
+
+	// A first install has no fragment directory yet.
+	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	if got, err := refindEntryIncludes(shared.BootMountPoint); err != nil || len(got) != 0 {
+		t.Fatalf("refindEntryIncludes(empty) = %v, %v; want none", got, err)
 	}
 }
 
@@ -473,7 +524,7 @@ func TestRegisterRefindBootEntry(t *testing.T) {
 
 	ctx := &shared.InstallContext{
 		DiskID:     "/dev/vda",
-		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1"},
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1", RootPart: "/dev/vda2"},
 	}
 	if err := registerRefindBootEntry(ctx); err != nil {
 		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
@@ -483,7 +534,7 @@ func TestRegisterRefindBootEntry(t *testing.T) {
 		"--disk", "/dev/vda",
 		"--part", "1",
 		"--loader", shared.RefindNvramLoader,
-		"--label", shared.BootEntryTitle,
+		"--label", shared.RefindEntryTitle("/dev/vda2"),
 	}
 	if !hasCall(rec.CallsFor("efibootmgr"), want...) {
 		t.Fatalf("efibootmgr create argv missing; calls = %v", rec.CallsFor("efibootmgr"))
@@ -560,11 +611,16 @@ func TestRegisterRefindBootEntry_Errors(t *testing.T) {
 func TestVerifyBootloaderInstallation_Success(t *testing.T) {
 	rec := primitivestest.NewRecorder()
 	defer primitives.SetCommandRunner(rec)()
+	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", RootPart: "/dev/vda2"}}
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	entryPath := shared.BootMountPoint + "/" + shared.RefindEntryPath(id)
 	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
-	fs := primitivestest.NewMemFS().WithFile(confPath, "include "+shared.RefindThemeInclude+"\n"+`menuentry "`+shared.BootEntryTitle+`" {`+"\n}\n")
+	fs := primitivestest.NewMemFS().
+		WithFile(confPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
+		WithFile(entryPath, `menuentry "`+shared.RefindEntryTitle("/dev/vda2")+`" {`+"\n}\n")
 	defer primitives.SetFileSystem(fs)()
 
-	if err := verifyBootloaderInstallation(shared.BootMountPoint); err != nil {
+	if err := verifyBootloaderInstallation(shared.BootMountPoint, ctx); err != nil {
 		t.Fatalf("verifyBootloaderInstallation() = %v, want nil", err)
 	}
 	binary := shared.BootMountPoint + "/" + shared.RefindBinaryPath
@@ -583,28 +639,36 @@ func TestVerifyBootloaderInstallation_ReportsIssues(t *testing.T) {
 	rec := primitivestest.NewRecorder().OnArgsError([]string{"test", "-f"}, errors.New("missing"))
 	defer primitives.SetCommandRunner(rec)()
 	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
+	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", RootPart: "/dev/vda2"}}
 
-	err := verifyBootloaderInstallation(shared.BootMountPoint)
+	err := verifyBootloaderInstallation(shared.BootMountPoint, ctx)
 	if err == nil {
 		t.Fatal("verifyBootloaderInstallation() = nil, want verification failure")
 	}
 	msg := err.Error()
-	if !strings.Contains(msg, "bootloader verification failed") ||
-		!strings.Contains(msg, "rEFInd binary is MISSING") ||
-		!strings.Contains(msg, "rEFInd config is MISSING") {
-		t.Errorf("error = %q, want verification issues listed", msg)
+	for _, want := range []string{
+		"bootloader verification failed",
+		"rEFInd binary is MISSING",
+		"rEFInd menu entry is MISSING",
+		"rEFInd config is MISSING",
+	} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("error = %q, want %q", msg, want)
+		}
 	}
 }
 
 func TestVerifyBootloaderInstallation_MissingMenuEntry(t *testing.T) {
 	rec := primitivestest.NewRecorder()
 	defer primitives.SetCommandRunner(rec)()
-	confPath := shared.BootMountPoint + "/" + shared.RefindConfigPath
-	fs := primitivestest.NewMemFS().WithFile(confPath, "timeout 5\n")
+	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", RootPart: "/dev/vda2"}}
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	fs := primitivestest.NewMemFS().
+		WithFile(shared.BootMountPoint+"/"+shared.RefindEntryPath(id), "timeout 5\n")
 	defer primitives.SetFileSystem(fs)()
 
-	err := verifyBootloaderInstallation(shared.BootMountPoint)
-	if err == nil || !strings.Contains(err.Error(), "missing the "+shared.BootEntryTitle+" menu entry") {
+	err := verifyBootloaderInstallation(shared.BootMountPoint, ctx)
+	if err == nil || !strings.Contains(err.Error(), "does not contain "+shared.RefindEntryTitle("/dev/vda2")) {
 		t.Fatalf("verifyBootloaderInstallation() error = %v, want missing-menuentry", err)
 	}
 }
@@ -676,23 +740,42 @@ func TestConfigureBootloader_Success(t *testing.T) {
 	defer primitives.SetCommandRunner(rec)()
 	fs := primitivestest.NewMemFS()
 	defer primitives.SetFileSystem(fs)()
+	ctx := validBootCtx()
+	ctx.Partitions.RootPart = "/dev/vda2"
 
-	if err := ConfigureBootloader(validBootCtx()); err != nil {
+	if err := ConfigureBootloader(ctx); err != nil {
 		t.Fatalf("ConfigureBootloader() = %v, want nil", err)
 	}
-	content, ok := fs.Read(shared.BootMountPoint + "/" + shared.RefindConfigPath)
+
+	id := shared.InstallID(ctx.Partitions.RootUUID)
+	confContent, ok := fs.Read(shared.ESPMountPoint + "/" + shared.RefindConfigPath)
 	if !ok {
-		t.Fatalf("refind.conf not written at %s", shared.BootMountPoint+"/"+shared.RefindConfigPath)
+		t.Fatalf("refind.conf not written at %s", shared.ESPMountPoint+"/"+shared.RefindConfigPath)
 	}
 	for _, want := range []string{
 		"include " + shared.RefindThemeInclude,
-		`menuentry "` + shared.BootEntryTitle + `"`,
-		"loader /vmlinuz-linux-lts",
-		"initrd /initramfs-linux-lts.img",
+		"include " + shared.RefindEntryInclude(id),
+	} {
+		if !strings.Contains(confContent, want) {
+			t.Errorf("refind.conf missing %q:\n%s", want, confContent)
+		}
+	}
+	if strings.Contains(confContent, "menuentry") {
+		t.Errorf("refind.conf should not hold the menu entry itself:\n%s", confContent)
+	}
+
+	entryContent, ok := fs.Read(shared.ESPMountPoint + "/" + shared.RefindEntryPath(id))
+	if !ok {
+		t.Fatalf("menu entry not written at %s", shared.ESPMountPoint+"/"+shared.RefindEntryPath(id))
+	}
+	for _, want := range []string{
+		`menuentry "` + shared.RefindEntryTitle("/dev/vda2") + `"`,
+		"loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts"),
+		"initrd /" + shared.InstallBootFilePath(id, "initramfs-linux-lts.img"),
 		`options "root=UUID=ROOT-UUID`,
 	} {
-		if !strings.Contains(content, want) {
-			t.Errorf("refind.conf missing %q:\n%s", want, content)
+		if !strings.Contains(entryContent, want) {
+			t.Errorf("rEFInd menu entry missing %q:\n%s", want, entryContent)
 		}
 	}
 }
