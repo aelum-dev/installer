@@ -189,6 +189,30 @@ rEFInd stays in graphics mode and the themed menu remains visible until the
 kernel and Plymouth take over. On an older install, add that line to
 `/efi/EFI/refind/refind.conf`.
 
+### A red systemd icon appears for my Arch install
+
+**Cause**: rEFInd's default icon for a systemd-boot loader is the red
+`os_systemd.png` logo. It is not an error; it is the auto-detected
+`EFI/systemd/systemd-bootx64.efi` entry. Older Aelum themes only overrode
+`os_arch.png`/`os_linux.png`, so other loader types used rEFInd's stock icons.
+
+**Fix**: Current themes ship `os_systemd.png` and `os_gummiboot.png` (Arch
+glyph), plus `os_win.png`/`os_win8.png` (Windows) and
+`os_ventoy.png`/`os_vtoyefi.png` (Ventoy USB). On an older install, copy the
+rebuilt `icons/*.png` from the live ISO's
+`/usr/share/aelum/refind/themes/aelum/` to
+`/efi/EFI/refind/themes/aelum/icons/`, or reinstall.
+
+### Several entries share the same Aelum “A” icon
+
+**Cause**: Ventoy's GRUB loader has no `os_grub.png` in rEFInd's stock set, so
+rEFInd falls back to `os_linux.png`. The old theme used the Aelum “A” for both
+`os_arch.png` and `os_linux.png`, making Aelum and Ventoy entries look alike.
+
+**Fix**: Current themes use Tux for `os_linux.png` and a USB-stick glyph for
+`os_ventoy.png`/`os_vtoyefi.png`, while `os_arch.png` keeps the Aelum mark for
+Aelum's own menu entries.
+
 ### "root UUID is empty" / "partitions not initialized"
 
 **Cause**: `FormatDisk` was skipped or failed before populating partition info.

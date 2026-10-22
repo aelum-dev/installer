@@ -338,8 +338,10 @@ const RefindThemeFont2x = "themes/" + RefindThemeName + "/font-2x.png"
 // referenced by theme.conf.
 const RefindThemeBackgroundPath = RefindThemeDir + "/background.png"
 
-// RefindIconPath is the ESP-relative icon rEFInd shows for the Aelum entry. It
-// lives in the branded theme so the menu icon matches the boot background.
+// RefindIconPath is the ESP-relative Aelum mark shown for Aelum's own menu
+// entries. It lives in the branded theme so the menu icon matches the boot
+// background; rEFInd selects the sibling os_*.png icons (systemd-boot, Windows,
+// Ventoy, generic Linux) for loaders it auto-detects.
 const RefindIconPath = RefindThemeDir + "/icons/os_arch.png"
 
 // --- Progress tick ----------------------------------------------------------
