@@ -48,10 +48,10 @@ const ReservedAccountNames = "adm,alpm,audio,bin,clock,daemon,dbus,disk,empower,
 // was removed in favor of zram.
 const MinDiskSizeBytes = 8 * 1024 * 1024 * 1024
 
-// MinESPSizeBytes is the smallest size a new ESP partition may be (512 MiB).
-// This matches the automatic installer's EFI partition and leaves room for
-// firmware, Windows Boot Manager, multiple kernels/initrds, and FAT32 allocation
-// metadata without squeezing the ESP.
+// MinESPSizeBytes is the smallest size an ESP partition may be (512 MiB).
+// Every Boot partition is formatted, new or existing, and must leave room for
+// the bootloader, theme, kernel, initramfs, and FAT32 allocation metadata
+// without squeezing the ESP.
 const MinESPSizeBytes = 512 * 1024 * 1024
 
 // MinSystemPartitionBytes is the root/system partition floor: 7680 MiB, i.e.
@@ -105,8 +105,8 @@ const DefaultBtrfsCompression = "zstd"
 const MountRoot = "/mnt"
 
 // BootMountPoint is where the installed system's /boot lives during install.
-// It is a bind mount of this installation's directory on the ESP, so two Aelum
-// installations that share an ESP each keep their own kernel and initramfs.
+// It is a bind mount of this installation's directory on its ESP, so its kernel
+// and initramfs stay isolated from any other install.
 const BootMountPoint = "/mnt/boot"
 
 // ESPMountPoint is where the EFI System Partition itself is mounted during
@@ -202,9 +202,8 @@ const GPTPartitionStartSector = 2048
 
 // MinManualDiskSizeBytes is the overall disk floor for manual mode: the same
 // 8 GiB product minimum. The individual ESP/System floors are checked
-// separately; a reused ESP has no size floor, while a new 512 MiB ESP +
-// 7680 MiB System needs a little more than 8 GiB once the GPT prefix/backup is
-// counted.
+// separately; a 512 MiB ESP + 7680 MiB System needs a little more than 8 GiB
+// once the GPT prefix/backup is counted.
 const MinManualDiskSizeBytes = MinDiskSizeBytes
 
 // GPTTypeGUIDs are the GPT partition type GUIDs used by the installer.

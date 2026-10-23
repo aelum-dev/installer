@@ -37,10 +37,10 @@ type Installer struct {
 	dryRun         bool
 	esp            string // ESP mount point (default: /mnt/efi)
 
-	// manualMode enables dualboot-safe manual partitioning. When set, the
-	// format step runs partition.Apply with manualLayout instead of the
-	// automatic format.Run. Only the Boot/Root partitions in the layout are
-	// touched; every other partition is preserved.
+	// manualMode enables manual partitioning. When set, the format step runs
+	// partition.Apply with manualLayout instead of the automatic format.Run.
+	// Only the Boot/System partitions in the layout are formatted; every other
+	// partition is preserved.
 	manualMode   bool
 	manualLayout *shared.ManualLayout
 
@@ -431,8 +431,8 @@ var simulateStep = func(cancel chan struct{}, duration time.Duration) error {
 	}
 }
 
-// SetManualLayout enables manual (dualboot-safe) partitioning with the given
-// layout. The layout is validated by the orchestrator before the first step.
+// SetManualLayout enables manual partitioning with the given layout. The layout
+// is validated by the orchestrator before the first step.
 func (inst *Installer) SetManualLayout(layout *shared.ManualLayout) {
 	inst.manualMode = true
 	inst.manualLayout = layout

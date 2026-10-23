@@ -32,7 +32,7 @@ export const installState = $state({
 	// Opt-in, like LUKS, but with no passphrase. Supports both filesystems.
 	lvmEnabled: false as boolean,
 
-	// Manual (dualboot-safe) partitioning mode
+	// Manual partitioning mode
 	manualMode: false as boolean,
 	manualLayout: null as ManualLayout | null,
 

@@ -75,7 +75,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         services.go             — zram swap config + systemd service enablement
         (+ fstab_test.go, swap_test.go)
       partition/
-        partition.go            — ComputeLayout(), Apply() (dualboot-safe manual partitioning)
+        partition.go            — ComputeLayout(), Apply() (manual partitioning: formats Boot + System)
         validate.go             — Validate()/ValidateFeasible() invariants
         layout.go               — free-space placement math (buildActions, allocateFree, …)
         sectors.go              — GPT sector geometry helpers + sgdisk -p parsing
@@ -151,7 +151,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         WelcomePage.svelte      — Language/region selection
         UserAccountPage.svelte  — Username + password (interactive validation hints)
         DiskSelectionPage.svelte — Disk cards + filesystem pills
-        ManualPartitionPage.svelte — Manual (dualboot-safe) partition editor
+        ManualPartitionPage.svelte — Manual partition editor
         ConfirmationPage.svelte — Summary + root check + confirm dialog
         InstallationPage.svelte — Progress bar + live events
         FinishPage.svelte       — Success screen
@@ -256,7 +256,7 @@ Welcome (language select)
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
-- Boot floor: only a brand-new Boot partition has a floor, `shared.MinESPSizeBytes` = 512 MiB. A reused existing Boot partition has **no size floor** (Windows-created boot partitions are often 100–300 MiB) but must already be FAT (`vfat`/`fat32`); it is mounted as-is and never formatted.
+- Boot floor: every Boot partition (new or existing) must be at least `shared.MinESPSizeBytes` = 512 MiB. Manual mode always formats the selected Boot partition as FAT32, so it never reuses another OS's ESP.
 - System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition); LVM uses `shared.MinLvmSystemPartitionBytes` = 16 GiB, plus `shared.LuksHeaderReserveBytes` when LUKS+LVM is enabled
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.

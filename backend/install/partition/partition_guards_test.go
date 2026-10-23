@@ -92,10 +92,10 @@ func TestValidate_LvmUseRemainingFloor(t *testing.T) {
 	}
 }
 
-// TestValidate_ExistingSubMiBESPAccepted confirms the reused-ESP rule has no
-// size floor at all: an existing FAT boot partition smaller than 1 MiB is still
-// reusable as-is (only brand-new ESPs must meet the 512 MiB floor).
-func TestValidate_ExistingSubMiBESPAccepted(t *testing.T) {
+// TestValidate_ExistingSubMiBESPRejected confirms the ESP floor also applies to
+// existing partitions: a Boot partition is always formatted, so a sub-1-MiB
+// partition cannot serve as the ESP.
+func TestValidate_ExistingSubMiBESPRejected(t *testing.T) {
 	layout := shared.ManualLayout{
 		Disk:          "/dev/vda",
 		DiskSizeMB:    20480,
@@ -105,8 +105,9 @@ func TestValidate_ExistingSubMiBESPAccepted(t *testing.T) {
 			{Index: 1, Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * guardMiB, Type: shared.TypeSystem},
 		},
 	}
-	if err := Validate(layout); err != nil {
-		t.Fatalf("Validate() = %v, want nil (existing ESP has no size floor)", err)
+	err := Validate(layout)
+	if err == nil || !strings.Contains(err.Error(), "boot partition is too small") {
+		t.Fatalf("Validate() = %v, want boot-floor error", err)
 	}
 }
 

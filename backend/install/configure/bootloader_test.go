@@ -346,9 +346,9 @@ func TestDiscoverKernelFiles_Success(t *testing.T) {
 	}
 }
 
-func TestDiscoverKernelFiles_PrefersAelumKernelOnSharedESP(t *testing.T) {
-	// A reused ESP can also hold another distribution's kernel. The Aelum
-	// kernel must win even when find(1) lists the other one first.
+func TestDiscoverKernelFiles_PrefersAelumKernel(t *testing.T) {
+	// This installation's boot directory can hold more than one kernel image.
+	// The Aelum kernel must win even when find(1) lists another one first.
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"find", shared.BootMountPoint}, "vmlinuz-linux\nvmlinuz-linux-lts\n")
 	defer primitives.SetCommandRunner(rec)()

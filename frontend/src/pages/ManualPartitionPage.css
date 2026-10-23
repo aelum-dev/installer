@@ -158,8 +158,8 @@
 	font-weight: 600;
 }
 
-/* Reused Boot (ESP) hint: the partition is mounted as-is, never formatted. */
-.reuse-hint {
+/* Designated partition hint: Boot and System are always formatted. */
+.format-hint {
 	display: block;
 	margin-top: 2px;
 	font-size: 0.68rem;

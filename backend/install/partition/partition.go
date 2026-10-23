@@ -1,10 +1,10 @@
-// Package partition implements dualboot-safe manual partitioning.
+// Package partition implements manual partitioning.
 //
 // Unlike the automatic format step (which wipes the whole disk and creates an
 // EFI + root layout), the manual partition step only touches the two
-// partitions the user designates (one Boot, one Root). Every other partition
-// on the disk is left exactly as-is, which is what makes a dualboot install
-// safe.
+// partitions the user designates (one Boot, one Root). Both are always
+// formatted. Every other partition on the disk is left exactly as-is, so
+// another operating system can keep its own partitions and its own ESP.
 package partition
 
 import (
@@ -71,7 +71,7 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 			SizeMB:         bytesToMB(p.Size),
 			SizeBytes:      p.Size,
 			ExistingFstype: p.Fstype,
-			// Role is empty → untouched (dualboot-safe).
+			// Role is empty → untouched (not formatted, mounted, or added to fstab).
 		})
 	}
 
@@ -161,8 +161,8 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	// Create brand-new partitions and stamp the correct GPT type on the ones we
-	// reuse.
+	// Create brand-new partitions and stamp the correct GPT type on the
+	// existing partitions kept in place.
 	if err := applyPartitionTable(diskID, actions); err != nil {
 		return err
 	}
@@ -175,15 +175,11 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 	// Format each Boot/Root partition. When LUKS or LVM is enabled the System
 	// partition is not formatted directly (EncryptRoot / SetupRootFilesystem
-	// below create the filesystem, and for LVM the PV/VG/LVs). A reused Boot
-	// (ESP) partition is never formatted: it may hold another OS's boot loaders
-	// and must be left exactly as-is for dualboot. Only brand-new ESPs are
-	// created and formatted by this step.
+	// below create the filesystem, and for LVM the PV/VG/LVs). The Boot
+	// partition is always formatted, new or existing: it belongs to this
+	// install, so it must never carry another OS's boot loaders.
 	for _, a := range actions {
 		if a.pType == shared.TypeSystem && (ctx.Luks || ctx.Lvm) {
-			continue
-		}
-		if a.pType == shared.TypeESP && !a.isNew {
 			continue
 		}
 		label := "aelum"
@@ -239,10 +235,9 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 // applyPartitionTable creates every brand-new partition, then sets the expected
 // GPT type GUID on each existing ESP/System action. Existing partitions are
-// never recreated, renumbered, or formatted; only their type is adjusted so
-// firmware and bootloader discovery see the role the user assigned. Stamping
-// the ESP GUID on a reused Boot partition is harmless and leaves its contents
-// (including other OSes' boot loaders) untouched.
+// never recreated or renumbered: they keep their slot and are formatted in
+// place, while their GPT type is adjusted so firmware and bootloader discovery
+// see the role the user assigned.
 func applyPartitionTable(diskID string, actions []formatAction) error {
 	for _, a := range actions {
 		if !a.isNew {

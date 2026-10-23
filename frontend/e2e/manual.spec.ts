@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// End-to-end tests for manual (dualboot-safe) partition mode. These drive the
+// End-to-end tests for manual partition mode. These drive the
 // real Wails app through `wails dev` (fake disks, dry-run), same as
 // wizard.spec.ts.
 //

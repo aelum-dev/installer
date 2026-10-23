@@ -100,7 +100,7 @@ func run(args []string) int {
 	fileSystemFlag := fs.String("filesystem", shared.DefaultFileSystem, "Root filesystem type: ext4 or btrfs")
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
-	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout for dualboot installs")
+	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout (formats the selected Boot and System partitions)")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
 	lvmFlag := fs.Bool("lvm", false, "Place root and home on LVM logical volumes (aelum VG)")
 	logPathFlag := fs.String("log-path", "", "Installation log path (the GUI passes this; defaults to /var/log/aelum-install-<timestamp>.log)")
@@ -278,8 +278,8 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 	// Wire the installer to use the shared logger.
 	installer.Logger = log
 
-	// Manual (dualboot) mode: parse and validate the JSON layout, then hand it
-	// to the installer so the format step only touches the Boot/Root partitions.
+	// Manual mode: parse and validate the JSON layout, then hand it to the
+	// installer so only the designated Boot/System partitions are formatted.
 	if manualLayoutJSON != "" {
 		layout, err := parseManualLayout(manualLayoutJSON)
 		if err != nil {
@@ -465,7 +465,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --manual-layout '<json>'   Dualboot: only format the Boot/Root partitions in the layout\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --manual-layout '<json>'   Manual: format only the Boot/System partitions in the layout\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback /dev/vda\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  echo 'mypassword' | %s --install /dev/vda\n", os.Args[0])
@@ -492,7 +492,7 @@ func readUsername() (string, error) {
 }
 
 // parseManualLayout decodes a manual partition layout from JSON. It is used by
-// the --manual-layout flag for dualboot installs driven by the GUI.
+// the --manual-layout flag for manual installs driven by the GUI.
 func parseManualLayout(jsonStr string) (*shared.ManualLayout, error) {
 	var layout shared.ManualLayout
 	if err := json.Unmarshal([]byte(jsonStr), &layout); err != nil {

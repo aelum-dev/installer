@@ -50,8 +50,8 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 
 	var actions []formatAction
 	for _, p := range layout.Partitions {
-		// Existing rows with no role are untouched (dualboot-safe). A brand-new
-		// row with no role is a draft that must never be silently ignored.
+		// Existing rows with no role are untouched. A brand-new row with no role
+		// is a draft that must never be silently ignored.
 		if p.Path == "" && p.Type == "" {
 			return nil, fmt.Errorf("new partition must be assigned as Boot or System (or deleted)")
 		}
@@ -70,7 +70,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		}
 
 		if p.Path != "" {
-			// Reuse an existing partition in place.
+			// Reuse the existing partition slot; Apply formats it in place.
 			num := parsePartitionNum(p.Path)
 			if num > maxNum {
 				maxNum = num
@@ -249,12 +249,10 @@ func roleLabel(fstype string) string {
 	return "aelum"
 }
 
-// minPartitionSizeMB returns the enforced minimum size in MiB for a brand-new
-// partition role: the new-ESP floor (512 MiB) and the System floor (8 GiB, or
-// 16 GiB / 16 GiB + LUKS header when LVM is enabled). Reused ESPs have no size
-// floor (Validate accepts any FAT partition), and other roles have no floor
-// (0). This backstops the *resolved* size of a use-remaining row so a too-small
-// partition can never reach sgdisk.
+// minPartitionSizeMB returns the enforced minimum size in MiB for a partition
+// role: the ESP floor (512 MiB) and the System floor (8 GiB, or 16 GiB /
+// 16 GiB + LUKS header when LVM is enabled). This backstops the *resolved* size
+// of a use-remaining row so a too-small partition can never reach sgdisk.
 func minPartitionSizeMB(pt shared.PartitionType, lvm, luks bool) int64 {
 	switch pt {
 	case shared.TypeESP:

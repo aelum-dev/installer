@@ -78,7 +78,7 @@ func TestValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "valid dualboot layout",
+			name:    "valid manual layout",
 			layout:  validLayout(),
 			wantErr: false,
 		},
@@ -175,11 +175,12 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-// TestBuildActions_DualbootInvariant asserts the core dualboot safety property:
-// Preserve partitions never appear as format actions, while the single Boot
-// (vfat/ESP) and Root (ext4/btrfs/LinuxRoot) partitions are correctly keyed by
-// role. Existing partitions keep their number; new partitions get the next.
-func TestBuildActions_DualbootInvariant(t *testing.T) {
+// TestBuildActions_PreserveInvariant asserts the core manual-partitioning
+// safety property: Preserve partitions never appear as format actions, while
+// the single Boot (vfat/ESP) and Root (ext4/btrfs/LinuxRoot) partitions are
+// correctly keyed by role. Existing partitions keep their number; new
+// partitions get the next.
+func TestBuildActions_PreserveInvariant(t *testing.T) {
 	sectors := []partitionSector{
 		{num: 1, start: 2048, end: 1050623},
 		{num: 2, start: 1050624, end: 8388609},
@@ -334,13 +335,13 @@ func TestBuildActions_AllRemainingFitsFullDisk(t *testing.T) {
 	}
 }
 
-// TestBuildActions_NoOverlapWithExisting asserts the dualboot-safety property at
+// TestBuildActions_NoOverlapWithExisting asserts the preservation property at
 // the geometry level: every newly created partition must start at or after the
 // end of ALL existing partitions (so it never carves into a kept OS/data
 // partition) and must stay within the disk. Preserve (untouched) partitions must
 // still advance the placement frontier even though they are never formatted.
 func TestBuildActions_NoOverlapWithExisting(t *testing.T) {
-	// sda1 (kept ESP) ends at 1050623; sda2 (kept Windows) ends at 8388609.
+	// sda1 (existing ESP) ends at 1050623; sda2 (Windows) ends at 8388609.
 	sectors := []partitionSector{
 		{num: 1, start: 2048, end: 1050623},
 		{num: 2, start: 1050624, end: 8388609},
@@ -356,7 +357,7 @@ func TestBuildActions_NoOverlapWithExisting(t *testing.T) {
 		Disk:       "/dev/sda",
 		DiskSizeMB: 100000,
 		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"}, // kept ESP
+			{Index: 0, Path: "/dev/sda1", SizeMB: 512, Type: shared.TypeESP, ExistingFstype: "vfat"}, // existing ESP, formatted in place
 			{Index: 1, Path: "/dev/sda2", SizeMB: 40000},                                             // Windows, preserve (empty type)
 			{Index: 2, Path: "", SizeMB: 20000, Type: shared.TypeSystem},                             // NEW Linux root
 		},
@@ -502,11 +503,10 @@ func TestValidate_NewPartitionRespectsExactFreeSpace(t *testing.T) {
 }
 
 // TestValidate_MinPartitionSizes checks the enforced floor for designated
-// partitions: a brand-new ESP must be at least 512 MiB, a reused ESP has no
-// size floor (Windows-created ESPs are often 100-300 MiB), and the system
-// partition must be at least 7680 MiB (8 GiB total minus the 512 MiB ESP). A
-// "use all remaining space" row is checked against the resolved free space in
-// TestValidate_UseRemainingRespectsFloor.
+// partitions: every ESP must be at least 512 MiB (it is always formatted), and
+// the system partition must be at least 7680 MiB (8 GiB total minus the 512 MiB
+// ESP). A "use all remaining space" row is checked against the resolved free
+// space in TestValidate_UseRemainingRespectsFloor.
 func TestValidate_MinPartitionSizes(t *testing.T) {
 	const mib = 1024 * 1024
 	minESP := int64(shared.MinESPSizeBytes / mib)
@@ -550,9 +550,9 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 		{"existing system below 7680 MiB", esp(minESP, false), sys(minSys-1, false), true},
 		{"brand-new system below 7680 MiB", esp(minESP, false), sys(4096, true), true},
 		{"system use-remaining resolves above floor", esp(minESP, false), sys(0, true), false},
-		{"existing 32 MiB esp is reusable (no floor)", esp(32, false), sys(minSys, false), false},
-		{"existing 1 MiB esp is reusable (no floor)", esp(1, false), sys(minSys, false), false},
-		{"existing 256 MiB esp is reusable", esp(256, false), sys(minSys, false), false},
+		{"existing 256 MiB esp is too small", esp(256, false), sys(minSys, false), true},
+		{"existing 511 MiB esp is too small", esp(minESP-1, false), sys(minSys, false), true},
+		{"existing 512 MiB esp is accepted", esp(minESP, false), sys(minSys, false), false},
 		{"brand-new esp below 512 MiB", esp(minESP-1, true), sys(minSys, false), true},
 		{"brand-new esp exactly 512 MiB", esp(minESP, true), sys(minSys, false), false},
 	}
@@ -565,10 +565,10 @@ func TestValidate_MinPartitionSizes(t *testing.T) {
 	}
 }
 
-// TestValidate_ExistingBootMustBeFAT verifies the dualboot guard: a reused Boot
-// partition is mounted as-is, so it must already be FAT. The "fat32" alias is
-// accepted because fake-disk data and some tools report it that way.
-func TestValidate_ExistingBootMustBeFAT(t *testing.T) {
+// TestValidate_ExistingBootAnyFstype verifies that an existing Boot partition
+// no longer has to be FAT: it is always formatted as vfat, so its previous
+// filesystem is irrelevant.
+func TestValidate_ExistingBootAnyFstype(t *testing.T) {
 	const mib = 1024 * 1024
 	minSys := int64(shared.MinSystemPartitionBytes / mib)
 
@@ -578,28 +578,16 @@ func TestValidate_ExistingBootMustBeFAT(t *testing.T) {
 			DiskSizeMB:    100000,
 			DiskSizeBytes: 100000 * mib,
 			Partitions: []shared.ManualPartition{
-				{Index: 0, Path: "/dev/sda1", SizeMB: 256, SizeBytes: 256 * mib, Type: shared.TypeESP, ExistingFstype: fstype},
+				{Index: 0, Path: "/dev/sda1", SizeMB: 512, SizeBytes: 512 * mib, Type: shared.TypeESP, ExistingFstype: fstype},
 				{Index: 1, Path: "/dev/sda2", SizeMB: minSys, SizeBytes: minSys * mib, Type: shared.TypeSystem},
 			},
 		}
 	}
 
-	tests := []struct {
-		name    string
-		fstype  string
-		wantErr bool
-	}{
-		{"vfat accepted", "vfat", false},
-		{"fat32 alias accepted", "fat32", false},
-		{"upper-case VFAT accepted", "VFAT", false},
-		{"ext4 rejected", "ext4", true},
-		{"empty fstype rejected", "", true},
-		{"nil fstype rejected", "nil", true},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if err := Validate(make(tc.fstype)); (err != nil) != tc.wantErr {
-				t.Fatalf("Validate(fstype=%q) error = %v, wantErr %v", tc.fstype, err, tc.wantErr)
+	for _, fstype := range []string{"vfat", "fat32", "ext4", "ntfs", ""} {
+		t.Run(fstype, func(t *testing.T) {
+			if err := Validate(make(fstype)); err != nil {
+				t.Fatalf("Validate(fstype=%q) = %v, want nil (Boot is always formatted)", fstype, err)
 			}
 		})
 	}

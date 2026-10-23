@@ -7,7 +7,7 @@ import (
 
 // InstallID derives a short, stable identifier for one Aelum installation from
 // its root filesystem UUID. The identifier names the installation's rEFInd menu
-// fragment, so two installs that share an ESP each keep their own entry
+// fragment and kernel directory, so each install keeps its own entry
 // (reinstalling the same root UUID deliberately reuses the same entry).
 //
 // Only [a-z0-9] characters survive, and at most the first eight: UUIDs are

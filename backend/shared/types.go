@@ -9,10 +9,10 @@ type InstallContext struct {
 	Helper     string
 	Username   string
 
-	// ManualMode indicates the disk was laid out manually (dualboot-safe):
-	// only the Boot and Root partitions are formatted/mounted; every other
-	// partition is left untouched. When set, ManualLayout describes the plan
-	// and partition.Apply handles formatting instead of format.Run.
+	// ManualMode indicates the disk was laid out manually: the designated Boot
+	// and System partitions are formatted, and every other partition is left
+	// untouched. When set, ManualLayout describes the plan and partition.Apply
+	// handles formatting instead of format.Run.
 	ManualMode   bool
 	ManualLayout *ManualLayout
 	Password     []byte // zeroed after use; never logged or returned
@@ -129,13 +129,14 @@ type DiskInfo struct {
 type PartitionType string
 
 const (
-	// TypeESP formats the partition as vfat (ESP) and mounts it at /boot.
+	// TypeESP formats the partition as vfat (ESP) and mounts it at /efi during
+	// install. It is always formatted, whether the row is new or existing.
 	TypeESP PartitionType = "esp"
 	// TypeSystem formats the partition as the root filesystem (ext4/btrfs) and
 	// mounts it at /.
 	TypeSystem PartitionType = "system"
 	// An empty type means the partition is untouched — not formatted, not
-	// mounted, not in fstab. This is what makes dualboot safe.
+	// mounted, not in fstab. This is what keeps other OSes and data safe.
 )
 
 // ManualPartition is one row in a manual partition layout plan.
@@ -156,8 +157,8 @@ type ManualPartition struct {
 type ManualLayout struct {
 	Disk       string `json:"disk"`
 	DiskSizeMB int64  `json:"diskSizeMB"`
-	// Lvm enables LVM on the designated System partition (dualboot-safe): the
-	// System partition becomes a PV in the `aelum` VG with root + home LVs.
+	// Lvm enables LVM on the designated System partition: the System partition
+	// becomes a PV in the `aelum` VG with root + home LVs.
 	Lvm bool `json:"lvm,omitempty"`
 	// Luks is a validation hint: true when the System partition is encrypted.
 	// Apply reconciles it from ctx.Luks; the GUI/CLI set it before validation so

@@ -29,20 +29,20 @@ You can switch between the two modes with the **Automatic / Manual** toggle at t
 
 ### Manual partition mode
 
-Automatic mode erases the whole disk. Manual mode is gentler — it only touches the partitions you point it at, so everything else on the disk (your other operating system, documents, photos) is left alone. Think of it as *labeling* existing partitions instead of wiping the disk.
+Automatic mode erases the whole disk. Manual mode only writes to the two partitions you designate — **Boot** and **System** — and both are always formatted. Every other partition (your other operating system, documents, photos) is left exactly as it is. If you dual-boot, give Aelum its **own** Boot partition and its **own** System partition; never point Boot at another operating system's ESP.
 
 Here's how to use it, step by step:
 
 1. **Pick a disk.** In manual mode the screen first asks you to select a disk — click the one you want to install into. (You can't use manual mode until a disk is chosen.)
 2. **Look at the list of partitions.** The disk already comes with some partitions (from a previous install, or another operating system). You'll see each one's name, its size, and a **Type** dropdown.
 3. **Label two of them.** Use the **Type** dropdown on each partition to give it a role:
-   - **Boot** — mark exactly **one** partition as this. It's the small boot partition the system needs to start up.
+   - **Boot** — mark exactly **one** partition as this. It's the small boot partition the system needs to start up. It is always formatted as FAT32 and must be at least 512 MiB, so choose a dedicated partition (new, or an existing one you are willing to erase) — never another OS's ESP.
    - **System** — mark exactly **one** partition as this. It becomes your main Arch Linux install (your home files and programs live here).
    - **Preserve** — this is the default. It means "leave this one alone." Keep every other partition on this setting so your other operating system and personal files stay untouched.
    - Tip: assign **Boot** first, then **Root (System)**. You never have to type in mount points — the installer assigns them for you.
 4. **Add partitions (optional).** If the disk has free space and you want a new partition, drag the slider (or type a size) to pick how big it should be, tick **Use remaining** to fill all the free space, then press **+ Add**. A brand-new partition starts as *Preserve* — set its Type like any other.
 5. **Delete partitions (optional).** If there's a partition you no longer need, use the delete (🗑) button on its row. This only stages the removal — it takes effect at install time, so you can cancel beforehand with no changes.
-6. **Finish.** Once exactly one **Boot** and one **System** are marked, **Next** becomes available. The installer installs onto those two, and leaves every *Preserve* partition exactly as it found it.
+6. **Finish.** Once exactly one **Boot** and one **System** are marked, **Next** becomes available. Both are formatted (Boot as FAT32, System with the filesystem you chose), and every *Preserve* partition is left exactly as it was found.
 
 > If you're not sure — or this disk holds nothing you need to keep — just stay in **Automatic** mode. It's faster and safer for a fresh install.
 

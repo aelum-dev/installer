@@ -22,8 +22,8 @@ import { uiState } from '$lib/ui.svelte';
 	const pageIcon = glyph(STEP_ICONS.confirmation);
 
 	// Destructive-install copy adapts to the install mode. Automatic installs
-	// wipe the whole disk; manual (dualboot-safe) installs only touch the chosen
-	// Boot and Root partitions and leave the rest of the disk intact. The model
+	// wipe the whole disk; manual installs format only the chosen Boot and
+	// System partitions and leave the rest of the disk intact. The model
 	// string comes from the hardware, so escape it before ConfirmDialog renders
 	// it with {@html} (the translation's <strong> markup is trusted).
 	const installationMessage = $derived.by(() => {
@@ -186,7 +186,7 @@ import { uiState } from '$lib/ui.svelte';
 	</div>
 </PageLayout>
 
-	<!-- Installation confirmation (mode-aware copy: wipe vs. dualboot-safe) -->
+	<!-- Installation confirmation (mode-aware copy: wipe vs. manual-preserve) -->
 	<ConfirmDialog
 		bind:show={uiState.showConfirmDialog}
 		message={installationMessage}

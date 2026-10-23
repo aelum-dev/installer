@@ -74,22 +74,6 @@ sudo ./aelum-installer-cli --rollback /dev/sda
 2. Rebuild mirrorlists: `go run ./backend/shared/mirrorlist_gen.go`
 3. Rebuild the installer: `./build.sh`
 
-### "conflicting files" when reusing an existing ESP
-
-**Cause**: The reused ESP already contains `memtest86+` binaries from another
-installation. pacman refuses to overwrite files it does not own in the target
-database:
-
-```text
-memtest86+-efi: /mnt/boot/memtest86+/memtest86x64.efi exists in filesystem
-```
-
-**Fix**: The installer handles this automatically by renaming the existing
-files to `*.aelum-backup` before pacstrap runs, then installing the packaged
-version. The old binaries remain on the ESP for recovery. If the install failed
-before this fix was applied, remove or rename `/mnt/efi/memtest86+` manually and
-retry.
-
 ### "bootloader verification failed" (rEFInd)
 
 **Cause**: The Boot partition is not mounted correctly, the `refind` package is
@@ -122,35 +106,41 @@ A missing NVRAM entry is logged as a warning (the install still completes); the
 system remains bootable through the firmware boot menu or by selecting
 `EFI/refind/refind_x64.efi` manually.
 
-### rEFInd does not show Arch (or another OS) from a shared ESP
+### rEFInd does not show Arch (or another OS)
 
-rEFInd scans every readable ESP and volume, so all bootable OSes should appear.
-Aelum's generated config suppresses only the duplicate fallback loaders
-(`dont_scan_files + BOOTX64.EFI,bootx64.efi`); it must not hide
+rEFInd scans every readable ESP and volume, so other OSes on their own ESPs
+should appear. Aelum's own ESP is dedicated and always formatted, so only its
+loader is written there. Aelum's generated config suppresses only the duplicate
+fallback loaders (`dont_scan_files + BOOTX64.EFI,bootx64.efi`); it must not hide
 `EFI/systemd` or `systemd-bootx64.efi`, otherwise a systemd-boot Arch install
-on the same or another ESP disappears from the menu. If Arch is still missing,
-confirm its loader exists on the ESP (often mounted at `/boot` or `/efi` in the
-Arch install) at `EFI/systemd/systemd-bootx64.efi` (or a `linux*` loader entry
-under `loader/entries`), and check that `refind.conf` has no
+on another ESP disappears from the menu. If Arch is still missing, confirm its
+loader exists on its ESP (often mounted at `/boot` or `/efi` in that install)
+at `EFI/systemd/systemd-bootx64.efi` (or a `linux*` loader entry under
+`loader/entries`), and check that `refind.conf` has no
 `dont_scan_dirs`/`dont_scan_files` line covering it.
 
-### Installing Aelum twice on the same ESP
+### Dual-booting with another Aelum install (or any other OS)
 
-Every install is fully isolated, including its kernel files:
+Each OS must own its own ESP and its own System partition. Manual mode always
+formats the Boot and System partitions you select, so pointing Aelum's Boot at
+another OS's ESP destroys that OS's boot loaders. Create (or choose) a separate
+Boot partition for Aelum, plus a separate System partition; leave the other
+OS's partitions as **Preserve**.
+
+Aelum still keeps its own kernel files isolated per install:
 
 - The ESP is mounted at `/efi` in the installed system.
-- Each install owns a directory `aelum/<id>/` on the ESP, where `<id>` is the
+- Each install owns a directory `aelum/<id>/` on its ESP, where `<id>` is the
   first eight alphanumeric characters of its root filesystem UUID.
 - That directory is bind-mounted at `/boot`, so pacman, mkinitcpio, and kernel
   updates keep writing to `/boot` as usual, but the files physically stay in
   this install's own directory.
 - The rEFInd fragment `EFI/refind/aelum/<id>.conf` loads
-  `/aelum/<id>/vmlinuz-…` and `/aelum/<id>/initramfs-….img`, and the shared
-  `refind.conf` includes every install's fragment.
+  `/aelum/<id>/vmlinuz-…` and `/aelum/<id>/initramfs-….img`.
 
-Two installs can therefore share one ESP without overwriting each other's menu
-entry, kernel, or initramfs. The menu shows both as
-`Aelum (<root partition>)`, e.g. `Aelum (sda2)` and `Aelum (sda3)`.
+Two installs can therefore coexist on one disk, each with its own ESP, and
+rEFInd shows both as `Aelum (<root partition>)`, e.g. `Aelum (sda2)` and
+`Aelum (sda3)`.
 
 ### Boot menu is stretched or at a low resolution
 

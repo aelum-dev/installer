@@ -52,24 +52,24 @@ describe('isManualLayoutValid', () => {
 		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 
-	it('accepts a 256 MiB existing ESP (dual-boot reuse)', () => {
+	it('rejects a 256 MiB existing ESP (Boot is always formatted)', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 256, sizeBytes: 256 * mib, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
-		expect(isManualLayoutValid(layout)).toBe(true);
+		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 
-	it('accepts an existing ESP below 100 MiB (no reuse floor)', () => {
+	it('rejects an existing ESP below 512 MiB', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 99, sizeBytes: 99 * mib, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
-		expect(isManualLayoutValid(layout)).toBe(true);
+		expect(isManualLayoutValid(layout)).toBe(false);
 	});
 
 	it('rejects a brand-new ESP below 512 MiB', () => {
@@ -190,12 +190,15 @@ describe('manual layout geometry', () => {
 	it('reports structured issues in the same order the modal renders them', () => {
 		const layout = baseLayout({
 			partitions: [
-				// A reused ESP has no size floor; only the tiny System is a problem.
+				// Both the tiny ESP and the tiny System violate their floors.
 				{ index: 0, path: '/dev/sda1', sizeMB: 64, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 1, type: 'system' },
 			],
 		});
-		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toEqual(['systemTooSmall']);
+		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toEqual([
+			'espTooSmall',
+			'systemTooSmall',
+		]);
 	});
 });
 
@@ -246,16 +249,16 @@ describe('manual layout guards', () => {
 		);
 	});
 
-	it('accepts an existing sub-1-MiB ESP without treating it as use-remaining', () => {
+	it('rejects an existing sub-1-MiB ESP without treating it as use-remaining', () => {
 		const layout = baseLayout({
 			partitions: [
 				{ index: 0, path: '/dev/sda1', sizeMB: 0, sizeBytes: 512 * 1024, type: 'esp' },
 				{ index: 1, path: '/dev/sda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
 			],
 		});
-		// Reused boot partitions have no size floor, so the tiny ESP is valid and
+		// Boot partitions are always formatted, so the floor applies. The tiny ESP
 		// must not be mistaken for a brand-new "use all remaining space" row.
-		expect(manualLayoutIssues(layout)).toEqual([]);
+		expect(manualLayoutIssues(layout)).toEqual([{ kind: 'espTooSmall', sizeMB: 0 }]);
 	});
 });
 

@@ -13,8 +13,8 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-// formatDisk runs the format step. In manual (dualboot) mode it delegates to
-// partition.Apply, which only formats the user-designated Boot and Root
+// formatDisk runs the format step. In manual mode it delegates to
+// partition.Apply, which only formats the user-designated Boot and System
 // partitions; otherwise it runs the automatic format.Run.
 func formatDisk(ctx *shared.InstallContext) error {
 	if ctx.ManualMode && ctx.ManualLayout != nil {

@@ -132,8 +132,8 @@ func espRoot(ctx *shared.InstallContext) string {
 }
 
 // bootEntryPath returns the host path of the rEFInd menu fragment belonging to
-// this installation. Each install has its own fragment, so a shared ESP with
-// several Aelum installations keeps one entry per install.
+// this installation. Each install has its own fragment, keyed by its root
+// filesystem UUID.
 func bootEntryPath(ctx *shared.InstallContext) string {
 	if ctx == nil || ctx.Partitions == nil {
 		return espRoot(ctx) + "/" + shared.RefindConfigPath
@@ -327,8 +327,8 @@ func checkKernelImages(ctx *shared.InstallContext, issues, info *[]string) {
 		return
 	}
 	// Match the bootloader step's choice: prefer the kernel the installer
-	// installed, so a reused ESP with another distribution's kernel still
-	// verifies the image the boot entry actually references.
+	// installed, so a second kernel image cannot verify something the boot
+	// entry does not reference.
 	kernel := shared.PickKernelFile(strings.Split(files, "\n"))
 	if kernel == "" {
 		*issues = append(*issues, "no kernel (vmlinuz-*) image found in "+shared.BootMountPoint)

@@ -41,7 +41,7 @@ func (a *App) GetFileSystem() string {
 	return a.fileSystem
 }
 
-// GetManualMode reports whether manual (dualboot-safe) partitioning is active.
+// GetManualMode reports whether manual partitioning is active.
 func (a *App) GetManualMode() bool {
 	return a.manualMode
 }

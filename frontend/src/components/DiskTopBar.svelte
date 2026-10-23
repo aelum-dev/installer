@@ -89,7 +89,7 @@
 		pill/toggle lines up on one vertical column (grid synchronises the column
 		widths across rows). -->
 	<div class="top-bar-controls">
-		<!-- Installation mode: automatic vs manual (dualboot) -->
+		<!-- Installation mode: automatic vs manual (preserve other partitions) -->
 		<span class="control-row-label">{t('page.diskSelection.mode')}</span>
 		<div class="mode-pills">
 			<button

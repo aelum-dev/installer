@@ -16,14 +16,14 @@ export const TOTAL_PAGES = 6;
 export const FILESYSTEMS = ['btrfs', 'ext4'] as const;
 export type FileSystem = (typeof FILESYSTEMS)[number];
 
-// Installation mode: automatic (whole disk) vs manual (dualboot-safe).
+// Installation mode: automatic (whole disk) vs manual (preserve other partitions).
 export const INSTALL_MODES = ['automatic', 'manual'] as const;
 export type InstallMode = (typeof INSTALL_MODES)[number];
 
-// Manual-partitioning types (dualboot-safe). Mirrors backend shared.PartitionType.
+// Manual-partitioning types. Mirrors backend shared.PartitionType.
 export const TYPE_ESP = 'esp';
 export const TYPE_SYSTEM = 'system';
-// An empty type means the partition is untouched (dualboot-safe).
+// An empty type means the partition is untouched (not formatted or mounted).
 export type PartitionType = 'esp' | 'system' | '';
 
 export const PARTITION_TYPES: PartitionType[] = [TYPE_ESP, TYPE_SYSTEM, ''];

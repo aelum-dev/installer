@@ -1,4 +1,4 @@
-// Manual (dualboot-safe) partition-plan math and validation.
+// Manual partition-plan math and validation.
 //
 // Pure helpers only — no Svelte state, no i18n. The store owns the selected
 // plan; this module derives free space and reports structural problems as
@@ -156,8 +156,8 @@ export function manualLayoutIssues(
 		const sizeMB = partitionSizeMB(p);
 		if (sizeMB < 0) {
 			// "Use all remaining space": the floor applies to the resolved free
-			// space. Only a brand-new row can resolve to something different from
-			// an existing partition's real size.
+			// space. An existing partition always has a real size, so this only
+			// matters for brand-new rows.
 			if (!p.path && p.type === TYPE_ESP && freeMB < MinESPSizeBytes / BYTES_PER_MB) {
 				issues.push({ kind: 'espTooSmall', sizeMB: freeMB });
 			}
@@ -171,10 +171,9 @@ export function manualLayoutIssues(
 			continue;
 		}
 
-		if (p.type === TYPE_ESP && !p.path) {
-			// A reused ESP is mounted as-is and has no size floor (Windows-created
-			// ESPs are often 100-300 MiB). Only a brand-new ESP must fit the
-			// kernel, initrd, and bootloader, so it keeps the 512 MiB floor.
+		if (p.type === TYPE_ESP) {
+			// Every Boot partition is formatted, existing or new, so it must be
+			// large enough for the kernel, initrd, bootloader, and theme.
 			const floorMB = MinESPSizeBytes / BYTES_PER_MB;
 			if (sizeMB < floorMB) {
 				issues.push({ kind: 'espTooSmall', sizeMB });

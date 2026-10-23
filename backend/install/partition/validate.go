@@ -2,7 +2,6 @@ package partition
 
 import (
 	"fmt"
-	"strings"
 
 	"aelum-installer/backend/shared"
 )
@@ -13,10 +12,8 @@ import (
 //   - the sum of partition sizes must fit the disk
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
 //   - every type must be a known value
-//   - a reused Boot partition carries a FAT filesystem (only FAT can serve as
-//     an ESP); its size is not constrained
 //   - designated partitions meet their role floor (the System floor rises for
-//     LVM and LUKS+LVM; only a brand-new ESP has the 512 MiB floor)
+//     LVM and LUKS+LVM; every Boot partition has the 512 MiB floor)
 func Validate(layout shared.ManualLayout) error {
 	// Debug: record the layout and every number behind the size checks so a
 	// rejection that only happens on real disk geometry can be traced from the
@@ -53,20 +50,10 @@ func Validate(layout shared.ManualLayout) error {
 		switch p.Type {
 		case shared.TypeESP:
 			esp++
-			// A reused Boot partition is mounted as-is (never formatted), so it
-			// must already be FAT. Reject anything else now rather than failing
-			// later when the firmware cannot read the ESP.
-			if p.Path != "" && !isFATFstype(p.ExistingFstype) {
-				got := p.ExistingFstype
-				if got == "" {
-					got = "unknown"
-				}
-				return fmt.Errorf("existing boot partition %s has filesystem %q; only a FAT (vfat) partition can be reused as the ESP", p.Path, got)
-			}
 		case shared.TypeSystem:
 			sys++
 		case "":
-			// empty type = untouched (dualboot-safe)
+			// empty type = untouched (preserved)
 		default:
 			return fmt.Errorf("invalid partition type %q (want esp or system)", p.Type)
 		}
@@ -198,10 +185,9 @@ func validatePartitionSize(p shared.ManualPartition, systemFloorBytes int64) err
 	}
 	switch p.Type {
 	case shared.TypeESP:
-		// A reused ESP has no size floor: Windows-created ESPs are commonly
-		// 100-300 MiB and must still be reusable. Only a brand-new ESP must fit
-		// the kernel, initrd, and bootloader, so it keeps the 512 MiB floor.
-		if p.Path == "" && sizeBytes < shared.MinESPSizeBytes {
+		// Every Boot partition is formatted, existing or new, so it must be
+		// large enough for the kernel, initrd, bootloader, and theme.
+		if sizeBytes < shared.MinESPSizeBytes {
 			return fmt.Errorf("boot partition is too small: %d MB (minimum %s required)", p.SizeMB, shared.FormatSize(shared.MinESPSizeBytes))
 		}
 	case shared.TypeSystem:
@@ -235,9 +221,9 @@ func validateUseRemainingFloors(layout shared.ManualLayout, usableSectors, newSe
 }
 
 // validateManualDiskMinimum rejects a disk that cannot hold even the smallest
-// valid manual layout (8 GiB System + GPT; a reused ESP adds no floor). Disk
-// selection only enforces the automatic 8 GiB floor, which leaves a manual plan
-// on an 8 GiB disk impossible to satisfy.
+// valid manual layout (512 MiB Boot + 8 GiB System + GPT). Disk selection only
+// enforces the automatic 8 GiB floor, which leaves a manual plan on an 8 GiB
+// disk impossible to satisfy.
 func validateManualDiskMinimum(layout shared.ManualLayout) error {
 	diskBytes := layout.DiskSizeBytes
 	if diskBytes == 0 && layout.DiskSizeMB > 0 {
@@ -296,18 +282,6 @@ func hasNewPartitions(layout shared.ManualLayout) bool {
 		}
 	}
 	return false
-}
-
-// isFATFstype reports whether fstype names a FAT filesystem that can serve as
-// an ESP. lsblk reports FAT12/16/32 uniformly as "vfat"; the fake-disk data and
-// some tools use the "fat32" alias.
-func isFATFstype(fstype string) bool {
-	switch strings.ToLower(strings.TrimSpace(fstype)) {
-	case shared.FileSystemVfat, "fat32":
-		return true
-	default:
-		return false
-	}
 }
 
 // dropDeleted removes the partitions the user deleted from a sector list, so a

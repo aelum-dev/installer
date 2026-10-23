@@ -66,7 +66,7 @@ cd frontend && npx playwright test
 
 - `wizard.spec.ts` — Welcome → User account (validation) → Disk selection →
   Confirmation → Back navigation.
-- `manual.spec.ts` — manual (dualboot) partition mode: the role menu, adding/
+- `manual.spec.ts` — manual partition mode: the role menu, adding/
   deleting rows, and the delete-confirmation dialog.
 - `install.spec.ts` — the full wizard flow through to the Installation step and
   its terminal state.

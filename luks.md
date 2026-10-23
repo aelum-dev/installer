@@ -170,7 +170,8 @@ Set `ctx.Partitions.RootMapper` and `RootUUID` = mapper filesystem UUID.
 
 ### 3.9 `backend/install/partition/partition.go` (`Apply`, manual mode)
 Same LUKS sequence on the designated **System** row: `luksFormat` → `luksOpen` →
-mkfs on mapper → btrfs subvolumes on mapper. EFI/Preserve rows untouched.
+mkfs on mapper → btrfs subvolumes on mapper. The Boot row is formatted as vfat;
+Preserve rows stay untouched.
 Populate `RootMapper`/`LuksUUID` via `BuildPartitionInfo`.
 
 ### 3.10 `backend/install/mount/mount.go`

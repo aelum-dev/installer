@@ -91,7 +91,7 @@ func TestComputeLayout(t *testing.T) {
 	if layout.Partitions[1].Path != "/dev/vda2" || layout.Partitions[1].SizeBytes != 10000000000 {
 		t.Errorf("partition[1] = %+v", layout.Partitions[1])
 	}
-	// Existing rows must be Preserve (empty role): dualboot-safe.
+	// Existing rows must be Preserve (empty role): left untouched.
 	for _, p := range layout.Partitions {
 		if p.Type != "" {
 			t.Errorf("existing partition %s has role %q, want empty", p.Path, p.Type)
@@ -423,10 +423,10 @@ func TestApply_PlainExt4BrandNewPartitions(t *testing.T) {
 	}
 }
 
-// TestApply_ReusedESPNotFormatted is the dualboot safety contract: an existing
-// Boot (ESP) partition is mounted as-is. Apply must not format it (another OS's
-// boot loaders may live there), while the System partition is still formatted.
-func TestApply_ReusedESPNotFormatted(t *testing.T) {
+// TestApply_ExistingPartitionsFormatted is the manual-mode contract: the
+// designated Boot (ESP) and System partitions are formatted even when they are
+// existing partitions, so no other OS's boot files can survive on Aelum's ESP.
+func TestApply_ExistingPartitionsFormatted(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"sgdisk", "-p", "/dev/vda"}, "").
 		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda1"}, "EFI-UUID\n").
@@ -439,7 +439,7 @@ func TestApply_ReusedESPNotFormatted(t *testing.T) {
 		DiskSizeBytes:   21474836480,
 		SectorSizeBytes: 512,
 		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 256, SizeBytes: 256 * 1024 * 1024, Type: shared.TypeESP, ExistingFstype: "vfat"},
+			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP, ExistingFstype: "ext4"},
 			{Path: "/dev/vda2", SizeMB: 10000, SizeBytes: 10000 * 1024 * 1024, Type: shared.TypeSystem, ExistingFstype: "ext4"},
 		},
 	}
@@ -456,15 +456,15 @@ func TestApply_ReusedESPNotFormatted(t *testing.T) {
 	if got := len(callsForArg(rec, "sgdisk", "-n")); got != 0 {
 		t.Errorf("sgdisk -n calls = %d, want 0 (no partition created)", got)
 	}
-	if rec.Called("mkfs.fat") {
-		t.Error("reused ESP was formatted; it must be left untouched")
+	if !rec.Called("mkfs.fat") {
+		t.Error("existing Boot partition was not formatted; it must be formatted as vfat")
 	}
 	if !rec.Called("mkfs.ext4") {
 		t.Error("System partition was not formatted")
 	}
-	// The reused ESP is still stamped with the ESP type GUID so firmware finds it.
+	// The existing partitions keep their slots and get the role's GPT type.
 	if got := len(callsForArg(rec, "sgdisk", "-t")); got != 2 {
-		t.Errorf("sgdisk -t calls = %d, want 2 (per reused ESP/System row)", got)
+		t.Errorf("sgdisk -t calls = %d, want 2 (per existing ESP/System row)", got)
 	}
 }
 

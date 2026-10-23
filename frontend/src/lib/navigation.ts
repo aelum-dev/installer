@@ -128,8 +128,8 @@ async function commitPageData(page: number): Promise<void> {
 			fileSystem: installState.fileSystem,
 		});
 
-		// Manual (dualboot) mode: persist the designed plan so the installer
-		// only formats the Boot/Root partitions.
+		// Manual mode: persist the designed plan so the installer formats only
+		// the Boot/System partitions.
 		if (installState.manualMode && installState.manualLayout) {
 			await SaveManualLayout(installState.manualLayout);
 		}

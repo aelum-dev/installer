@@ -37,7 +37,7 @@ type App struct {
 	region              shared.Region
 	uiLocale            string // UI language (separate from installed system locale)
 	fileSystem          string // root filesystem: "ext4" or "btrfs"
-	manualMode          bool   // dualboot-safe manual partitioning enabled
+	manualMode          bool   // manual partitioning enabled
 	manualLayout        shared.ManualLayout
 	installationRunning atomic.Bool
 

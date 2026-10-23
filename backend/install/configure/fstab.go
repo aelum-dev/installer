@@ -76,11 +76,11 @@ func generateExt4Fstab(ctx *shared.InstallContext) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// efiFstabLines returns the fstab entries that give one installation its own
-// boot directory on a shared ESP: the ESP is mounted at /efi, and this
+// efiFstabLines returns the fstab entries that give the installation its own
+// boot directory on the ESP: the ESP is mounted at /efi, and this
 // installation's subdirectory is bind-mounted at /boot. Keeping /boot a bind
 // mount means pacman and mkinitcpio keep writing to /boot unchanged, while the
-// files physically live in aelum/<id>/ and cannot collide with another install.
+// files physically live in aelum/<id>/ and stay isolated from another install.
 // x-systemd.requires-mounts-for makes the bind wait for the ESP mount.
 func efiFstabLines(p *shared.PartitionInfo, id string) []string {
 	src := shared.InstalledESPMountPoint + "/" + shared.InstallBootDir(id)

@@ -86,8 +86,8 @@ func (a *App) StartInstallation() error {
 		args = append(args, "--dry-run")
 	}
 
-	// Manual (dualboot) mode: pass the user-designed layout so the CLI only
-	// formats the Boot/Root partitions. It is serialized as JSON.
+	// Manual mode: pass the user-designed layout so the CLI only formats the
+	// Boot/System partitions. It is serialized as JSON.
 	if a.manualMode {
 		layoutJSON, err := json.Marshal(a.manualLayout)
 		if err != nil {

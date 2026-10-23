@@ -9,11 +9,8 @@ import (
 // list of boot-directory entries (vmlinuz-*), as listed by find(1).
 //
 // The Aelum kernel (KernelFilePrefix+KernelPresetName, e.g. vmlinuz-linux-lts)
-// is preferred over whatever find happens to list first. On a dualboot install
-// that reuses an existing ESP, the ESP may also hold another distribution's
-// kernel (e.g. vmlinuz-linux); picking that one would write a boot entry that
-// points Aelum's root flags at an unrelated kernel, so the installed system
-// would not boot as configured.
+// is preferred over whatever find happens to list first, so a second kernel
+// image in this installation's boot directory cannot be picked by accident.
 //
 // When the preferred kernel is not present (custom builds, tests), the first
 // entry is returned so callers keep their previous behaviour. Paths are reduced

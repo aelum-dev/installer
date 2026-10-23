@@ -48,7 +48,7 @@ func TestBuildActionsESPOnExistingNonFirst(t *testing.T) {
 		Disk: diskID, DiskSizeMB: 23000,
 		Partitions: []shared.ManualPartition{
 			{Index: 0, Path: "/dev/vda1", SizeMB: 1024},                        // preserve (existing EFI)
-			{Index: 1, Path: "/dev/vda2", SizeMB: 11972, Type: shared.TypeESP}, // reuse as EFI
+			{Index: 1, Path: "/dev/vda2", SizeMB: 11972, Type: shared.TypeESP}, // use as Boot
 			{Index: 2, Path: "", SizeMB: 0, Type: shared.TypeSystem},           // new root, use remaining
 		},
 	}
