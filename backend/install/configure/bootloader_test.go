@@ -79,7 +79,7 @@ func TestRefindConfig(t *testing.T) {
 	got := refindConfig(ctx, displayMode{Width: 1920, Height: 1080}, true, false, includes)
 
 	for _, want := range []string{
-		"resolution 1920 1080",
+		"resolution max",
 		"timeout 5",
 		fmt.Sprintf("default_selection %q", shared.RefindEntryTitle("/dev/sda2")),
 		"scan_all_linux_kernels false",
@@ -145,7 +145,7 @@ func TestRefindConfig_HiDPI(t *testing.T) {
 			got := refindConfig(ctx, tc.mode, true, true, nil)
 
 			for _, want := range []string{
-				fmt.Sprintf("resolution %d %d", tc.mode.Width, tc.mode.Height),
+				"resolution max",
 				"font " + shared.RefindThemeFont2x,
 			} {
 				if !strings.Contains(got, want) {
