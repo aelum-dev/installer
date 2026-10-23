@@ -31,67 +31,6 @@ func TestValidate_RejectsUntypedNewRow(t *testing.T) {
 	}
 }
 
-func TestValidate_LvmSystemFloor(t *testing.T) {
-	const minLvmMB = shared.MinLvmSystemPartitionBytes / guardMiB
-	const minLvmLuksMB = shared.MinLvmLuksSystemPartitionBytes / guardMiB
-
-	make := func(lvm, luks bool, sizeMB int64) shared.ManualLayout {
-		return shared.ManualLayout{
-			Disk:          "/dev/vda",
-			DiskSizeMB:    40960,
-			DiskSizeBytes: 40960 * guardMiB,
-			Lvm:           lvm,
-			Luks:          luks,
-			Partitions: []shared.ManualPartition{
-				{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
-				{Index: 1, Path: "", SizeMB: sizeMB, Type: shared.TypeSystem},
-			},
-		}
-	}
-
-	tests := []struct {
-		name    string
-		layout  shared.ManualLayout
-		wantErr bool
-	}{
-		{"no LVM accepts 8 GiB", make(false, false, 8192), false},
-		{"LVM rejects 8 GiB", make(true, false, 8192), true},
-		{"LVM accepts 16 GiB", make(true, false, minLvmMB), false},
-		{"LUKS+LVM rejects 16 GiB raw partition", make(true, true, minLvmMB), true},
-		{"LUKS+LVM accepts 16 GiB + header", make(true, true, minLvmLuksMB), false},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if err := Validate(tc.layout); (err != nil) != tc.wantErr {
-				t.Fatalf("Validate() = %v, wantErr %v", err, tc.wantErr)
-			}
-		})
-	}
-}
-
-func TestValidate_LvmUseRemainingFloor(t *testing.T) {
-	layout := shared.ManualLayout{
-		Disk:          "/dev/vda",
-		DiskSizeMB:    12000,
-		DiskSizeBytes: 12000 * guardMiB,
-		Lvm:           true,
-		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
-			{Index: 1, Path: "", SizeMB: 0, Type: shared.TypeSystem},
-		},
-	}
-	err := Validate(layout)
-	if err == nil || !strings.Contains(err.Error(), "below the") {
-		t.Fatalf("Validate() = %v, want resolved LVM floor error", err)
-	}
-	// buildActions is the last line of defence before sgdisk: it must refuse the
-	// same resolved size even if validation were bypassed.
-	sectors := []partitionSector{{num: 1, start: 2048, end: 2048 + 512*2048 - 1}}
-	if _, err := buildActions("/dev/vda", &layout, shared.FileSystemExt4, sectors); err == nil {
-		t.Fatal("buildActions() = nil, want resolved LVM floor error")
-	}
-}
-
 // TestValidate_ExistingSubMiBESPRejected confirms the ESP floor also applies to
 // existing partitions: a Boot partition is always formatted, so a sub-1-MiB
 // partition cannot serve as the ESP.
@@ -116,38 +55,6 @@ func TestValidate_ManualDiskMinimum(t *testing.T) {
 	err := Validate(layout)
 	if err == nil || !strings.Contains(err.Error(), "too small for manual partitioning") {
 		t.Fatalf("Validate() = %v, want manual-disk-minimum error", err)
-	}
-}
-
-// TestApply_LvmTooSmallFailsBeforeDelete verifies the LVM floor is enforced by
-// Validate before Apply reaches any destructive sgdisk -d.
-func TestApply_LvmTooSmallFailsBeforeDelete(t *testing.T) {
-	rec := primitivestest.NewRecorder()
-	defer primitives.SetCommandRunner(rec)()
-
-	layout := shared.ManualLayout{
-		Disk:            "/dev/vda",
-		DiskSizeMB:      20480,
-		DiskSizeBytes:   20480 * guardMiB,
-		SectorSizeBytes: 512,
-		Lvm:             true,
-		Partitions: []shared.ManualPartition{
-			{Index: 0, Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * guardMiB, Type: shared.TypeESP, ExistingFstype: "vfat"},
-			{Index: 1, Path: "", SizeMB: 8192, Type: shared.TypeSystem},
-		},
-		DeletedPartitions: []shared.ManualPartition{{Index: 2, Path: "/dev/vda3"}},
-	}
-	ctx := &shared.InstallContext{DiskID: "/dev/vda", FileSystem: shared.FileSystemExt4, Lvm: true}
-	err := Apply(ctx, &layout)
-	if err == nil || !strings.Contains(err.Error(), "system partition is too small") {
-		t.Fatalf("Apply() = %v, want LVM floor error", err)
-	}
-	for _, argv := range rec.CallsFor("sgdisk") {
-		for _, a := range argv {
-			if a == "-d" {
-				t.Fatalf("Apply() deleted a partition before the LVM floor check: %v", argv)
-			}
-		}
 	}
 }
 

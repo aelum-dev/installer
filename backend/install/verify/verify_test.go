@@ -50,15 +50,14 @@ func TestCapitalizeFirst(t *testing.T) {
 	}
 }
 
-// TestLuksEntryMapsMapper covers the LUKS boot-entry check that previously
-// required a literal /dev/mapper/aelum path. That passed only when LVM made the
-// root command line contain /dev/mapper/aelum as a substring of
-// /dev/mapper/aelum-root, and failed every encrypted install whose root is the
-// mapper itself (root=UUID=…).
+// TestLuksEntryMapsMapper covers the LUKS boot-entry check that must accept any
+// root= form: a LUKS root selected by UUID (root=UUID=…) never contains a
+// literal /dev/mapper path, so requiring one produced a false failure on every
+// encrypted install.
 func TestLuksEntryMapsMapper(t *testing.T) {
 	const uuid = "11111111-2222-3333-4444-555555555555"
 	luksOnly := "rd.luks.name=" + uuid + "=aelum root=UUID=aaaa rw quiet splash"
-	luksLvm := "rd.luks.name=" + uuid + "=aelum root=/dev/mapper/aelum-root rw"
+	luksMapper := "rd.luks.name=" + uuid + "=aelum root=/dev/mapper/aelum rw"
 
 	cases := []struct {
 		name    string
@@ -67,7 +66,7 @@ func TestLuksEntryMapsMapper(t *testing.T) {
 		want    bool
 	}{
 		{"luks only maps header", luksOnly, uuid, true},
-		{"luks+lvm maps header", luksLvm, uuid, true},
+		{"luks mapper root maps header", luksMapper, uuid, true},
 		{"wrong mapper name", "rd.luks.name=" + uuid + "=other root=UUID=x", uuid, false},
 		{"wrong header uuid", "rd.luks.name=deadbeef=aelum root=UUID=x", uuid, false},
 		{"no mapping", "root=UUID=aaaa rw", uuid, false},

@@ -63,14 +63,6 @@ func TestRun_LuksRequiresMapper(t *testing.T) {
 	}
 }
 
-func TestRun_LvmRequiresRootLV(t *testing.T) {
-	ctx := baseCtx()
-	ctx.Lvm = true
-	if err := Run(ctx); err == nil {
-		t.Fatal("expected an error when LVM is enabled without a root LV path")
-	}
-}
-
 // TestRun_LuksRequiresPassphrase checks that mount refuses to proceed when LUKS
 // is enabled but no passphrase was supplied. The exact error depends on the
 // host (whether the mapper already exists), so only the failure is asserted.

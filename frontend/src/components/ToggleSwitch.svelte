@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * Compact on/off switch (LUKS, LVM). Styled to match the manual-mode
+	 * Compact on/off switch (LUKS). Styled to match the manual-mode
 	 * "Use remaining" toggle. Accessible as an ARIA switch.
 	 */
 	let {

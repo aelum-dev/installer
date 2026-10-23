@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"aelum-installer/backend/install/luks"
-	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -23,9 +22,8 @@ import (
 //   - /mnt/efi: EFI partition (ESP)
 //   - /mnt/boot: bind mount of this installation's ESP boot directory
 //
-// For ext4 LVM layouts:
-//   - /mnt: root logical volume
-//   - /mnt/home: home logical volume
+// For ext4 layouts:
+//   - /mnt: root partition
 //   - /mnt/efi: EFI partition (ESP)
 //   - /mnt/boot: bind mount of this installation's ESP boot directory
 //
@@ -57,10 +55,8 @@ func Run(ctx *shared.InstallContext) error {
 	var err error
 
 	// Resolve the device that holds the root filesystem (and its subvolumes):
-	//   LUKS+LVM : open LUKS, activate the VG, root lives on the root LV
-	//   LUKS     : open LUKS, root lives on the decrypted mapper
-	//   LVM      : activate the VG, root lives on the root LV
-	//   else     : root lives on the raw partition
+	//   LUKS : open LUKS, root lives on the decrypted mapper
+	//   else : root lives on the raw partition
 	rootDevice := p.RootPart
 	if ctx.Luks {
 		if p.RootMapper == "" {
@@ -73,20 +69,6 @@ func Run(ctx *shared.InstallContext) error {
 			return err
 		}
 		rootDevice = p.RootMapper
-	}
-	if ctx.Lvm {
-		if p.RootLV == "" {
-			return fmt.Errorf("LVM enabled but root LV path not set (format step failed)")
-		}
-		// The VG must be active for the LVs to appear. For the LUKS+LVM path
-		// this runs after the mapper is open, so the PV is available.
-		if err := lvm.VGActivate(shared.LvmVolumeGroup); err != nil {
-			return err
-		}
-		if ctx.Logger != nil {
-			ctx.Logger.Info("LVM root enabled; mounting root LV %s", p.RootLV)
-		}
-		rootDevice = p.RootLV
 	}
 
 	// ── Mount root partition ──
@@ -121,7 +103,7 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 
-	// ── Mount additional filesystems (btrfs subvolumes / non-btrfs LVM home) ──
+	// ── Mount additional filesystems (btrfs subvolumes) ──
 	if err := mountAdditionalMounts(ctx, p, rootDevice); err != nil {
 		return err
 	}
@@ -177,22 +159,17 @@ func Run(ctx *shared.InstallContext) error {
 }
 
 // mountAdditionalMounts mounts every filesystem beyond root that the layout
-// defines: the btrfs subvolumes and, for a non-btrfs LVM layout, the home
-// logical volume at /home.
+// defines: the btrfs subvolumes.
 func mountAdditionalMounts(ctx *shared.InstallContext, p *shared.PartitionInfo, rootDevice string) error {
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		return mountBtrfsSubvolumes(ctx, p, rootDevice)
-	}
-	if ctx.Lvm {
-		return mountLvmHome(p)
 	}
 	return nil
 }
 
 // mountBtrfsSubvolumes mounts each extra btrfs subvolume recorded in the
-// layout's MountPoints map. Each entry maps a mount point (e.g. "/home") to the
-// device that holds it: with LVM, /home lives on the home LV while the rest
-// share the root LV.
+// layout's MountPoints map. Each entry maps a mount point (e.g. "/home") to
+// the device that holds it.
 func mountBtrfsSubvolumes(ctx *shared.InstallContext, p *shared.PartitionInfo, rootDevice string) error {
 	for mountPath, device := range p.MountPoints {
 		// Skip the root mount point — already mounted by Run.
@@ -224,22 +201,6 @@ func mountBtrfsSubvolumes(ctx *shared.InstallContext, p *shared.PartitionInfo, r
 		}
 	}
 	return nil
-}
-
-// mountLvmHome mounts the LVM home logical volume at /home for a non-btrfs
-// (ext4) LVM layout, where /home is a separate filesystem rather than a btrfs
-// subvolume on the home LV.
-func mountLvmHome(p *shared.PartitionInfo) error {
-	if p.HomeLV == "" {
-		return fmt.Errorf("LVM enabled but home LV path not set (format step failed)")
-	}
-	homePath := shared.MountRoot + "/home"
-	_ = primitives.Run("mkdir", "-p", homePath).Run()
-	out, err := primitives.Run("mount", p.HomeLV, homePath).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("mount home LV (%s) failed: %w: %s", homePath, err, string(out))
-	}
-	return verifyMount(homePath, p.HomeLV)
 }
 
 // ensureLuksOpen opens the LUKS root mapper if it isn't already open. The

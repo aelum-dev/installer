@@ -40,9 +40,6 @@ func Run(ctx *shared.InstallContext) error {
 	if ctx.Luks {
 		checkLuks(ctx, &issues, &info)
 	}
-	if ctx.Lvm {
-		checkLvm(ctx, &issues, &info)
-	}
 	checkBootloader(ctx, &issues, &info)
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
@@ -148,10 +145,9 @@ func bootEntryPath(ctx *shared.InstallContext) string {
 func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 	// The rEFInd stanza maps the header to the mapper with
 	// rd.luks.name=<header-uuid>=<mapper>, consumed by sd-encrypt. The root is
-	// then referenced indirectly: root=UUID=<mapper fs uuid> when root is the
-	// mapper, or root=/dev/mapper/aelum-root when LVM sits on top. Assert the
-	// mapping argument itself rather than a literal /dev/mapper path, which
-	// only the LVM root happens to contain as a substring.
+	// then referenced indirectly (root=UUID=<mapper fs uuid>). Assert the
+	// mapping argument itself rather than a literal /dev/mapper path, which the
+	// boot entry does not contain.
 	confPath := bootEntryPath(ctx)
 	if data, err := primitives.ReadFile(confPath); err == nil {
 		content := string(data)
@@ -194,7 +190,7 @@ func checkLuks(ctx *shared.InstallContext, issues, info *[]string) {
 // sd-encrypt. When luksUUID is empty the exact header cannot be asserted, so any
 // rd.luks.name= mapping is accepted. The literal /dev/mapper path is deliberately
 // not required: a LUKS root selected by UUID (root=UUID=…) never contains it, so
-// requiring it produced a false failure on every non-LVM encrypted install.
+// requiring it produced a false failure on every encrypted install.
 func luksEntryMapsMapper(options, luksUUID string) bool {
 	if !strings.Contains(options, "rd.luks.name=") {
 		return false
@@ -205,53 +201,9 @@ func luksEntryMapsMapper(options, luksUUID string) bool {
 	return strings.Contains(options, "rd.luks.name="+luksUUID+"="+shared.LuksMapperName)
 }
 
-// checkLvm verifies LVM-related configuration in the installed system when LVM
-// is enabled: the rEFInd stanza points root at the root logical volume, fstab
-// lists the home LV, and the lvm2 hook is present in mkinitcpio.
-func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
-	// The rEFInd stanza references the root logical volume (not the PV).
-	confPath := bootEntryPath(ctx)
-	if data, err := primitives.ReadFile(confPath); err == nil {
-		content := string(data)
-		if !strings.Contains(content, shared.LvmRootLvPath) {
-			*issues = append(*issues, "rEFInd config does not reference the root LV "+shared.LvmRootLvPath)
-		} else {
-			*info = append(*info, "rEFInd config references root LV ✓")
-		}
-	} else {
-		*issues = append(*issues, "failed to read rEFInd config "+confPath)
-	}
-
-	// Home LV filesystem UUID present in fstab (RootUUID is the root LV's UUID,
-	// already covered by checkFstab).
-	if ctx.Partitions != nil && ctx.Partitions.HomeUUID != "" {
-		path := shared.MountRoot + "/etc/fstab"
-		if data, err := primitives.ReadFile(path); err == nil {
-			if !strings.Contains(string(data), ctx.Partitions.HomeUUID) {
-				*issues = append(*issues, "fstab missing home LV UUID "+ctx.Partitions.HomeUUID)
-			} else {
-				*info = append(*info, "home LV UUID in fstab ✓")
-			}
-		}
-	}
-
-	// lvm2 hook present in mkinitcpio.conf.
-	confPath = shared.MountRoot + "/etc/mkinitcpio.conf"
-	if data, err := primitives.ReadFile(confPath); err == nil {
-		content := string(data)
-		if !strings.Contains(content, shared.LvmInitramfsHook) {
-			*issues = append(*issues, "lvm2 hook not found in mkinitcpio.conf")
-		} else {
-			*info = append(*info, "initramfs lvm2 hook present ✓")
-		}
-	} else {
-		*issues = append(*issues, "failed to read "+confPath)
-	}
-}
-
 // checkBootloader verifies that rEFInd's EFI binary and configuration (with the
-// Aelum menu entry) are present on the ESP. The stanza's root/LUKS/LVM options
-// are checked by checkLuks/checkLvm when those features are enabled.
+// Aelum menu entry) are present on the ESP. The stanza's root/LUKS options are
+// checked by checkLuks when encryption is enabled.
 func checkBootloader(ctx *shared.InstallContext, issues, info *[]string) {
 	esp := espRoot(ctx)
 	binaryPath := esp + "/" + shared.RefindBinaryPath

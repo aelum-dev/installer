@@ -73,9 +73,6 @@ func TestNewPartitionInfo(t *testing.T) {
 	rec := primitivestest.NewRecorder().OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda1"}, "EFI-UUID\n")
 	defer primitives.SetCommandRunner(rec)()
 
-	rootLV := shared.LvmRootLvPath
-	homeLV := shared.LvmHomeLvPath
-
 	tests := []struct {
 		name        string
 		ctx         *shared.InstallContext
@@ -83,8 +80,6 @@ func TestNewPartitionInfo(t *testing.T) {
 		fsType      string
 		wantMapper  bool
 		wantLuks    string
-		wantRootLV  string
-		wantHomeLV  string
 		wantSubvols map[string]string // mount point -> device (only entries that must be present)
 	}{
 		{
@@ -111,26 +106,6 @@ func TestNewPartitionInfo(t *testing.T) {
 			wantMapper: true,
 			wantLuks:   "LUKS-UUID",
 		},
-		{
-			name:       "lvm ext4 records lvs without subvolumes",
-			ctx:        &shared.InstallContext{Lvm: true},
-			setup:      RootSetup{RootDevice: rootLV, RootUUID: "ROOT-UUID", HomeLV: homeLV, HomeUUID: "HOME-UUID"},
-			fsType:     shared.FileSystemExt4,
-			wantRootLV: rootLV,
-			wantHomeLV: homeLV,
-		},
-		{
-			name:       "lvm btrfs splits root and home subvolumes",
-			ctx:        &shared.InstallContext{Lvm: true},
-			setup:      RootSetup{RootDevice: rootLV, RootUUID: "ROOT-UUID", HomeLV: homeLV, HomeUUID: "HOME-UUID"},
-			fsType:     shared.FileSystemBtrfs,
-			wantRootLV: rootLV,
-			wantHomeLV: homeLV,
-			wantSubvols: map[string]string{
-				"/home":      homeLV,
-				"/var/cache": rootLV,
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -150,12 +125,6 @@ func TestNewPartitionInfo(t *testing.T) {
 			}
 			if info.LuksUUID != tt.wantLuks {
 				t.Errorf("LuksUUID = %q, want %q", info.LuksUUID, tt.wantLuks)
-			}
-			if info.RootLV != tt.wantRootLV {
-				t.Errorf("RootLV = %q, want %q", info.RootLV, tt.wantRootLV)
-			}
-			if info.HomeLV != tt.wantHomeLV {
-				t.Errorf("HomeLV = %q, want %q", info.HomeLV, tt.wantHomeLV)
 			}
 			for mp, dev := range tt.wantSubvols {
 				if info.MountPoints[mp] != dev {
@@ -220,45 +189,6 @@ func TestSetupRootFilesystem_FormatFails(t *testing.T) {
 
 	if _, err := SetupRootFilesystem(&shared.InstallContext{}, "/dev/vda2", shared.FileSystemExt4); err == nil {
 		t.Fatal("SetupRootFilesystem() = nil, want wipefs failure")
-	}
-}
-
-// --- applyLvm ----------------------------------------------------------------
-
-func TestApplyLvm_Btrfs(t *testing.T) {
-	rootLV := shared.LvmRootLvPath
-	homeLV := shared.LvmHomeLvPath
-	rec := primitivestest.NewRecorder().
-		OnArgsOutput([]string{"blockdev", "--getsize64"}, "34359738368\n"). // 32 GiB
-		OnArgsOutput([]string{"vgs"}, "32768\n").                           // 32 GiB in MiB
-		OnArgsOutput([]string{"btrfs", "subvolume", "list"}, "ID 256 gen 1 top level 5 path @\nID 257 gen 1 top level 5 path @home\n").
-		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", rootLV}, "ROOT-LV-UUID\n").
-		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", homeLV}, "HOME-LV-UUID\n")
-	defer primitives.SetCommandRunner(rec)()
-
-	setup, err := applyLvm(&shared.InstallContext{}, "/dev/vda2", shared.FileSystemBtrfs)
-	if err != nil {
-		t.Fatalf("applyLvm() = %v", err)
-	}
-	if setup.RootDevice != rootLV || setup.HomeLV != homeLV {
-		t.Errorf("devices wrong: root=%q home=%q", setup.RootDevice, setup.HomeLV)
-	}
-	if setup.RootUUID != "ROOT-LV-UUID" || setup.HomeUUID != "HOME-LV-UUID" {
-		t.Errorf("UUIDs wrong: root=%q home=%q", setup.RootUUID, setup.HomeUUID)
-	}
-	for _, name := range []string{"pvcreate", "vgcreate", "lvcreate"} {
-		if !rec.Called(name) {
-			t.Errorf("%s not called", name)
-		}
-	}
-}
-
-func TestApplyLvm_DeviceTooSmall(t *testing.T) {
-	rec := primitivestest.NewRecorder().OnArgsOutput([]string{"blockdev", "--getsize64"}, "1073741824\n") // 1 GiB
-	defer primitives.SetCommandRunner(rec)()
-
-	if _, err := applyLvm(&shared.InstallContext{}, "/dev/vda2", shared.FileSystemExt4); err == nil {
-		t.Fatal("applyLvm() = nil, want device-too-small error")
 	}
 }
 

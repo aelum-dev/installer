@@ -17,7 +17,6 @@ function resetState(): void {
 	installState.manualMode = false;
 	installState.manualLayout = null;
 	installState.luksEnabled = false;
-	installState.lvmEnabled = false;
 }
 
 function setManual(layout: ManualLayout): void {
@@ -138,22 +137,6 @@ describe('isPageValid — agrees with the modal reasons', () => {
 
 		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(true);
 		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
-	});
-
-	it('uses the LVM System floor when the toggle is on', () => {
-		installState.lvmEnabled = true;
-		setManual({
-			disk: '/dev/sda',
-			diskSizeMB: 100000,
-			diskSizeBytes: 100000 * mib,
-			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
-				{ index: 1, path: '', sizeMB: 8192, type: 'system' },
-			],
-		});
-
-		const reasons = getPageValidationReasons(PAGE_IDS.DISK_SELECTION);
-		expect(reasons.some((reason) => reason.includes('LVM'))).toBe(true);
 	});
 
 	it('rejects a sub-8-GiB disk in manual mode', () => {

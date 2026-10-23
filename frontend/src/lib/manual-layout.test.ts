@@ -214,41 +214,6 @@ describe('manual layout guards', () => {
 		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('newPartNoType');
 	});
 
-	it('enforces the LVM System floor', () => {
-		const layout = baseLayout({
-			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
-				{ index: 1, path: '', sizeMB: 8192, type: 'system' },
-			],
-		});
-		expect(manualLayoutIssues(layout, { lvm: true }).map((issue) => issue.kind)).toContain(
-			'lvmSystemTooSmall',
-		);
-	});
-
-	it('uses the layout LVM flag when no explicit options are passed', () => {
-		const layout = baseLayout({
-			lvm: true,
-			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
-				{ index: 1, path: '', sizeMB: 8192, type: 'system' },
-			],
-		});
-		expect(manualLayoutIssues(layout).map((issue) => issue.kind)).toContain('lvmSystemTooSmall');
-	});
-
-	it('adds the LUKS header reserve to the LVM System floor', () => {
-		const layout = baseLayout({
-			partitions: [
-				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
-				{ index: 1, path: '', sizeMB: 16384, type: 'system' },
-			],
-		});
-		expect(manualLayoutIssues(layout, { lvm: true, luks: true }).map((issue) => issue.kind)).toContain(
-			'lvmSystemTooSmall',
-		);
-	});
-
 	it('rejects an existing sub-1-MiB ESP without treating it as use-remaining', () => {
 		const layout = baseLayout({
 			partitions: [

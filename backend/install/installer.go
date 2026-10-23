@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"aelum-installer/backend/install/luks"
-	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -33,7 +32,6 @@ type Installer struct {
 	fileSystem     string // root filesystem: "ext4" or "btrfs"
 	luks           bool
 	luksPassphrase []byte // zeroed after being copied to InstallContext
-	lvm            bool
 	dryRun         bool
 	esp            string // ESP mount point (default: /mnt/efi)
 
@@ -81,7 +79,6 @@ type InstallerConfig struct {
 	FileSystem     string // root filesystem: "ext4" or "btrfs"
 	Luks           bool
 	LuksPassphrase string
-	Lvm            bool
 	DryRun         bool
 }
 
@@ -96,7 +93,6 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		fileSystem:     cfg.FileSystem,
 		luks:           cfg.Luks,
 		luksPassphrase: []byte(cfg.LuksPassphrase),
-		lvm:            cfg.Lvm,
 		dryRun:         cfg.DryRun,
 		esp:            shared.ESPMountPoint,
 		Logger:         shared.NewConsoleLogger(),
@@ -353,9 +349,7 @@ func (inst *Installer) context() *InstallContext {
 	// Create a fresh cancel channel for this installation run.
 	inst.cancel = make(chan struct{})
 
-	// LVM installs the selected filesystem on both logical volumes: btrfs (the
-	// root LV carries the subvolume scheme, the home LV carries @home) or ext4.
-	// Default an unset filesystem so the LVM steps have a concrete type.
+	// Default an unset filesystem so the format/mount steps have a concrete type.
 	fileSystem := inst.fileSystem
 	if fileSystem == "" {
 		fileSystem = shared.DefaultFileSystem
@@ -371,15 +365,8 @@ func (inst *Installer) context() *InstallContext {
 		FileSystem:     fileSystem,
 		Luks:           inst.luks,
 		LuksPassphrase: luksPassphrase,
-		Lvm:            inst.lvm,
 		Logger:         inst.Logger,
 		Cancel:         inst.cancel,
-	}
-	if inst.lvm {
-		ctx.LvmVolumes = []shared.LvmVolume{
-			{Name: shared.LvmRootVolume, Percent: shared.LvmRootPercent, FileSystem: fileSystem, MountPoint: "/"},
-			{Name: shared.LvmHomeVolume, Rest: true, FileSystem: fileSystem, MountPoint: "/home"},
-		}
 	}
 	ctx.ManualMode = inst.manualMode
 	ctx.ManualLayout = inst.manualLayout
@@ -451,20 +438,12 @@ func (inst *Installer) RunCleanup() {
 	inst.cleanupOnce.Do(func() {
 		inst.logInfo("Cleanup: started")
 		// Unmount everything under /mnt first. The root filesystem may live on
-		// an LVM logical volume or a LUKS mapper, and both `vgchange -an` and
-		// `cryptsetup close` refuse to tear down a device that is still mounted
-		// (or otherwise busy). Unmounting first is what actually lets the VG and
-		// mapper be released, so a failed install can be retried cleanly.
+		// a LUKS mapper, and `cryptsetup close` refuses to tear down a device
+		// that is still mounted (or otherwise busy). Unmounting first is what
+		// actually lets the mapper be released, so a failed install can be
+		// retried cleanly.
 		if err := primitives.CleanupMounts(inst.Logger); err != nil {
 			inst.logError("Cleanup: unmount: %v", err)
-		}
-		// Deactivate the LVM volume group (if any) before closing the LUKS
-		// mapper it may sit on, so a failed install can be retried without a
-		// leaked VG. Best-effort — a missing VG errors.
-		if inst.lvm {
-			if err := lvm.VGDeactivate(shared.LvmVolumeGroup); err != nil && inst.Logger != nil {
-				inst.logInfo("Cleanup: LVM VG deactivate (non-fatal): %v", err)
-			}
 		}
 		// Close the LUKS mapper (if any) so a failed install can be retried
 		// without a leaked dm device. Best-effort — a closed mapper errors.

@@ -133,10 +133,7 @@ function manualLayoutValidationReasons(): string[] {
 		return reasons;
 	}
 
-	for (const issue of manualLayoutIssues(layout, {
-		lvm: installState.lvmEnabled,
-		luks: installState.luksEnabled,
-	})) {
+	for (const issue of manualLayoutIssues(layout)) {
 		reasons.push(manualIssueReason(issue));
 	}
 	return reasons;
@@ -154,11 +151,6 @@ function manualIssueReason(issue: ManualLayoutIssue): string {
 			return t('validation.modal.espTooSmall', { size: issue.sizeMB });
 		case 'systemTooSmall':
 			return t('validation.modal.systemTooSmall', { size: issue.sizeMB, min: issue.minMB });
-		case 'lvmSystemTooSmall':
-			return t('validation.modal.lvmSystemTooSmall', {
-				size: issue.sizeMB,
-				min: issue.minMB,
-			});
 		case 'invalidType':
 			return t('validation.modal.invalidType', { type: issue.type });
 		case 'multipleRemaining':

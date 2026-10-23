@@ -70,15 +70,12 @@ func TestInstaller_RunCleanup(t *testing.T) {
 	rec := primitivestest.NewRecorder()
 	defer primitives.SetCommandRunner(rec)()
 
-	inst := NewInstaller(InstallerConfig{DiskID: "/dev/vda", Luks: true, Lvm: true})
+	inst := NewInstaller(InstallerConfig{DiskID: "/dev/vda", Luks: true})
 	inst.RunCleanup()
 	inst.RunCleanup() // cleanupOnce: the second call is a no-op
 
 	if !rec.Called("umount") {
 		t.Error("RunCleanup should unmount the installed system")
-	}
-	if !rec.Called("vgchange") {
-		t.Error("RunCleanup should deactivate the LVM volume group")
 	}
 	if !rec.Called("cryptsetup") {
 		t.Error("RunCleanup should close the LUKS mapper")

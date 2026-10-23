@@ -43,7 +43,7 @@ func TestGenerateFstab(t *testing.T) {
 		ctx := &shared.InstallContext{
 			DiskID:     "/dev/vda",
 			FileSystem: fs,
-			Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", EFIUUID: "EFI-UUID", HomeUUID: "HOME-UUID"},
+			Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", EFIUUID: "EFI-UUID"},
 		}
 		if mutate != nil {
 			mutate(ctx)
@@ -65,16 +65,6 @@ func TestGenerateFstab(t *testing.T) {
 			name: "btrfs",
 			ctx:  base(shared.FileSystemBtrfs, nil),
 			want: []string{"UUID=ROOT-UUID", "subvol=@", "btrfs"},
-		},
-		{
-			name: "lvm ext4 splits home",
-			ctx:  base(shared.FileSystemExt4, func(c *shared.InstallContext) { c.Lvm = true }),
-			want: []string{"UUID=ROOT-UUID", "UUID=HOME-UUID", "ext4"},
-		},
-		{
-			name: "lvm btrfs splits @home",
-			ctx:  base(shared.FileSystemBtrfs, func(c *shared.InstallContext) { c.Lvm = true }),
-			want: []string{"UUID=ROOT-UUID", "UUID=HOME-UUID", "subvol=@home"},
 		},
 	}
 
@@ -630,10 +620,10 @@ func TestConfigureInitramfs(t *testing.T) {
 			want:    []string{"HOOKS=(base systemd plymouth", "filesystems fsck)"},
 		},
 		{
-			name:    "luks and lvm",
-			ctx:     &shared.InstallContext{Luks: true, Lvm: true},
+			name:    "luks",
+			ctx:     &shared.InstallContext{Luks: true},
 			content: "MODULES=()\nHOOKS=(base)\n",
-			want:    []string{"sd-encrypt", shared.LvmInitramfsHook, "filesystems fsck)"},
+			want:    []string{"sd-encrypt", "filesystems fsck)"},
 		},
 	}
 	for _, tt := range tests {

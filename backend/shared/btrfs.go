@@ -27,32 +27,6 @@ func GetBtrfsSubvolumes() []BtrfsSubvolume {
 	return btrfsSubvolumes
 }
 
-// lvmBtrfsSubvolumes is the subvolume set for an LVM root LV: the canonical
-// scheme minus @home, which lives on the separate home LV instead.
-var lvmBtrfsSubvolumes = []BtrfsSubvolume{
-	{Name: "@", MountPoint: "/", Compression: "zstd", NoDataCow: false},
-	{Name: "@srv", MountPoint: "/srv", Compression: "zstd", NoDataCow: false},
-	{Name: "@cache", MountPoint: "/var/cache", Compression: "", NoDataCow: true},
-	{Name: "@tmp", MountPoint: "/var/tmp", Compression: "", NoDataCow: true},
-	{Name: "@log", MountPoint: "/var/log", Compression: "zstd", NoDataCow: false},
-}
-
-// lvmHomeSubvolumes is the subvolume set for the LVM home LV: a single @home.
-var lvmHomeSubvolumes = []BtrfsSubvolume{
-	{Name: "@home", MountPoint: "/home", Compression: "zstd", NoDataCow: false},
-}
-
-// GetLvmBtrfsSubvolumes returns the subvolume scheme for the LVM root LV: the
-// canonical set minus @home (which the home LV carries).
-func GetLvmBtrfsSubvolumes() []BtrfsSubvolume {
-	return lvmBtrfsSubvolumes
-}
-
-// GetLvmHomeSubvolumes returns the subvolume scheme for the LVM home LV (@home).
-func GetLvmHomeSubvolumes() []BtrfsSubvolume {
-	return lvmHomeSubvolumes
-}
-
 // FindSubvolumeByMountPoint finds a subvolume by its mount point.
 func FindSubvolumeByMountPoint(subvolumes []BtrfsSubvolume, mountPoint string) *BtrfsSubvolume {
 	for i := range subvolumes {

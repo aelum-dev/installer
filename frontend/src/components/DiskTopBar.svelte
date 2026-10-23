@@ -18,8 +18,6 @@
 		luksEnabled = false,
 		onEnableLuks,
 		onDisableLuks,
-		lvmEnabled = false,
-		onToggleLvm,
 		onSelectFileSystem,
 		onToggleMode
 	}: {
@@ -34,8 +32,6 @@
 		luksEnabled?: boolean;
 		onEnableLuks?: () => void;
 		onDisableLuks?: () => void;
-		lvmEnabled?: boolean;
-		onToggleLvm?: () => void;
 		onSelectFileSystem: (fs: FileSystem) => void;
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
@@ -130,10 +126,9 @@
 		{/each}
 	</div>
 
-	<!-- Encryption (LUKS2) and LVM toggles share the control column (column 2),
-		so their switches line up with the mode/filesystem pills above. The label
-		for the first toggle occupies column 1; the LVM label sits inline before its
-		switch. Shown in both automatic and manual mode. -->
+	<!-- Encryption (LUKS2) toggle. The label occupies column 1 and the switch
+		column 2, so it lines up with the mode/filesystem pills above. Shown in
+		both automatic and manual mode. -->
 	{#if onEnableLuks || onDisableLuks}
 		<span class="control-row-label">{t('disk.encryptLabel')}</span>
 		<div class="toggle-row">
@@ -148,27 +143,6 @@
 						onEnableLuks?.();
 					}
 				}}
-			/>
-			{#if onToggleLvm}
-				<div class="toggle-group">
-					<span class="control-row-label">{t('disk.lvmLabel')}</span>
-					<ToggleSwitch
-						checked={lvmEnabled}
-						label={t('disk.lvmLabel')}
-						title={t('disk.lvmHint')}
-						onToggle={() => onToggleLvm?.()}
-					/>
-				</div>
-			{/if}
-		</div>
-	{:else if onToggleLvm}
-		<span class="control-row-label">{t('disk.lvmLabel')}</span>
-		<div class="toggle-row">
-			<ToggleSwitch
-				checked={lvmEnabled}
-				label={t('disk.lvmLabel')}
-				title={t('disk.lvmHint')}
-				onToggle={() => onToggleLvm?.()}
 			/>
 		</div>
 	{/if}

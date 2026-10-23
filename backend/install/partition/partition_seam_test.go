@@ -142,7 +142,7 @@ func TestComputeLayout_DiskNotFound(t *testing.T) {
 	}
 }
 
-// --- roleLabel / reconcileLvm / ensureSectorSize -----------------------------
+// --- roleLabel / reconcileLuks / ensureSectorSize ----------------------------
 
 func TestRoleLabel(t *testing.T) {
 	if got := roleLabel(shared.FileSystemVfat); got != "EFI" {
@@ -150,30 +150,6 @@ func TestRoleLabel(t *testing.T) {
 	}
 	if got := roleLabel(shared.FileSystemExt4); got != "aelum" {
 		t.Errorf("roleLabel(ext4) = %q, want aelum", got)
-	}
-}
-
-func TestReconcileLvm(t *testing.T) {
-	tests := []struct {
-		name          string
-		ctx, layout   bool
-		wantCtxLvm    bool
-		wantLayoutLvm bool
-	}{
-		{"neither", false, false, false, false},
-		{"ctx only", true, false, true, true},
-		{"layout only", false, true, true, true},
-		{"both", true, true, true, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := &shared.InstallContext{Lvm: tt.ctx}
-			layout := &shared.ManualLayout{Lvm: tt.layout}
-			reconcileLvm(ctx, layout)
-			if ctx.Lvm != tt.wantCtxLvm || layout.Lvm != tt.wantLayoutLvm {
-				t.Errorf("reconcileLvm() = ctx:%v layout:%v, want ctx:%v layout:%v", ctx.Lvm, layout.Lvm, tt.wantCtxLvm, tt.wantLayoutLvm)
-			}
-		})
 	}
 }
 

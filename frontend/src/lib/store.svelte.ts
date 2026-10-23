@@ -2,7 +2,7 @@ import type { DiskInfo, FileSystem, ManualLayout } from '$lib/types';
 import { DefaultFileSystem } from '$lib/constants';
 import { t } from '$lib/i18n';
 import { uiState } from '$lib/ui.svelte';
-import { SetLuks, SetLuksPassphrase, SetLvm } from '$lib/backend';
+import { SetLuks, SetLuksPassphrase } from '$lib/backend';
 
 // ── Installation State (shared across pages) ──
 
@@ -27,10 +27,6 @@ export const installState = $state({
 	// ('' = none held) until the CLI consumes it.
 	luksEnabled: false as boolean,
 	luksPassphrase: '' as string,
-
-	// LVM: place root and home on logical volumes in the `aelum` volume group.
-	// Opt-in, like LUKS, but with no passphrase. Supports both filesystems.
-	lvmEnabled: false as boolean,
 
 	// Manual partitioning mode
 	manualMode: false as boolean,
@@ -95,7 +91,7 @@ export function disableLuks(): void {
 
 // ── Backend sync ───────────────────────────────────────────────────────────
 
-// syncEncryptionToBackend pushes the committed LUKS/LVM state to the Go backend
+// syncEncryptionToBackend pushes the committed LUKS state to the Go backend
 // before the install starts.
 //
 // Every Wails binding call runs on its own goroutine in the backend, so these
@@ -113,20 +109,9 @@ export async function syncEncryptionToBackend(): Promise<void> {
 	} else {
 		await SetLuks(false);
 	}
-	await SetLvm(installState.lvmEnabled);
 }
 
-// ── LVM helpers ────────────────────────────────────────────────────────────
-
-// toggleLvm flips LVM on/off. LVM has no passphrase (unlike LUKS), so the toggle
-// commits immediately: the installer places root and home on logical volumes in
-// the `aelum` volume group. Both LVs use the selected filesystem.
-export function toggleLvm(): void {
-	installState.lvmEnabled = !installState.lvmEnabled;
-}
-
-// setFileSystem selects the root filesystem. LVM supports both ext4 and btrfs,
-// so it stays enabled across filesystem changes.
+// setFileSystem selects the root filesystem.
 export function setFileSystem(fs: FileSystem): void {
 	installState.fileSystem = fs;
 }

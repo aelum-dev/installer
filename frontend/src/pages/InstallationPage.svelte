@@ -73,10 +73,10 @@
 		}, 1000);
 	});
 
-	// Entering this page starts the install. Push the committed LUKS/LVM state to
+	// Entering this page starts the install. Push the committed LUKS state to
 	// the Go backend first — the backend decides whether to pass --luks (and
-	// which passphrase to feed the CLI on stdin) and --lvm; the confirmation
-	// note is derived purely from the frontend store.
+	// which passphrase to feed the CLI on stdin); the confirmation note is
+	// derived purely from the frontend store.
 	//
 	// syncEncryptionToBackend awaits every binding call on purpose: the Wails
 	// runtime dispatches each call on its own goroutine, so a fire-and-forget

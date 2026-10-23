@@ -12,8 +12,8 @@ import (
 //   - the sum of partition sizes must fit the disk
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
 //   - every type must be a known value
-//   - designated partitions meet their role floor (the System floor rises for
-//     LVM and LUKS+LVM; every Boot partition has the 512 MiB floor)
+//   - designated partitions meet their role floor (every Boot partition has the
+//     512 MiB floor; the System partition has the 8 GiB floor)
 func Validate(layout shared.ManualLayout) error {
 	// Debug: record the layout and every number behind the size checks so a
 	// rejection that only happens on real disk geometry can be traced from the
@@ -32,7 +32,7 @@ func Validate(layout shared.ManualLayout) error {
 
 	ss := layoutSectorSize(&layout)
 	spm := sectorsPerMiB(ss)
-	systemFloorBytes := shared.MinSystemPartitionSize(layout.Lvm, layout.Luks)
+	systemFloorBytes := int64(shared.MinSystemPartitionBytes)
 
 	var esp, sys, zeroSize int
 	var newSectors int64
@@ -213,7 +213,7 @@ func validateUseRemainingFloors(layout shared.ManualLayout, usableSectors, newSe
 		if p.Path != "" || p.SizeMB != 0 || (p.Type != shared.TypeESP && p.Type != shared.TypeSystem) {
 			continue
 		}
-		if min := minPartitionSizeMB(p.Type, layout.Lvm, layout.Luks); remainingMB < min {
+		if min := minPartitionSizeMB(p.Type); remainingMB < min {
 			return fmt.Errorf("%s partition would have only %d MB of free space, below the %d MB minimum", p.Type, remainingMB, min)
 		}
 	}

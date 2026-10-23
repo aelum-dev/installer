@@ -55,7 +55,6 @@ func (a *App) GetManualLayout(diskID string) (shared.ManualLayout, error) {
 	}
 	// Carry the current storage/encryption choices so validation sees the right
 	// System-partition floor before the page is saved.
-	layout.Lvm = a.lvm
 	layout.Luks = a.luks
 	return layout, nil
 }
@@ -68,11 +67,10 @@ func (a *App) GetManualLayout(diskID string) (shared.ManualLayout, error) {
 // here rather than during installation. If the geometry cannot be read (e.g.
 // unprivileged), it falls back to the coarse Validate result.
 func (a *App) ValidateManualLayout(layout shared.ManualLayout) error {
-	// The layout comes from the page, which may not include the toggles the user
-	// changed after loading it. Make the current choices authoritative so the
-	// LVM/LUKS System floor is enforced at Next and a disabled toggle is not
+	// The layout comes from the page, which may not include the toggle the user
+	// changed after loading it. Make the current choice authoritative so the
+	// LUKS System floor is enforced at Next and a disabled toggle is not
 	// resurrected by a stale layout field.
-	layout.Lvm = a.lvm
 	layout.Luks = a.luks
 	return partition.ValidateFeasible(layout)
 }
@@ -82,7 +80,6 @@ func (a *App) ValidateManualLayout(layout shared.ManualLayout) error {
 func (a *App) SaveManualLayout(layout shared.ManualLayout) {
 	// The app toggles are authoritative; a layout loaded before the user changed
 	// them may still carry the old values.
-	layout.Lvm = a.lvm
 	layout.Luks = a.luks
 	a.manualLayout = layout
 	a.manualMode = true

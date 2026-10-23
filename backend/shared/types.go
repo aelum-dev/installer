@@ -25,15 +25,6 @@ type InstallContext struct {
 	// after use; never logged or returned.
 	LuksPassphrase []byte
 
-	// Lvm reports whether the root partition becomes an LVM physical volume in
-	// the `aelum` volume group (with root + home logical volumes). When set, the
-	// root filesystem lives on a logical volume and the initramfs gains the
-	// lvm2 hook. Composes with Luks: the PV is the decrypted LUKS mapper.
-	Lvm bool
-	// LvmVolumes describes the logical volumes to create when Lvm is set (root,
-	// then home). Never serialized; the sizing is fixed by the lvm package.
-	LvmVolumes []LvmVolume
-
 	Hostname   string
 	Region     Region
 	FileSystem string // root filesystem: "ext4" or "btrfs"
@@ -84,27 +75,8 @@ type PartitionInfo struct {
 	RootMapper string
 	// LuksUUID is the LUKS header UUID of the raw root partition. Used for the
 	// boot cmdline rd.luks.name= argument — NOT the filesystem UUID.
-	LuksUUID string
-	// RootLV is the LVM root logical volume path (e.g. /dev/mapper/aelum-root).
-	// Empty when LVM is disabled; otherwise the device mounted as root.
-	RootLV string
-	// HomeLV is the LVM home logical volume path (e.g. /dev/mapper/aelum-home).
-	// Empty when LVM is disabled; mounted at /home.
-	HomeLV string
-	// HomeUUID is the filesystem UUID of the home logical volume (LVM only).
-	HomeUUID    string
+	LuksUUID    string
 	MountPoints map[string]string // Additional mount points (e.g., "/home" → "/dev/sda2")
-}
-
-// LvmVolume describes one logical volume the installer creates in the volume
-// group. The root volume is sized from a percentage of the VG (with a floor);
-// the home volume takes the rest.
-type LvmVolume struct {
-	Name       string // "root" | "home"
-	Percent    int    // root: percentage of the VG (ignored when Rest is true)
-	Rest       bool   // home: consume 100% of the remaining space
-	FileSystem string // "btrfs" | "ext4"
-	MountPoint string // "/" | "/home"
 }
 
 // DiskInfo represents a block device discovered on the system.
@@ -157,12 +129,8 @@ type ManualPartition struct {
 type ManualLayout struct {
 	Disk       string `json:"disk"`
 	DiskSizeMB int64  `json:"diskSizeMB"`
-	// Lvm enables LVM on the designated System partition: the System partition
-	// becomes a PV in the `aelum` VG with root + home LVs.
-	Lvm bool `json:"lvm,omitempty"`
 	// Luks is a validation hint: true when the System partition is encrypted.
-	// Apply reconciles it from ctx.Luks; the GUI/CLI set it before validation so
-	// the LUKS header reserve is included in the System-partition floor.
+	// Apply reconciles it from ctx.Luks so the two can never disagree.
 	Luks bool `json:"luks,omitempty"`
 	// DiskSizeBytes is the exact total disk size in bytes. Free-space math that
 	// must survive existing-partitions being rounded down to MiB uses it.

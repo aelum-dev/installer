@@ -56,25 +56,6 @@ func TestBootEntryOptions(t *testing.T) {
 			},
 			want: "rd.luks.name=" + luksUUID + "=" + shared.LuksMapperName + " root=UUID=" + rootUUID + suffix,
 		},
-		{
-			name: "lvm roots on the root LV",
-			ctx: &shared.InstallContext{
-				FileSystem: shared.FileSystemExt4,
-				Lvm:        true,
-				Partitions: &shared.PartitionInfo{RootUUID: rootUUID},
-			},
-			want: "root=" + shared.LvmRootLvPath + suffix,
-		},
-		{
-			name: "luks+lvm+btrfs combines all three",
-			ctx: &shared.InstallContext{
-				FileSystem: shared.FileSystemBtrfs,
-				Luks:       true,
-				Lvm:        true,
-				Partitions: &shared.PartitionInfo{RootUUID: rootUUID, LuksUUID: luksUUID},
-			},
-			want: "rd.luks.name=" + luksUUID + "=" + shared.LuksMapperName + " root=" + shared.LvmRootLvPath + suffix + " rootflags=subvol=@",
-		},
 	}
 
 	for _, tt := range tests {
@@ -92,7 +73,6 @@ func TestRefindConfig(t *testing.T) {
 	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Luks:       true,
-		Lvm:        true,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID", RootPart: "/dev/sda2"},
 	}
 	includes := []string{"aelum/aaaa1111.conf", "aelum/bbbb2222.conf"}
@@ -129,7 +109,6 @@ func TestRefindEntry(t *testing.T) {
 	ctx := &shared.InstallContext{
 		FileSystem: shared.FileSystemBtrfs,
 		Luks:       true,
-		Lvm:        true,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID", RootPart: "/dev/sda2"},
 	}
 	id := shared.InstallID(ctx.Partitions.RootUUID)

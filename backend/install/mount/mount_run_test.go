@@ -97,36 +97,6 @@ func TestRun_BtrfsSubvolumes(t *testing.T) {
 	}
 }
 
-// TestRun_LvmExt4Home verifies the LVM ext4 flow: activate the VG, mount the
-// root LV, then mount the home LV at /home.
-func TestRun_LvmExt4Home(t *testing.T) {
-	ctx := baseCtx()
-	ctx.Lvm = true
-	ctx.Partitions.RootLV = shared.LvmRootLvPath
-	ctx.Partitions.HomeLV = shared.LvmHomeLvPath
-
-	rec := findmntRule(findmntRule(findmntRule(primitivestest.NewRecorder(),
-		shared.MountRoot, shared.LvmRootLvPath),
-		shared.MountRoot+"/home", shared.LvmHomeLvPath),
-		shared.ESPMountPoint, "/dev/vda1")
-	defer primitives.SetCommandRunner(rec)()
-
-	if err := Run(ctx); err != nil {
-		t.Fatalf("Run() = %v, want nil", err)
-	}
-
-	if !hasCall(rec.CallsFor("vgchange"), "vgchange", "-ay", shared.LvmVolumeGroup) {
-		t.Errorf("VG was not activated: %v", rec.CallsFor("vgchange"))
-	}
-	mounts := rec.CallsFor("mount")
-	if !hasCall(mounts, "mount", "--mkdir", shared.LvmRootLvPath, shared.MountRoot) {
-		t.Errorf("root LV mount not issued; mount calls = %v", mounts)
-	}
-	if !hasCall(mounts, "mount", shared.LvmHomeLvPath, shared.MountRoot+"/home") {
-		t.Errorf("home LV mount not issued; mount calls = %v", mounts)
-	}
-}
-
 // TestRun_LuksAlreadyOpen verifies a live mapper is not reopened, and the mapper
 // is used as the root device.
 func TestRun_LuksAlreadyOpen(t *testing.T) {

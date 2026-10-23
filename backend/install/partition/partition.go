@@ -13,7 +13,6 @@ import (
 	"strconv"
 
 	"aelum-installer/backend/install/format"
-	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -96,7 +95,6 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	// math uses the same sector unit sgdisk reports in (512e vs 4Kn).
 	ensureSectorSize(layout, diskID)
 
-	reconcileLvm(ctx, layout)
 	reconcileLuks(ctx, layout)
 
 	if err := Validate(*layout); err != nil {
@@ -122,13 +120,6 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 
 	// Unmount anything left behind by a prior attempt.
 	_ = primitives.CleanupMounts(ctx.Logger)
-
-	// A previous LVM install leaves the `aelum` volume group active on the
-	// target. Its device-mapper holders keep the System partition busy, so
-	// mkfs and cryptsetup — which open with O_EXCL — fail with EBUSY. Remove the
-	// group before touching the partition table (lvm.Apply does the same before
-	// recreating it on the LVM path).
-	lvm.Teardown(shared.LvmVolumeGroup, nil)
 
 	// Remove any partitions the user deleted from the layout before reading the
 	// disk geometry or creating new partitions. Deleting first frees their space
@@ -173,13 +164,12 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		return fmt.Errorf("partprobe: %w: %s", probeErr, string(probeOut))
 	}
 
-	// Format each Boot/Root partition. When LUKS or LVM is enabled the System
-	// partition is not formatted directly (EncryptRoot / SetupRootFilesystem
-	// below create the filesystem, and for LVM the PV/VG/LVs). The Boot
-	// partition is always formatted, new or existing: it belongs to this
-	// install, so it must never carry another OS's boot loaders.
+	// Format each Boot/Root partition. When LUKS is enabled the System
+	// partition is not formatted directly (EncryptRoot below creates the
+	// filesystem). The Boot partition is always formatted, new or existing: it
+	// belongs to this install, so it must never carry another OS's boot loaders.
 	for _, a := range actions {
-		if a.pType == shared.TypeSystem && (ctx.Luks || ctx.Lvm) {
+		if a.pType == shared.TypeSystem && ctx.Luks {
 			continue
 		}
 		label := "aelum"
@@ -201,11 +191,6 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		if err != nil {
 			return err
 		}
-	case ctx.Lvm:
-		setup, err = format.SetupRootFilesystem(ctx, sysPath, ctx.FileSystem)
-		if err != nil {
-			return err
-		}
 	default:
 		// Plain root (ext4 or btrfs): the System partition was formatted above.
 		// For btrfs create the subvolume scheme here, then read the filesystem
@@ -223,7 +208,7 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	}
 
 	// Build PartitionInfo from the resolved EFI and System paths, applying the
-	// LUKS/LVM/plain root mapping.
+	// LUKS/plain root mapping.
 	partitions, err := format.NewPartitionInfo(ctx, diskID, espPath, sysPath, setup, ctx.FileSystem)
 	if err != nil {
 		return err
@@ -274,20 +259,9 @@ func preflightPlacement(diskID string, layout *shared.ManualLayout) error {
 	return feasible(*layout, sectors)
 }
 
-// reconcileLvm reconciles the LVM decision, which reaches the manual path two
-// ways: the --lvm toggle (ctx.Lvm, from the frontend/CLI) and the layout's own
-// flag (layout.Lvm, which drives the System partition's GPT type in
-// buildActions). LVM is on if either says so.
-func reconcileLvm(ctx *shared.InstallContext, layout *shared.ManualLayout) {
-	if ctx.Lvm || layout.Lvm {
-		ctx.Lvm = true
-		layout.Lvm = true
-	}
-}
-
-// reconcileLuks reconciles the LUKS decision the same way: either the --luks
-// toggle (ctx.Luks) or the layout's validation hint can enable it. Validate uses
-// the flag to include the LUKS header reserve in the System-partition floor.
+// reconcileLuks reconciles the LUKS decision: either the --luks toggle
+// (ctx.Luks) or the layout flag can enable it, so a layout loaded with LUKS on
+// cannot silently install unencrypted.
 func reconcileLuks(ctx *shared.InstallContext, layout *shared.ManualLayout) {
 	if ctx.Luks || layout.Luks {
 		ctx.Luks = true

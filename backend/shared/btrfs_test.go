@@ -51,38 +51,6 @@ func TestGetBtrfsSubvolumes_Invariants(t *testing.T) {
 	}
 }
 
-// TestGetLvmSubvolumes verifies the LVM split: the root LV carries every
-// subvolume except @home, which the home LV carries.
-func TestGetLvmSubvolumes(t *testing.T) {
-	root := GetLvmBtrfsSubvolumes()
-	home := GetLvmHomeSubvolumes()
-	all := GetBtrfsSubvolumes()
-
-	if len(home) != 1 || home[0].Name != "@home" || home[0].MountPoint != "/home" {
-		t.Fatalf("home LV subvolumes = %+v, want a single @home at /home", home)
-	}
-	if len(root) != len(all)-1 {
-		t.Errorf("root LV should carry all subvolumes but @home: got %d, want %d", len(root), len(all)-1)
-	}
-	for _, sv := range root {
-		if sv.Name == "@home" {
-			t.Error("@home must live on the home LV, not the root LV")
-		}
-	}
-	if !subvolumeNamesContain(root, "@") {
-		t.Error("root LV must carry @")
-	}
-}
-
-func subvolumeNamesContain(subs []BtrfsSubvolume, name string) bool {
-	for _, sv := range subs {
-		if sv.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
 func TestFindSubvolumeByMountPoint(t *testing.T) {
 	subs := GetBtrfsSubvolumes()
 

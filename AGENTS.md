@@ -67,8 +67,8 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
-        fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4/LVM variants)
-        bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS/LVM-aware root options)
+        fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants)
+        bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
@@ -138,7 +138,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         manual-layout.ts        — Pure manual-partition geometry + structural validation
         navigation.ts           — Page navigation state
         page-validation.ts      — `isPageValid()`/`getPageValidationReasons()` (shares validate.ts rules)
-        store.svelte.ts         — Svelte 5 store (`installState`, `navState`, LUKS/LVM actions)
+        store.svelte.ts         — Svelte 5 store (`installState`, `navState`, LUKS actions)
         i18n/
           index.svelte.ts       — Translation runtime (glob-imported locales) + locale loading
           index.ts              — Re-exports for .ts/.svelte consumers
@@ -257,7 +257,7 @@ Welcome (language select)
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
 - Boot floor: every Boot partition (new or existing) must be at least `shared.MinESPSizeBytes` = 512 MiB. Manual mode always formats the selected Boot partition as FAT32, so it never reuses another OS's ESP.
-- System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition); LVM uses `shared.MinLvmSystemPartitionBytes` = 16 GiB, plus `shared.LuksHeaderReserveBytes` when LUKS+LVM is enabled
+- System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition)
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Default username: `shared.DefaultCLIUsername` = "aelum"

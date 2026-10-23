@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { installState, syncEncryptionToBackend } from './store.svelte';
-import { SetLuks, SetLuksPassphrase, SetLvm } from '@wails/go/gui/App.js';
+import { SetLuks, SetLuksPassphrase } from '@wails/go/gui/App.js';
 
 vi.mock('@wails/go/gui/App.js', () => ({
 	SetLuks: vi.fn(() => Promise.resolve()),
 	SetLuksPassphrase: vi.fn(() => Promise.resolve()),
-	SetLvm: vi.fn(() => Promise.resolve()),
 }));
 
 // syncEncryptionToBackend runs right before StartInstallation. The Wails runtime
@@ -18,13 +17,11 @@ describe('syncEncryptionToBackend', () => {
 		vi.clearAllMocks();
 		installState.luksEnabled = false;
 		installState.luksPassphrase = '';
-		installState.lvmEnabled = false;
 	});
 
 	afterEach(() => {
 		installState.luksEnabled = false;
 		installState.luksPassphrase = '';
-		installState.lvmEnabled = false;
 	});
 
 	it('sends the passphrase before flagging encryption on', async () => {
@@ -60,28 +57,6 @@ describe('syncEncryptionToBackend', () => {
 		await sync;
 
 		expect(SetLuks).toHaveBeenCalledWith(true);
-	});
-
-	it('awaits the LVM flag too', async () => {
-		installState.lvmEnabled = true;
-
-		let releaseLvm!: () => void;
-		const pending = new Promise<void>((resolve) => {
-			releaseLvm = resolve;
-		});
-		vi.mocked(SetLvm).mockImplementationOnce(() => pending);
-
-		let settled = false;
-		const sync = syncEncryptionToBackend().then(() => {
-			settled = true;
-		});
-
-		await Promise.resolve();
-		expect(settled).toBe(false);
-
-		releaseLvm();
-		await sync;
-		expect(SetLvm).toHaveBeenCalledWith(true);
 	});
 
 	it('disables encryption when no passphrase is held', async () => {

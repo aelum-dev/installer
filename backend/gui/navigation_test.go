@@ -104,22 +104,6 @@ func TestUILocale_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestSetLvm(t *testing.T) {
-	app := NewApp(false)
-
-	if app.lvm {
-		t.Error("lvm should default to false")
-	}
-	app.SetLvm(true)
-	if !app.lvm {
-		t.Error("SetLvm(true) did not enable lvm")
-	}
-	app.SetLvm(false)
-	if app.lvm {
-		t.Error("SetLvm(false) did not disable lvm")
-	}
-}
-
 func TestSetLuksPassphrase_StoresCopy(t *testing.T) {
 	app := NewApp(false)
 

@@ -172,12 +172,6 @@ import { uiState } from '$lib/ui.svelte';
 							<span class="option-hint">{t('disk.encryptHint')}</span>
 						</div>
 					{/if}
-					{#if installState.lvmEnabled}
-						<div class="option-row">
-							<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
-							<span class="option-hint">{t('disk.lvmHint')}</span>
-						</div>
-					{/if}
 				</div>
 			{:else}
 				<p class="section-value error">{t('validation.noDiskSelected')}</p>
@@ -365,11 +359,6 @@ import { uiState } from '$lib/ui.svelte';
 	.luks-tag {
 		background: var(--color-danger-bg);
 		color: var(--color-danger);
-	}
-
-	.lvm-tag {
-		background: var(--color-primary-lighter);
-		color: var(--color-primary);
 	}
 
 	.role-tag.esp {

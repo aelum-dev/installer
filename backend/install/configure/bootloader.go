@@ -377,14 +377,11 @@ func refindConfig(ctx *shared.InstallContext, mode displayMode, modeOK, hiDPI bo
 }
 
 // bootEntryOptions builds the kernel command line for the rEFInd entry. The
-// root device is the root LV (LVM), the decrypted LUKS mapper (encrypted), or
-// the root filesystem UUID. LUKS entries carry rd.luks.name= so sd-encrypt maps
-// the header to the "aelum" mapper before the root is mounted.
+// root device is the decrypted LUKS mapper (encrypted) or the root filesystem
+// UUID. LUKS entries carry rd.luks.name= so sd-encrypt maps the header to the
+// "aelum" mapper before the root is mounted.
 func bootEntryOptions(ctx *shared.InstallContext) string {
 	root := "UUID=" + ctx.Partitions.RootUUID
-	if ctx.Lvm {
-		root = shared.LvmRootLvPath
-	}
 
 	var options string
 	if ctx.Luks {

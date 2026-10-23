@@ -48,36 +48,33 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 	}
 }
 
-func TestRun_PassesWithLuksAndLvm(t *testing.T) {
+func TestRun_PassesWithLuks(t *testing.T) {
 	ctx := &shared.InstallContext{
 		DiskID:     "/dev/vda",
 		Username:   "alice",
 		Hostname:   "aelum",
 		FileSystem: shared.FileSystemBtrfs,
 		Luks:       true,
-		Lvm:        true,
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "ROOT-UUID",
 			EFIUUID:  "EFI-UUID",
 			LuksUUID: "LUKS-UUID",
-			HomeUUID: "HOME-UUID",
 			RootPart: "/dev/vda2",
 		},
 	}
 	id := shared.InstallID(ctx.Partitions.RootUUID)
 	entry := `menuentry "` + shared.RefindEntryTitle("/dev/vda2") + `" {` +
 		"\n    loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts") +
-		"\n    options rd.luks.name=LUKS-UUID=aelum root=" + shared.LvmRootLvPath +
+		"\n    options rd.luks.name=LUKS-UUID=aelum root=UUID=ROOT-UUID" +
 		" rw quiet splash rootflags=subvol=@\n}\n"
 	fstab := "UUID=ROOT-UUID / ext4 rw 0 1\n" +
 		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
-		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n" +
-		"UUID=HOME-UUID /home ext4 rw 0 2\n"
+		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n"
 	fs := primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", fstab).
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
-		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt lvm2 filesystems)\n").
+		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt filesystems)\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry)
@@ -207,77 +204,6 @@ func TestCheckLuks(t *testing.T) {
 			defer primitives.SetFileSystem(tt.fs)()
 			var issues, info []string
 			checkLuks(ctx, &issues, &info)
-			if tt.wantIssue == "" {
-				if len(issues) != 0 {
-					t.Fatalf("issues = %v, want none", issues)
-				}
-				return
-			}
-			if len(issues) != 1 || !strings.Contains(issues[0], tt.wantIssue) {
-				t.Fatalf("issues = %v, want one containing %q", issues, tt.wantIssue)
-			}
-		})
-	}
-}
-
-// --- checkLvm ----------------------------------------------------------------
-
-func TestCheckLvm(t *testing.T) {
-	const (
-		confPath  = shared.MountRoot + "/etc/mkinitcpio.conf"
-		fstabPath = shared.MountRoot + "/etc/fstab"
-	)
-	ctx := &shared.InstallContext{Lvm: true, Partitions: &shared.PartitionInfo{HomeUUID: "HOME-UUID", RootUUID: "ROOT-UUID"}}
-	entryPath := bootEntryPath(ctx)
-
-	tests := []struct {
-		name      string
-		fs        *primitivestest.MemFS
-		wantIssue string
-	}{
-		{
-			name:      "missing rEFInd config",
-			fs:        primitivestest.NewMemFS().WithFile(confPath, "HOOKS=(lvm2)\n"),
-			wantIssue: "failed to read rEFInd config",
-		},
-		{
-			name: "entry lacks root LV",
-			fs: primitivestest.NewMemFS().
-				WithFile(entryPath, "root=UUID=ROOT-UUID rw\n").
-				WithFile(confPath, "HOOKS=(lvm2)\n").
-				WithFile(fstabPath, "UUID=HOME-UUID /home ext4 rw 0 2\n"),
-			wantIssue: "does not reference the root LV",
-		},
-		{
-			name: "fstab lacks home UUID",
-			fs: primitivestest.NewMemFS().
-				WithFile(entryPath, "root="+shared.LvmRootLvPath+" rw\n").
-				WithFile(confPath, "HOOKS=(lvm2)\n").
-				WithFile(fstabPath, "UUID=ROOT-UUID / ext4 rw 0 1\n"),
-			wantIssue: "fstab missing home LV UUID HOME-UUID",
-		},
-		{
-			name: "missing lvm2 hook",
-			fs: primitivestest.NewMemFS().
-				WithFile(entryPath, "root="+shared.LvmRootLvPath+" rw\n").
-				WithFile(confPath, "HOOKS=(base systemd)\n").
-				WithFile(fstabPath, "UUID=HOME-UUID /home ext4 rw 0 2\n"),
-			wantIssue: "lvm2 hook not found",
-		},
-		{
-			name: "complete",
-			fs: primitivestest.NewMemFS().
-				WithFile(entryPath, "root="+shared.LvmRootLvPath+" rw\n").
-				WithFile(confPath, "HOOKS=(base systemd lvm2 filesystems)\n").
-				WithFile(fstabPath, "UUID=HOME-UUID /home ext4 rw 0 2\n"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			defer primitives.SetFileSystem(tt.fs)()
-			var issues, info []string
-			checkLvm(ctx, &issues, &info)
 			if tt.wantIssue == "" {
 				if len(issues) != 0 {
 					t.Fatalf("issues = %v, want none", issues)

@@ -211,7 +211,7 @@ func TestRunInstallation_DiskPathInvalid(t *testing.T) {
 	validateDiskPathFunc = func(string) error { return errors.New("invalid disk") }
 	defer func() { validateDiskPathFunc = old }()
 
-	if code := runInstallation("/dev/nope", "", "alice", "ext4", "", false, "", false, false); code != 1 {
+	if code := runInstallation("/dev/nope", "", "alice", "ext4", "", false, "", false); code != 1 {
 		t.Errorf("exit = %d, want 1", code)
 	}
 }
@@ -226,7 +226,7 @@ func TestRunInstallation_DiskSizeInvalid(t *testing.T) {
 		validateDiskSizeFunc = oldSize
 	}()
 
-	if code := runInstallation("/dev/nope", "", "alice", "ext4", "", false, "", false, false); code != 1 {
+	if code := runInstallation("/dev/nope", "", "alice", "ext4", "", false, "", false); code != 1 {
 		t.Errorf("exit = %d, want 1", code)
 	}
 }
@@ -244,12 +244,12 @@ func TestRunInstallation_PasswordFailures(t *testing.T) {
 	}()
 
 	readPasswordFunc = func() (string, error) { return "", errors.New("tty gone") }
-	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", false, false); code != 1 {
+	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", false); code != 1 {
 		t.Errorf("password read error exit = %d, want 1", code)
 	}
 
 	readPasswordFunc = func() (string, error) { return "", nil }
-	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", false, false); code != 1 {
+	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", false); code != 1 {
 		t.Errorf("empty password exit = %d, want 1", code)
 	}
 }
@@ -268,7 +268,7 @@ func TestRunInstallation_InvalidUsername(t *testing.T) {
 	}()
 
 	for _, username := range []string{"123", "root", "-bad"} {
-		if code := runInstallation("/dev/vda", "", username, "ext4", "", false, "", false, false); code != 1 {
+		if code := runInstallation("/dev/vda", "", username, "ext4", "", false, "", false); code != 1 {
 			t.Errorf("runInstallation(username=%q) = %d, want 1", username, code)
 		}
 	}
@@ -294,7 +294,7 @@ func TestRunInstallation_LuksPassphraseFailure(t *testing.T) {
 		}
 		return "", errors.New("no luks tty")
 	}
-	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", true, false); code != 1 {
+	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", true); code != 1 {
 		t.Errorf("luks passphrase error exit = %d, want 1", code)
 	}
 
@@ -306,7 +306,7 @@ func TestRunInstallation_LuksPassphraseFailure(t *testing.T) {
 		}
 		return "", nil
 	}
-	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", true, false); code != 1 {
+	if code := runInstallation("/dev/vda", "install", "alice", "ext4", "", false, "", true); code != 1 {
 		t.Errorf("empty luks passphrase exit = %d, want 1", code)
 	}
 }
@@ -317,7 +317,7 @@ func TestRunInstallation_InvalidManualLayout(t *testing.T) {
 	defer func() { validateDiskPathFunc = oldPath }()
 
 	// Dry-run skips size/password reads, so the layout parse is the first failure.
-	if code := runInstallation("/dev/vda", "", "", "ext4", "", true, "{bad json", false, false); code != 1 {
+	if code := runInstallation("/dev/vda", "", "", "ext4", "", true, "{bad json", false); code != 1 {
 		t.Errorf("invalid layout exit = %d, want 1", code)
 	}
 }
@@ -329,7 +329,7 @@ func TestRunInstallation_InfeasibleManualLayout(t *testing.T) {
 
 	// No ESP/System designations → ValidateFeasible rejects it.
 	layout := `{"disk":"/dev/vda","diskSizeMB":20480,"diskSizeBytes":21474836480,"sectorSizeBytes":512,"partitions":[]}`
-	if code := runInstallation("/dev/vda", "", "", "ext4", "", true, layout, false, false); code != 1 {
+	if code := runInstallation("/dev/vda", "", "", "ext4", "", true, layout, false); code != 1 {
 		t.Errorf("infeasible layout exit = %d, want 1", code)
 	}
 }
@@ -340,7 +340,7 @@ func TestRunInstallation_DryRunSingleStep(t *testing.T) {
 	defer func() { validateDiskPathFunc = oldPath }()
 
 	// A single step in dry-run simulates the step without touching a disk.
-	if code := runInstallation("/dev/vda", "format_disk", "", "ext4", "", true, "", false, false); code != 0 {
+	if code := runInstallation("/dev/vda", "format_disk", "", "ext4", "", true, "", false); code != 0 {
 		t.Errorf("dry-run single step exit = %d, want 0", code)
 	}
 }

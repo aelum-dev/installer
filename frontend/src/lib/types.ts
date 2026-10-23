@@ -51,12 +51,7 @@ export interface ManualLayout {
 	// sectorSizeBytes is the disk's logical sector size in bytes (512 for most
 	// disks, 4096 for 4Kn). Sector math uses it; 0/unset means 512.
 	sectorSizeBytes?: number;
-	// lvm places root and home on LVM logical volumes. The backend reconciles
-	// this with the --lvm toggle, so the frontend need not set it.
-	lvm?: boolean;
-	// luks is a validation hint: true when root is encrypted. The frontend
-	// passes the current toggle to manualLayoutIssues so the LUKS header reserve
-	// is included in the System-partition floor.
+	// luks is a validation hint: true when root is encrypted.
 	luks?: boolean;
 	partitions: ManualPartition[];
 	// Partitions the user removed from the layout. Kept (not dropped) so the

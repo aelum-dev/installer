@@ -11,23 +11,10 @@ import {
 	GPTBackupBytes,
 	GPTPrefixBytes,
 	MinESPSizeBytes,
-	MinLvmLuksSystemPartitionBytes,
-	MinLvmSystemPartitionBytes,
 	MinSystemPartitionBytes,
 } from '$lib/constants';
 
 const BYTES_PER_MB = 1024 * 1024;
-
-/** Storage/encryption choices that change the System-partition floor. */
-export interface ManualLayoutOptions {
-	lvm?: boolean;
-	luks?: boolean;
-}
-
-function systemFloorBytes(options: ManualLayoutOptions): number {
-	if (!options.lvm) return MinSystemPartitionBytes;
-	return options.luks ? MinLvmLuksSystemPartitionBytes : MinLvmSystemPartitionBytes;
-}
 
 // The two regions a GPT reserves and the backend never allocates: the trailing
 // backup header and the leading header + protective MBR. Sourced from the
@@ -114,7 +101,6 @@ export type ManualLayoutIssue =
 	| { kind: 'newPartNoType' }
 	| { kind: 'espTooSmall'; sizeMB: number }
 	| { kind: 'systemTooSmall'; sizeMB: number; minMB: number }
-	| { kind: 'lvmSystemTooSmall'; sizeMB: number; minMB: number }
 	| { kind: 'invalidType'; type: string }
 	| { kind: 'multipleRemaining' }
 	| { kind: 'partitionAfterRemaining' }
@@ -126,17 +112,9 @@ export type ManualLayoutIssue =
  * backend. Empty means valid. Kept as data (not translated strings) so the
  * same checks drive both the boolean gate and the explanatory modal.
  */
-export function manualLayoutIssues(
-	layout: ManualLayout,
-	options: ManualLayoutOptions = {},
-): ManualLayoutIssue[] {
+export function manualLayoutIssues(layout: ManualLayout): ManualLayoutIssue[] {
 	const issues: ManualLayoutIssue[] = [];
-	// Explicit options win; otherwise fall back to the flags carried on the
-	// layout. Page validation passes the live toggles so a changed toggle is
-	// respected even when the saved layout still has the old value.
-	const lvm = options.lvm ?? layout.lvm ?? false;
-	const luks = options.luks ?? layout.luks ?? false;
-	const systemFloorMB = systemFloorBytes({ lvm, luks }) / BYTES_PER_MB;
+	const systemFloorMB = MinSystemPartitionBytes / BYTES_PER_MB;
 
 	const espCount = typeCount(layout, TYPE_ESP);
 	const sysCount = typeCount(layout, TYPE_SYSTEM);
@@ -162,11 +140,7 @@ export function manualLayoutIssues(
 				issues.push({ kind: 'espTooSmall', sizeMB: freeMB });
 			}
 			if (!p.path && p.type === TYPE_SYSTEM && freeMB < systemFloorMB) {
-				issues.push(
-					lvm
-						? { kind: 'lvmSystemTooSmall', sizeMB: freeMB, minMB: systemFloorMB }
-						: { kind: 'systemTooSmall', sizeMB: freeMB, minMB: systemFloorMB },
-				);
+				issues.push({ kind: 'systemTooSmall', sizeMB: freeMB, minMB: systemFloorMB });
 			}
 			continue;
 		}
@@ -180,11 +154,7 @@ export function manualLayoutIssues(
 			}
 		}
 		if (p.type === TYPE_SYSTEM && sizeMB < systemFloorMB) {
-			issues.push(
-				lvm
-					? { kind: 'lvmSystemTooSmall', sizeMB, minMB: systemFloorMB }
-					: { kind: 'systemTooSmall', sizeMB, minMB: systemFloorMB },
-			);
+			issues.push({ kind: 'systemTooSmall', sizeMB, minMB: systemFloorMB });
 		}
 		if (p.type && p.type !== TYPE_ESP && p.type !== TYPE_SYSTEM && p.type !== 'preserve') {
 			issues.push({ kind: 'invalidType', type: p.type });
@@ -236,12 +206,9 @@ export function manualLayoutIssues(
  * === 0`; it intentionally includes the free-space and disk-size checks so the
  * UI gate can never let the backend reject a plan it showed as valid.
  */
-export function isManualLayoutValid(
-	layout: ManualLayout | null,
-	options: ManualLayoutOptions = {},
-): boolean {
+export function isManualLayoutValid(layout: ManualLayout | null): boolean {
 	if (!layout) return false;
-	return manualLayoutIssues(layout, options).length === 0;
+	return manualLayoutIssues(layout).length === 0;
 }
 
 /** Set a partition's type by row index. */

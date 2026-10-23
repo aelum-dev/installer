@@ -86,7 +86,7 @@ func newInfo() *shared.PartitionInfo {
 	return &shared.PartitionInfo{MountPoints: map[string]string{}}
 }
 
-// TestApplyRootSetup covers the LUKS/LVM/plain device and subvolume mapping the
+// TestApplyRootSetup covers the LUKS/plain device and subvolume mapping the
 // mount and fstab steps consume.
 func TestApplyRootSetup(t *testing.T) {
 	t.Run("plain ext4", func(t *testing.T) {
@@ -97,8 +97,8 @@ func TestApplyRootSetup(t *testing.T) {
 		if info.RootUUID != "root-uuid" {
 			t.Errorf("RootUUID = %q, want root-uuid", info.RootUUID)
 		}
-		if info.RootMapper != "" || info.RootLV != "" {
-			t.Errorf("plain ext4 must not set mapper/LV fields: %+v", info)
+		if info.RootMapper != "" {
+			t.Errorf("plain ext4 must not set the mapper field: %+v", info)
 		}
 		if len(info.MountPoints) != 0 {
 			t.Errorf("ext4 has no subvolumes, got %v", info.MountPoints)
@@ -137,34 +137,4 @@ func TestApplyRootSetup(t *testing.T) {
 		}
 	})
 
-	t.Run("lvm btrfs splits home onto the home LV", func(t *testing.T) {
-		info := newInfo()
-		applyRootSetup(info, &shared.InstallContext{Lvm: true, FileSystem: shared.FileSystemBtrfs},
-			RootSetup{RootDevice: "/dev/mapper/aelum-root", RootUUID: "r", HomeLV: "/dev/mapper/aelum-home", HomeUUID: "h"},
-			shared.FileSystemBtrfs)
-
-		if info.RootLV != "/dev/mapper/aelum-root" || info.HomeLV != "/dev/mapper/aelum-home" {
-			t.Errorf("root/home LV = %q/%q", info.RootLV, info.HomeLV)
-		}
-		if got := info.MountPoints["/home"]; got != "/dev/mapper/aelum-home" {
-			t.Errorf("MountPoints[/home] = %q, want the home LV", got)
-		}
-		if got := info.MountPoints["/var/log"]; got != "/dev/mapper/aelum-root" {
-			t.Errorf("MountPoints[/var/log] = %q, want the root LV", got)
-		}
-		if _, ok := info.MountPoints["/"]; ok {
-			t.Error("the root mount point / must not be in the subvolume map")
-		}
-	})
-
-	t.Run("lvm ext4 has no subvolume map", func(t *testing.T) {
-		info := newInfo()
-		applyRootSetup(info, &shared.InstallContext{Lvm: true, FileSystem: shared.FileSystemExt4},
-			RootSetup{RootDevice: "/dev/mapper/aelum-root", RootUUID: "r", HomeLV: "/dev/mapper/aelum-home", HomeUUID: "h"},
-			shared.FileSystemExt4)
-
-		if len(info.MountPoints) != 0 {
-			t.Errorf("ext4 LVM has no subvolumes, got %v", info.MountPoints)
-		}
-	})
 }

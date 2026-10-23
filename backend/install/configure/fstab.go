@@ -32,9 +32,6 @@ func GenerateFstab(ctx *shared.InstallContext) error {
 
 	p := ctx.Partitions
 
-	if ctx.Lvm {
-		return writeLvmFstab(ctx)
-	}
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		return writeBtrfsFstab(ctx)
 	}
@@ -92,55 +89,6 @@ func efiFstabLines(p *shared.PartitionInfo, id string) []string {
 
 func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	fstabContent := generateBtrfsFstab(ctx)
-	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
-		return err
-	}
-	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID))
-}
-
-// generateLvmFstab builds the fstab for an LVM layout. For btrfs it is the
-// subvolume layout with /home split off onto the home logical volume: every
-// subvolume except @home lives on the root LV (RootUUID), @home lives on the
-// home LV (HomeUUID). For ext4 the root and home LVs are mounted directly at /
-// and /home.
-func generateLvmFstab(ctx *shared.InstallContext) string {
-	if ctx.FileSystem != shared.FileSystemBtrfs {
-		return generateLvmExt4Fstab(ctx)
-	}
-
-	p := ctx.Partitions
-
-	var lines []string
-	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
-	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
-
-	for _, sv := range shared.GetLvmBtrfsSubvolumes() {
-		opts := primitives.BuildMountOpts(&sv)
-		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
-	}
-	for _, sv := range shared.GetLvmHomeSubvolumes() {
-		opts := primitives.BuildMountOpts(&sv)
-		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.HomeUUID, sv.MountPoint, opts))
-	}
-
-	return strings.Join(lines, "\n") + "\n"
-}
-
-// generateLvmExt4Fstab builds the fstab for an ext4 LVM layout: the root LV is
-// mounted at / and the home LV at /home, both ext4.
-func generateLvmExt4Fstab(ctx *shared.InstallContext) string {
-	p := ctx.Partitions
-	lines := []string{
-		"# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>",
-		fmt.Sprintf("UUID=%s  /              ext4    %s        0  1", p.RootUUID, shared.DefaultMountOptions),
-		fmt.Sprintf("UUID=%s  /home          ext4    %s        0  2", p.HomeUUID, shared.DefaultMountOptions),
-	}
-	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
-	return strings.Join(lines, "\n") + "\n"
-}
-
-func writeLvmFstab(ctx *shared.InstallContext) error {
-	fstabContent := generateLvmFstab(ctx)
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}

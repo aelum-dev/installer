@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"aelum-installer/backend/install/luks"
-	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -55,12 +54,11 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		// If /mnt is still mounted, format operations will fail with a clear error
 	}
 
-	// A previous LVM install leaves the `aelum` volume group active on the
-	// target. Its device-mapper holders keep the partitions busy, so mkfs and
-	// cryptsetup — which open with O_EXCL — fail with EBUSY. Remove the group
-	// before partitioning (the manual path does the same); its PV label is
-	// wiped by FormatPartition's wipefs on the new partitions.
-	lvm.Teardown(shared.LvmVolumeGroup, nil)
+	// A previous install leaves device-mapper holders (e.g. an open LUKS
+	// mapper) on the target partitions, keeping them busy so mkfs and
+	// cryptsetup — which open with O_EXCL — fail with EBUSY. CleanupMounts
+	// above releases the mounts; the partition table wipe below clears the
+	// signatures.
 
 	// Clear partition table (GPT backup, etc.) for a clean slate
 	clearOut, err := primitives.Run("sgdisk", "-Z", diskID).CombinedOutput()
@@ -88,13 +86,7 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 		case shared.FileSystemVfat:
 			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.ESP))
 		case shared.FileSystemExt4, shared.FileSystemBtrfs:
-			// The root partition hosts a filesystem directly, or an LVM physical
-			// volume when LVM is enabled (its type GUID is Linux LVM).
-			guid := shared.GPTTypeGUIDs.LinuxRootX86_64
-			if p.Name == shared.PartitionLayoutRoot && ctx.Lvm {
-				guid = shared.GPTTypeGUIDs.LinuxLVM
-			}
-			args = append(args, "-t", fmt.Sprintf("%d:%s", num, guid))
+			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxRootX86_64))
 		default:
 			args = append(args, "-t", fmt.Sprintf("%d:%s", num, shared.GPTTypeGUIDs.LinuxFilesystemGeneric))
 		}
@@ -131,11 +123,10 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 
 	// Create the root filesystem. When LUKS is enabled a LUKS2 header is written
 	// and the filesystem (and btrfs subvolumes) is created on the decrypted
-	// mapper, then the mapper is closed again (mount reopens it). When LVM is
-	// enabled the filesystem lives on logical volumes in the `aelum` volume
-	// group instead of directly on the partition/mapper. The EFI partition is
-	// always plaintext. SetupRootFilesystem/EncryptRoot return the device that
-	// will be mounted as root (the root LV when LVM, else the mapper/partition).
+	// mapper, then the mapper is closed again (mount reopens it). The EFI
+	// partition is always plaintext. SetupRootFilesystem/EncryptRoot return the
+	// device that will be mounted as root (the mapper when encrypted, else the
+	// raw partition).
 	var setup RootSetup
 	if ctx.Luks {
 		if len(ctx.LuksPassphrase) == 0 {
@@ -175,32 +166,26 @@ func Run(ctx *shared.InstallContext) (retErr error) {
 
 // RootSetup describes the root filesystem produced by the format step.
 type RootSetup struct {
-	// RootDevice is the device mounted as root: the root LV when LVM is on,
-	// otherwise the decrypted LUKS mapper or the raw partition.
+	// RootDevice is the device mounted as root: the decrypted LUKS mapper or
+	// the raw partition.
 	RootDevice string
 	// RootUUID is the filesystem UUID of RootDevice (used by fstab).
 	RootUUID string
-	// HomeLV / HomeUUID are the LVM home logical volume and its filesystem
-	// UUID. Empty when LVM is disabled.
-	HomeLV   string
-	HomeUUID string
 	// LuksUUID is the LUKS header UUID of the raw partition. Empty when LUKS is
 	// disabled.
 	LuksUUID string
 }
 
-// EncryptRoot runs the full LUKS (and, when enabled, LVM) sequence on the raw
-// root partition:
+// EncryptRoot runs the LUKS sequence on the raw root partition:
 //
 //  1. luksFormat writes a LUKS2 header (keyed by passphrase).
 //  2. luksOpen creates the decrypted mapper device.
-//  3. The filesystem (and, when LVM is enabled, the volume group with root +
-//     home LVs) is created on the mapper.
+//  3. The filesystem is created on the mapper.
 //  4. The mapper's filesystem UUID and the LUKS header UUID are read.
 //  5. The mapper is closed again; mount reopens it during install.
 //
-// It returns the RootSetup describing the mounted root device, its UUID, the
-// LVM home LV (when enabled), and the LUKS header UUID (for the boot cmdline).
+// It returns the RootSetup describing the mounted root device, its UUID, and
+// the LUKS header UUID (for the boot cmdline).
 func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string) (setup RootSetup, err error) {
 	mapperPath := shared.LuksMapperPath
 
@@ -218,8 +203,7 @@ func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string)
 		}
 	}()
 
-	// Create the filesystem (and LVM volume group) on the decrypted mapper, not
-	// the raw partition.
+	// Create the filesystem on the decrypted mapper, not the raw partition.
 	setup, err = SetupRootFilesystem(ctx, mapperPath, fsType)
 	if err != nil {
 		return RootSetup{}, err
@@ -239,17 +223,9 @@ func EncryptRoot(ctx *shared.InstallContext, rawPart, passphrase, fsType string)
 }
 
 // SetupRootFilesystem formats device as the root filesystem and returns the
-// RootSetup the mount/install/configure steps consume. When LVM is enabled it
-// creates the `aelum` volume group on device with root + home LVs; otherwise it
-// formats device in place. The btrfs paths create the appropriate subvolume
-// scheme (for LVM, the root LV carries every subvolume except @home, which the
-// home LV carries).
+// RootSetup the mount/install/configure steps consume. For btrfs it also
+// creates the standard subvolume scheme.
 func SetupRootFilesystem(ctx *shared.InstallContext, device, fsType string) (RootSetup, error) {
-	if ctx.Lvm {
-		// The root and home LVs use the selected filesystem: btrfs (the root LV
-		// carries the subvolume scheme and the home LV carries @home) or ext4.
-		return applyLvm(ctx, device, fsType)
-	}
 	if err := FormatPartition(device, fsType, "aelum"); err != nil {
 		return RootSetup{}, err
 	}
@@ -265,72 +241,14 @@ func SetupRootFilesystem(ctx *shared.InstallContext, device, fsType string) (Roo
 	return RootSetup{RootDevice: device, RootUUID: uuid}, nil
 }
 
-// applyLvm creates the LVM volume group on device and formats the root and home
-// logical volumes. The formatter closes over the format helpers so lvm never
-// imports format (format imports lvm — a direct call would be an import cycle).
-func applyLvm(ctx *shared.InstallContext, device, fsType string) (RootSetup, error) {
-	formatter := func(dev, fs string, subvols []shared.BtrfsSubvolume) error {
-		if err := FormatPartition(dev, fs, "aelum"); err != nil {
-			return err
-		}
-		if fs == shared.FileSystemBtrfs && len(subvols) > 0 {
-			return SetupBtrfsSubvolumes(ctx, dev, subvols)
-		}
-		return nil
-	}
-	lvs, err := lvm.Apply(device, lvm.Params{FileSystem: fsType}, formatter)
-	if err != nil {
-		return RootSetup{}, err
-	}
-	if len(lvs) < 2 {
-		return RootSetup{}, fmt.Errorf("lvm: expected root and home LVs, got %d", len(lvs))
-	}
-	rootLV, homeLV := lvs[0].Path, lvs[1].Path
-
-	rootUUID, err := ReadPartitionUUID(rootLV)
-	if err != nil {
-		return RootSetup{}, fmt.Errorf("blkid %s: %w", rootLV, err)
-	}
-	homeUUID, err := ReadPartitionUUID(homeLV)
-	if err != nil {
-		return RootSetup{}, fmt.Errorf("blkid %s: %w", homeLV, err)
-	}
-	if ctx.Logger != nil {
-		ctx.Logger.Info("LVM root: rootLV=%s homeLV=%s", rootLV, homeLV)
-	}
-	return RootSetup{RootDevice: rootLV, RootUUID: rootUUID, HomeLV: homeLV, HomeUUID: homeUUID}, nil
-}
-
-// applyRootSetup writes the root device mapping (LUKS/LVM/plain) and the
-// subvolume mount-point map into info, given the RootSetup produced by
+// applyRootSetup writes the root device mapping (LUKS/plain) and the subvolume
+// mount-point map into info, given the RootSetup produced by
 // SetupRootFilesystem or EncryptRoot. Shared by the automatic and manual paths.
 func applyRootSetup(info *shared.PartitionInfo, ctx *shared.InstallContext, setup RootSetup, fsType string) {
 	info.RootUUID = setup.RootUUID
 	if ctx.Luks {
 		info.RootMapper = shared.LuksMapperPath
 		info.LuksUUID = setup.LuksUUID
-	}
-	if ctx.Lvm {
-		// Root LV carries every subvolume except @home; the home LV carries
-		// @home. The mount step reads the per-mount-point device from this map.
-		// An ext4 LVM layout has no subvolumes: root is the root LV and /home is
-		// the home LV, both mounted directly by the mount step (no map entries).
-		info.RootLV = setup.RootDevice
-		info.HomeLV = setup.HomeLV
-		info.HomeUUID = setup.HomeUUID
-		if fsType == shared.FileSystemBtrfs {
-			for _, sv := range shared.GetLvmBtrfsSubvolumes() {
-				if sv.MountPoint != "/" {
-					info.MountPoints[sv.MountPoint] = setup.RootDevice
-				}
-			}
-			for _, sv := range shared.GetLvmHomeSubvolumes() {
-				if sv.MountPoint != "/" {
-					info.MountPoints[sv.MountPoint] = setup.HomeLV
-				}
-			}
-		}
-		return
 	}
 	if fsType == shared.FileSystemBtrfs {
 		for _, sv := range shared.GetBtrfsSubvolumes() {
@@ -345,7 +263,7 @@ func applyRootSetup(info *shared.PartitionInfo, ctx *shared.InstallContext, setu
 // NewPartitionInfo assembles the installed system's PartitionInfo from the
 // discovered EFI partition, the raw root partition, and the RootSetup produced
 // by SetupRootFilesystem or EncryptRoot. It reads the ESP UUID and applies the
-// LUKS/LVM/plain root mapping plus the subvolume mount-point map.
+// LUKS/plain root mapping plus the subvolume mount-point map.
 func NewPartitionInfo(ctx *shared.InstallContext, diskID, efiPath, rootPart string, setup RootSetup, fsType string) (*shared.PartitionInfo, error) {
 	efiUUID, err := ReadPartitionUUID(efiPath)
 	if err != nil {
@@ -418,8 +336,7 @@ func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolume
 		return fmt.Errorf("list subvolumes: %w", err)
 	}
 	// Prefer the subvolume mounted at "/" (usually @) as the default; fall back
-	// to the first one for sets without a root subvolume (e.g. the LVM home LV,
-	// which only carries @home).
+	// to the first one for sets without a root subvolume.
 	defaultName := ""
 	for _, sv := range subvolumes {
 		if sv.MountPoint == "/" {

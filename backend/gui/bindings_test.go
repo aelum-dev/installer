@@ -60,59 +60,39 @@ func TestBindings_ManualMode(t *testing.T) {
 	}
 }
 
-func TestBindings_ValidateManualLayoutUsesLvmFlag(t *testing.T) {
-	a := NewApp(false)
-	a.lvm = true
-
-	layout := shared.ManualLayout{
-		Disk:          "/dev/vda",
-		DiskSizeMB:    20480,
-		DiskSizeBytes: 20480 * 1024 * 1024,
-		Partitions: []shared.ManualPartition{
-			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP},
-			{Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * 1024 * 1024, Type: shared.TypeSystem},
-		},
-	}
-	if err := a.ValidateManualLayout(layout); err == nil {
-		t.Fatal("ValidateManualLayout() = nil, want LVM floor error")
-	}
-}
-
 func TestBindings_SaveManualLayoutStoresCryptoFlags(t *testing.T) {
 	a := NewApp(false)
-	a.lvm = true
 	a.luks = true
 
 	a.SaveManualLayout(shared.ManualLayout{Disk: "/dev/vda"})
-	if !a.manualLayout.Lvm || !a.manualLayout.Luks {
-		t.Errorf("stored layout flags = lvm:%v luks:%v, want both true", a.manualLayout.Lvm, a.manualLayout.Luks)
+	if !a.manualLayout.Luks {
+		t.Error("stored layout LUKS flag = false, want true")
 	}
 
-	// Disabling a toggle must clear a stale layout flag, not leave it enabled.
-	a.lvm = false
+	// Disabling the toggle must clear a stale layout flag, not leave it enabled.
 	a.luks = false
-	a.SaveManualLayout(shared.ManualLayout{Disk: "/dev/vda", Lvm: true, Luks: true})
-	if a.manualLayout.Lvm || a.manualLayout.Luks {
-		t.Errorf("stale flags survived disable: lvm:%v luks:%v", a.manualLayout.Lvm, a.manualLayout.Luks)
+	a.SaveManualLayout(shared.ManualLayout{Disk: "/dev/vda", Luks: true})
+	if a.manualLayout.Luks {
+		t.Error("stale LUKS flag survived disable")
 	}
 }
 
-func TestBindings_ValidateManualLayoutClearsDisabledLvm(t *testing.T) {
+func TestBindings_ValidateManualLayoutClearsDisabledLuks(t *testing.T) {
 	a := NewApp(false)
-	a.lvm = false
+	a.luks = false
 
 	layout := shared.ManualLayout{
 		Disk:          "/dev/vda",
 		DiskSizeMB:    20480,
 		DiskSizeBytes: 20480 * 1024 * 1024,
-		Lvm:           true, // stale value from a layout loaded before the toggle was turned off
+		Luks:          true, // stale value from a layout loaded before the toggle was turned off
 		Partitions: []shared.ManualPartition{
 			{Path: "/dev/vda1", SizeMB: 512, SizeBytes: 512 * 1024 * 1024, Type: shared.TypeESP, ExistingFstype: "vfat"},
 			{Path: "/dev/vda2", SizeMB: 8192, SizeBytes: 8192 * 1024 * 1024, Type: shared.TypeSystem},
 		},
 	}
 	if err := a.ValidateManualLayout(layout); err != nil {
-		t.Fatalf("ValidateManualLayout() = %v, want nil with LVM disabled", err)
+		t.Fatalf("ValidateManualLayout() = %v, want nil with LUKS disabled", err)
 	}
 }
 
@@ -144,7 +124,6 @@ func TestBindings_GetManualLayout(t *testing.T) {
 	defer primitives.SetCommandRunner(rec)()
 
 	a := NewApp(false)
-	a.lvm = true
 	a.luks = true
 	layout, err := a.GetManualLayout("/dev/vda")
 	if err != nil {
@@ -153,8 +132,8 @@ func TestBindings_GetManualLayout(t *testing.T) {
 	if layout.Disk != "/dev/vda" {
 		t.Errorf("layout.Disk = %q", layout.Disk)
 	}
-	if !layout.Lvm || !layout.Luks {
-		t.Errorf("layout flags = lvm:%v luks:%v, want both true", layout.Lvm, layout.Luks)
+	if !layout.Luks {
+		t.Error("layout.Luks = false, want true")
 	}
 	if len(layout.Partitions) != 2 {
 		t.Errorf("layout partitions = %d, want 2", len(layout.Partitions))

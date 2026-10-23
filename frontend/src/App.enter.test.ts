@@ -24,7 +24,6 @@ vi.mock('@wails/go/gui/App.js', () => {
 		SetCurrentPage: vi.fn(resolved),
 		SetLuks: vi.fn(resolved),
 		SetLuksPassphrase: vi.fn(resolved),
-		SetLvm: vi.fn(resolved),
 		SetSelectedLanguage: vi.fn(resolved),
 		SetWallpaper: vi.fn(resolved),
 		StartInstallation: vi.fn(resolved),
