@@ -299,6 +299,14 @@ func verifyBindMount(source, target string) error {
 // Uses findmnt which is more reliable than mountpoint (works even if mountpoint package is absent).
 // For btrfs subvolume mounts, findmnt returns "device[/subvol]" (e.g. "/dev/vda2[/@]"),
 // so we strip the [/subvol] suffix before comparing.
+//
+// The comparison is by device, not by spelling: findmnt names the node the mount
+// actually reached, and for a logical volume that is its device-mapper node —
+// where LVM doubles every hyphen of the group name, so the root LV of
+// aelum-1a2b3c4d is reported as /dev/mapper/aelum--1a2b3c4d-root while the
+// installer mounted it as /dev/aelum-1a2b3c4d/root. Those are the same device,
+// so when the two strings differ the paths are resolved to the node underneath
+// before the mount is declared wrong (see sameDeviceNode).
 func verifyMount(mountpoint, expectedDevice string) error {
 	// Check that the mountpoint is mounted
 	cmd := primitives.Run("findmnt", "-n", "-o", "SOURCE", mountpoint)
@@ -315,9 +323,43 @@ func verifyMount(mountpoint, expectedDevice string) error {
 		mountedDevice = mountedDevice[:idx]
 	}
 	// Verify it matches the expected device
-	if mountedDevice != expectedDevice {
+	if mountedDevice != expectedDevice && !sameDeviceNode(mountedDevice, expectedDevice) {
 		return fmt.Errorf("mount verification failed: %s is mounted on %s, expected %s",
 			mountpoint, mountedDevice, expectedDevice)
 	}
 	return nil
+}
+
+// sameDeviceNode reports whether two device paths reach the same device. Every
+// device-mapper device has several names for one node: a logical volume as
+// /dev/<vg>/<lv> and as /dev/mapper/<vg>-<lv> (hyphens doubled), a LUKS root as
+// /dev/mapper/<name> and as its /dev/dm-N node. Resolving each path through
+// those symlinks compares the devices themselves, so an alias never looks like a
+// wrong mount. Paths that cannot be resolved, or that resolve to nothing, are
+// never treated as the same device.
+func sameDeviceNode(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	first, err := resolveDevicePath(a)
+	if err != nil || first == "" {
+		return false
+	}
+	second, err := resolveDevicePath(b)
+	if err != nil || second == "" {
+		return false
+	}
+	return first == second
+}
+
+// resolveDevicePath returns the node a device path points at, following the
+// symlinks udev creates for device-mapper devices (/dev/<vg>/<lv>,
+// /dev/mapper/<name> → /dev/dm-N). readlink -f is used rather than Go's
+// EvalSymlinks so the lookup stays on the CommandRunner seam the tests script.
+func resolveDevicePath(path string) (string, error) {
+	out, err := primitives.Run("readlink", "-f", path).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
