@@ -283,6 +283,44 @@ func ReleaseDevice(device string) error {
 	return nil
 }
 
+// DeactivateForDisk deactivates the volume group(s) held by this disk's devices
+// without removing anything. Cleanup runs after a successful install too, and on
+// that system the root filesystem *is* a logical volume: releasing the group there
+// would delete the install. Teardown belongs to Rollback and to the format step's
+// pre-install release, never to the end-of-install cleanup.
+func DeactivateForDisk(diskID string, logger shared.Logger) {
+	if diskID == "" {
+		return
+	}
+
+	seen := make(map[string]struct{})
+	for _, device := range derivedDevices(diskID) {
+		// Only the group name matters here: cleanup deactivates whatever group a
+		// device of this disk holds, even one the installer would refuse to create
+		// (the physical-volume count is a Create-time rule, not a cleanup one).
+		vg, _, err := VGForDevice(device)
+		if err != nil {
+			if logger != nil {
+				logger.Error("Cleanup: resolving the volume group of %s: %v", device, err)
+			}
+		}
+		if vg == "" {
+			continue
+		}
+		if _, done := seen[vg]; done {
+			continue
+		}
+		seen[vg] = struct{}{}
+
+		if logger != nil {
+			logger.Info("Cleanup: deactivating volume group %s", vg)
+		}
+		if err := Deactivate(vg); err != nil && logger != nil {
+			logger.Error("Cleanup: volume group %s deactivate: %v", vg, err)
+		}
+	}
+}
+
 // ReleaseForDisk tears down LVM on every device derived from diskID: its
 // partitions, any dm-crypt mapper on them, and any logical volume. It is the
 // cleanup/rollback entry point and never fails the caller — a device it cannot

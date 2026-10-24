@@ -233,6 +233,47 @@ func TestDeactivateBeforeMapperCloseIsCallerResponsibility(t *testing.T) {
 	}
 }
 
+func TestDeactivateForDisk_KeepsTheInstalledGroup(t *testing.T) {
+	rec := useRecorder(t)
+	rec.OnArgsOutput([]string{"lsblk"}, "vda2 part\ndm-1 lvm\n")
+	rec.OnArgsOutput([]string{"pvs", "--noheadings", "-o", "vg_name", "/dev/vda2"},
+		"  aelum-1a2b3c4d")
+
+	DeactivateForDisk("/dev/vda", nil)
+
+	if callIndex(rec, "vgchange", "-an", "aelum-1a2b3c4d") < 0 {
+		t.Errorf("expected vgchange -an, got %v", rec.Calls())
+	}
+	// The installed system's root *is* a logical volume: end-of-install cleanup
+	// must never remove the group or its physical volume label.
+	for _, forbidden := range []string{"vgremove", "pvremove", "lvremove"} {
+		if rec.Called(forbidden) {
+			t.Errorf("cleanup ran %s; the installed volume group must survive", forbidden)
+		}
+	}
+}
+
+func TestDeactivateForDisk_SkipsDevicesWithoutAGroup(t *testing.T) {
+	rec := useRecorder(t)
+	rec.OnArgsOutput([]string{"lsblk"}, "vda1 part\nvda2 part\n")
+
+	DeactivateForDisk("/dev/vda", nil)
+
+	if rec.Called("vgchange") {
+		t.Errorf("a device with no volume group must not be deactivated: %v", rec.Calls())
+	}
+}
+
+func TestDeactivateForDisk_EmptyIDIsNoOp(t *testing.T) {
+	rec := useRecorder(t)
+
+	DeactivateForDisk("", nil)
+
+	if len(rec.Calls()) != 0 {
+		t.Fatalf("empty disk ID ran %d commands, want none", len(rec.Calls()))
+	}
+}
+
 func TestCreateHomeLVConsumesRest(t *testing.T) {
 	rec := useRecorder(t)
 

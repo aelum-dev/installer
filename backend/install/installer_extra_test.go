@@ -82,6 +82,28 @@ func TestInstaller_RunCleanup(t *testing.T) {
 	}
 }
 
+func TestInstaller_RunCleanupKeepsTheInstalledVolumeGroup(t *testing.T) {
+	rec := primitivestest.NewRecorder()
+	defer primitives.SetCommandRunner(rec)()
+	rec.OnArgsOutput([]string{"lsblk"}, "vda2 part\ndm-1 lvm\n")
+	rec.OnArgsOutput([]string{"pvs", "--noheadings", "-o", "vg_name", "/dev/vda2"},
+		"  aelum-1a2b3c4d")
+
+	inst := NewInstaller(InstallerConfig{DiskID: "/dev/vda", Lvm: true})
+	inst.RunCleanup()
+
+	if !rec.Called("vgchange") {
+		t.Error("RunCleanup should deactivate the volume group before closing devices")
+	}
+	// Cleanup also runs after a successful install, where the root filesystem is
+	// a logical volume: removing the group there would delete the install.
+	for _, forbidden := range []string{"vgremove", "pvremove"} {
+		if rec.Called(forbidden) {
+			t.Errorf("RunCleanup ran %s; an installed volume group must survive cleanup", forbidden)
+		}
+	}
+}
+
 // flakyCloseRunner fails the first `failures` cryptsetup calls. It exercises
 // the LUKS close retry without real devices.
 type flakyCloseRunner struct {

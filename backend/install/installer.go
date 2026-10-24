@@ -452,12 +452,15 @@ func (inst *Installer) RunCleanup() {
 		if err := primitives.CleanupMounts(inst.Logger); err != nil {
 			inst.logError("Cleanup: unmount: %v", err)
 		}
-		// Deactivate and remove any volume group on the target before the LUKS
-		// mapper is closed: an active logical volume keeps the mapper (the PV)
-		// open, so cryptsetup close would fail with EBUSY. Best-effort — the
-		// cleanup path must always finish.
+		// Deactivate any volume group on the target before the LUKS mapper is
+		// closed: an active logical volume keeps the mapper (the PV) open, so
+		// cryptsetup close would fail with EBUSY. Deactivate only — this path also
+		// runs after a successful install, and there the root filesystem *is* a
+		// logical volume, so tearing the group down would delete the install.
+		// Rollback and the format step's pre-install release do the teardown.
+		// Best-effort — the cleanup path must always finish.
 		if inst.lvm {
-			lvm.ReleaseForDisk(inst.diskID, inst.Logger)
+			lvm.DeactivateForDisk(inst.diskID, inst.Logger)
 		}
 		// Close the LUKS mapper (if any) so a failed install can be retried
 		// without a leaked dm device. Best-effort — a closed mapper errors.
