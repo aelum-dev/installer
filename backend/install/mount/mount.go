@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"aelum-installer/backend/install/luks"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -23,7 +24,8 @@ import (
 //   - /mnt/boot: bind mount of this installation's ESP boot directory
 //
 // For ext4 layouts:
-//   - /mnt: root partition
+//   - /mnt: root partition (or the root logical volume when LVM is enabled)
+//   - /mnt/home: home logical volume (LVM only)
 //   - /mnt/efi: EFI partition (ESP)
 //   - /mnt/boot: bind mount of this installation's ESP boot directory
 //
@@ -56,6 +58,7 @@ func Run(ctx *shared.InstallContext) error {
 
 	// Resolve the device that holds the root filesystem (and its subvolumes):
 	//   LUKS : open LUKS, root lives on the decrypted mapper
+	//   LVM  : activate the volume group, root lives on its root LV
 	//   else : root lives on the raw partition
 	rootDevice := p.RootPart
 	if ctx.Luks {
@@ -69,6 +72,17 @@ func Run(ctx *shared.InstallContext) error {
 			return err
 		}
 		rootDevice = p.RootMapper
+	}
+	if p.VGName != "" {
+		// LUKS sits below LVM, so the group is activated after the mapper is
+		// open: its physical volume is the decrypted device.
+		if err := lvm.Activate(p.VGName); err != nil {
+			return err
+		}
+		rootDevice = lvm.Path(p.VGName, shared.LvmRootVolumeName)
+		if ctx.Logger != nil {
+			ctx.Logger.Info("LVM root enabled; mounting volume group %s root at %s", p.VGName, rootDevice)
+		}
 	}
 
 	// ── Mount root partition ──
@@ -159,12 +173,32 @@ func Run(ctx *shared.InstallContext) error {
 }
 
 // mountAdditionalMounts mounts every filesystem beyond root that the layout
-// defines: the btrfs subvolumes.
+// defines: the btrfs subvolumes, or the ext4 home logical volume.
 func mountAdditionalMounts(ctx *shared.InstallContext, p *shared.PartitionInfo, rootDevice string) error {
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		return mountBtrfsSubvolumes(ctx, p, rootDevice)
 	}
+	if p.HomeDevice != "" {
+		return mountHomeVolume(ctx, p.HomeDevice)
+	}
 	return nil
+}
+
+// mountHomeVolume mounts the ext4 home logical volume at /mnt/home, so pacstrap
+// and the user setup write into it instead of the root filesystem.
+func mountHomeVolume(ctx *shared.InstallContext, device string) error {
+	fullPath := shared.MountRoot + "/home"
+	if err := primitives.Run("mkdir", "-p", fullPath).Run(); err != nil {
+		return fmt.Errorf("create home mount point %s failed: %w", fullPath, err)
+	}
+	out, err := primitives.Run("mount", device, fullPath).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("mount home volume %s failed: %w: %s", device, err, strings.TrimSpace(string(out)))
+	}
+	if ctx.Logger != nil && len(out) > 0 {
+		ctx.Logger.Command(string(out))
+	}
+	return verifyMount(fullPath, device)
 }
 
 // mountBtrfsSubvolumes mounts each extra btrfs subvolume recorded in the

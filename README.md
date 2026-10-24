@@ -27,6 +27,11 @@ On the *Disk Selection* step you pick **which disk** to install onto and **how**
 
 You can switch between the two modes with the **Automatic / Manual** toggle at the top of the page. Automatic mode works on any empty or whole disk; Manual mode needs a disk that already has partitions (or that you create on this screen).
 
+Two more toggles sit under the filesystem pills:
+
+- **Encrypt** — LUKS2-encrypts the root partition; you are asked for a passphrase, which you enter at every boot.
+- **LVM** — puts the root on an LVM logical volume. With ext4 you also get a separate `/home` volume; with btrfs everything stays on one volume's subvolumes. Both toggles can be on at once: encryption always sits *below* LVM, so the single physical volume is encrypted.
+
 ### Manual partition mode
 
 Automatic mode erases the whole disk. Manual mode only writes to the two partitions you designate — **Boot** and **System** — and both are always formatted. Every other partition (your other operating system, documents, photos) is left exactly as it is. If you dual-boot, give Aelum its **own** Boot partition and its **own** System partition; never point Boot at another operating system's ESP.
@@ -86,6 +91,9 @@ sudo ./build/bin/aelum-installer-cli --install /dev/vda
 
 # CLI — btrfs root instead of ext4
 sudo ./build/bin/aelum-installer-cli --install /dev/vda --filesystem btrfs
+
+# CLI — LUKS2 encryption, with LVM on top of it
+sudo ./build/bin/aelum-installer-cli --install /dev/vda --luks --lvm
 ```
 
 ## Testing

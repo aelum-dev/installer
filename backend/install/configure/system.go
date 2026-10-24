@@ -86,10 +86,10 @@ func copyMirrorList(regionCode string) error {
 }
 
 // configureInitramfs writes the installed system's mkinitcpio HOOKS line so the
-// boot splash (plymouth) shows and, when LUKS is enabled, the initramfs
-// unlocks the root before mounting it. Aelum supports a systemd-based initramfs
-// only, so the order is:
-// systemd ... plymouth ... [sd-encrypt] ... filesystems.
+// boot splash (plymouth) shows and, when LUKS and/or LVM are enabled, the
+// initramfs unlocks and activates the root before mounting it. Aelum supports a
+// systemd-based initramfs only, so the order is:
+// systemd ... plymouth ... [sd-encrypt] ... [lvm2] ... filesystems.
 func configureInitramfs(ctx *shared.InstallContext) error {
 	// Edit the target system's config, not the live ISO's.
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
@@ -119,6 +119,12 @@ func configureInitramfs(ctx *shared.InstallContext) error {
 	hooks = append(hooks, "autodetect", "microcode", "modconf", "kms", "keyboard", "sd-vconsole", "block")
 	if ctx.Luks {
 		hooks = append(hooks, "sd-encrypt")
+	}
+	// lvm2 activates the volume group in the initramfs. LUKS sits below LVM, so
+	// the hook must follow sd-encrypt (the decrypted device is the PV) and
+	// precede filesystems (the root LV is what gets mounted).
+	if ctx.Lvm {
+		hooks = append(hooks, shared.LvmInitramfsHook)
 	}
 	hooks = append(hooks, "filesystems", "fsck")
 

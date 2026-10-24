@@ -18,6 +18,8 @@
 		luksEnabled = false,
 		onEnableLuks,
 		onDisableLuks,
+		lvmEnabled = false,
+		onToggleLvm,
 		onSelectFileSystem,
 		onToggleMode
 	}: {
@@ -32,6 +34,8 @@
 		luksEnabled?: boolean;
 		onEnableLuks?: () => void;
 		onDisableLuks?: () => void;
+		lvmEnabled?: boolean;
+		onToggleLvm?: () => void;
 		onSelectFileSystem: (fs: FileSystem) => void;
 		onToggleMode: (mode: InstallMode) => void;
 	} = $props();
@@ -143,6 +147,21 @@
 						onEnableLuks?.();
 					}
 				}}
+			/>
+		</div>
+	{/if}
+
+	<!-- LVM layout toggle. Independent of encryption: LUKS always sits below LVM,
+		so enabling both encrypts the single physical volume. Shown in both modes;
+		in manual mode the designated System partition becomes the physical volume. -->
+	{#if onToggleLvm}
+		<span class="control-row-label">{t('disk.lvmLabel')}</span>
+		<div class="toggle-row">
+			<ToggleSwitch
+				checked={lvmEnabled}
+				label={t('disk.lvmLabel')}
+				title={t('disk.lvmHint')}
+				onToggle={() => onToggleLvm?.()}
 			/>
 		</div>
 	{/if}

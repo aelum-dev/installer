@@ -2,6 +2,7 @@ package format
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,17 +193,18 @@ func TestSetupRootFilesystem_FormatFails(t *testing.T) {
 	}
 }
 
-// --- EncryptRoot -------------------------------------------------------------
+// --- PrepareRoot (LUKS path) -------------------------------------------------
 
-func TestEncryptRoot(t *testing.T) {
+func TestPrepareRootLuks(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", shared.LuksMapperPath}, "ROOT-UUID\n").
 		OnArgsOutput([]string{"cryptsetup", "luksUUID"}, "LUKS-UUID\n")
 	defer primitives.SetCommandRunner(rec)()
 
-	setup, err := EncryptRoot(&shared.InstallContext{}, "/dev/vda2", "secret", shared.FileSystemExt4)
+	ctx := &shared.InstallContext{Luks: true, LuksPassphrase: []byte("secret")}
+	setup, err := PrepareRoot(ctx, "/dev/vda2", shared.FileSystemExt4)
 	if err != nil {
-		t.Fatalf("EncryptRoot() = %v", err)
+		t.Fatalf("PrepareRoot() = %v", err)
 	}
 	if setup.RootDevice != shared.LuksMapperPath || setup.RootUUID != "ROOT-UUID" || setup.LuksUUID != "LUKS-UUID" {
 		t.Errorf("setup = %+v", setup)
@@ -226,12 +228,25 @@ func TestEncryptRoot(t *testing.T) {
 	}
 }
 
-func TestEncryptRoot_FormatFails(t *testing.T) {
+func TestPrepareRootLuks_FormatFails(t *testing.T) {
 	rec := primitivestest.NewRecorder().OnArgsError([]string{"cryptsetup", "luksFormat"}, errors.New("exit status 1"))
 	defer primitives.SetCommandRunner(rec)()
 
-	if _, err := EncryptRoot(&shared.InstallContext{}, "/dev/vda2", "secret", shared.FileSystemExt4); err == nil {
-		t.Fatal("EncryptRoot() = nil, want luksFormat failure")
+	ctx := &shared.InstallContext{Luks: true, LuksPassphrase: []byte("secret")}
+	if _, err := PrepareRoot(ctx, "/dev/vda2", shared.FileSystemExt4); err == nil {
+		t.Fatal("PrepareRoot() = nil, want luksFormat failure")
+	}
+}
+
+func TestPrepareRootLuks_RequiresPassphrase(t *testing.T) {
+	rec := primitivestest.NewRecorder()
+	defer primitives.SetCommandRunner(rec)()
+
+	if _, err := PrepareRoot(&shared.InstallContext{Luks: true}, "/dev/vda2", shared.FileSystemExt4); err == nil {
+		t.Fatal("PrepareRoot() = nil, want a missing-passphrase error")
+	}
+	if rec.Called("cryptsetup") {
+		t.Error("cryptsetup must not run without a passphrase")
 	}
 }
 
@@ -401,4 +416,166 @@ func findCall(rec *primitivestest.Recorder, prefix ...string) (primitivestest.Ca
 		}
 	}
 	return primitivestest.Call{}, false
+}
+
+// --- PrepareRoot (LVM path) --------------------------------------------------
+
+// lvmRecorder scripts the commands the LVM path runs: a PARTUUID for the group
+// name, a device/VG size, and one filesystem UUID per created volume.
+func lvmRecorder(t *testing.T) *primitivestest.Recorder {
+	t.Helper()
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda2"}, "1a2b3c4d-0000-4000-8000-000000000000\n").
+		OnOutput("blockdev", "214748364800").
+		OnArgsOutput([]string{"vgs", "--noheadings", "--nosuffix", "--units", "m", "-o", "vg_size"}, "204800\n").
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/root"}, "ROOT-UUID\n").
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/home"}, "HOME-UUID\n")
+	t.Cleanup(primitives.SetCommandRunner(rec))
+	return rec
+}
+
+func TestPrepareRootLvmExt4(t *testing.T) {
+	rec := lvmRecorder(t)
+
+	ctx := &shared.InstallContext{Lvm: true, FileSystem: shared.FileSystemExt4}
+	setup, err := PrepareRoot(ctx, "/dev/vda2", shared.FileSystemExt4)
+	if err != nil {
+		t.Fatalf("PrepareRoot() = %v", err)
+	}
+
+	if setup.VGName != "aelum-1a2b3c4d" {
+		t.Errorf("VGName = %q, want aelum-1a2b3c4d", setup.VGName)
+	}
+	if setup.RootDevice != "/dev/aelum-1a2b3c4d/root" || setup.RootUUID != "ROOT-UUID" {
+		t.Errorf("root setup = %+v", setup)
+	}
+	if setup.HomeDevice != "/dev/aelum-1a2b3c4d/home" || setup.HomeUUID != "HOME-UUID" {
+		t.Errorf("home setup = %+v", setup)
+	}
+
+	if !hasArgv(rec.CallsFor("pvcreate"), "pvcreate", "-ff", "-y", "/dev/vda2") {
+		t.Errorf("pvcreate not called on the raw partition: %v", rec.CallsFor("pvcreate"))
+	}
+	if !hasArgv(rec.CallsFor("vgcreate"), "vgcreate", "aelum-1a2b3c4d", "/dev/vda2") {
+		t.Errorf("vgcreate not called: %v", rec.CallsFor("vgcreate"))
+	}
+	// ext4 gets a sized root plus a home volume for the rest.
+	lvCalls := rec.CallsFor("lvcreate")
+	if len(lvCalls) != 2 {
+		t.Fatalf("expected 2 lvcreate calls, got %v", lvCalls)
+	}
+	if !strings.Contains(strings.Join(lvCalls[0], " "), "-L 61440M -n root aelum-1a2b3c4d") {
+		t.Errorf("root LV not sized to 30%% of the group: %v", lvCalls[0])
+	}
+	if !strings.Contains(strings.Join(lvCalls[1], " "), "-l 100%FREE -n home aelum-1a2b3c4d") {
+		t.Errorf("home LV should take the rest of the group: %v", lvCalls[1])
+	}
+	if rec.Called("cryptsetup") {
+		t.Error("cryptsetup must not run when LUKS is off")
+	}
+}
+
+func TestPrepareRootLvmBtrfs(t *testing.T) {
+	rec := lvmRecorder(t)
+	rec.OnArgsOutput([]string{"btrfs", "subvolume", "list"}, "ID 256 gen 1 top level 5 path @\n")
+
+	ctx := &shared.InstallContext{Lvm: true, FileSystem: shared.FileSystemBtrfs}
+	setup, err := PrepareRoot(ctx, "/dev/vda2", shared.FileSystemBtrfs)
+	if err != nil {
+		t.Fatalf("PrepareRoot() = %v", err)
+	}
+
+	if setup.RootDevice != "/dev/aelum-1a2b3c4d/root" || setup.RootUUID != "ROOT-UUID" {
+		t.Errorf("root setup = %+v", setup)
+	}
+	// btrfs keeps /home on the @home subvolume: one LV, no home volume.
+	if setup.HomeDevice != "" || setup.HomeUUID != "" {
+		t.Errorf("btrfs must not create a home LV, got %+v", setup)
+	}
+	lvCalls := rec.CallsFor("lvcreate")
+	if len(lvCalls) != 1 || !strings.Contains(strings.Join(lvCalls[0], " "), "-l 100%FREE -n root aelum-1a2b3c4d") {
+		t.Errorf("expected a single whole-group root LV, got %v", lvCalls)
+	}
+	if !rec.Called("mkfs.btrfs") || !rec.Called("btrfs") {
+		t.Error("btrfs subvolume setup did not run")
+	}
+}
+
+// With LUKS+LVM the PV is the decrypted mapper, and the group must be
+// deactivated before the mapper is closed — otherwise cryptsetup fails EBUSY.
+func TestPrepareRootLuksLvmDeactivatesBeforeClose(t *testing.T) {
+	rec := lvmRecorder(t)
+	rec.OnArgsOutput([]string{"cryptsetup", "luksUUID"}, "LUKS-UUID\n")
+
+	ctx := &shared.InstallContext{
+		Luks:           true,
+		LuksPassphrase: []byte("secret"),
+		Lvm:            true,
+		FileSystem:     shared.FileSystemExt4,
+	}
+	setup, err := PrepareRoot(ctx, "/dev/vda2", shared.FileSystemExt4)
+	if err != nil {
+		t.Fatalf("PrepareRoot() = %v", err)
+	}
+	if setup.LuksUUID != "LUKS-UUID" || setup.VGName != "aelum-1a2b3c4d" {
+		t.Errorf("setup = %+v", setup)
+	}
+
+	if !hasArgv(rec.CallsFor("pvcreate"), "pvcreate", "-ff", "-y", shared.LuksMapperPath) {
+		t.Errorf("the PV must be the decrypted mapper, got %v", rec.CallsFor("pvcreate"))
+	}
+	if !hasArgv(rec.CallsFor("blkid"), "blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda2") {
+		t.Errorf("the VG name must come from the raw partition's PARTUUID, got %v", rec.CallsFor("blkid"))
+	}
+
+	deactivate := -1
+	closeIdx := -1
+	for i, c := range rec.Calls() {
+		if len(c.Args) >= 3 && c.Args[0] == "vgchange" && c.Args[1] == "-an" {
+			deactivate = i
+		}
+		if len(c.Args) >= 2 && c.Args[0] == "cryptsetup" && c.Args[1] == "close" {
+			closeIdx = i
+		}
+	}
+	if deactivate < 0 || closeIdx < 0 {
+		t.Fatalf("expected vgchange -an and cryptsetup close, got %v", rec.Calls())
+	}
+	if deactivate > closeIdx {
+		t.Error("the volume group must be deactivated before the LUKS mapper is closed")
+	}
+}
+
+// --- LVM size guard ----------------------------------------------------------
+
+// fakeWholeDiskSize puts an lsblk shim on PATH that reports a whole-disk size
+// for the size validators (which shell out directly, not via the seam).
+func fakeWholeDiskSize(t *testing.T, sizeBytes uint64) {
+	t.Helper()
+	dir := t.TempDir()
+	script := "#!/bin/sh\nprintf '%d\\n' " + fmt.Sprintf("%d", sizeBytes) + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "lsblk"), []byte(script), 0o755); err != nil {
+		t.Fatalf("write fake lsblk: %v", err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+// TestRun_LvmDiskTooSmallFailsBeforeWipe verifies a disk that cannot hold the
+// volume group is rejected before the partition table is touched.
+func TestRun_LvmDiskTooSmallFailsBeforeWipe(t *testing.T) {
+	fakeWholeDiskSize(t, 9*1024*1024*1024)
+	rec := primitivestest.NewRecorder()
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{DiskID: "/dev/vda", FileSystem: shared.FileSystemExt4, Lvm: true}
+	err := Run(ctx)
+	if err == nil {
+		t.Fatal("Run() = nil, want a disk-too-small error")
+	}
+	if !strings.Contains(err.Error(), "too small") {
+		t.Errorf("error = %v, want it to mention the disk being too small", err)
+	}
+	if rec.Called("sgdisk") {
+		t.Error("sgdisk must not run on a disk that cannot hold the layout")
+	}
 }

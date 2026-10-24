@@ -204,7 +204,7 @@ func TestVerifyFstab(t *testing.T) {
 			fs := primitivestest.NewMemFS().WithFile(path, tt.content)
 			defer primitives.SetFileSystem(fs)()
 
-			err := verifyFstab(tt.root, tt.efi, "rootuuid")
+			err := verifyFstab(tt.root, tt.efi, "rootuuid", "")
 			if tt.wantMsg == "" {
 				if err != nil {
 					t.Fatalf("verifyFstab() = %v, want nil", err)
@@ -220,7 +220,7 @@ func TestVerifyFstab(t *testing.T) {
 
 func TestVerifyFstab_ReadError(t *testing.T) {
 	defer primitives.SetFileSystem(primitivestest.NewMemFS())()
-	err := verifyFstab("ROOT-UUID", "EFI-UUID", "rootuuid")
+	err := verifyFstab("ROOT-UUID", "EFI-UUID", "rootuuid", "")
 	if err == nil || !strings.Contains(err.Error(), "failed to read fstab") {
 		t.Fatalf("verifyFstab() error = %v, want read failure", err)
 	}
@@ -624,6 +624,19 @@ func TestConfigureInitramfs(t *testing.T) {
 			ctx:     &shared.InstallContext{Luks: true},
 			content: "MODULES=()\nHOOKS=(base)\n",
 			want:    []string{"sd-encrypt", "filesystems fsck)"},
+		},
+		{
+			name:    "lvm",
+			ctx:     &shared.InstallContext{Lvm: true},
+			content: "MODULES=()\nHOOKS=(base)\n",
+			want:    []string{"lvm2 filesystems fsck)"},
+		},
+		{
+			name:    "luks on lvm",
+			ctx:     &shared.InstallContext{Luks: true, Lvm: true},
+			content: "MODULES=()\nHOOKS=(base)\n",
+			// LUKS sits below LVM: sd-encrypt must precede lvm2.
+			want: []string{"sd-encrypt lvm2 filesystems fsck)"},
 		},
 	}
 	for _, tt := range tests {

@@ -7,7 +7,7 @@
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import LuksPassphraseDialog from '$components/LuksPassphraseDialog.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import { installState, requestEnableLuks, disableLuks, setFileSystem } from '$lib/store.svelte';
+	import { installState, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
 	import { computeUsedMB, computeFreeMB } from '$lib/manual-layout';
 	import { inferDiskFileSystem } from '$lib/disks';
@@ -169,6 +169,8 @@
 			luksEnabled={installState.luksEnabled}
 			onEnableLuks={requestEnableLuks}
 			onDisableLuks={() => { showDisableConfirm = true; }}
+			lvmEnabled={installState.lvmEnabled}
+			onToggleLvm={toggleLvm}
 		/>
 
 		{#if installState.manualMode}

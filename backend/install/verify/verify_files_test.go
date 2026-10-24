@@ -398,3 +398,110 @@ func TestCheckFstab_ReadError(t *testing.T) {
 		t.Fatalf("issues = %v, want unreadable-fstab issue", issues)
 	}
 }
+
+// --- checkLvm ----------------------------------------------------------------
+
+func TestCheckLvm(t *testing.T) {
+	const confPath = shared.MountRoot + "/etc/mkinitcpio.conf"
+	lvmCtx := func() *shared.InstallContext {
+		return &shared.InstallContext{Lvm: true, Partitions: &shared.PartitionInfo{
+			VGName:     "aelum-1a2b3c4d",
+			RootUUID:   "ROOT-UUID",
+			HomeDevice: "/dev/aelum-1a2b3c4d/home",
+			HomeUUID:   "HOME-UUID",
+		}}
+	}
+	ctx := lvmCtx()
+	entryPath := bootEntryPath(ctx)
+	goodEntry := "options root=UUID=ROOT-UUID rw quiet\n"
+	goodHooks := "HOOKS=(base systemd lvm2 filesystems fsck)\n"
+
+	goodRecorder := func() *primitivestest.Recorder {
+		return primitivestest.NewRecorder().
+			OnArgsOutput([]string{"vgs"}, "  aelum-1a2b3c4d\n").
+			OnArgsOutput([]string{"lvs"}, "  root\n  home\n").
+			OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/root"}, "ROOT-UUID\n")
+	}
+
+	tests := []struct {
+		name      string
+		ctx       *shared.InstallContext
+		rec       *primitivestest.Recorder
+		fs        *primitivestest.MemFS
+		wantIssue string
+	}{
+		{
+			name:      "no volume group recorded",
+			ctx:       &shared.InstallContext{Lvm: true, Partitions: &shared.PartitionInfo{}},
+			rec:       goodRecorder(),
+			fs:        primitivestest.NewMemFS(),
+			wantIssue: "no volume group was recorded",
+		},
+		{
+			name:      "volume group missing",
+			ctx:       ctx,
+			rec:       goodRecorder().OnArgsError([]string{"vgs"}, errors.New("not found")),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, goodHooks),
+			wantIssue: "volume group aelum-1a2b3c4d not found",
+		},
+		{
+			name:      "missing home logical volume",
+			ctx:       ctx,
+			rec:       goodRecorder().OnArgsOutput([]string{"lvs"}, "  root\n"),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, goodHooks),
+			wantIssue: "logical volume home missing",
+		},
+		{
+			name:      "root LV UUID does not match",
+			ctx:       ctx,
+			rec:       goodRecorder().OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/root"}, "OTHER-UUID\n"),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, goodHooks),
+			wantIssue: "root LV filesystem UUID is OTHER-UUID",
+		},
+		{
+			name:      "missing lvm2 hook",
+			ctx:       ctx,
+			rec:       goodRecorder(),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, "HOOKS=(base systemd filesystems fsck)\n"),
+			wantIssue: "lvm2 hook not found",
+		},
+		{
+			name:      "boot entry does not use the root UUID",
+			ctx:       ctx,
+			rec:       goodRecorder(),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, "options rw quiet\n").WithFile(confPath, goodHooks),
+			wantIssue: "does not select the root by UUID",
+		},
+		{
+			name:      "boot entry references a mapper path",
+			ctx:       ctx,
+			rec:       goodRecorder(),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, "options root=UUID=ROOT-UUID rw root=/dev/mapper/aelum-1a2b3c4d-root\n").WithFile(confPath, goodHooks),
+			wantIssue: "device-mapper path",
+		},
+		{
+			name: "complete",
+			ctx:  ctx,
+			rec:  goodRecorder(),
+			fs:   primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, goodHooks),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer primitives.SetFileSystem(tt.fs)()
+			defer primitives.SetCommandRunner(tt.rec)()
+			var issues, info []string
+			checkLvm(tt.ctx, &issues, &info)
+			if tt.wantIssue == "" {
+				if len(issues) != 0 {
+					t.Fatalf("issues = %v, want none", issues)
+				}
+				return
+			}
+			if len(issues) != 1 || !strings.Contains(issues[0], tt.wantIssue) {
+				t.Fatalf("issues = %v, want one containing %q", issues, tt.wantIssue)
+			}
+		})
+	}
+}

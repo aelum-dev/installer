@@ -136,6 +136,7 @@ export namespace shared {
 	    disk: string;
 	    diskSizeMB: number;
 	    luks?: boolean;
+	    lvm?: boolean;
 	    diskSizeBytes: number;
 	    sectorSizeBytes?: number;
 	    partitions: ManualPartition[];
@@ -150,6 +151,7 @@ export namespace shared {
 	        this.disk = source["disk"];
 	        this.diskSizeMB = source["diskSizeMB"];
 	        this.luks = source["luks"];
+	        this.lvm = source["lvm"];
 	        this.diskSizeBytes = source["diskSizeBytes"];
 	        this.sectorSizeBytes = source["sectorSizeBytes"];
 	        this.partitions = this.convertValues(source["partitions"], ManualPartition);

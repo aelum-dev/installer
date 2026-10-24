@@ -56,9 +56,11 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
           recorder.go           — Scripted primitives.CommandRunner for unit tests (no root needed)
           memfs.go              — In-memory primitives.FileSystem for unit tests (no /mnt needed)
       format/
-        format.go               — FormatDisk() + setupBtrfsSubvolumes() (+ format_test.go)
+        format.go               — FormatDisk() + PrepareRoot() (LUKS → LVM → mkfs stack) + setupBtrfsSubvolumes() (+ format_test.go)
+      lvm/
+        lvm.go                  — per-install volume group (PV → VG → root/home LV), PARTUUID-derived name, device-scoped teardown (+ lvm_test.go)
       mount/
-        mount.go                — MountFilesystem() + verifyMount() (+ mount_test.go)
+        mount.go                — MountFilesystem() (activates the VG, mounts root LV + ext4 home LV) + verifyMount() (+ mount_test.go)
       installbase/
         install.go              — base pacstrap (basePackages) with phase-banded progress (+ install_test.go)
       installdesktop/
@@ -67,7 +69,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
-        fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants)
+        fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants, ext4+LVM /home)
         bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
@@ -177,8 +179,8 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 
 ## Installation Steps (8 top-level)
 `install/step.go` `Steps()` controls the step order. Weights control progress bar:
-1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), btrfs subvolumes (`install/format/`)
-2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt`, the ESP to `/mnt/efi`, then bind this install's `aelum/<id>/` ESP directory at `/mnt/boot` (`install/mount/`)
+1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), optional LUKS2 → LVM → mkfs stack, btrfs subvolumes (`install/format/`)
+2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt` (activating the volume group first when LVM is on), the ESP to `/mnt/efi`, then bind this install's `aelum/<id>/` ESP directory at `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
@@ -257,8 +259,9 @@ Welcome (language select)
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
 - Boot floor: every Boot partition (new or existing) must be at least `shared.MinESPSizeBytes` = 512 MiB. Manual mode always formats the selected Boot partition as FAT32, so it never reuses another OS's ESP.
-- System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition)
-- Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...`
+- System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition). With LVM it rises to `shared.MinLvmSystemPartitionBytes` (16 GiB + 16 MiB metadata), plus `shared.LuksHeaderReserveBytes` when LUKS sits under it — use `shared.SystemPartitionFloorBytes(lvm, luks)`.
+- Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...` (Linux LVM `E6D6D379...` when it becomes a PV without LUKS)
+- LVM: one PV per install (the System partition or its LUKS mapper). VG name `aelum-<8 hex>` from the PV's PARTUUID; LVs `root`, plus `home` for ext4 only (btrfs keeps `@home` on the single root LV). LUKS always sits below LVM; fstab/boot reference filesystem UUIDs only, never `/dev/mapper`. Teardown resolves the VG from the PV (`pvs`) and refuses a multi-PV group.
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Default username: `shared.DefaultCLIUsername` = "aelum"
 - Default hostname: `shared.DefaultHostname` = "aelum"

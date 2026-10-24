@@ -25,6 +25,11 @@ type InstallContext struct {
 	// after use; never logged or returned.
 	LuksPassphrase []byte
 
+	// Lvm reports whether the System partition (or its LUKS mapper) becomes an
+	// LVM physical volume holding the root logical volume. LUKS always sits
+	// below LVM: at most one encrypted PV, one passphrase.
+	Lvm bool
+
 	Hostname   string
 	Region     Region
 	FileSystem string // root filesystem: "ext4" or "btrfs"
@@ -75,7 +80,18 @@ type PartitionInfo struct {
 	RootMapper string
 	// LuksUUID is the LUKS header UUID of the raw root partition. Used for the
 	// boot cmdline rd.luks.name= argument — NOT the filesystem UUID.
-	LuksUUID    string
+	LuksUUID string
+	// VGName is the volume group holding the root LV. Empty when LVM is off.
+	// Nothing in fstab or the boot entry references it: the LV filesystem UUID
+	// is what identifies the root, so renaming the VG never breaks boot.
+	VGName string
+	// HomeDevice is the ext4 home LV's device path (e.g. /dev/aelum-1a2b3c4d/home).
+	// Empty for btrfs (which keeps /home on the @home subvolume) and for
+	// non-LVM installs.
+	HomeDevice string
+	// HomeUUID is the filesystem UUID of HomeDevice. Empty unless a separate
+	// home LV exists.
+	HomeUUID    string
 	MountPoints map[string]string // Additional mount points (e.g., "/home" → "/dev/sda2")
 }
 
@@ -132,6 +148,9 @@ type ManualLayout struct {
 	// Luks is a validation hint: true when the System partition is encrypted.
 	// Apply reconciles it from ctx.Luks so the two can never disagree.
 	Luks bool `json:"luks,omitempty"`
+	// Lvm is a validation hint: true when the System partition becomes an LVM
+	// physical volume. Apply reconciles it from ctx.Lvm the same way.
+	Lvm bool `json:"lvm,omitempty"`
 	// DiskSizeBytes is the exact total disk size in bytes. Free-space math that
 	// must survive existing-partitions being rounded down to MiB uses it.
 	DiskSizeBytes int64 `json:"diskSizeBytes"`

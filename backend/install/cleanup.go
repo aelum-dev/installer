@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -27,6 +28,12 @@ func Rollback(logger shared.Logger, diskID string) error {
 		}
 		return fmt.Errorf("rollback cleanup failed: %w", err)
 	}
+
+	// Deactivate and remove any volume group on the target before wiping
+	// signatures: an active logical volume keeps the physical volume busy, and a
+	// group must never outlive the partitions it sits on. The lookup is scoped to
+	// this disk's devices, so a group on another disk is never touched.
+	lvm.ReleaseForDisk(diskID, logger)
 
 	partitions := discoverPartitions(diskID)
 

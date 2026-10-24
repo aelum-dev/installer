@@ -231,3 +231,84 @@ func TestGenerateBtrfsFstab_EFIFirst(t *testing.T) {
 		t.Errorf("expected /boot bind mount as second entry, got:\n%s", content)
 	}
 }
+
+// --- LVM home volume ---------------------------------------------------------
+
+func TestGenerateExt4Fstab_LvmHomeVolume(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Lvm:        true,
+		Partitions: &shared.PartitionInfo{
+			RootUUID:   "root-uuid-123",
+			EFIUUID:    "efi-uuid-456",
+			VGName:     "aelum-1a2b3c4d",
+			HomeDevice: "/dev/aelum-1a2b3c4d/home",
+			HomeUUID:   "home-uuid-789",
+		},
+	}
+
+	content := generateExt4Fstab(ctx)
+
+	// The home logical volume is referenced by filesystem UUID, never by its
+	// device-mapper path.
+	homeLine := ""
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, "UUID=home-uuid-789") {
+			homeLine = line
+			break
+		}
+	}
+	if homeLine == "" || !strings.Contains(homeLine, "/home") || !strings.Contains(homeLine, "ext4") {
+		t.Errorf("expected a /home entry for the home LV, got:\n%s", content)
+	}
+	if strings.Contains(content, "/dev/mapper/") || strings.Contains(content, "/dev/aelum-") {
+		t.Errorf("fstab must not reference LVM device paths, got:\n%s", content)
+	}
+}
+
+func TestGenerateExt4Fstab_NoHomeWithoutLvm(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Partitions: &shared.PartitionInfo{
+			RootUUID: "root-uuid-123",
+			EFIUUID:  "efi-uuid-456",
+		},
+	}
+
+	content := generateExt4Fstab(ctx)
+
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, " /home ") {
+			t.Errorf("ext4 without LVM must not mount /home separately, got:\n%s", content)
+		}
+	}
+}
+
+// A btrfs install keeps /home on the @home subvolume even when LVM is enabled:
+// the root LV carries every subvolume, so no separate home row may appear.
+func TestGenerateBtrfsFstab_LvmHasNoSeparateHomeRow(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem: shared.FileSystemBtrfs,
+		Lvm:        true,
+		Partitions: &shared.PartitionInfo{
+			RootUUID: "root-uuid-123",
+			EFIUUID:  "efi-uuid-456",
+			VGName:   "aelum-1a2b3c4d",
+		},
+	}
+
+	content := generateBtrfsFstab(ctx)
+
+	homeLines := 0
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, " /home ") {
+			homeLines++
+			if !strings.Contains(line, "subvol=@home") {
+				t.Errorf("/home must be the @home subvolume, got: %s", line)
+			}
+		}
+	}
+	if homeLines != 1 {
+		t.Errorf("expected exactly 1 /home entry, got %d:\n%s", homeLines, content)
+	}
+}

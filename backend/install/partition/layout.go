@@ -26,6 +26,9 @@ type formatAction struct {
 func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string, sectors []partitionSector) ([]formatAction, error) {
 	ss := layoutSectorSize(layout)
 	spm := sectorsPerMiB(ss)
+	// The System floor depends on the storage stack: an LVM volume group (and a
+	// LUKS header under it) needs more room than a plain root.
+	systemFloorMB := shared.SystemPartitionFloorBytes(layout.Lvm, layout.Luks) / (1024 * 1024)
 
 	// Brand-new partitions are numbered immediately after the highest existing one.
 	maxNum := 0
@@ -64,6 +67,10 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		if p.Type == shared.TypeESP {
 			fstype = shared.FileSystemVfat
 			guid = shared.GPTTypeGUIDs.ESP
+		} else if layout.Lvm && !layout.Luks {
+			// The System partition becomes the LVM physical volume. With LUKS it
+			// holds the LUKS container instead, so it keeps the root type.
+			guid = shared.GPTTypeGUIDs.LinuxLVM
 		}
 
 		if p.Path != "" {
@@ -96,7 +103,7 @@ func buildActions(diskID string, layout *shared.ManualLayout, fileSystem string,
 		// "use all remaining space" row (SizeMB 0): Validate cannot know its
 		// final size, so without this check a tiny ESP or sub-8-GiB root could
 		// be created from whatever little free space is left.
-		if min := minPartitionSizeMB(p.Type); sizeMB < min {
+		if min := minPartitionSizeMB(p.Type, systemFloorMB); sizeMB < min {
 			return nil, fmt.Errorf("%s partition has only %d MB of contiguous free space, below the %d MB minimum", p.Type, sizeMB, min)
 		}
 		free = rest
@@ -247,15 +254,15 @@ func roleLabel(fstype string) string {
 }
 
 // minPartitionSizeMB returns the enforced minimum size in MiB for a partition
-// role: the ESP floor (512 MiB) and the System floor (8 GiB). This backstops the
-// *resolved* size of a use-remaining row so a too-small partition can never
-// reach sgdisk.
-func minPartitionSizeMB(pt shared.PartitionType) int64 {
+// role: the ESP floor (512 MiB) and the System floor, which is larger when LVM
+// (and LUKS under it) needs a whole volume group. This backstops the *resolved*
+// size of a use-remaining row so a too-small partition can never reach sgdisk.
+func minPartitionSizeMB(pt shared.PartitionType, systemFloorMB int64) int64 {
 	switch pt {
 	case shared.TypeESP:
 		return shared.MinESPSizeBytes / (1024 * 1024)
 	case shared.TypeSystem:
-		return shared.MinSystemPartitionBytes / (1024 * 1024)
+		return systemFloorMB
 	default:
 		return 0
 	}

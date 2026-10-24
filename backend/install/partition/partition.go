@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"aelum-installer/backend/install/format"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -96,6 +97,7 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	ensureSectorSize(layout, diskID)
 
 	reconcileLuks(ctx, layout)
+	reconcileLvm(ctx, layout)
 
 	if err := Validate(*layout); err != nil {
 		return err
@@ -158,18 +160,28 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		return err
 	}
 
+	// Release any volume group still active on the designated System partition
+	// before reloading the table: its logical volumes keep the partition busy,
+	// so partprobe would fail. Scoped to that one partition — preserved
+	// partitions (and any VG on them) are never touched.
+	if err := releaseSystemLvm(ctx, sysPath); err != nil {
+		return err
+	}
+
 	// Refresh the kernel partition table.
 	probeOut, probeErr := primitives.Run("partprobe", diskID).CombinedOutput()
 	if probeErr != nil {
 		return fmt.Errorf("partprobe: %w: %s", probeErr, string(probeOut))
 	}
 
-	// Format each Boot/Root partition. When LUKS is enabled the System
-	// partition is not formatted directly (EncryptRoot below creates the
-	// filesystem). The Boot partition is always formatted, new or existing: it
-	// belongs to this install, so it must never carry another OS's boot loaders.
+	// Format each Boot/Root partition. When LUKS and/or LVM are enabled the
+	// System partition is not formatted directly: it holds a LUKS container or
+	// an LVM physical volume, and PrepareRoot below builds the filesystem on the
+	// resulting logical volume. The Boot partition is always formatted, new or
+	// existing: it belongs to this install, so it must never carry another OS's
+	// boot loaders.
 	for _, a := range actions {
-		if a.pType == shared.TypeSystem && ctx.Luks {
+		if a.pType == shared.TypeSystem && (ctx.Luks || ctx.Lvm) {
 			continue
 		}
 		label := "aelum"
@@ -181,30 +193,10 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 		}
 	}
 
-	var setup format.RootSetup
-	switch {
-	case ctx.Luks:
-		if len(ctx.LuksPassphrase) == 0 {
-			return fmt.Errorf("LUKS enabled but no passphrase set")
-		}
-		setup, err = format.EncryptRoot(ctx, sysPath, string(ctx.LuksPassphrase), ctx.FileSystem)
-		if err != nil {
-			return err
-		}
-	default:
-		// Plain root (ext4 or btrfs): the System partition was formatted above.
-		// For btrfs create the subvolume scheme here, then read the filesystem
-		// UUID for fstab/boot.
-		if ctx.FileSystem == shared.FileSystemBtrfs {
-			if err := format.SetupBtrfsSubvolumes(ctx, sysPath, shared.GetBtrfsSubvolumes()); err != nil {
-				return err
-			}
-		}
-		uuid, err := format.ReadPartitionUUID(sysPath)
-		if err != nil {
-			return fmt.Errorf("blkid %s: %w", sysPath, err)
-		}
-		setup = format.RootSetup{RootDevice: sysPath, RootUUID: uuid}
+	// Build the root filesystem: LUKS (optional) → PV/VG/LV (optional) → mkfs.
+	setup, err := format.PrepareRoot(ctx, sysPath, ctx.FileSystem)
+	if err != nil {
+		return err
 	}
 
 	// Build PartitionInfo from the resolved EFI and System paths, applying the
@@ -267,6 +259,26 @@ func reconcileLuks(ctx *shared.InstallContext, layout *shared.ManualLayout) {
 		ctx.Luks = true
 		layout.Luks = true
 	}
+}
+
+// reconcileLvm reconciles the LVM decision the same way: the --lvm toggle wins,
+// but a layout that already carries LVM must not install without it.
+func reconcileLvm(ctx *shared.InstallContext, layout *shared.ManualLayout) {
+	if ctx.Lvm || layout.Lvm {
+		ctx.Lvm = true
+		layout.Lvm = true
+	}
+}
+
+// releaseSystemLvm clears LVM state on the designated System partition before
+// the table is reloaded. A group left active by a failed attempt keeps the
+// partition busy, which makes partprobe fail on the next run. Only this one
+// partition is touched: preserved partitions belong to the user or another OS.
+func releaseSystemLvm(ctx *shared.InstallContext, sysPath string) error {
+	if !ctx.Lvm || sysPath == "" {
+		return nil
+	}
+	return lvm.ReleaseDevice(sysPath)
 }
 
 // createPartition creates a new GPT partition with the correct size and type

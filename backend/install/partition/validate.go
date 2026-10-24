@@ -13,7 +13,8 @@ import (
 //   - at most one partition may request "use all remaining space" (SizeMB == 0)
 //   - every type must be a known value
 //   - designated partitions meet their role floor (every Boot partition has the
-//     512 MiB floor; the System partition has the 8 GiB floor)
+//     512 MiB floor; the System partition floor rises when LVM and/or LUKS need
+//     room for a volume group and its header)
 func Validate(layout shared.ManualLayout) error {
 	// Debug: record the layout and every number behind the size checks so a
 	// rejection that only happens on real disk geometry can be traced from the
@@ -32,7 +33,9 @@ func Validate(layout shared.ManualLayout) error {
 
 	ss := layoutSectorSize(&layout)
 	spm := sectorsPerMiB(ss)
-	systemFloorBytes := int64(shared.MinSystemPartitionBytes)
+	// LVM needs a whole volume group, and LUKS adds its header on top of it, so
+	// the System floor depends on the storage stack.
+	systemFloorBytes := shared.SystemPartitionFloorBytes(layout.Lvm, layout.Luks)
 
 	var esp, sys, zeroSize int
 	var newSectors int64
@@ -155,7 +158,7 @@ func Validate(layout shared.ManualLayout) error {
 	// A brand-new "use all remaining space" row (SizeMB 0) is exempt from the
 	// per-row floor above because its final size is only known after allocation.
 	// Enforce the floor on the resolved space now.
-	if err := validateUseRemainingFloors(layout, usableSectors, newSectors, spm); err != nil {
+	if err := validateUseRemainingFloors(layout, usableSectors, newSectors, spm, systemFloorBytes); err != nil {
 		return err
 	}
 
@@ -202,18 +205,19 @@ func validatePartitionSize(p shared.ManualPartition, systemFloorBytes int64) err
 // remaining space" row (SizeMB 0). Its final size is only known after explicit
 // new partitions are subtracted from the usable space, so the per-row pass in
 // Validate cannot check it.
-func validateUseRemainingFloors(layout shared.ManualLayout, usableSectors, newSectors, spm int64) error {
+func validateUseRemainingFloors(layout shared.ManualLayout, usableSectors, newSectors, spm, systemFloorBytes int64) error {
 	remainingSectors := usableSectors - newSectors
 	if remainingSectors < 0 {
 		remainingSectors = 0
 	}
 	remainingMB := remainingSectors / spm
+	systemFloorMB := systemFloorBytes / (1024 * 1024)
 
 	for _, p := range layout.Partitions {
 		if p.Path != "" || p.SizeMB != 0 || (p.Type != shared.TypeESP && p.Type != shared.TypeSystem) {
 			continue
 		}
-		if min := minPartitionSizeMB(p.Type); remainingMB < min {
+		if min := minPartitionSizeMB(p.Type, systemFloorMB); remainingMB < min {
 			return fmt.Errorf("%s partition would have only %d MB of free space, below the %d MB minimum", p.Type, remainingMB, min)
 		}
 	}

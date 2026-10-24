@@ -32,6 +32,7 @@ var BasePackages = []string{
 	"dosfstools",
 	"e2fsprogs",
 	"btrfs-progs",
+	"lvm2",
 	"pv",
 
 	// System

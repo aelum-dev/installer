@@ -208,10 +208,12 @@ const MinManualDiskSizeBytes = MinDiskSizeBytes
 var GPTTypeGUIDs = struct {
 	ESP                    string
 	LinuxRootX86_64        string
+	LinuxLVM               string
 	LinuxFilesystemGeneric string
 }{
 	ESP:                    "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
 	LinuxRootX86_64:        "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
+	LinuxLVM:               "E6D6D379-F507-44C2-A23C-238F2A3DF928",
 	LinuxFilesystemGeneric: "8300",
 }
 
@@ -410,6 +412,71 @@ const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.jpg"
 // WallpaperSourceLight is the light wallpaper file path shipped to the installed
 // system (used by DMS after install).
 const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.jpg"
+
+// --- LVM volume management ---------------------------------------------------
+
+// LvmVolumeGroupPrefix is prepended to the PV's PARTUUID-derived id to form the
+// volume group name (e.g. "aelum-1a2b3c4d"). Deriving the name from the
+// partition's PARTUUID — which exists before any mkfs and survives luksFormat —
+// keeps it unique per partition and stable across install retries, so a second
+// Aelum install never collides with this one.
+const LvmVolumeGroupPrefix = "aelum-"
+
+// LvmRootVolumeName is the logical volume mounted as "/".
+const LvmRootVolumeName = "root"
+
+// LvmHomeVolumeName is the logical volume mounted as "/home". It is created for
+// ext4 only: btrfs keeps /home on the @home subvolume of the single root LV.
+const LvmHomeVolumeName = "home"
+
+// LvmRootPercent is the root LV's share of the volume group (ext4 layouts
+// only), clamped to the root floor and to leaving room for home.
+const LvmRootPercent = 30
+
+// LvmInitramfsHook is the mkinitcpio hook that activates the volume group in the
+// initramfs. It must follow sd-encrypt (LUKS sits below LVM) and precede
+// filesystems.
+const LvmInitramfsHook = "lvm2"
+
+// MinLvmVolumeGroupBytes is the smallest usable volume group (16 GiB). With the
+// 8 GiB root floor that leaves room for an equally sized home LV on ext4, and
+// keeps one uniform floor for both filesystems.
+const MinLvmVolumeGroupBytes = 16 * 1024 * 1024 * 1024
+
+// LvmMetadataReserveBytes covers the PV header (~1 MiB), the VG metadata and
+// the extent alignment that lvcreate rounds up to.
+const LvmMetadataReserveBytes = 16 * 1024 * 1024
+
+// LuksHeaderReserveBytes is the space a LUKS2 header takes before the PV starts.
+// The header is 16 MiB; doubling it leaves margin for header growth.
+const LuksHeaderReserveBytes = 32 * 1024 * 1024
+
+// MinLvmRootVolumeBytes is the floor for the root LV. It reuses the plain-root
+// partition floor so an LVM install and a non-LVM install are rejected below the
+// same size.
+const MinLvmRootVolumeBytes = MinSystemPartitionBytes
+
+// MinLvmSystemPartitionBytes is the System-partition floor when LVM is enabled:
+// the smallest usable VG plus the LVM metadata reserve.
+const MinLvmSystemPartitionBytes = MinLvmVolumeGroupBytes + LvmMetadataReserveBytes
+
+// MinLvmLuksSystemPartitionBytes is the System-partition floor when LVM sits on
+// top of LUKS: the LVM floor plus the encrypted header.
+const MinLvmLuksSystemPartitionBytes = MinLvmSystemPartitionBytes + LuksHeaderReserveBytes
+
+// SystemPartitionFloorBytes returns the System-partition size floor for a manual
+// layout. LVM needs a whole volume group, and LUKS adds its header on top of it;
+// a plain root keeps the (smaller) base floor.
+func SystemPartitionFloorBytes(lvm, luks bool) int64 {
+	switch {
+	case lvm && luks:
+		return MinLvmLuksSystemPartitionBytes
+	case lvm:
+		return MinLvmSystemPartitionBytes
+	default:
+		return MinSystemPartitionBytes
+	}
+}
 
 // --- LUKS disk encryption --------------------------------------------------
 

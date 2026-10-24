@@ -7,6 +7,7 @@ import (
 
 	"aelum-installer/backend/install/installbase"
 	"aelum-installer/backend/install/installdesktop"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -39,6 +40,9 @@ func Run(ctx *shared.InstallContext) error {
 	checkFstab(ctx, &issues, &info)
 	if ctx.Luks {
 		checkLuks(ctx, &issues, &info)
+	}
+	if ctx.Lvm {
+		checkLvm(ctx, &issues, &info)
 	}
 	checkBootloader(ctx, &issues, &info)
 	checkKernelImages(ctx, &issues, &info)
@@ -114,6 +118,9 @@ func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 			if !strings.Contains(content, "bind") {
 				*issues = append(*issues, "fstab missing the /boot bind mount")
 			}
+		}
+		if ctx.Partitions.HomeUUID != "" && !strings.Contains(content, ctx.Partitions.HomeUUID) {
+			*issues = append(*issues, "fstab missing the home LV UUID "+ctx.Partitions.HomeUUID)
 		}
 	}
 }
@@ -199,6 +206,90 @@ func luksEntryMapsMapper(options, luksUUID string) bool {
 		return true
 	}
 	return strings.Contains(options, "rd.luks.name="+luksUUID+"="+shared.LuksMapperName)
+}
+
+// checkLvm verifies LVM-related configuration in the installed system when LVM
+// is enabled: the volume group and its logical volumes exist, the root LV's
+// filesystem UUID is the one fstab and the boot entry use, the lvm2 hook is in
+// mkinitcpio.conf, and the boot entry never references a device-mapper path.
+func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
+	if ctx.Partitions == nil || ctx.Partitions.VGName == "" {
+		*issues = append(*issues, "LVM enabled but no volume group was recorded")
+		return
+	}
+	vg := ctx.Partitions.VGName
+
+	if out, err := primitives.Run("vgs", "--noheadings", "-o", "vg_name", vg).Output(); err != nil {
+		*issues = append(*issues, "volume group "+vg+" not found")
+	} else if strings.TrimSpace(string(out)) == "" {
+		*issues = append(*issues, "volume group "+vg+" not reported by vgs")
+	} else {
+		*info = append(*info, "volume group "+vg+" present ✓")
+	}
+
+	expected := []string{shared.LvmRootVolumeName}
+	if ctx.Partitions.HomeDevice != "" {
+		expected = append(expected, shared.LvmHomeVolumeName)
+	}
+	if out, err := primitives.Run("lvs", "--noheadings", "-o", "lv_name", vg).Output(); err != nil {
+		*issues = append(*issues, "cannot list the logical volumes of "+vg)
+	} else {
+		for _, lv := range expected {
+			if !lvListContains(string(out), lv) {
+				*issues = append(*issues, "logical volume "+lv+" missing from "+vg)
+			} else {
+				*info = append(*info, "logical volume "+lv+" present ✓")
+			}
+		}
+	}
+
+	// The root LV must carry the filesystem UUID fstab and the boot entry use.
+	if ctx.Partitions.RootUUID != "" {
+		rootLV := lvm.Path(vg, shared.LvmRootVolumeName)
+		if out, err := primitives.Run("blkid", "-s", "UUID", "-o", "value", rootLV).Output(); err != nil {
+			*issues = append(*issues, "cannot read the root LV filesystem UUID from "+rootLV)
+		} else if got := strings.TrimSpace(string(out)); got != ctx.Partitions.RootUUID {
+			*issues = append(*issues, "root LV filesystem UUID is "+got+", expected "+ctx.Partitions.RootUUID)
+		} else {
+			*info = append(*info, "root LV filesystem UUID matches fstab ✓")
+		}
+	}
+
+	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
+	if data, err := primitives.ReadFile(confPath); err == nil {
+		if !strings.Contains(string(data), shared.LvmInitramfsHook) {
+			*issues = append(*issues, "lvm2 hook not found in mkinitcpio.conf")
+		} else {
+			*info = append(*info, "initramfs lvm2 hook present ✓")
+		}
+	} else {
+		*issues = append(*issues, "failed to read "+confPath)
+	}
+
+	entryPath := bootEntryPath(ctx)
+	if data, err := primitives.ReadFile(entryPath); err == nil {
+		content := string(data)
+		if ctx.Partitions.RootUUID != "" && !strings.Contains(content, "root=UUID="+ctx.Partitions.RootUUID) {
+			*issues = append(*issues, "rEFInd entry does not select the root by UUID (root=UUID="+ctx.Partitions.RootUUID+")")
+		} else {
+			*info = append(*info, "rEFInd entry selects the root LV by UUID ✓")
+		}
+		if strings.Contains(content, "/dev/mapper/"+vg) {
+			*issues = append(*issues, "rEFInd entry references a device-mapper path instead of a filesystem UUID")
+		}
+	} else {
+		*issues = append(*issues, "failed to read rEFInd config "+entryPath)
+	}
+}
+
+// lvListContains reports whether lvs output lists the given logical volume.
+func lvListContains(output, name string) bool {
+	for _, line := range strings.Split(output, "\n") {
+		if strings.TrimSpace(line) == name {
+			return true
+		}
+	}
+	return false
 }
 
 // checkBootloader verifies that rEFInd's EFI binary and configuration (with the

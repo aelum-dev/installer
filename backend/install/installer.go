@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aelum-installer/backend/install/luks"
+	"aelum-installer/backend/install/lvm"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
@@ -32,6 +33,7 @@ type Installer struct {
 	fileSystem     string // root filesystem: "ext4" or "btrfs"
 	luks           bool
 	luksPassphrase []byte // zeroed after being copied to InstallContext
+	lvm            bool
 	dryRun         bool
 	esp            string // ESP mount point (default: /mnt/efi)
 
@@ -79,7 +81,10 @@ type InstallerConfig struct {
 	FileSystem     string // root filesystem: "ext4" or "btrfs"
 	Luks           bool
 	LuksPassphrase string
-	DryRun         bool
+	// Lvm places the root (and, for ext4, home) on logical volumes. LUKS always
+	// sits below LVM, so enabling both encrypts the single physical volume.
+	Lvm    bool
+	DryRun bool
 }
 
 // NewInstaller creates a new Installer instance from cfg.
@@ -93,6 +98,7 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		fileSystem:     cfg.FileSystem,
 		luks:           cfg.Luks,
 		luksPassphrase: []byte(cfg.LuksPassphrase),
+		lvm:            cfg.Lvm,
 		dryRun:         cfg.DryRun,
 		esp:            shared.ESPMountPoint,
 		Logger:         shared.NewConsoleLogger(),
@@ -365,6 +371,7 @@ func (inst *Installer) context() *InstallContext {
 		FileSystem:     fileSystem,
 		Luks:           inst.luks,
 		LuksPassphrase: luksPassphrase,
+		Lvm:            inst.lvm,
 		Logger:         inst.Logger,
 		Cancel:         inst.cancel,
 	}
@@ -444,6 +451,13 @@ func (inst *Installer) RunCleanup() {
 		// retried cleanly.
 		if err := primitives.CleanupMounts(inst.Logger); err != nil {
 			inst.logError("Cleanup: unmount: %v", err)
+		}
+		// Deactivate and remove any volume group on the target before the LUKS
+		// mapper is closed: an active logical volume keeps the mapper (the PV)
+		// open, so cryptsetup close would fail with EBUSY. Best-effort — the
+		// cleanup path must always finish.
+		if inst.lvm {
+			lvm.ReleaseForDisk(inst.diskID, inst.Logger)
 		}
 		// Close the LUKS mapper (if any) so a failed install can be retried
 		// without a leaked dm device. Best-effort — a closed mapper errors.

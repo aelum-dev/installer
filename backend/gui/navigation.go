@@ -47,6 +47,10 @@ type App struct {
 	luks           bool
 	luksPassphrase []byte
 
+	// lvm places the root (and, for ext4, home) on logical volumes. It is
+	// orthogonal to luks: LUKS always sits below LVM.
+	lvm bool
+
 	// installCmd is the currently running CLI subprocess, or nil.
 	installCmd *exec.Cmd
 	// installCancel cancels the context for the current CLI subprocess.
@@ -104,6 +108,12 @@ func (a *App) SetLuksPassphrase(passphrase string) {
 	a.clearLuksPassphrase()
 	a.luksPassphrase = make([]byte, len(passphrase))
 	copy(a.luksPassphrase, []byte(passphrase))
+}
+
+// SetLvm enables or disables LVM for the root filesystem. It is independent of
+// SetLuks: enabling both encrypts the single physical volume.
+func (a *App) SetLvm(enabled bool) {
+	a.lvm = enabled
 }
 
 // clearLuksPassphrase zeroes and releases the held passphrase.

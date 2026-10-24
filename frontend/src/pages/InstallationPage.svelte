@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { installState, syncEncryptionToBackend } from '$lib/store.svelte';
+	import { installState, syncStorageToBackend } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import { StartInstallation, EventsOn, LogInfo } from '$lib/backend';
 	import { WIZARD_NAV, type WizardNavigation } from '$lib/navigation';
@@ -73,19 +73,19 @@
 		}, 1000);
 	});
 
-	// Entering this page starts the install. Push the committed LUKS state to
-	// the Go backend first — the backend decides whether to pass --luks (and
-	// which passphrase to feed the CLI on stdin); the confirmation note is
+	// Entering this page starts the install. Push the committed LUKS/LVM state to
+	// the Go backend first — the backend decides whether to pass --luks/--lvm
+	// (and which passphrase to feed the CLI on stdin); the confirmation note is
 	// derived purely from the frontend store.
 	//
-	// syncEncryptionToBackend awaits every binding call on purpose: the Wails
+	// syncStorageToBackend awaits every binding call on purpose: the Wails
 	// runtime dispatches each call on its own goroutine, so a fire-and-forget
 	// sync races StartInstallation() and can hand the CLI --luks before the
 	// passphrase has landed — which aborts the install at 0%.
 	async function init(): Promise<void> {
 		isRunning = true;
 		try {
-			await syncEncryptionToBackend();
+			await syncStorageToBackend();
 			await StartInstallation();
 		} catch (err) {
 			isRunning = false;

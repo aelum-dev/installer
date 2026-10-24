@@ -102,6 +102,10 @@ export function SetLuksPassphrase(arg1) {
   return window['go']['gui']['App']['SetLuksPassphrase'](arg1);
 }
 
+export function SetLvm(arg1) {
+  return window['go']['gui']['App']['SetLvm'](arg1);
+}
+
 export function SetSelectedLanguage(arg1) {
   return window['go']['gui']['App']['SetSelectedLanguage'](arg1);
 }

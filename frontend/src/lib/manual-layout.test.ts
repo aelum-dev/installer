@@ -299,3 +299,46 @@ describe('immutable layout updates', () => {
 		expect(original.partitions[1].type).toBe('system');
 	});
 });
+
+describe('LVM system floor', () => {
+	// 16 GiB volume group + 16 MiB metadata reserve, then + 32 MiB for LUKS.
+	const lvmMinMB = 16384 + 16;
+	const lvmLuksMinMB = lvmMinMB + 32;
+
+	function layoutWith(sizeMB: number, over: Partial<ManualLayout> = {}): ManualLayout {
+		return baseLayout({
+			partitions: [
+				{ index: 0, path: '/dev/sda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+				{ index: 1, path: '/dev/sda2', sizeMB, sizeBytes: sizeMB * mib, type: 'system' },
+			],
+			...over,
+		});
+	}
+
+	it('rejects a System that is large enough for a plain root but not for LVM', () => {
+		const layout = layoutWith(8192);
+		expect(manualLayoutIssues(layout, { lvm: false })).toEqual([]);
+		expect(manualLayoutIssues(layout, { lvm: true })).toContainEqual({
+			kind: 'lvmSystemTooSmall',
+			sizeMB: 8192,
+			minMB: lvmMinMB,
+		});
+	});
+
+	it('accepts the LVM floor and raises it again under LUKS', () => {
+		expect(manualLayoutIssues(layoutWith(lvmMinMB), { lvm: true })).toEqual([]);
+		expect(manualLayoutIssues(layoutWith(lvmMinMB), { lvm: true, luks: true })).toContainEqual({
+			kind: 'lvmSystemTooSmall',
+			sizeMB: lvmMinMB,
+			minMB: lvmLuksMinMB,
+		});
+	});
+
+	it('reads the toggles from the layout when no options are passed', () => {
+		expect(manualLayoutIssues(layoutWith(8192, { lvm: true }))).toContainEqual({
+			kind: 'lvmSystemTooSmall',
+			sizeMB: 8192,
+			minMB: lvmMinMB,
+		});
+	});
+});

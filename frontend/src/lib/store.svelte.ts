@@ -2,7 +2,7 @@ import type { DiskInfo, FileSystem, ManualLayout } from '$lib/types';
 import { DefaultFileSystem } from '$lib/constants';
 import { t } from '$lib/i18n';
 import { uiState } from '$lib/ui.svelte';
-import { SetLuks, SetLuksPassphrase } from '$lib/backend';
+import { SetLuks, SetLuksPassphrase, SetLvm } from '$lib/backend';
 
 // ── Installation State (shared across pages) ──
 
@@ -27,6 +27,10 @@ export const installState = $state({
 	// ('' = none held) until the CLI consumes it.
 	luksEnabled: false as boolean,
 	luksPassphrase: '' as string,
+
+	// LVM root layout. Independent of LUKS: LUKS always sits below LVM, so
+	// enabling both encrypts the single physical volume.
+	lvmEnabled: false as boolean,
 
 	// Manual partitioning mode
 	manualMode: false as boolean,
@@ -89,9 +93,18 @@ export function disableLuks(): void {
 	uiState.luksError = '';
 }
 
+// ── LVM helpers ────────────────────────────────────────────────────────────
+
+// toggleLvm flips the LVM layout option. Unlike LUKS it holds no secret, so the
+// toggle applies immediately; the choice reaches the backend in
+// syncStorageToBackend before the install starts.
+export function toggleLvm(): void {
+	installState.lvmEnabled = !installState.lvmEnabled;
+}
+
 // ── Backend sync ───────────────────────────────────────────────────────────
 
-// syncEncryptionToBackend pushes the committed LUKS state to the Go backend
+// syncStorageToBackend pushes the committed LUKS/LVM state to the Go backend
 // before the install starts.
 //
 // Every Wails binding call runs on its own goroutine in the backend, so these
@@ -102,13 +115,16 @@ export function disableLuks(): void {
 // sees a failure at 0% that has nothing to do with the disk. The reverse order
 // (flag first) also opens a window where encryption is on with no passphrase;
 // sending the passphrase first means that state is never observable.
-export async function syncEncryptionToBackend(): Promise<void> {
+export async function syncStorageToBackend(): Promise<void> {
 	if (installState.luksEnabled && installState.luksPassphrase !== '') {
 		await SetLuksPassphrase(installState.luksPassphrase);
 		await SetLuks(true);
 	} else {
 		await SetLuks(false);
 	}
+	// LVM is independent of LUKS and carries no secret, so it is always pushed
+	// (false included) — a stale backend flag must never survive a toggle off.
+	await SetLvm(installState.lvmEnabled);
 }
 
 // setFileSystem selects the root filesystem.

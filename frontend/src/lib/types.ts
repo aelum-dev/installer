@@ -53,6 +53,9 @@ export interface ManualLayout {
 	sectorSizeBytes?: number;
 	// luks is a validation hint: true when root is encrypted.
 	luks?: boolean;
+	// lvm is a validation hint: true when the System partition becomes an LVM
+	// physical volume (which raises the System-partition floor).
+	lvm?: boolean;
 	partitions: ManualPartition[];
 	// Partitions the user removed from the layout. Kept (not dropped) so the
 	// backend can delete them from the disk at install time.

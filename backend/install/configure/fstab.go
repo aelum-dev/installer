@@ -40,7 +40,7 @@ func GenerateFstab(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
-	return verifyFstab(p.RootUUID, p.EFIUUID, shared.InstallID(p.RootUUID))
+	return verifyFstab(p.RootUUID, p.EFIUUID, shared.InstallID(p.RootUUID), p.HomeUUID)
 }
 
 func generateBtrfsFstab(ctx *shared.InstallContext) string {
@@ -69,6 +69,11 @@ func generateExt4Fstab(ctx *shared.InstallContext) string {
 		"# <file system>                             <mount point>  <type>  <options>       <dump>  <pass>",
 		fmt.Sprintf("UUID=%s  /              %s    %s        0  1", p.RootUUID, rootFstype, shared.DefaultMountOptions),
 	}
+	// LVM on ext4 keeps /home on its own logical volume, so a full root does not
+	// take user data with it.
+	if p.HomeUUID != "" {
+		lines = append(lines, fmt.Sprintf("UUID=%s  /home          %s    %s        0  2", p.HomeUUID, rootFstype, shared.DefaultMountOptions))
+	}
 	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -92,10 +97,10 @@ func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
-	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID))
+	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID), "")
 }
 
-func verifyFstab(rootUUID, efiUUID, installID string) error {
+func verifyFstab(rootUUID, efiUUID, installID, homeUUID string) error {
 	if rootUUID == "" {
 		return fmt.Errorf("root UUID is empty — cannot verify fstab")
 	}
@@ -119,6 +124,9 @@ func verifyFstab(rootUUID, efiUUID, installID string) error {
 	}
 	if !strings.Contains(content, "/ ") && !strings.Contains(content, "/\t") {
 		return fmt.Errorf("fstab missing / mount point")
+	}
+	if homeUUID != "" && !strings.Contains(content, homeUUID) {
+		return fmt.Errorf("fstab missing home UUID %s (content length: %d bytes)", homeUUID, len(content))
 	}
 	bootSrc := shared.InstalledESPMountPoint + "/" + shared.InstallBootDir(installID)
 	if installID != "" && !strings.Contains(content, bootSrc) {

@@ -1,6 +1,9 @@
 package shared
 
 import (
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -210,6 +213,51 @@ func TestValidateDiskSelection(t *testing.T) {
 			err := ValidateDiskSelection(tt.data)
 			if (err != nil) != tt.expectErr {
 				t.Errorf("expected error=%v, got err=%v", tt.expectErr, err)
+			}
+		})
+	}
+}
+
+// fakeDiskSize puts an lsblk shim on PATH that reports the given size, so the
+// size validators can be tested without a real disk.
+func fakeDiskSize(t *testing.T, sizeBytes uint64) {
+	t.Helper()
+	dir := t.TempDir()
+	script := "#!/bin/sh\nprintf '%d\\n' " + strconv.FormatUint(sizeBytes, 10) + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "lsblk"), []byte(script), 0o755); err != nil {
+		t.Fatalf("write fake lsblk: %v", err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func TestValidateDiskSizeForLayout(t *testing.T) {
+	const gib = uint64(1024 * 1024 * 1024)
+	// ESP + plain System floor + GPT regions, rounded up to whole GiB.
+	plainDisk := gib * 9
+	lvmDisk := gib * 17
+	lvmLuksDisk := gib * 17
+
+	tests := []struct {
+		name    string
+		disk    uint64
+		lvm     bool
+		luks    bool
+		wantErr bool
+	}{
+		{"plain root on a 9 GiB disk", plainDisk, false, false, false},
+		{"LVM on a 9 GiB disk", plainDisk, true, false, true},
+		{"LVM on a 17 GiB disk", lvmDisk, true, false, false},
+		{"LUKS under LVM on a 17 GiB disk", lvmLuksDisk, true, true, false},
+		// 16 GiB + 16 MiB metadata + 32 MiB header + ESP + GPT does not fit in
+		// 16 GiB, so the same disk is rejected once both are enabled.
+		{"LUKS under LVM on a 16 GiB disk", gib * 16, true, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeDiskSize(t, tt.disk)
+			err := ValidateDiskSizeForLayout("/dev/vda", tt.lvm, tt.luks)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ValidateDiskSizeForLayout(%v, %v) error = %v, wantErr %v", tt.lvm, tt.luks, err, tt.wantErr)
 			}
 		})
 	}

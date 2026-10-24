@@ -96,20 +96,47 @@ func ValidateDiskPath(path string) error {
 // ValidateDiskSize checks that a disk meets the minimum size requirement.
 // It queries lsblk to get the disk size in bytes and compares against MinDiskSizeBytes.
 func ValidateDiskSize(diskPath string) error {
-	cmd := exec.Command("lsblk", "-b", "-d", "-n", "-o", "SIZE", diskPath)
-	output, err := cmd.Output()
+	sizeBytes, err := diskSizeBytes(diskPath)
 	if err != nil {
-		return fmt.Errorf("failed to get disk size for %s: %w", diskPath, err)
-	}
-	sizeStr := strings.TrimSpace(string(output))
-	sizeBytes, err := strconv.ParseUint(sizeStr, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse disk size %q: %w", sizeStr, err)
+		return err
 	}
 	if sizeBytes < MinDiskSizeBytes {
 		return fmt.Errorf("disk %s is too small: %s (minimum %s required)", diskPath, FormatSize(int64(sizeBytes)), FormatSize(MinDiskSizeBytes))
 	}
 	return nil
+}
+
+// ValidateDiskSizeForLayout checks that a whole disk can hold the requested
+// storage stack: the ESP, the System partition floor (which grows with LVM and
+// LUKS), and the GPT regions at both ends. It runs before anything destructive
+// so a disk that cannot hold a volume group is rejected while its contents are
+// still intact.
+func ValidateDiskSizeForLayout(diskPath string, lvm, luks bool) error {
+	sizeBytes, err := diskSizeBytes(diskPath)
+	if err != nil {
+		return err
+	}
+	required := uint64(MinESPSizeBytes + SystemPartitionFloorBytes(lvm, luks) + GPTPrefixBytes + GPTBackupBytes)
+	if sizeBytes < required {
+		return fmt.Errorf("disk %s is too small for this layout: %s (minimum %s required with LVM/LUKS settings)",
+			diskPath, FormatSize(int64(sizeBytes)), FormatSize(int64(required)))
+	}
+	return nil
+}
+
+// diskSizeBytes returns a whole disk's size in bytes (via lsblk).
+func diskSizeBytes(diskPath string) (uint64, error) {
+	cmd := exec.Command("lsblk", "-b", "-d", "-n", "-o", "SIZE", diskPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get disk size for %s: %w", diskPath, err)
+	}
+	sizeStr := strings.TrimSpace(string(output))
+	sizeBytes, err := strconv.ParseUint(sizeStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse disk size %q: %w", sizeStr, err)
+	}
+	return sizeBytes, nil
 }
 
 // ValidateDiskSelection checks that a disk is selected, meets minimum size,
