@@ -139,12 +139,21 @@
 	justify-self: start;
 }
 
-/* Encryption (LUKS) switch sits in the control column so it lines up with the
-   mode/filesystem pills above. */
+/* Encryption (LUKS) and LVM switches sit in the control column so they line up
+   with the mode/filesystem pills above, on a single row. The gap here separates
+   the two switches; each switch's own label is kept closer to it by
+   .toggle-field. */
 .toggle-row {
 	display: flex;
 	align-items: center;
-	gap: var(--spacing-xl);
+	gap: var(--spacing-lg);
+}
+
+/* Label + switch pair that travels together (LVM). */
+.toggle-field {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
 }
 
 .fs-pills {

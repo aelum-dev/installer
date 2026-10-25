@@ -43,6 +43,11 @@
 	// Show info popup when user tries to switch to manual without a disk selected.
 	let showDiskHint = $state(false);
 
+	// Both switches share a single row. Whichever control is present first owns
+	// the row label, so a page that only passes one of them still reads correctly.
+	const showLuks = $derived(Boolean(onEnableLuks || onDisableLuks));
+	const showLvm = $derived(Boolean(onToggleLvm));
+
 	function handleModeClick(mode: InstallMode): void {
 		onToggleMode(mode);
 	}
@@ -130,39 +135,45 @@
 		{/each}
 	</div>
 
-	<!-- Encryption (LUKS2) toggle. The label occupies column 1 and the switch
-		column 2, so it lines up with the mode/filesystem pills above. Shown in
-		both automatic and manual mode. -->
-	{#if onEnableLuks || onDisableLuks}
-		<span class="control-row-label">{t('disk.encryptLabel')}</span>
+	<!-- Encryption (LUKS2) + LVM toggles on one row. The row label occupies column
+		1 (left edge shared with the other labels) and the switches column 2, so the
+		row still lines up with the mode/filesystem pills above. When both are shown
+		the row is labelled "Encrypt" and the LVM label sits immediately left of its
+		own switch; when only LVM is wired up, the row label is "LVM" and the inline
+		label is dropped. Shown in both automatic and manual mode.
+		LVM is independent of encryption: LUKS always sits below LVM, so enabling
+		both encrypts the single physical volume. In manual mode the designated
+		System partition becomes the physical volume. -->
+	{#if showLuks || showLvm}
+		<span class="control-row-label">{showLuks ? t('disk.encryptLabel') : t('disk.lvmLabel')}</span>
 		<div class="toggle-row">
-			<ToggleSwitch
-				checked={luksEnabled}
-				label={t('disk.encryptLabel')}
-				title={t('disk.encryptHint')}
-				onToggle={() => {
-					if (luksEnabled) {
-						onDisableLuks?.();
-					} else {
-						onEnableLuks?.();
-					}
-				}}
-			/>
-		</div>
-	{/if}
-
-	<!-- LVM layout toggle. Independent of encryption: LUKS always sits below LVM,
-		so enabling both encrypts the single physical volume. Shown in both modes;
-		in manual mode the designated System partition becomes the physical volume. -->
-	{#if onToggleLvm}
-		<span class="control-row-label">{t('disk.lvmLabel')}</span>
-		<div class="toggle-row">
-			<ToggleSwitch
-				checked={lvmEnabled}
-				label={t('disk.lvmLabel')}
-				title={t('disk.lvmHint')}
-				onToggle={() => onToggleLvm?.()}
-			/>
+			{#if showLuks}
+				<ToggleSwitch
+					checked={luksEnabled}
+					label={t('disk.encryptLabel')}
+					title={t('disk.encryptHint')}
+					onToggle={() => {
+						if (luksEnabled) {
+							onDisableLuks?.();
+						} else {
+							onEnableLuks?.();
+						}
+					}}
+				/>
+			{/if}
+			{#if showLvm}
+				<span class="toggle-field">
+					{#if showLuks}
+						<span class="control-row-label">{t('disk.lvmLabel')}</span>
+					{/if}
+					<ToggleSwitch
+						checked={lvmEnabled}
+						label={t('disk.lvmLabel')}
+						title={t('disk.lvmHint')}
+						onToggle={() => onToggleLvm?.()}
+					/>
+				</span>
+			{/if}
 		</div>
 	{/if}
 </div>
