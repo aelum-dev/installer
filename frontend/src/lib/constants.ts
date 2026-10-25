@@ -92,7 +92,6 @@ export const WeightClearCache = 1;
 export const WeightVerifySystem = 1;
 export const WallpaperSourceDark = "/usr/share/DankMaterialShell/wallpaper-dark.jpg";
 export const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.jpg";
-export const LvmVolumeGroupPrefix = "aelum-";
 export const LvmRootVolumeName = "root";
 export const LvmHomeVolumeName = "home";
 export const LvmRootPercent = 30;

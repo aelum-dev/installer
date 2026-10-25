@@ -85,7 +85,7 @@ type PartitionInfo struct {
 	// Nothing in fstab or the boot entry references it: the LV filesystem UUID
 	// is what identifies the root, so renaming the VG never breaks boot.
 	VGName string
-	// HomeDevice is the ext4 home LV's device path (e.g. /dev/aelum-1a2b3c4d/home).
+	// HomeDevice is the ext4 home LV's device path (e.g. /dev/1a2b3c4d/home).
 	// Empty for btrfs (which keeps /home on the @home subvolume) and for
 	// non-LVM installs.
 	HomeDevice string

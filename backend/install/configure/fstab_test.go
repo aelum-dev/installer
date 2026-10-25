@@ -241,8 +241,8 @@ func TestGenerateExt4Fstab_LvmHomeVolume(t *testing.T) {
 		Partitions: &shared.PartitionInfo{
 			RootUUID:   "root-uuid-123",
 			EFIUUID:    "efi-uuid-456",
-			VGName:     "aelum-1a2b3c4d",
-			HomeDevice: "/dev/aelum-1a2b3c4d/home",
+			VGName:     "1a2b3c4d",
+			HomeDevice: "/dev/1a2b3c4d/home",
 			HomeUUID:   "home-uuid-789",
 		},
 	}
@@ -261,7 +261,7 @@ func TestGenerateExt4Fstab_LvmHomeVolume(t *testing.T) {
 	if homeLine == "" || !strings.Contains(homeLine, "/home") || !strings.Contains(homeLine, "ext4") {
 		t.Errorf("expected a /home entry for the home LV, got:\n%s", content)
 	}
-	if strings.Contains(content, "/dev/mapper/") || strings.Contains(content, "/dev/aelum-") {
+	if strings.Contains(content, "/dev/mapper/") || strings.Contains(content, "/dev/1a2b3c4d/") {
 		t.Errorf("fstab must not reference LVM device paths, got:\n%s", content)
 	}
 }
@@ -293,7 +293,7 @@ func TestGenerateBtrfsFstab_LvmHasNoSeparateHomeRow(t *testing.T) {
 		Partitions: &shared.PartitionInfo{
 			RootUUID: "root-uuid-123",
 			EFIUUID:  "efi-uuid-456",
-			VGName:   "aelum-1a2b3c4d",
+			VGName:   "1a2b3c4d",
 		},
 	}
 

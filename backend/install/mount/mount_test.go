@@ -91,11 +91,11 @@ func TestVerifyMount_NotMounted(t *testing.T) {
 
 // TestVerifyMount_LvmMapperAliasAccepted reproduces what findmnt really reports
 // for a logical volume: the mount was made through /dev/<vg>/<lv>, but the
-// device-mapper node it reached is named with every hyphen of the volume group
-// doubled. Both names are the same device, so verification must accept it.
+// device-mapper node it reached is named <vg>-<lv>. Both names are the same
+// device, so verification must accept it.
 func TestVerifyMount_LvmMapperAliasAccepted(t *testing.T) {
-	const lv = "/dev/aelum-1a2b3c4d/root"
-	const mapper = "/dev/mapper/aelum--1a2b3c4d-root"
+	const lv = "/dev/1a2b3c4d/root"
+	const mapper = "/dev/mapper/1a2b3c4d-root"
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", "/mnt"}, mapper+"[/@]\n").
 		OnArgsOutput([]string{"readlink", "-f", mapper}, "/dev/dm-0\n").
@@ -114,10 +114,10 @@ func TestVerifyMount_LvmMapperAliasAccepted(t *testing.T) {
 // that resolve to different nodes are still the wrong mount, and a path that
 // resolves to nothing never counts as a match.
 func TestVerifyMount_DifferentDeviceNodesRejected(t *testing.T) {
-	const lv = "/dev/aelum-1a2b3c4d/root"
+	const lv = "/dev/1a2b3c4d/root"
 	rec := primitivestest.NewRecorder().
-		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", "/mnt"}, "/dev/mapper/aelum--1a2b3c4d-home\n").
-		OnArgsOutput([]string{"readlink", "-f", "/dev/mapper/aelum--1a2b3c4d-home"}, "/dev/dm-1\n").
+		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", "/mnt"}, "/dev/mapper/1a2b3c4d-home\n").
+		OnArgsOutput([]string{"readlink", "-f", "/dev/mapper/1a2b3c4d-home"}, "/dev/dm-1\n").
 		OnArgsOutput([]string{"readlink", "-f", lv}, "/dev/dm-0\n")
 	defer primitives.SetCommandRunner(rec)()
 
@@ -132,11 +132,11 @@ func TestVerifyMount_DifferentDeviceNodesRejected(t *testing.T) {
 // not be matched to an unrelated mount.
 func TestVerifyMount_UnresolvablePathRejected(t *testing.T) {
 	rec := primitivestest.NewRecorder().
-		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", "/mnt"}, "/dev/mapper/aelum--1a2b3c4d-root\n").
+		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", "/mnt"}, "/dev/mapper/1a2b3c4d-root\n").
 		OnArgsError([]string{"readlink", "-f"}, errors.New("readlink: No such file or directory"))
 	defer primitives.SetCommandRunner(rec)()
 
-	err := verifyMount("/mnt", "/dev/aelum-1a2b3c4d/root")
+	err := verifyMount("/mnt", "/dev/1a2b3c4d/root")
 	if err == nil || !strings.Contains(err.Error(), "is mounted on") {
 		t.Fatalf("verifyMount() error = %v, want a mismatch error", err)
 	}
@@ -157,17 +157,17 @@ func TestBuildMountOptsAlias(t *testing.T) {
 // volume install can run end-to-end without touching real devices.
 //
 // findmnt is scripted the way a real install reports it: the mount is named by
-// the device-mapper node it reached, where LVM doubles every hyphen of the
-// volume group name (aelum-1a2b3c4d/root → aelum--1a2b3c4d-root). readlink
-// resolves both spellings to the same node, so these tests cover the alias the
-// mount step has to tolerate instead of assuming the /dev/<vg>/<lv> spelling.
+// the device-mapper node it reached (/dev/mapper/<vg>-<lv>), not by the
+// /dev/<vg>/<lv> path the mount command used. readlink resolves both spellings
+// to the same node, so these tests cover the alias the mount step has to
+// tolerate instead of assuming the /dev/<vg>/<lv> spelling.
 func lvmMountRecorder(t *testing.T) *primitivestest.Recorder {
 	t.Helper()
 	const (
-		lvRoot   = "/dev/aelum-1a2b3c4d/root"
-		lvHome   = "/dev/aelum-1a2b3c4d/home"
-		dmRoot   = "/dev/mapper/aelum--1a2b3c4d-root"
-		dmHome   = "/dev/mapper/aelum--1a2b3c4d-home"
+		lvRoot   = "/dev/1a2b3c4d/root"
+		lvHome   = "/dev/1a2b3c4d/home"
+		dmRoot   = "/dev/mapper/1a2b3c4d-root"
+		dmHome   = "/dev/mapper/1a2b3c4d-home"
 		nodeRoot = "/dev/dm-0"
 		nodeHome = "/dev/dm-1"
 	)
@@ -189,8 +189,8 @@ func TestRun_LvmMountsRootAndHomeVolumes(t *testing.T) {
 
 	ctx := baseCtx()
 	ctx.Lvm = true
-	ctx.Partitions.VGName = "aelum-1a2b3c4d"
-	ctx.Partitions.HomeDevice = "/dev/aelum-1a2b3c4d/home"
+	ctx.Partitions.VGName = "1a2b3c4d"
+	ctx.Partitions.HomeDevice = "/dev/1a2b3c4d/home"
 	ctx.Partitions.HomeUUID = "HOME-UUID"
 
 	if err := Run(ctx); err != nil {
@@ -202,13 +202,13 @@ func TestRun_LvmMountsRootAndHomeVolumes(t *testing.T) {
 	mountHome := -1
 	for i, c := range rec.Calls() {
 		joined := strings.Join(c.Args, " ")
-		if joined == "vgchange -ay aelum-1a2b3c4d" {
+		if joined == "vgchange -ay 1a2b3c4d" {
 			activate = i
 		}
-		if strings.HasPrefix(joined, "mount ") && strings.Contains(joined, "/dev/aelum-1a2b3c4d/root "+shared.MountRoot) {
+		if strings.HasPrefix(joined, "mount ") && strings.Contains(joined, "/dev/1a2b3c4d/root "+shared.MountRoot) {
 			mountRoot = i
 		}
-		if strings.HasPrefix(joined, "mount ") && strings.Contains(joined, "/dev/aelum-1a2b3c4d/home "+shared.MountRoot+"/home") {
+		if strings.HasPrefix(joined, "mount ") && strings.Contains(joined, "/dev/1a2b3c4d/home "+shared.MountRoot+"/home") {
 			mountHome = i
 		}
 	}
@@ -232,10 +232,10 @@ func TestRun_LvmBtrfsMountsSubvolumesFromRootLV(t *testing.T) {
 	ctx := baseCtx()
 	ctx.FileSystem = shared.FileSystemBtrfs
 	ctx.Lvm = true
-	ctx.Partitions.VGName = "aelum-1a2b3c4d"
+	ctx.Partitions.VGName = "1a2b3c4d"
 	for _, sv := range shared.GetBtrfsSubvolumes() {
 		if sv.MountPoint != "/" {
-			ctx.Partitions.MountPoints[sv.MountPoint] = "/dev/aelum-1a2b3c4d/root"
+			ctx.Partitions.MountPoints[sv.MountPoint] = "/dev/1a2b3c4d/root"
 		}
 	}
 
@@ -266,7 +266,7 @@ func TestRun_LuksLvmOpensMapperBeforeActivating(t *testing.T) {
 	ctx.LuksPassphrase = []byte("secret")
 	ctx.Lvm = true
 	ctx.Partitions.RootMapper = shared.LuksMapperPath
-	ctx.Partitions.VGName = "aelum-1a2b3c4d"
+	ctx.Partitions.VGName = "1a2b3c4d"
 
 	if err := Run(ctx); err != nil {
 		t.Fatalf("Run() = %v", err)
@@ -279,7 +279,7 @@ func TestRun_LuksLvmOpensMapperBeforeActivating(t *testing.T) {
 		if strings.HasPrefix(joined, "cryptsetup open ") {
 			open = i
 		}
-		if joined == "vgchange -ay aelum-1a2b3c4d" {
+		if joined == "vgchange -ay 1a2b3c4d" {
 			activate = i
 		}
 	}

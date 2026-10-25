@@ -6,14 +6,18 @@
 //   - One PV per install: the System partition, or its LUKS mapper. LUKS always
 //     sits below LVM, so there is exactly one encrypted device and one
 //     passphrase.
-//   - The volume group name is derived from the PV's PARTUUID
-//     ("aelum-<8 hex>"), never a global constant, so two installs can never
-//     collide and teardown can never target another system's volumes.
+//   - The volume group name is the PV's PARTUUID-derived install id
+//     ("<8 hex>"), never a global constant, so two installs can never collide
+//     and teardown can never target another system's volumes. The name carries
+//     no hyphen: LVM doubles every hyphen inside a device-mapper name, so a
+//     hyphen-free group keeps exactly one separator ("1a2b3c4d-root").
 //   - Teardown is scoped by looking the group up from the PV (`pvs`), and a
 //     group that spans more than that one PV is refused rather than removed.
 //   - Logical volumes are addressed as /dev/<vg>/<lv>, never /dev/mapper/
-//     paths: LVM escapes hyphens in device-mapper names, so a hand-built
-//     /dev/mapper/<vg>-<lv> string is wrong for a hyphenated group name.
+//     paths: the mapper node is a different spelling of the same device, so a
+//     hand-built /dev/mapper/<vg>-<lv> string is not what to mount (and is
+//     outright wrong when either name contains a hyphen). mount.verifyMount
+//     resolves devices rather than comparing the two spellings.
 //
 // This package deliberately does not format anything: the format package
 // orchestrates LVM and calls back into mkfs/btrfs, so importing format here
@@ -29,14 +33,20 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-// VolumeGroupName returns the volume group name for a partition's PARTUUID.
+// VolumeGroupName returns the volume group name for a partition's PARTUUID:
+// the install id on its own, 8 lowercase hex characters (e.g. "1a2b3c4d").
+//
+// The name is hyphen-free deliberately. LVM names a logical volume's
+// device-mapper node <vg>-<lv> and doubles every hyphen inside both names, so
+// the old "aelum-<id>" group produced "aelum--<id>-root" in lsblk; the bare id
+// produces "<id>-root", with the vg/lv separator as the only single hyphen.
 //
 // PARTUUID belongs to the partition table, so it exists before any mkfs and
 // survives luksFormat: the same name is derived whether LVM sits on the raw
 // partition or on its LUKS mapper, and a retried install reuses it instead of
 // leaking a second group.
 func VolumeGroupName(partUUID string) string {
-	return shared.LvmVolumeGroupPrefix + shared.InstallID(partUUID)
+	return shared.InstallID(partUUID)
 }
 
 // PARTUUID returns a block device's PARTUUID (via blkid).
@@ -61,11 +71,13 @@ func VGNameForDevice(device string) (string, error) {
 	return VolumeGroupName(uuid), nil
 }
 
-// Path returns the device path of a logical volume (e.g. /dev/aelum-1a2b3c4d/root).
+// Path returns the device path of a logical volume (e.g. /dev/1a2b3c4d/root).
 //
-// The /dev/<vg>/<lv> symlink LVM creates is used on purpose: it is correct for
-// hyphenated group names, whereas the device-mapper node escapes each hyphen as
-// two (aelum--1a2b3c4d-root) and a hand-built /dev/mapper path would not exist.
+// The /dev/<vg>/<lv> symlink LVM creates is used on purpose: it is the one
+// spelling that is always right. The device-mapper node doubles every hyphen in
+// the group and volume names, so a hand-built /dev/mapper path is a different
+// path (and simply does not exist when either name contains a hyphen, e.g.
+// aelu-m/root → /dev/mapper/aelu--m-root).
 func Path(vg, lv string) string {
 	return "/dev/" + vg + "/" + lv
 }
@@ -377,8 +389,11 @@ func removeLVNodes(vg string) {
 }
 
 // mapperName returns the device-mapper name for a logical volume: every hyphen
-// in the group and volume names is doubled by LVM (aelum-1a2b3c4d + root →
-// aelum--1a2b3c4d-root). dmsetup takes the dm name, not a /dev path.
+// inside the group and volume names is doubled by LVM, leaving the vg/lv
+// separator as the only single hyphen (1a2b3c4d + root → 1a2b3c4d-root,
+// aelu-m + root → aelu--m-root). This installer's group names are hyphen-free,
+// but the escaping is kept so the helper is correct for any name: dmsetup takes
+// the dm name, not a /dev path.
 func mapperName(vg, lv string) string {
 	escape := func(s string) string { return strings.ReplaceAll(s, "-", "--") }
 	return escape(vg) + "-" + escape(lv)

@@ -405,9 +405,9 @@ func TestCheckLvm(t *testing.T) {
 	const confPath = shared.MountRoot + "/etc/mkinitcpio.conf"
 	lvmCtx := func() *shared.InstallContext {
 		return &shared.InstallContext{Lvm: true, Partitions: &shared.PartitionInfo{
-			VGName:     "aelum-1a2b3c4d",
+			VGName:     "1a2b3c4d",
 			RootUUID:   "ROOT-UUID",
-			HomeDevice: "/dev/aelum-1a2b3c4d/home",
+			HomeDevice: "/dev/1a2b3c4d/home",
 			HomeUUID:   "HOME-UUID",
 		}}
 	}
@@ -418,9 +418,9 @@ func TestCheckLvm(t *testing.T) {
 
 	goodRecorder := func() *primitivestest.Recorder {
 		return primitivestest.NewRecorder().
-			OnArgsOutput([]string{"vgs"}, "  aelum-1a2b3c4d\n").
+			OnArgsOutput([]string{"vgs"}, "  1a2b3c4d\n").
 			OnArgsOutput([]string{"lvs"}, "  root\n  home\n").
-			OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/root"}, "ROOT-UUID\n")
+			OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/1a2b3c4d/root"}, "ROOT-UUID\n")
 	}
 
 	tests := []struct {
@@ -442,7 +442,7 @@ func TestCheckLvm(t *testing.T) {
 			ctx:       ctx,
 			rec:       goodRecorder().OnArgsError([]string{"vgs"}, errors.New("not found")),
 			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, goodHooks),
-			wantIssue: "volume group aelum-1a2b3c4d not found",
+			wantIssue: "volume group 1a2b3c4d not found",
 		},
 		{
 			name:      "missing home logical volume",
@@ -454,7 +454,7 @@ func TestCheckLvm(t *testing.T) {
 		{
 			name:      "root LV UUID does not match",
 			ctx:       ctx,
-			rec:       goodRecorder().OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/root"}, "OTHER-UUID\n"),
+			rec:       goodRecorder().OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/1a2b3c4d/root"}, "OTHER-UUID\n"),
 			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, goodHooks),
 			wantIssue: "root LV filesystem UUID is OTHER-UUID",
 		},
@@ -476,7 +476,7 @@ func TestCheckLvm(t *testing.T) {
 			name:      "boot entry references a mapper path",
 			ctx:       ctx,
 			rec:       goodRecorder(),
-			fs:        primitivestest.NewMemFS().WithFile(entryPath, "options root=UUID=ROOT-UUID rw root=/dev/mapper/aelum-1a2b3c4d-root\n").WithFile(confPath, goodHooks),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, "options root=UUID=ROOT-UUID rw root=/dev/mapper/1a2b3c4d-root\n").WithFile(confPath, goodHooks),
 			wantIssue: "device-mapper path",
 		},
 		{

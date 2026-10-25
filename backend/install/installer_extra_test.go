@@ -87,7 +87,7 @@ func TestInstaller_RunCleanupKeepsTheInstalledVolumeGroup(t *testing.T) {
 	defer primitives.SetCommandRunner(rec)()
 	rec.OnArgsOutput([]string{"lsblk"}, "vda2 part\ndm-1 lvm\n")
 	rec.OnArgsOutput([]string{"pvs", "--noheadings", "-o", "vg_name", "/dev/vda2"},
-		"  aelum-1a2b3c4d")
+		"  1a2b3c4d")
 
 	inst := NewInstaller(InstallerConfig{DiskID: "/dev/vda", Lvm: true})
 	inst.RunCleanup()

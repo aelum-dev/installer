@@ -415,12 +415,11 @@ const WallpaperSourceLight = "/usr/share/DankMaterialShell/wallpaper-light.jpg"
 
 // --- LVM volume management ---------------------------------------------------
 
-// LvmVolumeGroupPrefix is prepended to the PV's PARTUUID-derived id to form the
-// volume group name (e.g. "aelum-1a2b3c4d"). Deriving the name from the
-// partition's PARTUUID — which exists before any mkfs and survives luksFormat —
-// keeps it unique per partition and stable across install retries, so a second
-// Aelum install never collides with this one.
-const LvmVolumeGroupPrefix = "aelum-"
+// The volume group name is the install id derived from the PV's PARTUUID, built
+// by install/lvm.VolumeGroupName: 8 lowercase hex characters with no hyphen, on
+// purpose, so a logical volume's device-mapper name has a single separator
+// ("1a2b3c4d-root"). There is no "aelum-" prefix — LVM doubles every hyphen
+// inside both names, and a prefixed group read as "aelum--1a2b3c4d-root".
 
 // LvmRootVolumeName is the logical volume mounted as "/".
 const LvmRootVolumeName = "root"

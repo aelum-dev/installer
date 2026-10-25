@@ -302,11 +302,10 @@ func verifyBindMount(source, target string) error {
 //
 // The comparison is by device, not by spelling: findmnt names the node the mount
 // actually reached, and for a logical volume that is its device-mapper node —
-// where LVM doubles every hyphen of the group name, so the root LV of
-// aelum-1a2b3c4d is reported as /dev/mapper/aelum--1a2b3c4d-root while the
-// installer mounted it as /dev/aelum-1a2b3c4d/root. Those are the same device,
-// so when the two strings differ the paths are resolved to the node underneath
-// before the mount is declared wrong (see sameDeviceNode).
+// the root LV mounted as /dev/1a2b3c4d/root is reported as
+// /dev/mapper/1a2b3c4d-root. Those are the same device, so when the two strings
+// differ the paths are resolved to the node underneath before the mount is
+// declared wrong (see sameDeviceNode).
 func verifyMount(mountpoint, expectedDevice string) error {
 	// Check that the mountpoint is mounted
 	cmd := primitives.Run("findmnt", "-n", "-o", "SOURCE", mountpoint)

@@ -428,8 +428,8 @@ func lvmRecorder(t *testing.T) *primitivestest.Recorder {
 		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda2"}, "1a2b3c4d-0000-4000-8000-000000000000\n").
 		OnOutput("blockdev", "214748364800").
 		OnArgsOutput([]string{"vgs", "--noheadings", "--nosuffix", "--units", "m", "-o", "vg_size"}, "204800\n").
-		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/root"}, "ROOT-UUID\n").
-		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/aelum-1a2b3c4d/home"}, "HOME-UUID\n")
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/1a2b3c4d/root"}, "ROOT-UUID\n").
+		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/1a2b3c4d/home"}, "HOME-UUID\n")
 	t.Cleanup(primitives.SetCommandRunner(rec))
 	return rec
 }
@@ -443,20 +443,20 @@ func TestPrepareRootLvmExt4(t *testing.T) {
 		t.Fatalf("PrepareRoot() = %v", err)
 	}
 
-	if setup.VGName != "aelum-1a2b3c4d" {
-		t.Errorf("VGName = %q, want aelum-1a2b3c4d", setup.VGName)
+	if setup.VGName != "1a2b3c4d" {
+		t.Errorf("VGName = %q, want 1a2b3c4d", setup.VGName)
 	}
-	if setup.RootDevice != "/dev/aelum-1a2b3c4d/root" || setup.RootUUID != "ROOT-UUID" {
+	if setup.RootDevice != "/dev/1a2b3c4d/root" || setup.RootUUID != "ROOT-UUID" {
 		t.Errorf("root setup = %+v", setup)
 	}
-	if setup.HomeDevice != "/dev/aelum-1a2b3c4d/home" || setup.HomeUUID != "HOME-UUID" {
+	if setup.HomeDevice != "/dev/1a2b3c4d/home" || setup.HomeUUID != "HOME-UUID" {
 		t.Errorf("home setup = %+v", setup)
 	}
 
 	if !hasArgv(rec.CallsFor("pvcreate"), "pvcreate", "-ff", "-y", "/dev/vda2") {
 		t.Errorf("pvcreate not called on the raw partition: %v", rec.CallsFor("pvcreate"))
 	}
-	if !hasArgv(rec.CallsFor("vgcreate"), "vgcreate", "aelum-1a2b3c4d", "/dev/vda2") {
+	if !hasArgv(rec.CallsFor("vgcreate"), "vgcreate", "1a2b3c4d", "/dev/vda2") {
 		t.Errorf("vgcreate not called: %v", rec.CallsFor("vgcreate"))
 	}
 	// ext4 gets a sized root plus a home volume for the rest.
@@ -464,10 +464,10 @@ func TestPrepareRootLvmExt4(t *testing.T) {
 	if len(lvCalls) != 2 {
 		t.Fatalf("expected 2 lvcreate calls, got %v", lvCalls)
 	}
-	if !strings.Contains(strings.Join(lvCalls[0], " "), "-L 61440M -n root aelum-1a2b3c4d") {
+	if !strings.Contains(strings.Join(lvCalls[0], " "), "-L 61440M -n root 1a2b3c4d") {
 		t.Errorf("root LV not sized to 30%% of the group: %v", lvCalls[0])
 	}
-	if !strings.Contains(strings.Join(lvCalls[1], " "), "-l 100%FREE -n home aelum-1a2b3c4d") {
+	if !strings.Contains(strings.Join(lvCalls[1], " "), "-l 100%FREE -n home 1a2b3c4d") {
 		t.Errorf("home LV should take the rest of the group: %v", lvCalls[1])
 	}
 	if rec.Called("cryptsetup") {
@@ -485,7 +485,7 @@ func TestPrepareRootLvmBtrfs(t *testing.T) {
 		t.Fatalf("PrepareRoot() = %v", err)
 	}
 
-	if setup.RootDevice != "/dev/aelum-1a2b3c4d/root" || setup.RootUUID != "ROOT-UUID" {
+	if setup.RootDevice != "/dev/1a2b3c4d/root" || setup.RootUUID != "ROOT-UUID" {
 		t.Errorf("root setup = %+v", setup)
 	}
 	// btrfs keeps /home on the @home subvolume: one LV, no home volume.
@@ -493,7 +493,7 @@ func TestPrepareRootLvmBtrfs(t *testing.T) {
 		t.Errorf("btrfs must not create a home LV, got %+v", setup)
 	}
 	lvCalls := rec.CallsFor("lvcreate")
-	if len(lvCalls) != 1 || !strings.Contains(strings.Join(lvCalls[0], " "), "-l 100%FREE -n root aelum-1a2b3c4d") {
+	if len(lvCalls) != 1 || !strings.Contains(strings.Join(lvCalls[0], " "), "-l 100%FREE -n root 1a2b3c4d") {
 		t.Errorf("expected a single whole-group root LV, got %v", lvCalls)
 	}
 	if !rec.Called("mkfs.btrfs") || !rec.Called("btrfs") {
@@ -517,7 +517,7 @@ func TestPrepareRootLuksLvmDeactivatesBeforeClose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PrepareRoot() = %v", err)
 	}
-	if setup.LuksUUID != "LUKS-UUID" || setup.VGName != "aelum-1a2b3c4d" {
+	if setup.LuksUUID != "LUKS-UUID" || setup.VGName != "1a2b3c4d" {
 		t.Errorf("setup = %+v", setup)
 	}
 
