@@ -105,10 +105,10 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       locales.go                — Language list (28 languages)
       btrfs.go                  — BtrfsSubvolume definitions + GetBtrfsSubvolumes()
       validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection(), ValidateDiskSize()
-      mirrorlist.go             — Embedded mirrorlists per region
+      mirrorlist.go             — Embedded mirrorlists per region (falls back to default.list)
       mirrorlist_gen.go         — Mirrorlist refresh script
       logpath.go                — GetLogPath()
-      mirrorlist/               — Mirrorlist data files per locale (28 locale .list files + all_https.txt, default.list)
+      mirrorlist/               — 28 .list files: 25 region files (of the 28 Regions) + zh_Hans/zh_Hant aliases + default.list; ar_SA, ca_ES and eo use default.list. all_https.txt is the raw Arch mirrorlist they are generated from.
       disks_test.go             — Disk tests
       validators_test.go        — Validator tests
     validation/
