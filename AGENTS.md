@@ -62,20 +62,21 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       mount/
         mount.go                — MountFilesystem() (activates the VG, mounts root LV + ext4 home LV) + verifyMount() (+ mount_test.go)
       installbase/
-        install.go              — base pacstrap (basePackages) with phase-banded progress (+ install_test.go)
+        install.go              — base pacstrap (basePackages + btrfsOnlyBasePackages on btrfs) with phase-banded progress (+ install_test.go)
       installdesktop/
-        install.go              — desktop pacstrap (desktopPackages) with phase-banded progress (+ install_test.go)
+        install.go              — desktop pacstrap (desktopPackages + btrfsOnlyDesktopPackages on btrfs) with phase-banded progress (+ install_test.go)
       users/
         users.go                — SetupUsers() (useradd, chpasswd, sudoers, ISO skel copy) (+ users_test.go)
       configure/
-        configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services)
+        configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→snapper→services)
         fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants, ext4+LVM /home)
         bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options)
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
         services.go             — zram swap config + systemd service enablement
-        (+ fstab_test.go, swap_test.go)
+        snapper.go              — snapper configs for @ and @home (.snapshots subvolumes, quotas, timeline units); btrfs only
+        (+ fstab_test.go, swap_test.go, snapper_test.go)
       partition/
         partition.go            — ComputeLayout(), Apply() (manual partitioning: formats Boot + System)
         validate.go             — Validate()/ValidateFeasible() invariants
@@ -184,7 +185,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
-6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → services (`install/configure/`)
+6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → snapper (btrfs only) → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
 8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs, ESP at `/efi`, per-install `/boot` bind), kernel + initrd in this install's ESP boot directory (via the `/mnt/boot` bind), the rEFInd binary and its Aelum menu entry, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
 
@@ -243,7 +244,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 ## Desktop Environment
 Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
 
-Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, imv, gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd.
+Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, imv, gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd. On btrfs installs only, the desktop set also carries `snapper` (base step) and `btrfs-assistant` (desktop step): the layout's snapshots and their GUI. Both must also be listed in `live-iso/packages.x86_64`, since the installer installs from the mirror embedded in the ISO.
 
 ## Frontend Pages (Wizard Flow)
 ```
@@ -264,6 +265,7 @@ Welcome (language select)
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...` (Linux LVM `E6D6D379...` when it becomes a PV without LUKS)
 - LVM: one PV per install (the System partition or its LUKS mapper). The VG is named after the install id — the PV's PARTUUID-derived `<8 hex>`, with no `aelum-` prefix and no hyphen, so device-mapper names carry a single separator (`1a2b3c4d-root`, never `aelum--1a2b3c4d-root`); LVs `root`, plus `home` for ext4 only (btrfs keeps `@home` on the single root LV). LUKS always sits below LVM; fstab/boot reference filesystem UUIDs only, never `/dev/mapper`. Teardown resolves the VG from the PV (`pvs`) and refuses a multi-PV group.
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
+- Snapper (btrfs only): configs `root` (@) and `home` (@home) written by `configure.ConfigureSnapper`, each with its `.snapshots` subvolume, quotas enabled, `SNAPPER_CONFIGS` in `/etc/conf.d/snapper`, and snapperd + the timeline timers enabled. The list lives in `configure.snapperTargets` and is checked against `GetBtrfsSubvolumes()`.
 - Default username: `shared.DefaultCLIUsername` = "aelum"
 - Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"

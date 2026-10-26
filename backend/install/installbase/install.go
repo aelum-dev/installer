@@ -52,13 +52,37 @@ var BasePackages = []string{
 	"nano",
 }
 
+// BtrfsOnlyBasePackages extend the base set only when the install chose btrfs.
+// snapper is the snapshot engine the configure step configures for the subvolume
+// layout (see configure.ConfigureSnapper); an ext4 install has no subvolumes to
+// snapshot, so it gets neither snapper nor its GUI.
+var BtrfsOnlyBasePackages = []string{
+	"snapper",
+}
+
+// AppendBtrfsOnly returns packages plus extra when the install chose btrfs, and
+// packages unchanged otherwise. Exported for installdesktop, which gates
+// btrfs-assistant the same way.
+//
+// A btrfs-only package must also be listed in the live ISO's package list
+// (live-iso/packages.x86_64): the installer installs from the mirror embedded in
+// the ISO, so a package that is not in that mirror cannot be installed.
+func AppendBtrfsOnly(ctx *shared.InstallContext, packages, extra []string) []string {
+	if ctx.FileSystem != shared.FileSystemBtrfs {
+		return packages
+	}
+	out := make([]string, 0, len(packages)+len(extra))
+	out = append(out, packages...)
+	return append(out, extra...)
+}
+
 // Run installs the Arch Linux base system via pacstrap.
 func Run(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 
-	return InstallPackages(ctx, BasePackages, "base system")
+	return InstallPackages(ctx, AppendBtrfsOnly(ctx, BasePackages, BtrfsOnlyBasePackages), "base system")
 }
 
 // InstallPackages runs pacstrap with the given package list.

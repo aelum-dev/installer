@@ -175,3 +175,50 @@ func TestCheckPackages_QueriesEveryExpectedPackage(t *testing.T) {
 		}
 	}
 }
+
+// queriedPackages runs checkPackages against a recorder and returns the package
+// names it asked the installed system about.
+func queriedPackages(t *testing.T, ctx *shared.InstallContext) map[string]bool {
+	t.Helper()
+
+	rec := primitivestest.NewRecorder()
+	defer primitives.SetCommandRunner(rec)()
+
+	var issues, info []string
+	checkPackages(ctx, &issues, &info)
+
+	seen := map[string]bool{}
+	for _, argv := range rec.CallsFor("arch-chroot") {
+		if len(argv) > 4 {
+			seen[argv[4]] = true
+		}
+	}
+	return seen
+}
+
+// TestCheckPackages_BtrfsOnlyPackagesAreGated keeps the verification list in step
+// with the install steps: the snapshot tooling is verified on a btrfs install and
+// never on an ext4 one.
+func TestCheckPackages_BtrfsOnlyPackagesAreGated(t *testing.T) {
+	if len(btrfsOnlyPackages) == 0 {
+		t.Fatal("expected a non-empty btrfsOnlyPackages list")
+	}
+
+	btrfs := queriedPackages(t, &shared.InstallContext{FileSystem: shared.FileSystemBtrfs})
+	ext4 := queriedPackages(t, &shared.InstallContext{FileSystem: shared.FileSystemExt4})
+
+	for _, pkg := range btrfsOnlyPackages {
+		if !btrfs[pkg] {
+			t.Errorf("a btrfs install did not verify %q", pkg)
+		}
+		if ext4[pkg] {
+			t.Errorf("an ext4 install verified %q, which it never installs", pkg)
+		}
+	}
+
+	for _, pkg := range expectedPackages {
+		if !btrfs[pkg] || !ext4[pkg] {
+			t.Errorf("%q must be verified on every filesystem", pkg)
+		}
+	}
+}

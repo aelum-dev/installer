@@ -18,6 +18,19 @@ import (
 // the desktop. Single-sourced from the install steps (not duplicated here).
 var expectedPackages = append(append([]string{}, installbase.BasePackages...), installdesktop.DesktopPackages...)
 
+// btrfsOnlyPackages are the packages the base and desktop steps install only for
+// a btrfs install (installbase.AppendBtrfsOnly gates them). Expecting them on an
+// ext4 install would report a package that was never meant to be there.
+var btrfsOnlyPackages = append(append([]string{}, installbase.BtrfsOnlyBasePackages...), installdesktop.BtrfsOnlyDesktopPackages...)
+
+// expectedPackagesFor returns the package set this install must contain.
+func expectedPackagesFor(ctx *shared.InstallContext) []string {
+	if ctx.FileSystem != shared.FileSystemBtrfs {
+		return expectedPackages
+	}
+	return append(append([]string{}, expectedPackages...), btrfsOnlyPackages...)
+}
+
 // Run verifies that the installed system (mounted at /mnt) is complete and
 // bootable. The check is read-only and fast: it verifies fstab, kernel/initrd
 // images, required packages, the user account, and the hostname. It never
@@ -406,7 +419,7 @@ func checkKernelImages(ctx *shared.InstallContext, issues, info *[]string) {
 // package as an issue.
 func checkPackages(ctx *shared.InstallContext, issues, info *[]string) {
 	var missing []string
-	for _, pkg := range expectedPackages {
+	for _, pkg := range expectedPackagesFor(ctx) {
 		if _, err := primitives.Run("arch-chroot", shared.MountRoot, "pacman", "-Q", pkg).Output(); err != nil {
 			missing = append(missing, pkg)
 		}

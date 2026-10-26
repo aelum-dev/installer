@@ -66,7 +66,16 @@ var DesktopPackages = []string{
 	"wireplumber",
 }
 
-// Run installs desktop environment packages via pacstrap.
+// BtrfsOnlyDesktopPackages extend the desktop set only when the install chose
+// btrfs. btrfs-assistant is the front-end for that layout: subvolumes, snapper
+// snapshots, scrub and balance. On ext4 there is no layout for it to manage, and
+// snapper is not installed either (see installbase.btrfsOnlyBasePackages).
+var BtrfsOnlyDesktopPackages = []string{
+	"btrfs-assistant",
+}
+
+// Run installs the desktop environment packages via pacstrap.
 func Run(ctx *shared.InstallContext) error {
-	return installbase.InstallPackages(ctx, DesktopPackages, "desktop environment")
+	packages := installbase.AppendBtrfsOnly(ctx, DesktopPackages, BtrfsOnlyDesktopPackages)
+	return installbase.InstallPackages(ctx, packages, "desktop environment")
 }

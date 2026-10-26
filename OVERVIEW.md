@@ -111,7 +111,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
 | 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
-| 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → bootloader → system config → greetd → Plymouth → zram → services |
+| 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → bootloader → system config → greetd → Plymouth → zram → snapper → services |
 
 **Step 6 sub-steps (in order):**
 
@@ -123,7 +123,8 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 6.4 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
 | 6.5 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
 | 6.6 | Configure zram | `ConfigureZram` | Compressed swap via zram-generator |
-| 6.7 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
+| 6.7 | Configure Snapper | `ConfigureSnapper` | btrfs only: snapper configs for `@` and `@home`, their `.snapshots` subvolumes, quotas, `SNAPPER_CONFIGS`, snapperd + timeline timers |
+| 6.8 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
 
 ### Progress Tracking
 
@@ -201,6 +202,8 @@ The installer supports starting on any page via the `StartPage` constant in `mai
 
 ### btrfs Subvolumes
 When btrfs is selected, 6 subvolumes are created: `@` (default), `@home`, `@srv`, `@cache`, `@tmp`, `@log`. Each has configurable compression (zstd) and mount options. `@` is set as default. `@cache` and `@tmp` use `nodatacow` to avoid CoW overhead. Swap is provided by zram, not a subvolume.
+
+`@` and `@home` get a snapper config (`root`, `home`) written by `configure.ConfigureSnapper`, each with its own `.snapshots` subvolume, plus btrfs quotas and the timeline units. The other four are deliberately not snapshotted: they are separate subvolumes, so a snapshot of `@` never contains them, and no restore wants an old package cache, scratch file, journal record or server data directory.
 
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:
@@ -298,6 +301,7 @@ Aelum-Installer/
 │   │   │   └── memory.go        # Embedded memory.json
 │   │   ├── plymouth.go          # Silent boot (Aelum theme)
 │   │   ├── services.go          # systemd service enabling
+│   │   ├── snapper.go           # Snapper configs for the btrfs layout
 │   │   ├── zram.go              # Compressed swap via zram-generator
 │   │   ├── copy.go              # ISO-to-target file copying
 │   │   ├── cleanup.go           # Rollback + mount cleanup
