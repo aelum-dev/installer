@@ -25,7 +25,7 @@ On the *Disk Selection* step you pick **which disk** to install onto and **how**
 - **Automatic** (recommended) — the installer uses the whole disk and sets up the partitions for you. It creates a small boot partition and a root partition, then formats them as either **ext4** or **btrfs** (choose your filesystem with the toggle at the top). This is what most people want: pick a disk, pick a filesystem, and go. Everything else is handled automatically.
 - **Manual** — you decide exactly which partitions exist and what each one is for. Use this if you're **dual-booting** (keeping another operating system and its files intact) or want a custom layout. See the plain-language guide below.
 
-You can switch between the two modes with the **Automatic / Manual** toggle at the top of the page. Automatic mode works on any empty or whole disk; Manual mode needs a disk that already has partitions (or that you create on this screen).
+You can switch between the two modes with the **Automatic / Manual** toggle at the top of the page. Automatic mode works on any empty or whole disk; Manual mode needs a disk that already has partitions (or that you create on this screen) and a **GPT** partition table — automatic mode rewrites an older MBR table for you.
 
 Two more toggles sit under the filesystem pills:
 
@@ -35,6 +35,8 @@ Two more toggles sit under the filesystem pills:
 ### Manual partition mode
 
 Automatic mode erases the whole disk. Manual mode only writes to the two partitions you designate — **Boot** and **System** — and both are always formatted. Every other partition (your other operating system, documents, photos) is left exactly as it is. If you dual-boot, give Aelum its **own** Boot partition and its **own** System partition; never point Boot at another operating system's ESP.
+
+Manual mode writes partitions with `sgdisk`, which only saves changes to a GPT, so the disk must already use a GPT table or have no table at all (the installer then creates one). A disk that still uses an MBR table is refused before anything on it is touched — use automatic mode there, since it clears the table and writes a GPT in its place.
 
 Here's how to use it, step by step:
 

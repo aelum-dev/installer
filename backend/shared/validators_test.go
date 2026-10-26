@@ -262,3 +262,34 @@ func TestValidateDiskSizeForLayout(t *testing.T) {
 		})
 	}
 }
+
+// --- ValidateManualPartitionTable ---------------------------------------------
+
+// sgdisk writes a manual plan only to a GPT (or to a disk with no table at all,
+// where it creates one). A disk carrying any other table must be rejected before
+// Apply starts deleting partitions.
+func TestValidateManualPartitionTable(t *testing.T) {
+	tests := []struct {
+		name    string
+		blkid   string
+		wantErr bool
+	}{
+		{"GPT table", "echo gpt\n", false},
+		{"no partition table (blkid exits 2)", "exit 2\n", false},
+		{"unreadable device: fail open, Apply re-checks", "exit 1\n", false},
+		{"MBR table (util-linux names it dos)", "echo dos\n", true},
+		{"BSD disklabel", "echo bsd\n", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeTools(t, map[string]string{"blkid": tt.blkid})
+			err := ValidateManualPartitionTable("/dev/vda")
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ValidateManualPartitionTable() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil && !strings.Contains(err.Error(), "partition table") {
+				t.Errorf("error = %v, want it to name the partition table", err)
+			}
+		})
+	}
+}

@@ -257,6 +257,7 @@ Welcome (language select)
 
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
+- Partition table: manual mode needs a GPT. `shared.PartitionTableType` reads it (`blkid -p -o value -s PTTYPE`) and `shared.ValidateManualPartitionTable` rejects any other table in `ComputeLayout`, `ValidateFeasible` and `Apply` — sgdisk refuses to save changes on a non-GPT disk (exit 3), so the rejection must come before anything is deleted. An empty type (no table, or an unreadable device) is allowed: sgdisk writes a GPT there, and Apply re-checks as root. Automatic mode is unaffected — `sgdisk -Z` replaces any table.
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
 - Boot floor: every Boot partition (new or existing) must be at least `shared.MinESPSizeBytes` = 512 MiB. Manual mode always formats the selected Boot partition as FAT32, so it never reuses another OS's ESP.
 - System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition). With LVM it rises to `shared.MinLvmSystemPartitionBytes` (16 GiB + 16 MiB metadata), plus `shared.LuksHeaderReserveBytes` when LUKS sits under it — use `shared.SystemPartitionFloorBytes(lvm, luks)`.

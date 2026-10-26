@@ -2,9 +2,47 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { getPageValidationReasons, isPageValid } from './page-validation';
 import { installState } from './store.svelte';
 import { PAGE_IDS } from './types';
-import type { ManualLayout } from './types';
+import type { DiskInfo, ManualLayout } from './types';
 
 const mib = 1024 * 1024;
+
+const NOT_GPT_REASON =
+	'Manual mode needs a GPT partition table. This disk has a different one; automatic mode rewrites it.';
+
+function diskInfo(over: Partial<DiskInfo> = {}): DiskInfo {
+	return {
+		name: 'vda',
+		path: '/dev/vda',
+		size: 20480 * mib,
+		sizeFormatted: '20.0 GiB',
+		type: 'disk',
+		model: 'Test Disk',
+		vendor: '',
+		rotational: false,
+		readonly: false,
+		fstype: null,
+		mountpoint: null,
+		serial: '',
+		trans: 'virtio',
+		isRemovable: false,
+		partitionTable: 'gpt',
+		...over,
+	};
+}
+
+// A manual plan that is valid in every other respect: an existing 512 MB Boot
+// partition and an existing 8192 MB System partition on a 20 GiB disk.
+function validManualLayout(): ManualLayout {
+	return {
+		disk: '/dev/vda',
+		diskSizeMB: 20480,
+		diskSizeBytes: 20480 * mib,
+		partitions: [
+			{ index: 0, path: '/dev/vda1', sizeMB: 512, sizeBytes: 512 * mib, type: 'esp' },
+			{ index: 1, path: '/dev/vda2', sizeMB: 8192, sizeBytes: 8192 * mib, type: 'system' },
+		],
+	};
+}
 
 function resetState(): void {
 	installState.locale = 'en-US';
@@ -58,6 +96,47 @@ describe('getPageValidationReasons — new-partition free space', () => {
 		// Over-allocation is still rejected (this also trips the disk-size check,
 		// since new + existing > disk), so just assert it does not silently pass.
 		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).not.toEqual([]);
+	});
+});
+
+describe('getPageValidationReasons — manual mode partition table', () => {
+	// A manual plan is written with sgdisk, which refuses to save any change on a
+	// disk whose partition table is not a GPT. The wizard must say so before the
+	// user designs a plan that cannot be applied.
+	it('refuses a manual plan on a disk with an MBR table', () => {
+		setManual(validManualLayout());
+		installState.disk = diskInfo({ partitionTable: 'dos' });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([NOT_GPT_REASON]);
+		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(false);
+	});
+
+	it('accepts a GPT disk', () => {
+		setManual(validManualLayout());
+		installState.disk = diskInfo({ partitionTable: 'gpt' });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
+		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(true);
+	});
+
+	// No table reported means either an unpartitioned disk (sgdisk creates a GPT)
+	// or a device the backend could not read. Neither may block the wizard: Apply
+	// re-checks as root before it writes anything.
+	it('accepts a disk whose table could not be read', () => {
+		setManual(validManualLayout());
+		installState.disk = diskInfo({ partitionTable: '' });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
+	});
+
+	// Automatic mode zaps the table first (`sgdisk -Z`), so any table is fine.
+	it('does not gate automatic mode', () => {
+		installState.diskId = '/dev/vda';
+		installState.fileSystem = 'ext4';
+		installState.disk = diskInfo({ partitionTable: 'dos' });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
+		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(true);
 	});
 });
 

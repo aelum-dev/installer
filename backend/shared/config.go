@@ -190,6 +190,11 @@ const DefaultCLIUsername = "aelum"
 
 // --- EFI / GPT ---------------------------------------------------------------
 
+// PartitionTableGPT is the partition-table name util-linux reports for a GPT
+// disk (blkid/lsblk PTTYPE). util-linux calls an MBR table "dos". Manual
+// partitioning compares against it: sgdisk only writes to a GPT.
+const PartitionTableGPT = "gpt"
+
 // EFIPartitionSizeMB is the EFI partition size in mebibytes.
 const EFIPartitionSizeMB = 512
 

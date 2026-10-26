@@ -17,7 +17,8 @@ const disk: DiskInfo = {
 	mountpoint: null,
 	serial: '',
 	trans: 'sata',
-	isRemovable: false
+	isRemovable: false,
+	partitionTable: 'gpt',
 };
 
 let app: ReturnType<typeof mount> | null = null;

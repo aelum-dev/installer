@@ -253,6 +253,13 @@ func ValidateFeasible(layout shared.ManualLayout) error {
 	if err := Validate(layout); err != nil {
 		return err
 	}
+	// The table check reads the device, so it belongs to this real-disk preflight
+	// rather than to Validate, which only inspects the plan.
+	if layout.Disk != "" {
+		if err := shared.ValidateManualPartitionTable(layout.Disk); err != nil {
+			return err
+		}
+	}
 	if layout.Disk == "" || !hasNewPartitions(layout) {
 		return nil
 	}

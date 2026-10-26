@@ -124,6 +124,27 @@ func ValidateDiskSizeForLayout(diskPath string, lvm, luks bool) error {
 	return nil
 }
 
+// ValidateManualPartitionTable rejects a disk whose partition table sgdisk will
+// not write to. Manual partitioning creates and re-types partitions with
+// `sgdisk -n`/`-t`, and on a disk carrying a non-GPT table sgdisk refuses to
+// save the changes ("Non-GPT disk; not saving changes. Use -g to override.",
+// exit 3) — a failure that would otherwise surface in the middle of the install,
+// after the user's deleted partitions are already gone. Automatic mode is
+// unaffected: it zaps the table first (`sgdisk -Z`), and sgdisk then writes a
+// fresh GPT in its place.
+//
+// An empty type is accepted on purpose: a disk with no partition table is
+// exactly the case sgdisk handles by creating one, and a caller that cannot read
+// the device (unprivileged, dry-run) must not be blocked here — Apply re-checks
+// as root before it writes anything.
+func ValidateManualPartitionTable(diskPath string) error {
+	table := PartitionTableType(diskPath)
+	if table == "" || table == PartitionTableGPT {
+		return nil
+	}
+	return fmt.Errorf("disk %s has a %s partition table: manual partitioning needs a GPT, or a disk with no partition table at all. Automatic mode rewrites the table for you", diskPath, table)
+}
+
 // diskSizeBytes returns a whole disk's size in bytes (via lsblk).
 func diskSizeBytes(diskPath string) (uint64, error) {
 	cmd := exec.Command("lsblk", "-b", "-d", "-n", "-o", "SIZE", diskPath)

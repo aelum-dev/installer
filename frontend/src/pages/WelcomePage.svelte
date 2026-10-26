@@ -66,7 +66,6 @@
 		<div class="requirements">
 			<div class="requirement-header">{t('page.welcome.requirements')}</div>
 			<div class="requirement-item">{t('page.welcome.reqUEFI')}</div>
-			<div class="requirement-item">{t('page.welcome.reqGPT')}</div>
 			<div class="requirement-item">{t('page.welcome.reqDisk')}</div>
 		</div>
 	{/snippet}

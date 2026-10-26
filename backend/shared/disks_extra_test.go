@@ -136,6 +136,15 @@ func TestLogicalSectorSize_FakeMode(t *testing.T) {
 	}
 }
 
+// Fake disks report a GPT so the manual-mode partition-table check never fires in
+// UI/dry-run mode, where no real device is being read.
+func TestPartitionTableType_FakeMode(t *testing.T) {
+	t.Setenv("FAKE_DISKS", "1")
+	if got := PartitionTableType("/dev/vda"); got != PartitionTableGPT {
+		t.Errorf("PartitionTableType in fake mode = %q, want %q", got, PartitionTableGPT)
+	}
+}
+
 func TestFakeDisks(t *testing.T) {
 	disks := fakeDisks()
 	if len(disks) == 0 {

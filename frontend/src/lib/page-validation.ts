@@ -6,7 +6,7 @@
 
 import { installState } from '$lib/store.svelte';
 import { PAGE_IDS } from '$lib/types';
-import { MinDiskSizeBytes, MinManualDiskSizeBytes } from '$lib/constants';
+import { MinDiskSizeBytes, MinManualDiskSizeBytes, PartitionTableGPT } from '$lib/constants';
 import { t } from '$lib/i18n';
 import {
 	confirmPasswordRule,
@@ -123,6 +123,15 @@ function manualLayoutValidationReasons(): string[] {
 				min: (MinManualDiskSizeBytes / 1024 ** 3).toFixed(1),
 			}),
 		);
+	}
+
+	// Manual mode applies the plan with sgdisk, which refuses to save any change
+	// on a disk whose partition table is not a GPT. An empty value is not a
+	// reason: it means the disk has no table at all (sgdisk creates one) or the
+	// backend could not read it, and the backend re-checks before it writes.
+	if (installState.disk?.partitionTable && installState.disk.partitionTable !== PartitionTableGPT) {
+		reasons.push(t('validation.modal.notGPTDisk'));
+		return reasons;
 	}
 
 	const layout = installState.manualLayout;

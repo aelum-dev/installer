@@ -18,6 +18,7 @@ function disk(over: Partial<DiskInfo> = {}): DiskInfo {
 		serial: '',
 		trans: 'nvme',
 		isRemovable: false,
+		partitionTable: 'gpt',
 		...over,
 	};
 }

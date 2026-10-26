@@ -131,6 +131,9 @@ func GetDisks() ([]DiskInfo, error) {
 			if disks[i].Fstype == "" {
 				disks[i].Fstype = deriveFstypeFromFakePartitions(disks[i].Path)
 			}
+			// Fake disks are always GPT: the manual-mode partition-table check must
+			// not fire in UI/dry-run mode, where no real device is being read.
+			disks[i].PartitionTable = PartitionTableGPT
 		}
 		return disks, nil
 	}
@@ -157,20 +160,21 @@ func GetDisks() ([]DiskInfo, error) {
 		}
 
 		disk := DiskInfo{
-			Name:          bd.Name,
-			Path:          "/dev/" + bd.Name,
-			Size:          bd.Size.Int64(),
-			SizeFormatted: FormatSize(bd.Size.Int64()),
-			Type:          bd.Type,
-			Model:         strings.TrimSpace(bd.Model),
-			Vendor:        strings.TrimSpace(bd.Vendor),
-			Rotational:    bool(bd.Rota),
-			Readonly:      bool(bd.Ro),
-			Fstype:        bd.Fstype,
-			Mountpoint:    bd.Mountpoint,
-			Serial:        strings.TrimSpace(bd.Serial),
-			Trans:         bd.Trans,
-			IsRemovable:   isRemovable(bd.Trans),
+			Name:           bd.Name,
+			Path:           "/dev/" + bd.Name,
+			Size:           bd.Size.Int64(),
+			SizeFormatted:  FormatSize(bd.Size.Int64()),
+			Type:           bd.Type,
+			Model:          strings.TrimSpace(bd.Model),
+			Vendor:         strings.TrimSpace(bd.Vendor),
+			Rotational:     bool(bd.Rota),
+			Readonly:       bool(bd.Ro),
+			Fstype:         bd.Fstype,
+			Mountpoint:     bd.Mountpoint,
+			Serial:         strings.TrimSpace(bd.Serial),
+			Trans:          bd.Trans,
+			IsRemovable:    isRemovable(bd.Trans),
+			PartitionTable: PartitionTableType("/dev/" + bd.Name),
 		}
 
 		if disk.Model == "" && disk.Vendor != "" {
@@ -292,6 +296,32 @@ func LogicalSectorSize(diskPath string) int64 {
 		return fallback
 	}
 	return n
+}
+
+// PartitionTableType returns the name util-linux reports for a disk's partition
+// table ("gpt", "dos", …), or "" when the disk carries no partition table or the
+// type cannot be read (unprivileged caller, unreadable device).
+//
+// Manual partitioning places partitions with sgdisk, which refuses to save any
+// change on a disk whose table is not a GPT ("Non-GPT disk; not saving changes.
+// Use -g to override.", exit 3) but happily creates one on a disk that has no
+// table at all — so the two cases have to be told apart before anything is
+// written. blkid's low-probe is used rather than `lsblk -o PTTYPE`: lsblk
+// reports no PTTYPE for loop devices, while blkid reports gpt/dos for every
+// device checked, real virtio disk and loop-backed image alike.
+func PartitionTableType(diskPath string) string {
+	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
+		return PartitionTableGPT
+	}
+	if !strings.HasPrefix(diskPath, "/dev/") {
+		diskPath = "/dev/" + diskPath
+	}
+	out, err := exec.Command("blkid", "-p", "-o", "value", "-s", "PTTYPE", diskPath).Output()
+	if err != nil {
+		// blkid exits 2 when the device carries no partition table at all.
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(string(out)))
 }
 
 // GetDiskPartitions returns partition information for a disk using lsblk.

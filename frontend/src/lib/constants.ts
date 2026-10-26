@@ -41,6 +41,7 @@ export const MirrorListServerPrefix = "Server = ";
 export const MinFstabContentLengthBytes = 50;
 export const DefaultHostname = "aelum";
 export const DefaultCLIUsername = "aelum";
+export const PartitionTableGPT = "gpt";
 export const EFIPartitionSizeMB = 512;
 export const GPTPartitionStartSector = 2048;
 export const MinManualDiskSizeBytes = MinDiskSizeBytes;

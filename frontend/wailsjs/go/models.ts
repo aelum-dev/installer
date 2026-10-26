@@ -55,6 +55,7 @@ export namespace shared {
 	    serial: string;
 	    trans: string;
 	    isRemovable: boolean;
+	    partitionTable: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new DiskInfo(source);
@@ -76,6 +77,7 @@ export namespace shared {
 	        this.serial = source["serial"];
 	        this.trans = source["trans"];
 	        this.isRemovable = source["isRemovable"];
+	        this.partitionTable = source["partitionTable"];
 	    }
 	}
 	export class DiskSelectionData {

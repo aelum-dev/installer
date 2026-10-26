@@ -44,6 +44,13 @@ func ComputeLayout(diskID string) (shared.ManualLayout, error) {
 		return shared.ManualLayout{}, fmt.Errorf("disk %s not found", diskID)
 	}
 
+	// Manual layout is applied with sgdisk, which will not write to a disk whose
+	// partition table is not a GPT. Reject such a disk here — while the user is
+	// still choosing one — rather than after partitions have been deleted.
+	if err := shared.ValidateManualPartitionTable(diskID); err != nil {
+		return shared.ManualLayout{}, err
+	}
+
 	// Existing partitions.
 	partitions, err := shared.GetDiskPartitions(diskID)
 	if err != nil {
@@ -100,6 +107,12 @@ func Apply(ctx *shared.InstallContext, layout *shared.ManualLayout) (retErr erro
 	reconcileLvm(ctx, layout)
 
 	if err := Validate(*layout); err != nil {
+		return err
+	}
+
+	// Same guard as ComputeLayout, for callers that built the layout themselves
+	// (the CLI's --manual-layout) and never went through the disk picker.
+	if err := shared.ValidateManualPartitionTable(diskID); err != nil {
 		return err
 	}
 

@@ -96,6 +96,56 @@ func TestGetDisks_ParsesAndFilters(t *testing.T) {
 	}
 }
 
+// --- PartitionTableType ------------------------------------------------------
+
+func TestPartitionTableType(t *testing.T) {
+	tests := []struct {
+		name   string
+		script string
+		want   string
+	}{
+		{"GPT disk", "echo gpt\n", "gpt"},
+		{"MBR disk (util-linux names it dos)", "echo dos\n", "dos"},
+		{"no partition table (blkid exits 2)", "exit 2\n", ""},
+		{"unreadable device", "echo boom >&2\nexit 1\n", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeTools(t, map[string]string{"blkid": tt.script})
+			if got := PartitionTableType("/dev/vda"); got != tt.want {
+				t.Errorf("PartitionTableType() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// GetDisks carries the table type to the UI so manual mode can refuse a disk
+// before the user designs a plan sgdisk will not write.
+func TestGetDisks_ReportsPartitionTable(t *testing.T) {
+	fakeTools(t, map[string]string{
+		"lsblk": lsblkShim(disksJSON, partsJSON),
+		"blkid": `for a in "$@"; do
+  if [ "$a" = "/dev/sda" ]; then echo dos; exit 0; fi
+done
+exit 2
+`,
+	})
+
+	disks, err := GetDisks()
+	if err != nil {
+		t.Fatalf("GetDisks() = %v", err)
+	}
+	if len(disks) != 2 {
+		t.Fatalf("GetDisks() returned %d disks, want 2", len(disks))
+	}
+	if disks[0].Path != "/dev/vda" || disks[0].PartitionTable != "" {
+		t.Errorf("vda partition table = %q, want empty (no table reported)", disks[0].PartitionTable)
+	}
+	if disks[1].Path != "/dev/sda" || disks[1].PartitionTable != "dos" {
+		t.Errorf("sda partition table = %q, want dos", disks[1].PartitionTable)
+	}
+}
+
 func TestGetDisks_Error(t *testing.T) {
 	fakeTools(t, map[string]string{"lsblk": "echo 'lsblk fail' >&2\nexit 1\n"})
 

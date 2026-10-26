@@ -111,6 +111,10 @@ type DiskInfo struct {
 	Serial        string `json:"serial"`
 	Trans         string `json:"trans"`
 	IsRemovable   bool   `json:"isRemovable"`
+	// PartitionTable is the disk's partition-table type as util-linux names it
+	// ("gpt", "dos", …), or "" when the disk has no partition table or the type
+	// could not be read. Manual mode needs a GPT; automatic mode writes one.
+	PartitionTable string `json:"partitionTable"`
 }
 
 // PartitionType is the type assigned to a partition in a manual layout plan.

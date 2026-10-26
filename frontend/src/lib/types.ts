@@ -86,6 +86,10 @@ export interface DiskInfo {
 	serial: string;
 	trans: string;
 	isRemovable: boolean;
+	// Partition-table type as util-linux names it ("gpt", "dos", …), or "" when
+	// the disk has no partition table or the backend could not read one.
+	// Manual mode can only write a GPT; automatic mode writes one for any disk.
+	partitionTable: string;
 }
 
 // PartitionEntry represents a partition on a disk.

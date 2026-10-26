@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { DiskInfo, ManualPartition, PartitionType } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
+	import { PartitionTableGPT } from '$lib/constants';
 	import { GetManualLayout, SaveManualLayout } from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
@@ -90,6 +91,16 @@
 		const size = addSizeMB || 0;
 		return size > 0 && size <= availableAddMB;
 	});
+
+	// Manual mode applies the plan with sgdisk, which refuses to save any change on
+	// a disk whose partition table is not a GPT. The backend rejects such a disk in
+	// ComputeLayout as well; naming it here keeps the page showing a translated,
+	// actionable reason instead of a raw backend error. An empty partitionTable is
+	// not unsupported: it means no table (sgdisk writes one) or an unreadable
+	// device, and the backend re-checks before it writes anything.
+	const unsupportedTable = $derived(
+		!!disk?.partitionTable && disk.partitionTable !== PartitionTableGPT,
+	);
 
 
 	// Identifies the latest layout request, so a slow response for a previous
@@ -218,6 +229,14 @@
 			loading = false;
 			return;
 		}
+		// Nothing to design on a disk sgdisk will not write to: asking the backend
+		// would only produce the same rejection as an untranslated error string.
+		if (unsupportedTable) {
+			loadRequest++;
+			installState.manualLayout = null;
+			loading = false;
+			return;
+		}
 		void loadLayout(path);
 	});
 
@@ -241,7 +260,11 @@
 </script>
 
 <div class="manual">
-	{#if error}
+	{#if unsupportedTable}
+		<div class="state-message error">
+			<p>{t('validation.modal.notGPTDisk')}</p>
+		</div>
+	{:else if error}
 		<div class="state-message error">
 			<p>{error}</p>
 		</div>
