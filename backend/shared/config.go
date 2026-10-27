@@ -346,6 +346,12 @@ const RefindThemeBackgroundPath = RefindThemeDir + "/background.png"
 // Ventoy, generic Linux) for loaders it auto-detects.
 const RefindIconPath = RefindThemeDir + "/icons/os_arch.png"
 
+// RefindSnapshotIconPath is the ESP-relative icon for an installation's snapshot
+// menu entry: the history glyph of the branded theme, drawn on the same cream
+// tile as the Aelum mark so it reads as part of this system rather than as a
+// second copy of it. live-iso/scripts/gen-refind-theme.py renders it.
+const RefindSnapshotIconPath = RefindThemeDir + "/icons/os_snapshot.png"
+
 // --- Progress tick ----------------------------------------------------------
 
 // DryRunStepDuration is how long each install step sleeps in dry-run mode.

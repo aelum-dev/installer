@@ -306,9 +306,37 @@ func refindEntryIncludes(esp string) ([]string, error) {
 	sort.Strings(names)
 
 	includes := make([]string, 0, len(names))
+	add := func(name string) { includes = append(includes, shared.RefindEntriesDirName+"/"+name) }
+	isMenuFragment := func(name string) bool {
+		return strings.EqualFold(filepath.Ext(name), ".conf")
+	}
+	present := make(map[string]bool, len(names))
 	for _, name := range names {
-		if strings.EqualFold(filepath.Ext(name), ".conf") {
-			includes = append(includes, shared.RefindEntriesDirName+"/"+name)
+		present[name] = true
+	}
+
+	// Each installation's entry, immediately followed by its own snapshots: an
+	// entry and the states of that same system belong together on screen, and a
+	// plain filename sort would list the snapshots first ("-" sorts before ".",
+	// see shared.IsRefindSnapshotEntry).
+	written := make(map[string]bool, len(names))
+	for _, name := range names {
+		if !isMenuFragment(name) || shared.IsRefindSnapshotEntry(name) {
+			continue
+		}
+		add(name)
+		written[name] = true
+		sibling := strings.TrimSuffix(name, ".conf") + shared.RefindSnapshotEntrySuffix
+		if present[sibling] {
+			add(sibling)
+			written[sibling] = true
+		}
+	}
+	// A snapshot fragment whose entry is gone still lists its snapshots; it just
+	// has no entry to sit behind.
+	for _, name := range names {
+		if isMenuFragment(name) && !written[name] {
+			add(name)
 		}
 	}
 	return includes, nil

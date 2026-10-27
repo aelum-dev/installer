@@ -245,7 +245,25 @@ func TestSnapshotMenuScript(t *testing.T) {
 		// LVM options stay the installer's business.
 		`base_entry="$esp/EFI/refind/aelum/$install_id.conf"`,
 		`base_options=$(sed -n 's/^[[:space:]]*options`,
-		"rootflags=subvol=$snapshot_subvol",
+		`rootflags=subvol=$subvol_base/$1/snapshot`,
+		// One entry, with the snapshots inside it: snapper keeps dozens, and a row
+		// of icons that size is not a menu. A submenuentry inherits the loader, so
+		// it only states which subvolume becomes root.
+		`echo "menuentry \"$target_entry_title\" {"`,
+		`echo "    icon $SNAPSHOT_ICON"`,
+		`echo "    submenuentry \"$title\" {"`,
+		// Menu naming (Option A): the number stays, because it is what snapper and
+		// btrfs-assistant show, and the words say what the state is for.
+		`title="Snapshot $number"`,
+		`entry_title="Aelum snapshot $number"`,
+		`phrase="Before system update"`,
+		`phrase="After system update"`,
+		`case "$phrase" in pacman) phrase="" ;;`,
+		// The entry boots the newest snapshot taken before a change, not the newest
+		// one, which is usually the state that already contains the change.
+		`[ "$type" = pre ]`,
+		// No snapshots, no entry: an icon that boots nothing is worse than no icon.
+		`if [ -n "$target_number" ]; then`,
 		// The install id is the installer's derivation: eight hex characters of the
 		// root filesystem UUID.
 		`install_id=$(printf '%s' "$root_uuid" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9' | cut -c1-8)`,
@@ -264,8 +282,29 @@ func TestSnapshotMenuScript(t *testing.T) {
 	if strings.Contains(script, "```") {
 		t.Error("generator contains a backtick")
 	}
-	if !strings.Contains(script, `tr -d '"{}'`) {
-		t.Error("generator does not strip quotes and braces from menu titles")
+	// rEFInd draws its menu with a bitmap font covering ASCII 32-126 and nothing
+	// else: anything wider becomes a fallback box. The generator is ASCII, and
+	// menu_text is what keeps the titles it builds ASCII too.
+	for i, line := range strings.Split(script, "\n") {
+		for _, r := range line {
+			if r > 127 {
+				t.Errorf("generator line %d is not ASCII, and rEFInd's font is: %q", i+1, line)
+				break
+			}
+		}
+	}
+	if !strings.Contains(script, `tr -cd ' -~'`) {
+		t.Error("generator does not cut menu titles to printable ASCII")
+	}
+	// Only the free-text part of a title is length-bounded. Cutting a whole title
+	// would cut the date, which is what a snapshot is actually identified by.
+	if !strings.Contains(script, "menu_phrase") || !strings.Contains(script, "cut -c1-48") {
+		t.Error("generator does not bound only the description part of a title")
+	}
+	// The snapshot entry carries the theme's history glyph rather than the Aelum
+	// mark, so it never reads as a second copy of the system.
+	if !strings.Contains(script, `SNAPSHOT_ICON="/`+shared.RefindSnapshotIconPath+`"`) {
+		t.Errorf("generator does not use the theme's snapshot icon (%s)", shared.RefindSnapshotIconPath)
 	}
 	// Booted from a snapshot, / has no .snapshots at all (a snapshot does not
 	// contain its parent's subvolumes), so the generator must refuse to rewrite the

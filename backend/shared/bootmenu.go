@@ -49,7 +49,18 @@ func RefindEntryInclude(id string) string {
 // installer: snapshots only exist after the install is finished, so the
 // installer creates the file empty and aelum-refind-snapshots keeps it current.
 func RefindSnapshotEntryName(id string) string {
-	return id + "-snapshots.conf"
+	return id + RefindSnapshotEntrySuffix
+}
+
+// RefindSnapshotEntrySuffix is what marks a menu fragment as one of those.
+const RefindSnapshotEntrySuffix = "-snapshots.conf"
+
+// IsRefindSnapshotEntry reports whether a menu fragment is a snapshot fragment.
+// refind.conf has to include them after the installation's own entry: a plain
+// filename sort puts "<id>-snapshots.conf" before "<id>.conf" (hyphen sorts
+// before dot), which would show every snapshot before the system they belong to.
+func IsRefindSnapshotEntry(name string) bool {
+	return strings.HasSuffix(name, RefindSnapshotEntrySuffix)
 }
 
 // RefindSnapshotEntryPath is the ESP-relative path of that fragment.

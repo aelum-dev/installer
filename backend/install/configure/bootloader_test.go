@@ -176,6 +176,9 @@ func TestRefindEntryIncludes(t *testing.T) {
 	fs := primitivestest.NewMemFS().
 		WithFile(dir+"/bbbb2222.conf", "").
 		WithFile(dir+"/aaaa1111.conf", "").
+		WithFile(dir+"/bbbb2222-snapshots.conf", "").
+		WithFile(dir+"/aaaa1111-snapshots.conf", "").
+		WithFile(dir+"/cccc3333-snapshots.conf", "").
 		WithFile(dir+"/notes.txt", "")
 	defer primitives.SetFileSystem(fs)()
 
@@ -183,7 +186,15 @@ func TestRefindEntryIncludes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("refindEntryIncludes() = %v, want nil", err)
 	}
-	want := []string{"aelum/aaaa1111.conf", "aelum/bbbb2222.conf"}
+	// Each entry is followed by its own snapshots. Sorted by name alone, the
+	// snapshots would come first: "-" sorts before ".".
+	want := []string{
+		"aelum/aaaa1111.conf",
+		"aelum/aaaa1111-snapshots.conf",
+		"aelum/bbbb2222.conf",
+		"aelum/bbbb2222-snapshots.conf",
+		"aelum/cccc3333-snapshots.conf",
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("refindEntryIncludes() = %v, want %v", got, want)
 	}

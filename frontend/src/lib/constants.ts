@@ -77,6 +77,7 @@ export const RefindThemeInclude = ((("themes/" + RefindThemeName) + "/") + Refin
 export const RefindThemeFont2x = (("themes/" + RefindThemeName) + "/font-2x.png");
 export const RefindThemeBackgroundPath = (RefindThemeDir + "/background.png");
 export const RefindIconPath = (RefindThemeDir + "/icons/os_arch.png");
+export const RefindSnapshotIconPath = (RefindThemeDir + "/icons/os_snapshot.png");
 export const DryRunStepDurationMs = 1000;
 export const ProgressTickDelayMs = 2000;
 export const ProgressTickIntervalMs = 8000;

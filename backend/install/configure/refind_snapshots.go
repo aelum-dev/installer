@@ -106,11 +106,12 @@ const snapshotMenuScript = `#!/bin/sh
 # aelum-refind-snapshots - put this system's snapshots in the Aelum boot menu.
 #
 # rEFInd shows exactly the menu stanzas its configuration contains, so a snapshot
-# is only bootable once it has a stanza. This script writes a stanza for the
-# newest snapshots snapper keeps for @ into this installation's snapshot menu
-# fragment (EFI/refind/aelum/<id>-snapshots.conf, which refind.conf already
-# includes). It rewrites that file from scratch every run, so it is idempotent
-# and a deleted snapshot disappears from the menu.
+# is only bootable once it has a stanza. Snapper keeps dozens of snapshots, and
+# a row of icons that size is not a menu anyone can read, so this writes ONE
+# entry into this installation's snapshot menu fragment
+# (EFI/refind/aelum/<id>-snapshots.conf, which refind.conf already includes)
+# and lists the snapshots inside it as submenuentries: rEFInd shows those on F2,
+# Insert, Tab or +.
 #
 # It runs at every boot (aelum-refind-snapshots.service) and after every snapshot
 # snapper creates or deletes (its plugin in /usr/lib/snapper/plugins).
@@ -124,13 +125,18 @@ const snapshotMenuScript = `#!/bin/sh
 
 set -u
 
-# The boot menu is not a snapshot browser: the newest few are the ones anyone
-# can act on, and snapper's own limits keep far more than this in existence.
+# The submenu is a list the user asked for, so it can hold more than the main
+# menu should: still only a fraction of what snapper keeps, and the states worth
+# booting are the recent ones.
 MAX_SNAPSHOTS=8
 
 # The config snapper.go writes for @. Only a root subvolume is bootable, so the
 # @home config is not this script's business.
 SNAPPER_CONFIG="root"
+
+# The icon that says "history", not "another system": the history glyph of the
+# Aelum rEFInd theme, on the same cream tile as the Aelum mark.
+SNAPSHOT_ICON="/` + shared.RefindSnapshotIconPath + `"
 
 fail() { echo "aelum-refind-snapshots: $*" >&2; exit 1; }
 
@@ -164,12 +170,10 @@ install_id=$(printf '%s' "$root_uuid" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9' | cut -
 base_entry="$esp/EFI/refind/aelum/$install_id.conf"
 out="$esp/EFI/refind/aelum/$install_id-snapshots.conf"
 [ -r "$base_entry" ] || fail "no menu entry to copy boot options from: $base_entry"
-
-# The loader, initramfs, icon and full kernel command line come from this
-# installation's own menu entry. Copying them is what keeps LUKS (rd.luks.name=)
-# and every future option correct without this script knowing anything about
-# them; the only thing a snapshot entry changes is which subvolume is root.
-base_icon=$(sed -n 's/^[[:space:]]*icon[[:space:]]\{1,\}\([^[:space:]]*\).*/\1/p' "$base_entry" | head -n 1)
+# The loader, initramfs and full kernel command line come from this installation's
+# own menu entry. Copying them is what keeps LUKS (rd.luks.name=) and every
+# future option correct without this script knowing anything about them; the only
+# thing a snapshot entry changes is which subvolume is root.
 base_loader=$(sed -n 's/^[[:space:]]*loader[[:space:]]\{1,\}\([^[:space:]]*\).*/\1/p' "$base_entry" | head -n 1)
 base_initrd=$(sed -n 's/^[[:space:]]*initrd[[:space:]]\{1,\}\([^[:space:]]*\).*/\1/p' "$base_entry" | head -n 1)
 base_options=$(sed -n 's/^[[:space:]]*options[[:space:]]\{1,\}"\(.*\)"[[:space:]]*$/\1/p' "$base_entry" | head -n 1)
@@ -205,67 +209,179 @@ case "$root_subvol" in
         ;;
 esac
 
+# --- How a snapshot is named in the menu ------------------------------------
+# Two rules shape every title. rEFInd's menu font covers ASCII 32-126, so a
+# character outside it renders as a fallback box: names are cut to printable
+# ASCII, which still keeps "GPU driver" readable. And rEFInd tokenizes its
+# config, so a quote or a brace would end the stanza early.
+# menu_text: keep only printable ASCII, collapse runs of spaces, trim. No length
+# limit here - cutting a title would cut the date, which is the one thing a
+# snapshot is identified by.
+menu_text() {
+    printf '%s' "$1" | tr -cd ' -~' | tr -s ' ' | sed -e 's/^ *//' -e 's/ *$//'
+}
+
+# A description is free text written by a person or by btrfs-assistant, so it is
+# the only part that is bounded: a long one would push the date off the line.
+menu_phrase() {
+    menu_text "$1" | cut -c1-48
+}
+
+human_date() {
+    # info.xml writes "YYYY-MM-DD HH:MM:SS". A boot menu is read by a person,
+    # so it gets "DD Mon YYYY HH:MM". Anything that is not that shape is passed
+    # through rather than guessed at.
+    case "$1" in
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*) ;;
+        *) printf '%s' "$1"; return 0 ;;
+    esac
+    year=$(printf '%s' "$1" | cut -c1-4)
+    month=$(printf '%s' "$1" | cut -c6-7)
+    day=$(printf '%s' "$1" | cut -c9-10)
+    clock=$(printf '%s' "$1" | cut -c12-16)
+    case "$month" in
+        01) month=Jan ;; 02) month=Feb ;; 03) month=Mar ;; 04) month=Apr ;;
+        05) month=May ;; 06) month=Jun ;; 07) month=Jul ;; 08) month=Aug ;;
+        09) month=Sep ;; 10) month=Oct ;; 11) month=Nov ;; 12) month=Dec ;;
+    esac
+    printf '%s %s %s %s' "$day" "$month" "$year" "$clock"
+}
+
+# What a snapshot is *for*. A description written by a user (or by
+# btrfs-assistant) is the best label there is, so it wins. With none, snapper's
+# own type says it: a pre snapshot is the state before a transaction, a post
+# snapshot the state after one. "pacman" is this installer's own tag, not
+# something a person would read, so it is replaced by the words the type implies.
+snapshot_phrase() {
+    phrase=$(menu_phrase "$2")
+    case "$phrase" in pacman) phrase="" ;; esac
+    if [ -z "$phrase" ]; then
+        case "$1" in
+            pre) phrase="Before system update" ;;
+            post) phrase="After system update" ;;
+        esac
+    fi
+    printf '%s' "$phrase"
+}
+
 # --- Which snapshots to offer -----------------------------------------------
-# Snapshot numbers are directory names; newest first. info.xml is read directly
-# rather than asking snapper, so this works with snapperd stopped and costs no
-# filesystem walk beyond the snapshot directory.
-numbers=""
-if [ -d "$snapshot_dir" ]; then
-    for dir in "$snapshot_dir"/[0-9]*; do
-        [ -d "$dir/snapshot" ] || continue
-        number=${dir##*/}
-        case "$number" in ""|*[!0-9]*) continue ;; esac
-        numbers="$numbers $number"
-    done
+# Snapshot numbers are directory names. info.xml is read directly rather than
+# asking snapper, so this works with snapperd stopped and costs no filesystem
+# walk beyond the snapshot directory.
+#
+# Each collected line is: number|type|submenu title|entry title. A pipe separates
+# them because a title is free text, and both titles name the same snapshot in
+# the two shapes a menu needs: short inside the submenu, qualified as the entry
+# that boots it.
+list=$(
+    if [ -d "$snapshot_dir" ]; then
+        for dir in "$snapshot_dir"/[0-9]*; do
+            [ -d "$dir/snapshot" ] || continue
+            number=${dir##*/}
+            case "$number" in ""|*[!0-9]*) continue ;; esac
+
+            info="$dir/info.xml"
+            type=$(sed -n 's/.*<type>\([^<]*\)<\/type>.*/\1/p' "$info" 2>/dev/null | head -n 1)
+            date=$(sed -n 's/.*<date>\([^<]*\)<\/date>.*/\1/p' "$info" 2>/dev/null | head -n 1)
+            desc=$(sed -n 's/.*<description>\([^<]*\)<\/description>.*/\1/p' "$info" 2>/dev/null | head -n 1)
+            case "$type" in pre|post) ;; *) type="single" ;; esac
+
+            phrase=$(snapshot_phrase "$type" "$desc")
+            stamp=$(human_date "$date")
+
+            title="Snapshot $number"
+            entry_title="Aelum snapshot $number"
+            if [ -n "$phrase" ]; then
+                title="$title - $phrase"
+                entry_title="$entry_title - $phrase"
+            fi
+            if [ -n "$stamp" ]; then
+                title="$title - $stamp"
+                entry_title="$entry_title ($stamp)"
+            fi
+            printf '%s|%s|%s|%s\n' \
+                "$number" "$type" "$(menu_text "$title")" "$(menu_text "$entry_title")"
+        done
+    fi | sort -rn | head -n "$MAX_SNAPSHOTS"
+)
+
+# The entry itself boots the newest snapshot taken *before* a change: when an
+# update breaks the system, that is the state worth booting, and the newest
+# snapshot is usually the one that already contains the change. The choice is
+# made inside the list, because a snapshot the menu does not list is a snapshot
+# this entry could not boot either.
+target_number=""; target_type=""; target_title=""; target_entry_title=""
+first_number=""; first_entry_title=""; first_title=""; first_type=""
+while IFS='|' read -r number type title entry_title; do
+    [ -n "$first_number" ] || {
+        first_number=$number; first_type=$type; first_title=$title; first_entry_title=$entry_title
+    }
+    if [ "$type" = pre ] && [ -z "$target_number" ]; then
+        target_number=$number; target_type=$type
+        target_title=$title; target_entry_title=$entry_title
+    fi
+done <<EOF
+$list
+EOF
+if [ -z "$target_number" ]; then
+    target_number=$first_number; target_type=$first_type
+    target_title=$first_title; target_entry_title=$first_entry_title
 fi
-numbers=$(printf '%s\n' $numbers | sed '/^$/d' | sort -rn | head -n "$MAX_SNAPSHOTS")
+
+# The install's own options with the snapshot substituted for the live subvolume -
+# nothing else changes, so a snapshot that was made writable (btrfs property set
+# ... ro false) still boots the way it was mounted.
+snapshot_options() {
+    case "$base_options" in
+        *rootflags=*)
+            printf '%s' "$base_options" | sed "s|rootflags=[^ ]*|rootflags=subvol=$subvol_base/$1/snapshot|g"
+            ;;
+        *)
+            printf '%s rootflags=subvol=%s/%s/snapshot' "$base_options" "$subvol_base" "$1"
+            ;;
+    esac
+}
 
 # --- Write the fragment -----------------------------------------------------
 # Written to a temporary name and renamed, so rEFInd can never read a fragment
 # that is half-written (it is not a .conf file, so it is not an entry itself).
+# With no snapshots there is no entry at all: an icon that boots nothing is
+# worse than no icon.
 tmp="$out.tmp"
 {
     echo "# Generated by aelum-refind-snapshots. Do not edit by hand."
-    echo "# Boot entries for the snapshots of @ (snapper config $SNAPPER_CONFIG)."
-    echo "# Each entry boots this install's current kernel with that snapshot as root."
+    echo "# One menu entry for the snapshots of @ (snapper config $SNAPPER_CONFIG)."
+    echo "# Enter boots the snapshot named in the title; F2, Insert, Tab or + lists"
+    echo "# every snapshot offered here. Each boots this install's current kernel"
+    echo "# with that snapshot as root."
     echo "# Snapper's snapshots are read-only, so the system comes up with / read-only."
     echo "# Rebuild this file with: systemctl start aelum-refind-snapshots.service"
-    echo ""
-    for number in $numbers; do
-        info="$snapshot_dir/$number/info.xml"
-        date=$(sed -n 's/.*<date>\(.*\)<\/date>.*/\1/p' "$info" 2>/dev/null | head -n 1)
-        type=$(sed -n 's/.*<type>\(.*\)<\/type>.*/\1/p' "$info" 2>/dev/null | head -n 1)
-        desc=$(sed -n 's/.*<description>\(.*\)<\/description>.*/\1/p' "$info" 2>/dev/null | head -n 1)
-
-        # Minutes are enough to pick a snapshot; seconds only widen the title.
-        stamp=$(printf '%s' "$date" | cut -c1-16)
-        title="Aelum snapshot #$number"
-        [ -n "$stamp" ] && title="$title ($stamp)"
-        # rEFInd tokenizes its config: a quote or a brace in a title would end
-        # the stanza early.
-        title=$(printf '%s' "$title" | tr -d '"{}')
-
-        # The install's own options with the snapshot substituted for the live
-        # subvolume - nothing else changes, so a snapshot that was made writable
-        # (btrfs property set ... ro false) still boots the way it was mounted.
-        snapshot_subvol="$subvol_base/$number/snapshot"
-        case "$base_options" in
-            *rootflags=*)
-                options=$(printf '%s' "$base_options" | sed "s|rootflags=[^ ]*|rootflags=subvol=$snapshot_subvol|g")
-                ;;
-            *)
-                options="$base_options rootflags=subvol=$snapshot_subvol"
-                ;;
-        esac
-
-        echo "# snapshot $number ${type:-unknown}${desc:+ $desc}"
-        echo "menuentry \"$title\" {"
-        [ -n "$base_icon" ] && echo "    icon $base_icon"
+    if [ -n "$target_number" ]; then
+        echo ""
+        echo "# The entry boots the newest snapshot taken before a change - the"
+        echo "# state to boot when the last one turned out to be broken."
+        echo "# snapshot $target_number $target_type"
+        echo "menuentry \"$target_entry_title\" {"
+        echo "    icon $SNAPSHOT_ICON"
         echo "    loader $base_loader"
         [ -n "$base_initrd" ] && echo "    initrd $base_initrd"
-        echo "    options \"$options\""
+        echo "    options \"$(snapshot_options "$target_number")\""
+        echo ""
+        while IFS='|' read -r number type title entry_title; do
+            # A submenuentry inherits loader, initrd and icon from the entry it
+            # sits in, so it only has to say which subvolume becomes root. The
+            # entry's own snapshot is listed too: rEFInd adds its own line for
+            # the entry at the top of the submenu, and "Boot using default
+            # options" does not say that it is a snapshot.
+            echo "    # snapshot $number $type"
+            echo "    submenuentry \"$title\" {"
+            echo "        options \"$(snapshot_options "$number")\""
+            echo "    }"
+        done <<EOF
+$list
+EOF
         echo "}"
-    done
+    fi
 } > "$tmp" || { rm -f "$tmp"; fail "cannot write $tmp"; }
 mv -f "$tmp" "$out" || { rm -f "$tmp"; fail "cannot replace $out"; }
 
