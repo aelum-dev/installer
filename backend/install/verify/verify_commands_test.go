@@ -2,6 +2,7 @@ package verify
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -220,5 +221,24 @@ func TestCheckPackages_BtrfsOnlyPackagesAreGated(t *testing.T) {
 		if !btrfs[pkg] || !ext4[pkg] {
 			t.Errorf("%q must be verified on every filesystem", pkg)
 		}
+	}
+}
+
+// TestCheckPackages_SummaryCountsWhatItChecked pins the log line to the list the
+// check actually walked, so a btrfs install reports its snapshot packages too
+// instead of the unconditional count.
+func TestCheckPackages_SummaryCountsWhatItChecked(t *testing.T) {
+	rec := primitivestest.NewRecorder()
+	defer primitives.SetCommandRunner(rec)()
+
+	var issues, info []string
+	checkPackages(&shared.InstallContext{FileSystem: shared.FileSystemBtrfs}, &issues, &info)
+	if len(issues) != 0 {
+		t.Fatalf("issues = %v, want none", issues)
+	}
+
+	want := fmt.Sprintf("all %d packages", len(expectedPackages)+len(btrfsOnlyPackages))
+	if len(info) != 1 || !strings.Contains(info[0], want) {
+		t.Errorf("info = %v, want a summary counting %d packages", info, len(expectedPackages)+len(btrfsOnlyPackages))
 	}
 }

@@ -418,8 +418,9 @@ func checkKernelImages(ctx *shared.InstallContext, issues, info *[]string) {
 // On success it logs a single summary line; on failure it lists every missing
 // package as an issue.
 func checkPackages(ctx *shared.InstallContext, issues, info *[]string) {
+	expected := expectedPackagesFor(ctx)
 	var missing []string
-	for _, pkg := range expectedPackagesFor(ctx) {
+	for _, pkg := range expected {
 		if _, err := primitives.Run("arch-chroot", shared.MountRoot, "pacman", "-Q", pkg).Output(); err != nil {
 			missing = append(missing, pkg)
 		}
@@ -432,7 +433,7 @@ func checkPackages(ctx *shared.InstallContext, issues, info *[]string) {
 		return
 	}
 
-	*info = append(*info, fmt.Sprintf("all %d packages installed and present ✓ (base + desktop)", len(expectedPackages)))
+	*info = append(*info, fmt.Sprintf("all %d packages installed and present ✓ (base + desktop)", len(expected)))
 }
 
 // checkUserAccount verifies that the configured user account exists in the
