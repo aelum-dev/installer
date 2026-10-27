@@ -259,12 +259,24 @@ func displayIsHiDPI(drmRoot string) bool {
 // overwrites another's menu entry. Kernel and initramfs paths likewise live in
 // a per-install directory on the ESP, so fragments cannot point at each other's
 // images.
+//
+// A btrfs install gets a second fragment for its snapshots. It is written empty
+// here and filled in by the installed system (see refind_snapshots.go), but it has
+// to exist before the include list is collected: refind.conf can only include a
+// file that is there, and the installer never runs again.
 func writeRefindConfig(esp string, ctx *shared.InstallContext, kernel, initrd string, mode displayMode, modeOK, hiDPI bool) error {
 	id := shared.InstallID(ctx.Partitions.RootUUID)
 
 	entryPath := esp + "/" + shared.RefindEntryPath(id)
 	if err := primitives.WriteFile(entryPath, refindEntry(ctx, id, kernel, initrd)); err != nil {
 		return fmt.Errorf("failed to write rEFInd menu entry to %s: %w", entryPath, err)
+	}
+
+	if ctx.FileSystem == shared.FileSystemBtrfs {
+		snapshotPath := esp + "/" + shared.RefindSnapshotEntryPath(id)
+		if err := primitives.WriteFile(snapshotPath, refindSnapshotPlaceholder()); err != nil {
+			return fmt.Errorf("failed to write the snapshot menu entry to %s: %w", snapshotPath, err)
+		}
 	}
 
 	includes, err := refindEntryIncludes(esp)
@@ -498,6 +510,19 @@ func verifyBootloaderInstallation(esp string, ctx *shared.InstallContext) error 
 		}
 		if !strings.Contains(content, "include "+shared.RefindThemeInclude) {
 			issues = append(issues, "rEFInd config does not include the Aelum theme ("+shared.RefindThemeInclude+")")
+		}
+		// A btrfs install's snapshots are bootable through a second fragment. It is
+		// empty until the first snapshot exists, but the include has to be in place
+		// for the installed system to ever put anything in it.
+		if ctx.FileSystem == shared.FileSystemBtrfs {
+			snapshotPath := esp + "/" + shared.RefindSnapshotEntryPath(id)
+			if _, err := primitives.ReadFile(snapshotPath); err != nil {
+				issues = append(issues, "snapshot menu entry is MISSING: "+snapshotPath)
+			} else if !strings.Contains(content, "include "+shared.RefindSnapshotEntryInclude(id)) {
+				issues = append(issues, "rEFInd config does not include "+shared.RefindSnapshotEntryInclude(id))
+			} else {
+				info = append(info, "snapshot menu entry: "+snapshotPath)
+			}
 		}
 		info = append(info, "rEFInd config contents: "+strings.TrimSpace(content))
 	}

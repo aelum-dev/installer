@@ -70,13 +70,14 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→snapper→services)
         fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants, ext4+LVM /home)
-        bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options)
+        bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options) + the empty snapshot fragment a btrfs install's refind.conf includes
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + DMS greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
         services.go             — zram swap config + systemd service enablement
-        snapper.go              — snapper configs for @ and @home (.snapshots subvolumes, quotas, timeline units); btrfs only
-        (+ fstab_test.go, swap_test.go, snapper_test.go)
+        snapper.go              — snapper configs for @ and @home (.snapshots subvolumes, quotas, timeline units) + the pacman pre/post transaction snapshot hooks; btrfs only
+        refind_snapshots.go     — the installed system's snapshot boot entries: aelum-refind-snapshots generator, its systemd unit, and the snapper plugin that runs it; btrfs only
+        (+ fstab_test.go, swap_test.go, snapper_test.go, refind_snapshots_test.go)
       partition/
         partition.go            — ComputeLayout(), Apply() (manual partitioning: formats Boot + System)
         validate.go             — Validate()/ValidateFeasible() invariants
@@ -185,7 +186,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
 4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
-6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → snapper (btrfs only) → services (`install/configure/`)
+6. **ConfigureSystem** (weight 4) — Merged step: fstab → bootloader → system config → greetd → plymouth → zram → snapper (configs + pacman hooks + snapshot boot entries, btrfs only) → services (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
 8. **VerifySystem** (weight 1) — Read-only post-install verification (`install/verify/`): checks fstab (root/EFI UUIDs, ESP at `/efi`, per-install `/boot` bind), kernel + initrd in this install's ESP boot directory (via the `/mnt/boot` bind), the rEFInd binary and its Aelum menu entry, required packages via `pacman -Q`, the user account, and hostname. Logs every check and fails with a combined error if anything is missing. Total weight stays at 100 (base/desktop each reduced by 1 to make room).
 
@@ -266,6 +267,8 @@ Welcome (language select)
 - LVM: one PV per install (the System partition or its LUKS mapper). The VG is named after the install id — the PV's PARTUUID-derived `<8 hex>`, with no `aelum-` prefix and no hyphen, so device-mapper names carry a single separator (`1a2b3c4d-root`, never `aelum--1a2b3c4d-root`); LVs `root`, plus `home` for ext4 only (btrfs keeps `@home` on the single root LV). LUKS always sits below LVM; fstab/boot reference filesystem UUIDs only, never `/dev/mapper`. Teardown resolves the VG from the PV (`pvs`) and refuses a multi-PV group.
 - Btrfs subvolumes: `@` (default, zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - Snapper (btrfs only): configs `root` (@) and `home` (@home) written by `configure.ConfigureSnapper`, each with its `.snapshots` subvolume, quotas enabled, `SNAPPER_CONFIGS` in `/etc/conf.d/snapper`, and snapperd + the timeline timers enabled. The list lives in `configure.snapperTargets` and is checked against `GetBtrfsSubvolumes()`.
+- Transaction snapshots (btrfs only): `/etc/pacman.d/hooks/90-aelum-snapper-pre.hook` + `91-aelum-snapper-post.hook` take a pre/post pair of the `root` config around every pacman transaction. Paths and triggers live in `configure.pacman*`; the pre snapshot's number is handed to the post hook through `/run/aelum-snapper/pacman.pre`. Both hooks end in `|| true` — a PreTransaction hook failure aborts the transaction, and a missing snapshot is not a reason to refuse an update.
+- Snapshot boot entries (btrfs only): rEFInd shows exactly the stanzas its config contains, so the installed system owns the generator — `/usr/local/bin/aelum-refind-snapshots` (writes the newest snapshots into `EFI/refind/aelum/<id>-snapshots.conf`), `aelum-refind-snapshots.service` (runs it at every boot) and the snapper plugin `/usr/lib/snapper/plugins/10-aelum-refind-snapshots` (starts the service after every snapshot create/delete). The installer writes that fragment **empty** from `writeRefindConfig`, before the include list is collected: refind.conf can only include a file that exists. Names live in `shared.RefindSnapshotEntry*`; the generator copies loader/initrd/options from the install's own fragment and changes only `rootflags=subvol=`, so LUKS and LVM options stay the installer's business.
 - Default username: `shared.DefaultCLIUsername` = "aelum"
 - Default hostname: `shared.DefaultHostname` = "aelum"
 - Mount root: `shared.MountRoot` = "/mnt"

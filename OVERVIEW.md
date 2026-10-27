@@ -111,19 +111,19 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
 | 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
-| 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → bootloader → system config → greetd → Plymouth → zram → snapper → services |
+| 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → bootloader → system config → greetd → Plymouth → zram → snapper (configs, pacman hooks, snapshot boot entries) → services |
 
 **Step 6 sub-steps (in order):**
 
 | # | Sub-step | Function | Description |
 |---|----------|----------|-------------|
 | 6.1 | Generate fstab | `GenerateFstab` | Writes `/etc/fstab` (custom for btrfs subvolumes): ESP at `/efi`, this install's `aelum/<id>/` boot dir bind-mounted at `/boot` |
-| 6.2 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, per-install `aelum/<id>.conf` menu fragment (loads this install's own `aelum/<id>/` kernel), NVRAM boot entry |
+| 6.2 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, per-install `aelum/<id>.conf` menu fragment (loads this install's own `aelum/<id>/` kernel), the empty `aelum/<id>-snapshots.conf` a btrfs install's refind.conf includes, NVRAM boot entry |
 | 6.3 | Configure System | `ConfigureSystemBase` | Hostname, timezone, locale, keymap, NTP, mirrorlist |
 | 6.4 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
 | 6.5 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
 | 6.6 | Configure zram | `ConfigureZram` | Compressed swap via zram-generator |
-| 6.7 | Configure Snapper | `ConfigureSnapper` | btrfs only: snapper configs for `@` and `@home`, their `.snapshots` subvolumes, quotas, `SNAPPER_CONFIGS`, snapperd + timeline timers |
+| 6.7 | Configure Snapper | `ConfigureSnapper` | btrfs only: snapper configs for `@` and `@home`, their `.snapshots` subvolumes, quotas, `SNAPPER_CONFIGS`, snapperd + timeline timers, the pacman pre/post transaction snapshot hooks, and the installed system's snapshot boot entries (generator + unit + snapper plugin) |
 | 6.8 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth |
 
 ### Progress Tracking
@@ -204,6 +204,14 @@ The installer supports starting on any page via the `StartPage` constant in `mai
 When btrfs is selected, 6 subvolumes are created: `@` (default), `@home`, `@srv`, `@cache`, `@tmp`, `@log`. Each has configurable compression (zstd) and mount options. `@` is set as default. `@cache` and `@tmp` use `nodatacow` to avoid CoW overhead. Swap is provided by zram, not a subvolume.
 
 `@` and `@home` get a snapper config (`root`, `home`) written by `configure.ConfigureSnapper`, each with its own `.snapshots` subvolume, plus btrfs quotas and the timeline units. The other four are deliberately not snapshotted: they are separate subvolumes, so a snapshot of `@` never contains them, and no restore wants an old package cache, scratch file, journal record or server data directory.
+
+### Snapshots You Can Boot and Undo (btrfs only)
+
+**Around every pacman transaction**, `/etc/pacman.d/hooks/90-aelum-snapper-pre.hook` takes a pre snapshot of `@` and `91-aelum-snapper-post.hook` takes the post half, so `snapper undochange` can show exactly what an update changed. Both hooks end in `|| true`: a PreTransaction hook failure aborts the transaction, and a snapshot that cannot be taken is not a reason to refuse an update. The pair is tagged with the `number` cleanup algorithm, so an update history is bounded by `NUMBER_LIMIT` instead of growing forever, and pairs whose transaction changed nothing are dropped by `EMPTY_PRE_POST_CLEANUP`.
+
+**In the boot menu**, rEFInd shows exactly the stanzas its configuration contains, so the installed system owns the generator: `/usr/local/bin/aelum-refind-snapshots` writes the newest snapshots into `EFI/refind/aelum/<id>-snapshots.conf`, `aelum-refind-snapshots.service` runs it at every boot, and `/usr/lib/snapper/plugins/10-aelum-refind-snapshots` starts it after every snapshot snapper creates or deletes. The installer writes that fragment **empty** (refind.conf can only include a file that exists) and never writes it again.
+
+An entry copies this install's own loader, initramfs and kernel options and changes only `rootflags=subvol=`, so LUKS and LVM options stay correct without the generator knowing anything about them, and the current kernel on the ESP boots the older root. Snapper's snapshots are read-only subvolumes, so the system comes up with `/` read-only — enough to log in, compare and copy; `snapper rollback` (or btrfs-assistant) is what makes one the system again. `/home`, `/srv` and `/var/*` are separate subvolumes and are untouched by a snapshot boot. When `/` is itself a snapshot the generator leaves the menu alone: a snapshot does not contain its parent's `.snapshots`, so rewriting from an empty list would delete the entry being booted.
 
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:
@@ -301,7 +309,8 @@ Aelum-Installer/
 │   │   │   └── memory.go        # Embedded memory.json
 │   │   ├── plymouth.go          # Silent boot (Aelum theme)
 │   │   ├── services.go          # systemd service enabling
-│   │   ├── snapper.go           # Snapper configs for the btrfs layout
+│   │   ├── snapper.go           # Snapper configs + pacman transaction snapshot hooks
+│   │   ├── refind_snapshots.go  # Snapshot boot entries: generator, unit, snapper plugin
 │   │   ├── zram.go              # Compressed swap via zram-generator
 │   │   ├── copy.go              # ISO-to-target file copying
 │   │   ├── cleanup.go           # Rollback + mount cleanup

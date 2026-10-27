@@ -43,6 +43,25 @@ func RefindEntryInclude(id string) string {
 	return RefindEntriesDirName + "/" + id + ".conf"
 }
 
+// RefindSnapshotEntryName is the menu fragment that holds one installation's
+// snapshot boot entries. It sits next to the installation's own fragment and is
+// included the same way, but it is written by the installed system, not by the
+// installer: snapshots only exist after the install is finished, so the
+// installer creates the file empty and aelum-refind-snapshots keeps it current.
+func RefindSnapshotEntryName(id string) string {
+	return id + "-snapshots.conf"
+}
+
+// RefindSnapshotEntryPath is the ESP-relative path of that fragment.
+func RefindSnapshotEntryPath(id string) string {
+	return RefindEntriesDir + "/" + RefindSnapshotEntryName(id)
+}
+
+// RefindSnapshotEntryInclude is its "include" token value.
+func RefindSnapshotEntryInclude(id string) string {
+	return RefindEntriesDirName + "/" + RefindSnapshotEntryName(id)
+}
+
 // RefindEntryTitle is the menu title for one installation. The root partition
 // suffix (e.g. "Aelum (sda2)") keeps two side-by-side installs distinguishable,
 // and lets default_selection target the install that was just written.

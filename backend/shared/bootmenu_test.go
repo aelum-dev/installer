@@ -78,3 +78,24 @@ func TestRefindEntryTitle(t *testing.T) {
 		})
 	}
 }
+
+// TestRefindSnapshotEntryPaths pins the snapshot fragment's names. The installed
+// system rewrites the file the installer created empty, so the spelling has to
+// match on both sides: the include line, the ESP path, and the generator's own
+// $install_id-snapshots.conf.
+func TestRefindSnapshotEntryPaths(t *testing.T) {
+	if got, want := RefindSnapshotEntryName("1a2b3c4d"), "1a2b3c4d-snapshots.conf"; got != want {
+		t.Errorf("RefindSnapshotEntryName() = %q, want %q", got, want)
+	}
+	if got, want := RefindSnapshotEntryPath("1a2b3c4d"), "EFI/refind/aelum/1a2b3c4d-snapshots.conf"; got != want {
+		t.Errorf("RefindSnapshotEntryPath() = %q, want %q", got, want)
+	}
+	if got, want := RefindSnapshotEntryInclude("1a2b3c4d"), "aelum/1a2b3c4d-snapshots.conf"; got != want {
+		t.Errorf("RefindSnapshotEntryInclude() = %q, want %q", got, want)
+	}
+	// A snapshot fragment is a fragment of its own: it lives where the include
+	// mechanism finds it, and it is never the install's own entry.
+	if RefindSnapshotEntryPath("1a2b3c4d") == RefindEntryPath("1a2b3c4d") {
+		t.Error("the snapshot fragment and the menu entry are the same file")
+	}
+}

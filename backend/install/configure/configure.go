@@ -19,7 +19,8 @@ import (
 //  5. greetd + DMS greeter setup
 //  6. Aelum LUKS unlock Plymouth theme (matches the live ISO)
 //  7. zram swap configuration
-//  8. Snapper configs for the btrfs layout (btrfs only)
+//  8. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
+//     hooks, and the boot-menu entries for the snapshots
 //  9. Enable systemd services
 func Run(ctx *shared.InstallContext) error {
 	if err := GenerateFstab(ctx); err != nil {

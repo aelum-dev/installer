@@ -29,7 +29,7 @@ type snapperTarget struct {
 }
 
 var snapperTargets = []snapperTarget{
-	{configName: "root", subvolume: "@", mountPoint: "/"},
+	{configName: snapperRootConfig, subvolume: "@", mountPoint: "/"},
 	{configName: "home", subvolume: "@home", mountPoint: "/home"},
 }
 
@@ -53,10 +53,97 @@ const (
 // timeline snapshots on a system with no cron daemon (Arch ships none).
 var snapperUnits = []string{"snapperd", "snapper-timeline.timer", "snapper-cleanup.timer"}
 
+// ============================================================================
+// Pacman hooks: a snapshot around every transaction
+// ============================================================================
+
+// snapperRootConfig is the name ConfigureSnapper gives the config that snapshots
+// @, i.e. the only config whose snapshots are roots (see
+// configureSnapshotBootEntries). The others are restored by hand, never booted.
+const snapperRootConfig = "root"
+
+// pacmanSnapshotHooks are the two halves of one pre/post pair taken around every
+// pacman transaction. They are numbered so the pre snapshot runs before the
+// transaction and the post snapshot after every other post-transaction hook
+// (mkinitcpio regenerates this install's kernel directory at 90-, and the post
+// snapshot belongs after the transaction is really finished).
+const (
+	pacmanPreHookPath  = "/etc/pacman.d/hooks/90-aelum-snapper-pre.hook"
+	pacmanPostHookPath = "/etc/pacman.d/hooks/91-aelum-snapper-post.hook"
+
+	// pacmanPreHookState carries the pre snapshot's number to the post hook:
+	// snapper pairs pre and post by number, and one hook cannot talk to the next.
+	// /run is tmpfs, so a half pair cannot survive a reboot.
+	pacmanPreHookState = "/run/aelum-snapper/pacman.pre"
+)
+
+// pacmanHookTriggers is shared by both halves: a pair is only meaningful for a
+// transaction that changes packages. Type is Package and never File: pacman allows
+// exactly one Type per hook (declaring two warns and the last one wins), and
+// Package is the type that covers every transaction - including a local
+// pacman -U of a .pkg.tar.zst, whose package name is known before it is added.
+const pacmanHookTriggers = `[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Package
+Target = *
+`
+
+const pacmanPreHook = `# SPDX-License-Identifier: GPL-3.0
+# Written by the Aelum installer: snapshot @ before every pacman transaction.
+#
+# The pre snapshot is what makes "undo that update" possible: snapper compares it
+# with the post hook's snapshot to show what the transaction changed, and the boot
+# menu can boot the state from before it (aelum-refind-snapshots).
+#
+# Both hooks end in || true: a PreTransaction hook that fails aborts the
+# transaction, and a snapshot that cannot be taken is never a reason to refuse an
+# update. The snapshots are tagged with the number cleanup algorithm, so an update
+# history is bounded by NUMBER_LIMIT in /etc/snapper/configs/root instead of
+# growing forever, and EMPTY_PRE_POST_CLEANUP drops the pairs whose transaction
+# changed nothing.
+` + pacmanHookTriggers + `
+[Action]
+Depends = snapper
+When = PreTransaction
+Exec = /bin/sh -c 'mkdir -p /run/aelum-snapper && snapper -c ` + snapperRootConfig + ` create -t pre -p -c number -d pacman > ` + pacmanPreHookState + ` 2>/dev/null || true'
+`
+
+const pacmanPostHook = `# SPDX-License-Identifier: GPL-3.0
+# Written by the Aelum installer: the post half of the pair that
+# 90-aelum-snapper-pre.hook starts. See that file for why.
+#
+# The pre snapshot's number is the pairing key, so it is read back from the file
+# the pre hook left. With no number there is nothing to pair with, which is the
+# normal state after a transaction whose pre hook did not run. snapper prints the
+# number it created and pacman forwards hook output, so that is sent away: a
+# successful transaction should not gain a line of its own.
+` + pacmanHookTriggers + `
+[Action]
+Depends = snapper
+When = PostTransaction
+Exec = /bin/sh -c 'n=$(cat ` + pacmanPreHookState + ` 2>/dev/null); [ -n "$n" ] && snapper -c ` + snapperRootConfig + ` create -t post --pre-number "$n" -p -c number -d pacman >/dev/null || true; rm -f ` + pacmanPreHookState + `'
+`
+
+// writePacmanSnapshotHooks installs the transaction snapshots as plain hook files
+// in pacman's own hooks directory. The alternative is a package (snap-pac) whose
+// numbering, descriptions and config names are not this installer's to choose.
+func writePacmanSnapshotHooks() error {
+	if err := primitives.WriteFile(pacmanPreHookPath, pacmanPreHook); err != nil {
+		return fmt.Errorf("failed to write the pacman pre-transaction snapshot hook: %w", err)
+	}
+	if err := primitives.WriteFile(pacmanPostHookPath, pacmanPostHook); err != nil {
+		return fmt.Errorf("failed to write the pacman post-transaction snapshot hook: %w", err)
+	}
+	return nil
+}
+
 // ConfigureSnapper configures snapper for the btrfs layout: a config per
 // snapshotted subvolume, the .snapshots subvolume snapper requires inside each
-// one, the config list in /etc/conf.d/snapper, btrfs quotas, and the units that
-// take the timeline snapshots.
+// one, the config list in /etc/conf.d/snapper, btrfs quotas, the units that take
+// the timeline snapshots, a snapshot pair around every pacman transaction, and the
+// machinery that puts the snapshots in the boot menu.
 //
 // Nothing here aborts an otherwise complete install: a system without snapshots
 // still installs and boots, so a command that fails is reported and the config it
@@ -76,6 +163,7 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 
 	subvolumes := shared.GetBtrfsSubvolumes()
 	configured := make([]string, 0, len(snapperTargets))
+	rootConfigured := false
 	for _, target := range snapperTargets {
 		// The list above and the subvolume scheme must agree. If they ever drift,
 		// skip the target instead of snapshotting something that is not there.
@@ -98,6 +186,9 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 			return err
 		}
 		configured = append(configured, target.configName)
+		if target.configName == snapperRootConfig {
+			rootConfigured = true
+		}
 		if ctx.Logger != nil {
 			ctx.Logger.Info("Snapper config %s: snapshots for %s (%s)",
 				target.configName, target.subvolume, target.mountPoint)
@@ -112,7 +203,16 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 	}
 
 	enableSnapperUnits(ctx)
-	return nil
+
+	if err := writePacmanSnapshotHooks(); err != nil {
+		return err
+	}
+	// Only the root config's snapshots are bootable, so the boot menu follows that
+	// config alone: with no root config there is nothing for it to list.
+	if !rootConfigured {
+		return nil
+	}
+	return configureSnapshotBootEntries(ctx)
 }
 
 // createSnapshotSubvolume creates the .snapshots subvolume inside the mounted
