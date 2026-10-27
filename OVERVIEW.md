@@ -8,7 +8,7 @@
 |------|-----------|-----------|
 | **Live ISO** | Bootable Arch environment running the installer. Read-only rootfs (overlay). | Sudoers: user needs passwordless sudo for CLI binary. |
 | **Installed System** | Arch Linux being written to the target disk. | Mounted at `/mnt/` during install. ESP at `/mnt/efi`; this install's `aelum/<id>/` boot directory bind-mounted at `/mnt/boot`. `/etc/sudoers.d/wheel` written here for the new user. Accessed via `arch-chroot /mnt`. |
-| **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `~/Projects/shared` shared with VM. |
+| **Host** | Developer's main machine. | Where `build.sh` runs, git lives. `../shared` (the distro workspace) is the host side of the VM's `/shared`. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
 **Code rule:** If it touches `/mnt/*` or runs via `arch-chroot` → installed system. If it touches `/dev/*` or runs directly → live ISO.
@@ -217,10 +217,10 @@ Region-specific mirrorlists are embedded in the binary. A `mirrorlist_gen.go` sc
 
 ## Shared Host/VM Setup
 
-- **Host**: `~/Projects/shared`
-- **VM**: `/shared` (mounted from host shared dir)
-- **ISO bin dir**: `~/Projects/Aelum/airootfs/usr/local/bin`
-- Built binaries are copied to both locations by `build.sh`
+- **Host**: `../shared` — the distro workspace, one level above this repo
+- **VM**: `/shared` (the 9p mount of that directory, set up by `docker/scripts/test-install.sh`)
+- **ISO bin dir**: `../live-iso/airootfs/usr/local/bin`
+- `build-local.sh` builds and publishes the binaries into `../shared`; `SHARED_INSTALLER=1 make -C docker test-one` then drives the install with them instead of the CLI baked into the ISO.
 
 ---
 

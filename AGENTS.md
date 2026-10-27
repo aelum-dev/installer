@@ -19,7 +19,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 |------|------|-----------|
 | **Live ISO** | Bootable Arch env running the installer. Read-only rootfs (overlay). | Sudoers: user needs passwordless sudo for CLI binary. |
 | **Installed System** | Arch being written to target disk. | Mounted at `/mnt/`. ESP at `/mnt/efi`; this install's ESP boot dir (`aelum/<id>/`) bind-mounted at `/mnt/boot`. Sudoers: `/etc/sudoers.d/wheel`. Accessed via `arch-chroot /mnt` |
-| **Host** | Developer's main machine. | `~/Projects/shared` shared with VM. |
+| **Host** | Developer's main machine. | `../shared` (the distro workspace) is the host side of the VM's `/shared`. |
 | **VM** | QEMU VM booting from ISO for testing. | `/shared` mounted from host shared dir. |
 
 **Code rule:** `/mnt/*` or `arch-chroot` → installed system. `/dev/*` or direct execution → live ISO.
@@ -206,7 +206,7 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 | `AELUM_DRY_RUN=1` | Simulate installation (steps sleep 200ms); also loads fake disks in `GetDisks()`/`GetDiskPartitions()`; auto-enabled when not root |
 | `AELUM_START_PAGE=N` | Start on page N (0-5) for debugging (see `main.go`) |
 | `FAKE_DISKS=1` | Use synthetic disk data (for frontend development) |
-| `SHARED_DIR` | Copy binaries to this path after build (e.g. VM shared folder) |
+| `SHARED_DIR` | Copy binaries to this path after build — use `../shared`, the dir the test VM mounts at `/shared` (`build-local.sh` does) |
 | `BIN_DIR` | Copy binaries to distro airootfs bin dir after build |
 
 ## Internationalization (i18n)

@@ -8,7 +8,11 @@ export WEBKIT_DISABLE_DMABUF_RENDERER=1
 
 cd "$(dirname "$0")"
 
-SHARED_DIR=$HOME"/Projects/shared"
+# The distro workspace's shared/ is the directory the test VM mounts at /shared,
+# so the dev build and the QEMU tests use the same one. Exported: the installer
+# reads SHARED_DIR from the environment.
+SHARED_DIR="$(cd .. && pwd)/shared"
+export SHARED_DIR
 
 # echo "=== Refreshing mirrorlists ==="
 # go run ./backend/shared/mirrorlist_gen.go || echo "Warning: failed to refresh mirrorlists"
