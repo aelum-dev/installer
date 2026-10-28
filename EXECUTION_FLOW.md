@@ -128,7 +128,9 @@ install/installer.go:100
       │   ├─> InstallDesktopStep → InstallDesktop() → installPackages()
       │   ├─> SetupUsersStep → SetupUsers()
       │   └─> ConfigureSystemStep → ConfigureSystem()
-      │       (merged: fstab → bootloader → system → greetd → plymouth → zram → services)
+      │       (merged: fstab → system → initramfs → bootloader → greetd → plymouth
+      │        → zram → services → snapper; snapper is last so the "after
+      │        installation" snapshot is the finished system - see configure.go)
       │
       └─> if err != nil → return (defer RunCleanup fires)
 ```
