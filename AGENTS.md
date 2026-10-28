@@ -74,7 +74,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options) + the empty snapshot fragment a btrfs install's refind.conf includes
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
         greetd.go               — greetd + Dux Greeter executor (greetdExecutor)
-        plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
+        plymouth.go             — Aelum LUKS unlock Plymouth theme + aelum-boot-progress.service (finishes the splash bar)
         services.go             — zram swap config + systemd service enablement
         snapper.go              — snapper configs for @ and @home (quotas, timeline units), the @home .snapshots subvolume, the "after installation" snapshot and the pacman pre/post transaction snapshot hooks; btrfs only
         refind_snapshots.go     — the installed system's snapshot boot entries: aelum-refind-snapshots generator, its systemd unit, and the snapper plugin that runs it; btrfs only

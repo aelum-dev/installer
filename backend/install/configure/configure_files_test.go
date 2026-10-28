@@ -363,9 +363,6 @@ func TestConfigurePlymouth_Full(t *testing.T) {
 	if !hasCall(rec.CallsFor("arch-chroot"), "arch-chroot", shared.MountRoot, "plymouth-set-default-theme", "-R", "aelum") {
 		t.Errorf("plymouth-set-default-theme not run: %v", rec.CallsFor("arch-chroot"))
 	}
-	if !hasCall(rec.CallsFor("touch"), "touch", shared.MountRoot+"/home/alice/.hushlogin") {
-		t.Errorf(".hushlogin not created: %v", rec.CallsFor("touch"))
-	}
 }
 
 func TestConfigurePlymouth_PlymouthdWriteFails(t *testing.T) {

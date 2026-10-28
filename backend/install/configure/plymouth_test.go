@@ -72,49 +72,6 @@ func TestInstallAelumTheme_CopyFails(t *testing.T) {
 	}
 }
 
-// --- createHushlogin ---------------------------------------------------------
-
-func TestCreateHushlogin_Success(t *testing.T) {
-	rec := primitivestest.NewRecorder()
-	defer primitives.SetCommandRunner(rec)()
-
-	if err := createHushlogin("alice"); err != nil {
-		t.Fatalf("createHushlogin() = %v, want nil", err)
-	}
-
-	wantTouch := []string{"touch", "/mnt/home/alice/.hushlogin"}
-	if got := rec.CallsFor("touch"); len(got) != 1 || !reflect.DeepEqual(got[0], wantTouch) {
-		t.Errorf("touch calls = %v, want %v", got, wantTouch)
-	}
-	wantChown := []string{"arch-chroot", shared.MountRoot, "chown", "alice:alice", "/home/alice/.hushlogin"}
-	if got := rec.CallsFor("arch-chroot"); len(got) != 1 || !reflect.DeepEqual(got[0], wantChown) {
-		t.Errorf("chown calls = %v, want %v", got, wantChown)
-	}
-}
-
-func TestCreateHushlogin_TouchFails(t *testing.T) {
-	rec := primitivestest.NewRecorder().OnError("touch", errors.New("exit status 1"))
-	defer primitives.SetCommandRunner(rec)()
-
-	err := createHushlogin("alice")
-	if err == nil || !strings.Contains(err.Error(), ".hushlogin") {
-		t.Fatalf("createHushlogin() error = %v, want touch failure", err)
-	}
-	if rec.Called("arch-chroot") {
-		t.Error("chown ran after touch failed")
-	}
-}
-
-func TestCreateHushlogin_ChownFails(t *testing.T) {
-	rec := primitivestest.NewRecorder().OnError("arch-chroot", errors.New("exit status 1"))
-	defer primitives.SetCommandRunner(rec)()
-
-	err := createHushlogin("alice")
-	if err == nil || !strings.Contains(err.Error(), "ownership") {
-		t.Fatalf("createHushlogin() error = %v, want chown failure", err)
-	}
-}
-
 // --- ConfigurePlymouth -------------------------------------------------------
 
 func TestConfigurePlymouth_NotMounted(t *testing.T) {

@@ -122,7 +122,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 6.3 | Configure initramfs | `configureInitramfs` | HOOKS: plymouth always, `sd-encrypt` with LUKS, `lvm2` with LVM (after the encrypt hook); regenerates the images the boot entry will reference |
 | 6.4 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, per-install `aelum/<id>.conf` menu fragment (loads this install's own `aelum/<id>/` kernel), the empty `aelum/<id>-snapshots.conf` a btrfs install's refind.conf includes, NVRAM boot entry |
 | 6.5 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs Dux Greeter |
-| 6.6 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
+| 6.6 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook |
 | 6.7 | Configure zram | `ConfigureZram` | Compressed swap via zram-generator |
 | 6.8 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth — **before** the snapshot below: an enable step that runs after it is simply absent from the state a user restores to |
 | 6.9 | Configure Snapper | `ConfigureSnapper` | btrfs only, and last on purpose: snapper configs for `@` and `@home`, their `.snapshots` subvolumes, quotas, `SNAPPER_CONFIGS`, snapperd + timeline timers, the pacman pre/post transaction snapshot hooks, the snapshot boot entries (generator + unit + snapper plugin), the generator that gives a snapshot boot writable state directories, then the "after installation" snapshot — a snapshot only contains what was written before it was taken |

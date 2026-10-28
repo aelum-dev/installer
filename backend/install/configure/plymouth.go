@@ -2,7 +2,6 @@ package configure
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
@@ -116,13 +115,6 @@ UseFirmwareBackground=false
 		return err
 	}
 
-	if ctx.Username != "" {
-		if err := createHushlogin(ctx.Username); err != nil {
-			if ctx.Logger != nil {
-				ctx.Logger.Error("Warning: failed to create .hushlogin: %v", err)
-			}
-		}
-	}
 	return nil
 }
 
@@ -171,22 +163,6 @@ func installBootProgressUnit(ctx *shared.InstallContext) error {
 	}
 	if ctx.Logger != nil {
 		ctx.Logger.Info("Installed aelum-boot-progress.service (finishes the boot splash bar)")
-	}
-	return nil
-}
-
-// createHushlogin creates the user's .hushlogin so the first login shell
-// stays quiet (no motd/banner) after the unlock splash.
-func createHushlogin(username string) error {
-	home := shared.MountRoot + filepath.Join("/home", username)
-	cmd := primitives.Run("touch", filepath.Join(home, ".hushlogin"))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to create .hushlogin: %w: %s", err, string(output))
-	}
-	_, err = primitives.RunChroot("chown", username+":"+username, filepath.Join("/home", username, ".hushlogin"))
-	if err != nil {
-		return fmt.Errorf("failed to set .hushlogin ownership: %w", err)
 	}
 	return nil
 }
