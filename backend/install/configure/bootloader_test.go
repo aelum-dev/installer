@@ -40,12 +40,16 @@ func TestBootEntryOptions(t *testing.T) {
 			want: "root=UUID=" + rootUUID + suffix,
 		},
 		{
-			name: "btrfs adds subvol rootflag",
+			name: "btrfs names no subvolume",
 			ctx: &shared.InstallContext{
 				FileSystem: shared.FileSystemBtrfs,
 				Partitions: &shared.PartitionInfo{RootUUID: rootUUID},
 			},
-			want: "root=UUID=" + rootUUID + suffix + " rootflags=subvol=@",
+			// The kernel mounts the filesystem's default subvolume: the subvolume the
+			// installer installed into and the one snapper's rollback replaces. The entry
+			// therefore needs no change after a rollback and stays byte-identical (see
+			// format.root_snapshot).
+			want: "root=UUID=" + rootUUID + suffix,
 		},
 		{
 			name: "luks adds rd.luks.name mapping",
@@ -120,11 +124,16 @@ func TestRefindEntry(t *testing.T) {
 		"loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts"),
 		"initrd /" + shared.InstallBootFilePath(id, "initramfs-linux-lts.img"),
 		fmt.Sprintf("    options %q", bootEntryOptions(ctx)),
-		"rootflags=subvol=@",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("rEFInd menu entry missing %q:\n%s", want, got)
 		}
+	}
+
+	// No rootflags= in a btrfs entry: a pinned subvolume would make a rollback change
+	// something the boot does not read.
+	if strings.Contains(got, "rootflags=") {
+		t.Errorf("rEFInd menu entry must not pin a subvolume:\n%s", got)
 	}
 }
 

@@ -19,9 +19,12 @@ import (
 //  5. greetd + DMS greeter setup
 //  6. Aelum LUKS unlock Plymouth theme (matches the live ISO)
 //  7. zram swap configuration
-//  8. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
-//     hooks, and the boot-menu entries for the snapshots
-//  9. Enable systemd services
+//  8. Enable systemd services
+//  9. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
+//     hooks, the boot-menu entries for the snapshots, the state mounts a snapshot
+//     boot needs, and the "after installation" snapshot - last, because it is the
+//     finished system and because a snapshot only contains what was written before
+//     it was taken
 func Run(ctx *shared.InstallContext) error {
 	if err := GenerateFstab(ctx); err != nil {
 		return err
@@ -50,8 +53,13 @@ func Run(ctx *shared.InstallContext) error {
 	if err := ConfigureZram(ctx); err != nil {
 		return err
 	}
-	if err := ConfigureSnapper(ctx); err != nil {
+	if err := EnableServices(ctx); err != nil {
 		return err
 	}
-	return EnableServices(ctx)
+	// Last, and it has to stay last: the "after installation" snapshot is the state
+	// a user restores to, so anything enabled after it is missing from it. Measured
+	// on a real install where this ran before the services were enabled: the factory
+	// snapshot had no display-manager.service and no NetworkManager, and booting it
+	// came up at a text login instead of the greeter the install itself boots into.
+	return ConfigureSnapper(ctx)
 }

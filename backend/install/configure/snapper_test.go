@@ -37,12 +37,18 @@ func TestSnapperTargetsMatchSubvolumeScheme(t *testing.T) {
 
 // snapperCalled reports whether the recorder ran exactly this argv.
 func snapperCalled(rec *primitivestest.Recorder, want ...string) bool {
-	for _, c := range rec.Calls() {
+	return snapperCallIndex(rec, want...) >= 0
+}
+
+// snapperCallIndex is snapperCalled with the position of the call, which is what
+// a test needs when the order of two commands is the behaviour being pinned.
+func snapperCallIndex(rec *primitivestest.Recorder, want ...string) int {
+	for i, c := range rec.Calls() {
 		if hasCall([][]string{c.Args}, want...) {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
 }
 
 func TestConfigureSnapper_Btrfs(t *testing.T) {
@@ -78,15 +84,40 @@ func TestConfigureSnapper_Btrfs(t *testing.T) {
 		}
 	}
 
-	// Snapper refuses to use a .snapshots that is not a subvolume, so the
-	// installer creates it inside each snapshotted subvolume.
-	for _, want := range []string{
-		shared.MountRoot + "/.snapshots",
-		shared.MountRoot + "/home/.snapshots",
-	} {
-		if !snapperCalled(rec, "btrfs", "subvolume", "create", want) {
-			t.Errorf("no btrfs subvolume create for %s; calls = %v", want, rec.Calls())
-		}
+	// The history of the subvolume that holds the system is part of the layout (see
+	// format.root_snapshot) and is mounted at /.snapshots: the live root is itself a
+	// snapshot, and a snapshot cannot contain a subvolume, so this step must not try
+	// to create one inside it. The @home history is created here, inside its own
+	// subvolume.
+	if !snapperCalled(rec, "findmnt", "-n", "-o", "SOURCE", shared.MountRoot+shared.BtrfsSnapshotsMountPoint) {
+		t.Errorf("the history of the root subvolume was not checked at %s; calls = %v",
+			shared.MountRoot+shared.BtrfsSnapshotsMountPoint, rec.Calls())
+	}
+	if snapperCalled(rec, "btrfs", "subvolume", "create", shared.MountRoot+"/"+shared.BtrfsSnapshotsDirName) {
+		t.Error("the root history was created inside the live root, where it would end up inside its own snapshots")
+	}
+	if !snapperCalled(rec, "btrfs", "subvolume", "create", shared.MountRoot+"/home/"+shared.BtrfsSnapshotsDirName) {
+		t.Errorf("no btrfs subvolume create for %s; calls = %v", shared.MountRoot+"/home/.snapshots", rec.Calls())
+	}
+
+	// The state this installer produced is the one a restore goes back to, so it is
+	// snapshotted at the end of the install and marked so cleanup never removes it.
+	snapshot := snapperCallIndex(rec, "arch-chroot", shared.MountRoot, "snapper", "--no-dbus", "-c", snapperRootConfig,
+		"create", "-t", "single", "-d", "after installation", "-c", "number", "-u", "important=yes")
+	if snapshot < 0 {
+		t.Errorf("no \"after installation\" snapshot; calls = %v", rec.Calls())
+	}
+
+	// The menu is written by the script the install just installed - not by a second
+	// copy of its logic here - and after the snapshot it lists exists. rEFInd reads
+	// its configuration before any part of the installed system runs, so this call is
+	// the install's only chance to have a snapshot entry on its own first boot.
+	menu := snapperCallIndex(rec, shared.MountRoot+snapshotScriptPath, "--root", shared.MountRoot)
+	switch {
+	case menu < 0:
+		t.Errorf("the snapshot menu was not written for the first boot; calls = %v", rec.Calls())
+	case snapshot >= 0 && menu < snapshot:
+		t.Error("the snapshot menu was written before the snapshot it lists exists")
 	}
 
 	sysconfig, ok := fs.Read(shared.MountRoot + snapperSysconfigPath)

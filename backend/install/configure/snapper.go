@@ -142,8 +142,10 @@ func writePacmanSnapshotHooks() error {
 // ConfigureSnapper configures snapper for the btrfs layout: a config per
 // snapshotted subvolume, the .snapshots subvolume snapper requires inside each
 // one, the config list in /etc/conf.d/snapper, btrfs quotas, the units that take
-// the timeline snapshots, a snapshot pair around every pacman transaction, and the
-// machinery that puts the snapshots in the boot menu.
+// the timeline snapshots, a snapshot pair around every pacman transaction, the
+// machinery that puts the snapshots in the boot menu, the state mounts a snapshot
+// boot needs, and finally the "after installation" snapshot - finally because it
+// is the finished system, and because everything written here has to be inside it.
 //
 // Nothing here aborts an otherwise complete install: a system without snapshots
 // still installs and boots, so a command that fails is reported and the config it
@@ -167,7 +169,8 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 	for _, target := range snapperTargets {
 		// The list above and the subvolume scheme must agree. If they ever drift,
 		// skip the target instead of snapshotting something that is not there.
-		if shared.FindSubvolumeByMountPoint(subvolumes, target.mountPoint) == nil {
+		subvolume := shared.FindSubvolumeByMountPoint(subvolumes, target.mountPoint)
+		if subvolume == nil {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("Warning: no subvolume mounted at %s; snapper config %s skipped",
 					target.mountPoint, target.configName)
@@ -175,7 +178,7 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 			continue
 		}
 
-		if err := createSnapshotSubvolume(target); err != nil {
+		if err := ensureSnapshotSubvolume(ctx, target, subvolume); err != nil {
 			if ctx.Logger != nil {
 				ctx.Logger.Error("Warning: snapper config %s skipped: %v", target.configName, err)
 			}
@@ -212,23 +215,81 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 	if !rootConfigured {
 		return nil
 	}
-	return configureSnapshotBootEntries(ctx)
+	if err := configureSnapshotBootEntries(ctx); err != nil {
+		return err
+	}
+	// Before the snapshot, on purpose: a snapshot boots the unit files the snapshot
+	// contains, so the mounts a snapshot boot needs have to be inside it. The
+	// "after installation" snapshot is taken last for the same reason (configure.go).
+	if err := configureSnapshotStateDirs(ctx); err != nil {
+		return err
+	}
+	if err := createInstallationSnapshot(ctx); err != nil {
+		return err
+	}
+	// The menu is written after the snapshot it lists exists, and by the script the
+	// install itself will run from now on - not by a second copy of its logic here.
+	return writeInitialSnapshotMenu(ctx)
 }
 
-// createSnapshotSubvolume creates the .snapshots subvolume inside the mounted
-// subvolume. Snapper needs it to be a subvolume, not a directory: it refuses to
-// use a plain .snapshots, and as a subvolume it stays out of the snapshots of
-// its own parent.
-func createSnapshotSubvolume(target snapperTarget) error {
+// ensureSnapshotSubvolume makes sure a config has a .snapshots subvolume to write
+// into. Snapper needs it to be a subvolume, not a directory: it refuses to use a
+// plain .snapshots, and as a subvolume it stays out of the snapshots of its own
+// parent.
+//
+// For the subvolume that holds the system the history is part of the layout and is
+// mounted at /.snapshots (see format.root_snapshot and the fstab): the live root is
+// itself a snapshot, and a snapshot cannot contain a subvolume, so this step could
+// not create the history inside it even if it wanted to. What it can check is that
+// the mount is there - without it snapper would write its history inside its own
+// snapshots.
+//
+// Every other config's history is created here, inside its own subvolume.
+func ensureSnapshotSubvolume(ctx *shared.InstallContext, target snapperTarget, subvolume *shared.BtrfsSubvolume) error {
+	if subvolume.SnapshotRoot {
+		mountedAt := shared.MountRoot + shared.BtrfsSnapshotsMountPoint
+		out, err := primitives.Run("findmnt", "-n", "-o", "SOURCE", mountedAt).Output()
+		if err != nil || strings.TrimSpace(string(out)) == "" {
+			return fmt.Errorf("%s is not mounted: the history of %s would be written inside its own snapshots",
+				shared.BtrfsSnapshotsMountPoint, subvolume.Name)
+		}
+		return nil
+	}
+
 	// The mount point is the subvolume as the installed system sees it, so the
-	// host path is the same path under MountRoot ("/" -> "/mnt", "/home" ->
-	// "/mnt/home"). Trim the trailing slash so "/" does not become "/mnt//".
+	// host path is the same path under MountRoot ("/home" -> "/mnt/home"). Trim the
+	// trailing slash so "/" does not become "/mnt//".
 	mountedAt := strings.TrimSuffix(shared.MountRoot+target.mountPoint, "/")
-	path := mountedAt + "/.snapshots"
+	path := mountedAt + "/" + shared.BtrfsSnapshotsDirName
 
 	out, err := primitives.Run("btrfs", "subvolume", "create", path).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("btrfs subvolume create %s: %w: %s", path, err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// createInstallationSnapshot takes the snapshot "restore to the state the installer
+// produced" is measured against, and marks it so no cleanup algorithm ever removes
+// it. SUSE ships the same snapshot in every rollback-capable install and its own
+// documentation lists it as "after installation, important=yes"; without it the
+// oldest state a user can go back to is whatever the first transaction happened to
+// leave behind.
+//
+// It is not fatal. A system whose first snapshot failed still installs, still boots
+// and still snapshots every transaction after it.
+func createInstallationSnapshot(ctx *shared.InstallContext) error {
+	out, err := primitives.RunChroot("snapper", "--no-dbus", "-c", snapperRootConfig,
+		"create", "-t", "single", "-d", "after installation", "-c", "number", "-u", "important=yes")
+	if err != nil {
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Warning: the \"after installation\" snapshot failed (non-fatal): %v: %s",
+				err, strings.TrimSpace(string(out)))
+		}
+		return nil
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Snapshot \"after installation\": the state this installer produced is restorable")
 	}
 	return nil
 }

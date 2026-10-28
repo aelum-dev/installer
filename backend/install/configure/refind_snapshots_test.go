@@ -207,8 +207,8 @@ func TestConfigureSnapper_NoSnapshotHooksForExt4(t *testing.T) {
 // reason to install a generator for it.
 func TestConfigureSnapper_SkipsMenuWithoutRootConfig(t *testing.T) {
 	rec := mountedRunner().OnArgsError(
-		[]string{"btrfs", "subvolume", "create", shared.MountRoot + "/.snapshots"},
-		errors.New("read-only filesystem"))
+		[]string{"findmnt", "-n", "-o", "SOURCE", shared.MountRoot + shared.BtrfsSnapshotsMountPoint},
+		errors.New("not mounted"))
 	defer primitives.SetCommandRunner(rec)()
 	fs := primitivestest.NewMemFS()
 	defer primitives.SetFileSystem(fs)()
@@ -259,9 +259,31 @@ func TestSnapshotMenuScript(t *testing.T) {
 		`phrase="Before system update"`,
 		`phrase="After system update"`,
 		`case "$phrase" in pacman) phrase="" ;;`,
-		// The entry boots the newest snapshot taken before a change, not the newest
-		// one, which is usually the state that already contains the change.
+		// '|' is the field separator of the collected list, so it cannot be allowed
+		// inside a field: a description containing one would shift every field after
+		// it and put a title in the wrong column.
+		`tr -cd ' -~' | tr -d '|'`,
+		// The entry boots the newest snapshot taken before a change, else the newest
+		// important one, else the newest one - not the newest one full stop, which
+		// is usually the state that already contains the change.
 		`[ "$type" = pre ]`,
+		`[ "$important" = yes ]`,
+		// snapper writes userdata as <key>/<value> pairs - measured on a real
+		// install's "after installation" snapshot - so that is what the generator
+		// reads, with the flat spelling accepted too rather than treating a snapshot
+		// it cannot parse as one nobody marked.
+		`<key>important</key>[[:space:]]*<value>`,
+		// A timeline snapshot is a timestamp, not a decision: it stays in the
+		// submenu and is never the recovery entry.
+		`case "$cleanup" in timeline) continue ;; esac`,
+		// Snapper keeps a dozen timeline snapshots, so a plain newest-N list would
+		// crowd every transaction pair out of the menu: the states someone had a
+		// reason to keep are collected first.
+		`sort -t'|' -k1,1n -k2,2rn`,
+		// The snapshot that *is* the system is not offered: this install's own entry
+		// already boots it (it names no subvolume), and a rollback moves it.
+		`if [ "$number" = "$default_number" ]; then`,
+		`default_number=${default_path##*/` + shared.BtrfsSnapshotsDirName + `/}`,
 		// No snapshots, no entry: an icon that boots nothing is worse than no icon.
 		`if [ -n "$target_number" ]; then`,
 		// The install id is the installer's derivation: eight hex characters of the
@@ -286,6 +308,13 @@ func TestSnapshotMenuScript(t *testing.T) {
 	// else: anything wider becomes a fallback box. The generator is ASCII, and
 	// menu_text is what keeps the titles it builds ASCII too.
 	for i, line := range strings.Split(script, "\n") {
+		// A Go comment inside the raw string is not a shell comment: "//" is a
+		// command to /bin/sh, and the apostrophe in the text after it opens a quote
+		// that swallows the lines which follow - which is how menu_text once stopped
+		// being defined at all.
+		if strings.HasPrefix(line, "//") {
+			t.Errorf("generator line %d is a Go comment, not a shell comment: %q", i+1, line)
+		}
 		for _, r := range line {
 			if r > 127 {
 				t.Errorf("generator line %d is not ASCII, and rEFInd's font is: %q", i+1, line)
@@ -306,11 +335,52 @@ func TestSnapshotMenuScript(t *testing.T) {
 	if !strings.Contains(script, `SNAPSHOT_ICON="/`+shared.RefindSnapshotIconPath+`"`) {
 		t.Errorf("generator does not use the theme's snapshot icon (%s)", shared.RefindSnapshotIconPath)
 	}
-	// Booted from a snapshot, / has no .snapshots at all (a snapshot does not
-	// contain its parent's subvolumes), so the generator must refuse to rewrite the
-	// fragment from an empty list: that would delete the entry being booted.
-	if !strings.Contains(script, "*/.snapshots/*)") {
-		t.Error("generator rewrites the boot menu even when / is itself a snapshot")
+	// The live root is a snapshot, and a snapshot does not contain its parent's
+	// subvolumes, so the only history this system can read is the mounted one. With
+	// no mount the generator must refuse to rewrite the fragment from an empty list:
+	// that would delete the entry being booted.
+	if !strings.Contains(script, `findmnt -n -o SOURCE "$snapshot_dir"`) {
+		t.Error("generator rewrites the boot menu even when it cannot see the history")
+	}
+	// What the system is is named by the filesystem's default subvolume - the pointer
+	// a rollback moves - so the path of the history is derived from it, not from how
+	// / happens to be mounted.
+	if !strings.Contains(script, `btrfs subvolume get-default "$root"`) {
+		t.Error("generator does not derive the history from the default subvolume")
+	}
+	// The installer runs the same script against the system it is still installing,
+	// so every path it resolves has to be under the root it was given. A single
+	// absolute one would make the install-time run write about the live system.
+	if !strings.Contains(script, `--root)`) {
+		t.Error("generator has no --root, so the installer cannot write the menu before the first boot")
+	}
+	// The default root is "/" - the service and snapper's plugin run this with no
+	// argument at all - and stripping a trailing slash used to turn that into an
+	// empty path. "btrfs subvolume get-default "" then fails, and the stanzas name
+	// subvolumes that are not in the filesystem tree: an entry that cannot mount a
+	// root. Measured on a real install, where every snapshot entry stopped booting
+	// after the install's own first boot rewrote the menu this way.
+	if !strings.Contains(script, `case $root in
+    "/") ;;
+    */) root=${root%/} ;;
+esac`) {
+		t.Error("generator can reduce the default root \"/\" to an empty path")
+	}
+	// And when btrfs does not answer at all there is no correct path to name a
+	// snapshot by, so the fragment already on the ESP is the better answer.
+	if !strings.Contains(script, `cannot read the default subvolume`) {
+		t.Error("generator guesses a history path when the default subvolume is unknown")
+	}
+	for _, want := range []string{
+		`root="/"`,
+		`for candidate in "$root/efi" "$root/boot"`,
+		`findmnt -no UUID "$root"`,
+		`"$root/etc/snapper/configs/$SNAPPER_CONFIG"`,
+		`snapshot_dir="$root${snapshot_dir%/}/` + shared.BtrfsSnapshotsDirName + `"`,
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("generator resolves %q outside the root it was given", want)
+		}
 	}
 }
 
@@ -354,4 +424,39 @@ func TestSnapshotUnitPathIsWhatSystemctlEnables(t *testing.T) {
 	if got := "/etc/systemd/system/" + snapshotUnitName; got != snapshotUnitPath {
 		t.Errorf("unit name %q does not match its path %q", snapshotUnitName, snapshotUnitPath)
 	}
+}
+
+// TestWriteInitialSnapshotMenu: the install-time run is the installed system's own
+// script, asked about the target with --root rather than through a chroot (a chroot
+// shows the live system's mount table, which is the mistake this whole layout was
+// built to stop). A failure here costs a boot menu, not an install: the placeholder
+// is a valid file and the installed system rebuilds it at every boot.
+func TestWriteInitialSnapshotMenu(t *testing.T) {
+	t.Run("runs the installed script against the target", func(t *testing.T) {
+		rec := primitivestest.NewRecorder()
+		defer primitives.SetCommandRunner(rec)()
+
+		if err := writeInitialSnapshotMenu(&shared.InstallContext{}); err != nil {
+			t.Fatalf("writeInitialSnapshotMenu() = %v, want nil", err)
+		}
+		if !hasCall(rec.CallsFor(shared.MountRoot+snapshotScriptPath),
+			shared.MountRoot+snapshotScriptPath, "--root", shared.MountRoot) {
+			t.Errorf("generator was not run against the target; calls = %v", rec.Calls())
+		}
+		for _, c := range rec.Calls() {
+			if c.Args[0] == "arch-chroot" {
+				t.Errorf("the menu generator was run in a chroot, where it would read the live system's mounts: %v", c.Args)
+			}
+		}
+	})
+
+	t.Run("a failed run is not a failed install", func(t *testing.T) {
+		rec := primitivestest.NewRecorder().OnArgsError(
+			[]string{shared.MountRoot + snapshotScriptPath}, errors.New("no mounted ESP"))
+		defer primitives.SetCommandRunner(rec)()
+
+		if err := writeInitialSnapshotMenu(&shared.InstallContext{}); err != nil {
+			t.Fatalf("writeInitialSnapshotMenu() = %v, want nil", err)
+		}
+	})
 }

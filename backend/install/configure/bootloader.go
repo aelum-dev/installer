@@ -430,9 +430,12 @@ func bootEntryOptions(ctx *shared.InstallContext) string {
 	} else {
 		options = "root=" + root + " rw quiet splash loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0"
 	}
-	if ctx.FileSystem == shared.FileSystemBtrfs {
-		options += " rootflags=subvol=@"
-	}
+	// A btrfs entry carries no rootflags= at all. The kernel mounts the filesystem's
+	// default subvolume, which is the subvolume the installer installed into and the
+	// one snapper's rollback replaces - so "boot the state I chose" needs no change
+	// to this entry, and it stays byte-identical across a rollback. Naming a
+	// subvolume here would pin the boot to a name and leave the rollback changing
+	// something nothing reads.
 	return options
 }
 
