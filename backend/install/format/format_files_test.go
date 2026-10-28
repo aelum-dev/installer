@@ -169,8 +169,9 @@ func TestSetupRootFilesystem_Ext4(t *testing.T) {
 func TestSetupRootFilesystem_Btrfs(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"blkid", "-s", "UUID", "-o", "value", "/dev/vda2"}, "ROOT-UUID\n").
-		OnArgsOutput([]string{"btrfs", "subvolume", "list"}, "ID 256 gen 1 top level 5 path @\n")
+		OnArgsOutput([]string{"btrfs", "subvolume", "list"}, btrfsSetupList)
 	defer primitives.SetCommandRunner(rec)()
+	defer withMemFS()()
 
 	setup, err := SetupRootFilesystem(&shared.InstallContext{}, "/dev/vda2", shared.FileSystemBtrfs)
 	if err != nil {
@@ -477,7 +478,8 @@ func TestPrepareRootLvmExt4(t *testing.T) {
 
 func TestPrepareRootLvmBtrfs(t *testing.T) {
 	rec := lvmRecorder(t)
-	rec.OnArgsOutput([]string{"btrfs", "subvolume", "list"}, "ID 256 gen 1 top level 5 path @\n")
+	rec.OnArgsOutput([]string{"btrfs", "subvolume", "list"}, btrfsSetupList)
+	defer withMemFS()()
 
 	ctx := &shared.InstallContext{Lvm: true, FileSystem: shared.FileSystemBtrfs}
 	setup, err := PrepareRoot(ctx, "/dev/vda2", shared.FileSystemBtrfs)

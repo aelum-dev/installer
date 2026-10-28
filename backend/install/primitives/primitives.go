@@ -268,15 +268,46 @@ func ValidateMountedSystem() error {
 
 // BuildMountOpts constructs mount options string from a BtrfsSubvolume's properties.
 // Returns "subvol=<name>,compress=<val>,nodatacow" or similar based on properties.
+// For the subvolume that holds the system, subvol= names the initial snapshot
+// inside it rather than the container: that is the subvolume being installed into
+// and the one the installed system boots.
 func BuildMountOpts(sv *shared.BtrfsSubvolume) string {
-	opts := shared.BtrfsSubvolumeMountPrefix + sv.Name
+	return btrfsMountOptions(shared.LiveSubvolumeName(sv), sv)
+}
+
+// BuildFstabMountOpts builds the fstab options for one subvolume.
+//
+// The subvolume that holds the system gets no subvol= at all. Its mount follows
+// the filesystem's default subvolume, and a rollback moves that pointer - which is
+// how "boot the state I just chose" works without rewriting fstab or the boot
+// entry, and why the entry stays byte-identical across a rollback.
+func BuildFstabMountOpts(sv *shared.BtrfsSubvolume) string {
+	if sv.SnapshotRoot {
+		return btrfsMountOptions("", sv)
+	}
+	return btrfsMountOptions(sv.Name, sv)
+}
+
+// BuildSnapshotsMountOpts builds the mount and fstab options for the mount that
+// keeps a subvolume's .snapshots reachable at a fixed path. It carries the
+// properties of the subvolume it belongs to so the history is stored the same way
+// as the system it records.
+func BuildSnapshotsMountOpts(sv *shared.BtrfsSubvolume) string {
+	return btrfsMountOptions(shared.SnapshotDirName(sv), sv)
+}
+
+func btrfsMountOptions(subvol string, sv *shared.BtrfsSubvolume) string {
+	opts := make([]string, 0, 3)
+	if subvol != "" {
+		opts = append(opts, shared.BtrfsSubvolumeMountPrefix+subvol)
+	}
 	if sv.Compression != "" {
-		opts += ",compress=" + sv.Compression
+		opts = append(opts, "compress="+sv.Compression)
 	}
 	if sv.NoDataCow {
-		opts += ",nodatacow"
+		opts = append(opts, "nodatacow")
 	}
-	return opts
+	return strings.Join(opts, ",")
 }
 
 // CleanupMounts forcefully unmounts everything under /mnt.

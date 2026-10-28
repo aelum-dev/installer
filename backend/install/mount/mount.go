@@ -117,6 +117,13 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 
+	// ── Mount the history of the subvolume that holds the system ──
+	if rootSubvol != nil {
+		if err := mountRootHistory(ctx, rootDevice, rootSubvol); err != nil {
+			return err
+		}
+	}
+
 	// ── Mount additional filesystems (btrfs subvolumes) ──
 	if err := mountAdditionalMounts(ctx, p, rootDevice); err != nil {
 		return err
@@ -199,6 +206,29 @@ func mountHomeVolume(ctx *shared.InstallContext, device string) error {
 		ctx.Logger.Command(string(out))
 	}
 	return verifyMount(fullPath, device)
+}
+
+// mountRootHistory mounts the history of the subvolume that holds the system at
+// /.snapshots, during the install exactly as the installed system mounts it at
+// runtime (see configure/fstab.go).
+//
+// The live root is a snapshot, and a snapshot never contains the subvolumes that
+// were inside its parent, so the live root only has a plain placeholder directory
+// for this to land on. Left unmounted, snapper would write its history into that
+// directory - inside its own snapshot - instead of into the history.
+func mountRootHistory(ctx *shared.InstallContext, rootDevice string, rootSubvol *shared.BtrfsSubvolume) error {
+	snapPath := shared.MountRoot + shared.BtrfsSnapshotsMountPoint
+	if err := primitives.Run("mkdir", "-p", snapPath).Run(); err != nil {
+		return fmt.Errorf("create snapshots mount point %s failed: %w", snapPath, err)
+	}
+	output, err := primitives.Run("mount", "-o", primitives.BuildSnapshotsMountOpts(rootSubvol), rootDevice, snapPath).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("mount %s failed: %w: %s", shared.BtrfsSnapshotsMountPoint, err, string(output))
+	}
+	if ctx.Logger != nil && len(output) > 0 {
+		ctx.Logger.Command(string(output))
+	}
+	return verifyMount(snapPath, rootDevice)
 }
 
 // mountBtrfsSubvolumes mounts each extra btrfs subvolume recorded in the

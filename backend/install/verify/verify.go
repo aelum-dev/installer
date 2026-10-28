@@ -136,6 +136,23 @@ func checkFstab(ctx *shared.InstallContext, issues, info *[]string) {
 			*issues = append(*issues, "fstab missing the home LV UUID "+ctx.Partitions.HomeUUID)
 		}
 	}
+
+	// A btrfs install restores by moving the filesystem's default subvolume, so two
+	// things must hold of the fstab the restored system boots with: the root mount
+	// names no subvolume (a pinned one makes the rollback change something nothing
+	// mounts), and the history is mounted at a fixed path (without it the restored
+	// system has an empty .snapshots and snapper stops working in it).
+	if ctx.FileSystem == shared.FileSystemBtrfs {
+		for _, line := range strings.Split(content, "\n") {
+			if strings.Contains(line, "  /  btrfs") && strings.Contains(line, "subvol=") {
+				*issues = append(*issues, "fstab pins the root mount to a subvolume; a rollback would change nothing the boot reads")
+				break
+			}
+		}
+		if !strings.Contains(content, shared.BtrfsSnapshotsMountPoint) {
+			*issues = append(*issues, "fstab missing the "+shared.BtrfsSnapshotsMountPoint+" mount (snapper's history would not be reachable after a rollback)")
+		}
+	}
 }
 
 // espRoot returns the ESP mount point for this installation. The ESP itself is
@@ -357,6 +374,13 @@ func checkBootloader(ctx *shared.InstallContext, issues, info *[]string) {
 			*issues = append(*issues, "rEFInd menu entry does not load a kernel from this installation's boot directory ("+kernelDir+")")
 			return
 		}
+	}
+	if ctx.FileSystem == shared.FileSystemBtrfs && strings.Contains(string(entryData), "rootflags=") {
+		// The entry must let the kernel mount the filesystem's default subvolume: that
+		// pointer is what a rollback moves, and a pinned subvolume would leave the
+		// rollback changing a state the boot never reads.
+		*issues = append(*issues, "rEFInd menu entry pins a subvolume (rootflags=); a rollback would not change what boots")
+		return
 	}
 	*info = append(*info, "rEFInd menu entry present ✓")
 

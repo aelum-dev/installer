@@ -66,8 +66,9 @@ func TestRun_PassesWithLuks(t *testing.T) {
 	entry := `menuentry "` + shared.RefindEntryTitle("/dev/vda2") + `" {` +
 		"\n    loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts") +
 		"\n    options rd.luks.name=LUKS-UUID=aelum root=UUID=ROOT-UUID" +
-		" rw quiet splash rootflags=subvol=@\n}\n"
-	fstab := "UUID=ROOT-UUID / ext4 rw 0 1\n" +
+		" rw quiet splash\n}\n"
+	fstab := "UUID=ROOT-UUID / btrfs compress=zstd 0 1\n" +
+		"UUID=ROOT-UUID /.snapshots btrfs subvol=@/.snapshots,compress=zstd 0 0\n" +
 		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
 		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n"
 	fs := primitivestest.NewMemFS().

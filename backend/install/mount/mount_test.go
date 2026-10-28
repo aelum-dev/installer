@@ -174,6 +174,7 @@ func lvmMountRecorder(t *testing.T) *primitivestest.Recorder {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", shared.MountRoot}, dmRoot+"\n").
 		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", shared.MountRoot + "/home"}, dmHome+"\n").
+		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", shared.MountRoot + shared.BtrfsSnapshotsMountPoint}, dmRoot+"\n").
 		OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", shared.ESPMountPoint}, "/dev/vda1\n").
 		OnArgsOutput([]string{"readlink", "-f", dmRoot}, nodeRoot+"\n").
 		OnArgsOutput([]string{"readlink", "-f", lvRoot}, nodeRoot+"\n").

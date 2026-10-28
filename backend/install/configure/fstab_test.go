@@ -180,9 +180,47 @@ func TestGenerateBtrfsFstab_CompressionOptions(t *testing.T) {
 
 	content := generateBtrfsFstab(ctx)
 
-	// @ should have compress=zstd
-	if !strings.Contains(content, "subvol=@,compress=zstd") {
-		t.Errorf("expected compress=zstd on @ subvolume, got:\n%s", content)
+	// The root mount names no subvolume at all: it follows the filesystem's default
+	// subvolume, and that pointer is what a rollback moves. It still carries the
+	// compression, which is what the system's files are written with.
+	rootLine := ""
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, "UUID=root-uuid-123  /  btrfs") {
+			rootLine = line
+			break
+		}
+	}
+	if rootLine == "" {
+		t.Fatalf("could not find the / line:\n%s", content)
+	}
+	if !strings.Contains(rootLine, "compress=zstd") {
+		t.Errorf("expected compress=zstd on the root mount, got: %s", rootLine)
+	}
+	if strings.Contains(rootLine, "subvol=") {
+		t.Errorf("the root mount must not name a subvolume (a pinned subvol= makes a rollback change nothing the boot reads), got: %s", rootLine)
+	}
+
+	// The history of the root subvolume gets its own mount at a fixed path. A
+	// snapshot never contains the subvolumes inside its parent, so without this a
+	// restored system has an empty .snapshots and snapper stops working in it.
+	snapshotsLine := ""
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, "UUID=root-uuid-123  "+shared.BtrfsSnapshotsMountPoint+"  btrfs") {
+			snapshotsLine = line
+			break
+		}
+	}
+	if snapshotsLine == "" {
+		t.Errorf("expected a %s entry, got:\n%s", shared.BtrfsSnapshotsMountPoint, content)
+	}
+	if !strings.Contains(snapshotsLine, "subvol="+shared.SnapshotDirName(shared.RootSubvolume())) {
+		t.Errorf("%s must mount the root subvolume's history, got: %s", shared.BtrfsSnapshotsMountPoint, snapshotsLine)
+	}
+
+	// @home keeps its own subvol= - only the mount that holds the system follows the
+	// default subvolume.
+	if !strings.Contains(content, "subvol=@home,compress=zstd") {
+		t.Errorf("expected compress=zstd on @home, got:\n%s", content)
 	}
 
 	// @cache should have nodatacow

@@ -252,6 +252,32 @@ const BtrfsTopLevelSubvolumeID = 5
 // BtrfsSetupTmpMount is the temporary mount point for btrfs subvolume operations.
 const BtrfsSetupTmpMount = "/tmp/btrfs-setup"
 
+// BtrfsSnapshotsDirName is the directory snapper keeps its snapshots in. It is a
+// subvolume of its own, not a directory: snapper refuses a plain one, and as a
+// subvolume it stays out of the snapshots of the parent it belongs to.
+const BtrfsSnapshotsDirName = ".snapshots"
+
+// BtrfsSnapshotSubvolumeName is the name snapper gives the subvolume holding one
+// snapshot, inside .snapshots/<number>/.
+const BtrfsSnapshotSubvolumeName = "snapshot"
+
+// BtrfsInitialSnapshotNumber is the number of the snapshot the system is installed
+// into. snapper's rollback names the running system by the filesystem's default
+// subvolume and only accepts it as one of its own numbered snapshots
+// (Btrfs::getDefault -> idToNum requires a path ending <number>/snapshot), so the
+// installer creates that snapshot, points the default subvolume at it, and installs
+// into it - the sequence snapper's own installation-helper runs (step1, and the
+// step_filesystem fallback that creates .snapshots/1/snapshot and sets it as the
+// default before anything is installed).
+const BtrfsInitialSnapshotNumber = 1
+
+// BtrfsSnapshotsMountPoint is where the installed system mounts the root config's
+// .snapshots subvolume. That mount is what keeps the history reachable when / is a
+// snapshot: a snapshot never contains the subvolumes that were inside its parent,
+// so without it the restored system has an empty .snapshots and snapper stops
+// working in it.
+const BtrfsSnapshotsMountPoint = "/.snapshots"
+
 // --- Kernel / boot entry -----------------------------------------------------
 
 // KernelFilePrefix is the filename prefix for vmlinuz kernel files.

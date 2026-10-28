@@ -11,11 +11,27 @@ import (
 )
 
 // listOutput is a realistic `btrfs subvolume list` output covering the canonical
-// scheme, so the default subvolume (@) can be located by path.
+// scheme, so the initial snapshot under @ can be located by path.
 const listOutput = `ID 258 gen 42 top level 5 path @
 ID 260 gen 42 top level 5 path @home
 ID 262 gen 42 top level 5 path @srv
+ID 264 gen 42 top level 258 path @/.snapshots
+ID 266 gen 42 top level 264 path @/.snapshots/1/snapshot
 `
+
+// withMemFS gives the format step an in-memory filesystem. The initial root
+// snapshot writes its info.xml through the file seam, and the host running the
+// tests has no /tmp/btrfs-setup to write it into.
+func withMemFS() func() {
+	return primitives.SetFileSystem(primitivestest.NewMemFS())
+}
+
+// btrfsSetupList is what `btrfs subvolume list` reports for a scheme that was just
+// created: the subvolumes, the history under the root one, and the snapshot the
+// system is installed into.
+const btrfsSetupList = "ID 256 gen 1 top level 5 path @\n" +
+	"ID 258 gen 1 top level 256 path @/.snapshots\n" +
+	"ID 260 gen 1 top level 258 path @/.snapshots/1/snapshot\n"
 
 // hasCall reports whether calls contains argv exactly.
 func hasCall(calls [][]string, want ...string) bool {
@@ -38,12 +54,15 @@ func hasCall(calls [][]string, want ...string) bool {
 }
 
 // TestSetupBtrfsSubvolumes_Success verifies the sequence: mount the top level,
-// create each subvolume, set @ as default by its listed ID, apply per-subvolume
-// compression, then unmount and clean up.
+// create each subvolume, build the history and the snapshot the system is installed
+// into, set that snapshot as the default by its listed ID, apply per-subvolume
+// compression to the subvolume that holds files, then unmount and clean up.
 func TestSetupBtrfsSubvolumes_Success(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"btrfs", "subvolume", "list"}, listOutput)
 	defer primitives.SetCommandRunner(rec)()
+	fs := primitivestest.NewMemFS()
+	defer primitives.SetFileSystem(fs)()
 
 	subvols := shared.GetBtrfsSubvolumes()
 	if err := SetupBtrfsSubvolumes(&shared.InstallContext{}, "/dev/vda2", subvols); err != nil {
@@ -64,11 +83,36 @@ func TestSetupBtrfsSubvolumes_Success(t *testing.T) {
 	if created != len(subvols) {
 		t.Errorf("created %d/%d subvolumes", created, len(subvols))
 	}
-	if !hasCall(creates, "btrfs", "subvolume", "set-default", "258", tmp) {
-		t.Errorf("default subvolume (@ ID 258) was not set: %v", creates)
+	if !hasCall(creates, "btrfs", "subvolume", "create", tmp+"/@/.snapshots") {
+		t.Errorf("the history of the root subvolume was not created: %v", creates)
+	}
+	live := tmp + "/" + shared.LiveSubvolumeName(shared.RootSubvolume())
+	if !hasCall(creates, "btrfs", "subvolume", "create", live) {
+		t.Errorf("the snapshot the system is installed into was not created: %v", creates)
+	}
+	if !hasCall(creates, "btrfs", "subvolume", "set-default", "266", tmp) {
+		t.Errorf("default subvolume (@/.snapshots/1/snapshot, ID 266) was not set: %v", creates)
 	}
 	if !hasCall(creates, "btrfs", "property", "set", tmp+"/@home", "compression", "zstd") {
 		t.Errorf("compression was not applied to @home: %v", creates)
+	}
+	if !hasCall(creates, "btrfs", "property", "set", live, "compression", "zstd") {
+		t.Errorf("compression was not applied to the subvolume that holds the system: %v", creates)
+	}
+	// snapper only treats .snapshots/<n>/ as a snapshot when info.xml is there; with
+	// none it treats the directory as a leftover and removes it.
+	info, ok := fs.Read(tmp + "/@/.snapshots/1/info.xml")
+	if !ok {
+		t.Error("the initial snapshot has no info.xml, so snapper would not see the live root as a snapshot")
+	} else {
+		for _, want := range []string{"<type>single</type>", "<num>1</num>", "<date>", "first root filesystem"} {
+			if !strings.Contains(info, want) {
+				t.Errorf("initial snapshot info.xml is missing %q:\n%s", want, info)
+			}
+		}
+	}
+	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", live+"/"+shared.BtrfsSnapshotsDirName) {
+		t.Error("the live root has no mount point for /.snapshots, so the history could not be mounted in it")
 	}
 	if !hasCall(rec.CallsFor("umount"), "umount", tmp) {
 		t.Errorf("top-level mount was not undone: %v", rec.CallsFor("umount"))
@@ -86,6 +130,7 @@ func TestSetupBtrfsSubvolumes_UnmountFails(t *testing.T) {
 			Err:    errors.New("exit status 32"),
 		})
 	defer primitives.SetCommandRunner(rec)()
+	defer withMemFS()()
 
 	err := SetupBtrfsSubvolumes(&shared.InstallContext{}, "/dev/vda2", shared.GetBtrfsSubvolumes())
 	if err == nil || !strings.Contains(err.Error(), "unmount btrfs top-level") {
@@ -119,6 +164,7 @@ func TestSetupBtrfsSubvolumes_ListFails(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsError([]string{"btrfs", "subvolume", "list"}, errors.New("exit status 1"))
 	defer primitives.SetCommandRunner(rec)()
+	defer withMemFS()()
 
 	err := SetupBtrfsSubvolumes(&shared.InstallContext{}, "/dev/vda2", shared.GetBtrfsSubvolumes())
 	if err == nil || !strings.Contains(err.Error(), "list subvolumes") {
@@ -127,11 +173,13 @@ func TestSetupBtrfsSubvolumes_ListFails(t *testing.T) {
 }
 
 // TestSetupBtrfsSubvolumes_DefaultNotFound verifies a list output without the
-// default subvolume aborts rather than setting an arbitrary default.
+// subvolume the system is installed into aborts rather than setting an arbitrary
+// default.
 func TestSetupBtrfsSubvolumes_DefaultNotFound(t *testing.T) {
 	rec := primitivestest.NewRecorder().
 		OnArgsOutput([]string{"btrfs", "subvolume", "list"}, "ID 300 gen 1 top level 5 path @other\n")
 	defer primitives.SetCommandRunner(rec)()
+	defer withMemFS()()
 
 	err := SetupBtrfsSubvolumes(&shared.InstallContext{}, "/dev/vda2", shared.GetBtrfsSubvolumes())
 	if err == nil || !strings.Contains(err.Error(), "not found") {

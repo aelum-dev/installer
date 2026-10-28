@@ -51,9 +51,19 @@ func generateBtrfsFstab(ctx *shared.InstallContext) string {
 	lines = append(lines, "# <file system>                             <mount point>  <type>  <options>               <dump>  <pass>")
 	lines = append(lines, efiFstabLines(p, shared.InstallID(p.RootUUID))...)
 
-	for _, sv := range subvolumes {
-		opts := primitives.BuildMountOpts(&sv)
+	for i := range subvolumes {
+		sv := &subvolumes[i]
+		opts := primitives.BuildFstabMountOpts(sv)
 		lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID, sv.MountPoint, opts))
+		// The history of the subvolume that holds the system gets its own mount.
+		// A snapshot never contains the subvolumes inside its parent, so once a
+		// rollback has run the new live root has an empty .snapshots of its own:
+		// this line is what makes the history reachable again, and it names the
+		// container (@/.snapshots), which no rollback ever moves.
+		if sv.SnapshotRoot {
+			lines = append(lines, fmt.Sprintf("UUID=%s  %s  btrfs   %s  0 0", p.RootUUID,
+				shared.BtrfsSnapshotsMountPoint, primitives.BuildSnapshotsMountOpts(sv)))
+		}
 	}
 
 	return strings.Join(lines, "\n") + "\n"
@@ -97,7 +107,22 @@ func writeBtrfsFstab(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile("/etc/fstab", fstabContent); err != nil {
 		return err
 	}
-	return verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID), "")
+	if err := verifyFstab(ctx.Partitions.RootUUID, ctx.Partitions.EFIUUID, shared.InstallID(ctx.Partitions.RootUUID), ""); err != nil {
+		return err
+	}
+	// The root mount names no subvolume, so the only thing that decides which state
+	// comes back after a rollback is the filesystem's default subvolume. If the
+	// history is not mounted, the restored system cannot see it and snapper stops
+	// working in it, so a fstab without that line is a broken install, not a
+	// cosmetic one.
+	data, err := primitives.ReadFile(shared.MountRoot + "/etc/fstab")
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(string(data), shared.BtrfsSnapshotsMountPoint) {
+		return fmt.Errorf("fstab is missing the %s mount (snapper's history would not be reachable after a rollback)", shared.BtrfsSnapshotsMountPoint)
+	}
+	return nil
 }
 
 func verifyFstab(rootUUID, efiUUID, installID, homeUUID string) error {

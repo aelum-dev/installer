@@ -82,6 +82,7 @@ func TestRun_BtrfsSubvolumes(t *testing.T) {
 	rec := findmntRule(findmntRule(primitivestest.NewRecorder(),
 		shared.MountRoot, "/dev/vda2"),
 		shared.ESPMountPoint, "/dev/vda1")
+	rec.OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", shared.MountRoot + shared.BtrfsSnapshotsMountPoint}, "/dev/vda2\n")
 	defer primitives.SetCommandRunner(rec)()
 
 	if err := Run(ctx); err != nil {
@@ -89,8 +90,16 @@ func TestRun_BtrfsSubvolumes(t *testing.T) {
 	}
 
 	mounts := rec.CallsFor("mount")
-	if !hasCall(mounts, "mount", "--mkdir", "-o", "subvol=@,compress=zstd", "/dev/vda2", shared.MountRoot) {
+	// The root mount names the initial snapshot, not the container: that is the
+	// subvolume the installed system boots (see format.root_snapshot).
+	if !hasCall(mounts, "mount", "--mkdir", "-o",
+		"subvol="+shared.LiveSubvolumeName(shared.RootSubvolume())+",compress=zstd", "/dev/vda2", shared.MountRoot) {
 		t.Errorf("root subvolume mount not issued; mount calls = %v", mounts)
+	}
+	// The history is mounted too, so snapper writes it where it will be at runtime
+	// instead of inside the live root's own snapshot.
+	if !hasCall(mounts, "mount", "-o", "subvol=@/.snapshots,compress=zstd", "/dev/vda2", shared.MountRoot+shared.BtrfsSnapshotsMountPoint) {
+		t.Errorf("history mount not issued; mount calls = %v", mounts)
 	}
 	if !hasCall(mounts, "mount", "-o", "subvol=@home,compress=zstd", "/dev/vda2", shared.MountRoot+"/home") {
 		t.Errorf("@home subvolume mount not issued; mount calls = %v", mounts)
@@ -209,14 +218,15 @@ func TestRun_BtrfsSubvolumeMountFails(t *testing.T) {
 	ctx.Partitions.MountPoints = map[string]string{"/": "/dev/vda2", "/home": ""}
 
 	rec := findmntRule(primitivestest.NewRecorder(), shared.MountRoot, "/dev/vda2")
-	rec.OnArgs([]string{"mount", "-o"}, primitivestest.Result{
+	rec.OnArgsOutput([]string{"findmnt", "-n", "-o", "SOURCE", shared.MountRoot + shared.BtrfsSnapshotsMountPoint}, "/dev/vda2\n")
+	rec.OnArgs([]string{"mount", "-o", "subvol=@home,compress=zstd"}, primitivestest.Result{
 		Err: errors.New("exit status 32"),
 	})
 	defer primitives.SetCommandRunner(rec)()
 
 	err := Run(ctx)
-	if err == nil || !strings.Contains(err.Error(), "subvolume") {
-		t.Fatalf("Run() error = %v, want subvolume mount failure", err)
+	if err == nil || !strings.Contains(err.Error(), "@home") {
+		t.Fatalf("Run() error = %v, want a subvolume mount failure naming @home", err)
 	}
 }
 

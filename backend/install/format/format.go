@@ -415,6 +415,10 @@ func FormatPartition(path, fstype, label string) error {
 // SetupBtrfsSubvolumes creates the standard btrfs subvolume scheme on the
 // mounted root partition and sets the default subvolume. Shared by the
 // automatic format step and the manual partition step.
+//
+// The default subvolume is the initial snapshot under the root subvolume, not the
+// root subvolume itself: see root_snapshot.go for why that is the layout snapper's
+// rollback needs.
 func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolumes []shared.BtrfsSubvolume) error {
 	tmp := shared.BtrfsSetupTmpMount
 
@@ -433,22 +437,36 @@ func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolume
 		}
 	}
 
+	// The history and the snapshot the system is installed into, for the scheme that
+	// has a root subvolume (an ext4 install never gets here).
+	liveName := ""
+	if shared.RootSubvolume() != nil {
+		var err error
+		if liveName, err = createRootSnapshot(tmp); err != nil {
+			return fmt.Errorf("initial root snapshot: %w", err)
+		}
+	}
+
 	cmd = primitives.Run("btrfs", "subvolume", "list", tmp)
 	listOut, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("list subvolumes: %w", err)
 	}
-	// Prefer the subvolume mounted at "/" (usually @) as the default; fall back
-	// to the first one for sets without a root subvolume.
-	defaultName := ""
-	for _, sv := range subvolumes {
-		if sv.MountPoint == "/" {
-			defaultName = sv.Name
-			break
+	// The default subvolume is the one the system boots, which for the root config
+	// is the initial snapshot rather than the subvolume it lives under.
+	defaultName := liveName
+	if defaultName == "" {
+		// Prefer the subvolume mounted at "/" (usually @) as the default; fall back
+		// to the first one for sets without a root subvolume.
+		for _, sv := range subvolumes {
+			if sv.MountPoint == "/" {
+				defaultName = sv.Name
+				break
+			}
 		}
-	}
-	if defaultName == "" && len(subvolumes) > 0 {
-		defaultName = subvolumes[0].Name
+		if defaultName == "" && len(subvolumes) > 0 {
+			defaultName = subvolumes[0].Name
+		}
 	}
 	var targetID string
 	for _, line := range strings.Split(strings.TrimSpace(string(listOut)), "\n") {
@@ -472,14 +490,16 @@ func SetupBtrfsSubvolumes(ctx *shared.InstallContext, rootPath string, subvolume
 		return fmt.Errorf("set default subvolume: %w: %s", err, string(out))
 	}
 
-	for _, sv := range subvolumes {
-		if sv.Compression == "" {
+	for i := range subvolumes {
+		if subvolumes[i].Compression == "" {
 			continue
 		}
-		cmd = primitives.Run("btrfs", "property", "set", tmp+"/"+sv.Name, "compression", sv.Compression)
+		// The properties belong on the subvolume that holds files, which for the root
+		// config is the initial snapshot, not the container it sits under.
+		cmd = primitives.Run("btrfs", "property", "set", tmp+"/"+shared.LiveSubvolumeName(&subvolumes[i]), "compression", subvolumes[i].Compression)
 		if _, err := cmd.CombinedOutput(); err != nil {
 			if ctx.Logger != nil {
-				ctx.Logger.Error("Warning: compression on %s: %v", sv.Name, err)
+				ctx.Logger.Error("Warning: compression on %s: %v", subvolumes[i].Name, err)
 			}
 		}
 	}
