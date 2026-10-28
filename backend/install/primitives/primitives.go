@@ -117,6 +117,10 @@ type FileSystem interface {
 	RemoveAll(path string) error
 	// Chmod changes path's permission bits.
 	Chmod(path string, mode os.FileMode) error
+	// Symlink creates newname as a symbolic link to oldname. oldname is written
+	// verbatim: a relative target stays relative, which is what a link created
+	// inside an unmounted install root needs.
+	Symlink(oldname, newname string) error
 	// ReadDirNames lists the immediate entries of a directory, sorted.
 	ReadDirNames(path string) ([]string, error)
 }
@@ -157,6 +161,7 @@ func (osFS) MkdirAll(path string, perm os.FileMode) error { return os.MkdirAll(p
 func (osFS) Stat(path string) (os.FileInfo, error)        { return os.Stat(path) }
 func (osFS) RemoveAll(path string) error                  { return os.RemoveAll(path) }
 func (osFS) Chmod(path string, mode os.FileMode) error    { return os.Chmod(path, mode) }
+func (osFS) Symlink(oldname, newname string) error        { return os.Symlink(oldname, newname) }
 
 func (osFS) ReadDirNames(path string) ([]string, error) {
 	entries, err := os.ReadDir(path)
@@ -184,6 +189,10 @@ func RemoveAll(path string) error { return defaultFS.RemoveAll(path) }
 // Chmod changes a host path's permission bits through the active FileSystem
 // seam.
 func Chmod(path string, mode os.FileMode) error { return defaultFS.Chmod(path, mode) }
+
+// Symlink creates newname as a symbolic link to oldname through the active
+// FileSystem seam.
+func Symlink(oldname, newname string) error { return defaultFS.Symlink(oldname, newname) }
 
 // ReadDirNames lists the immediate entries of a host directory through the
 // active FileSystem seam. The result is sorted so callers that render it (for

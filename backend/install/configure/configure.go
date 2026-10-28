@@ -19,8 +19,10 @@ import (
 //  5. greetd + DMS greeter setup
 //  6. Aelum LUKS unlock Plymouth theme (matches the live ISO)
 //  7. zram swap configuration
-//  8. Enable systemd services
-//  9. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
+//  8. Point /etc/resolv.conf at /run (before the services and before the
+//     snapshot, so the factory snapshot already carries the link)
+//  9. Enable systemd services
+//  10. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
 //     hooks, the boot-menu entries for the snapshots, the state mounts a snapshot
 //     boot needs, and the "after installation" snapshot - last, because it is the
 //     finished system and because a snapshot only contains what was written before
@@ -51,6 +53,13 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 	if err := ConfigureZram(ctx); err != nil {
+		return err
+	}
+	// Before the services are enabled and before the snapshot is taken: the point
+	// is that the factory snapshot — the state a broken system gets restored to —
+	// already carries the link, so a snapshot boot resolves on the network it is
+	// running on rather than the one its root was installed on.
+	if err := ConfigureNetworkDNS(ctx); err != nil {
 		return err
 	}
 	if err := EnableServices(ctx); err != nil {

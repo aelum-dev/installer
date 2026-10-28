@@ -23,6 +23,7 @@ type MemFS struct {
 	files     map[string][]byte
 	modes     map[string]os.FileMode
 	dirs      map[string]bool
+	links     map[string]string
 	readErr   map[string]error
 	writeErr  map[string]error
 	appendErr map[string]error
@@ -30,6 +31,7 @@ type MemFS struct {
 	removeErr map[string]error
 	chmodErr  map[string]error
 	mkdirErr  map[string]error
+	linkErr   map[string]error
 	writes    map[string]int
 }
 
@@ -39,6 +41,7 @@ func NewMemFS() *MemFS {
 		files:     map[string][]byte{},
 		modes:     map[string]os.FileMode{},
 		dirs:      map[string]bool{},
+		links:     map[string]string{},
 		readErr:   map[string]error{},
 		writeErr:  map[string]error{},
 		appendErr: map[string]error{},
@@ -46,6 +49,7 @@ func NewMemFS() *MemFS {
 		removeErr: map[string]error{},
 		chmodErr:  map[string]error{},
 		mkdirErr:  map[string]error{},
+		linkErr:   map[string]error{},
 		writes:    map[string]int{},
 	}
 }
@@ -65,6 +69,30 @@ func (fs *MemFS) WithDir(path string) *MemFS {
 	defer fs.mu.Unlock()
 	fs.dirs[path] = true
 	return fs
+}
+
+// WithSymlink preloads a symbolic link at path pointing at target.
+func (fs *MemFS) WithSymlink(path, target string) *MemFS {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	fs.links[path] = target
+	return fs
+}
+
+// WithSymlinkError forces Symlink(newname=path) to fail.
+func (fs *MemFS) WithSymlinkError(path string, err error) *MemFS {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	fs.linkErr[path] = err
+	return fs
+}
+
+// SymlinkTarget returns the target recorded for a link at path.
+func (fs *MemFS) SymlinkTarget(path string) (string, bool) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	target, ok := fs.links[path]
+	return target, ok
 }
 
 // WithReadError forces ReadFile(path) to fail.
@@ -168,12 +196,20 @@ func (fs *MemFS) existsLocked(p string) bool {
 	if _, ok := fs.files[p]; ok {
 		return true
 	}
+	if _, ok := fs.links[p]; ok {
+		return true
+	}
 	if fs.dirs[p] {
 		return true
 	}
 	prefix := p + "/"
 	for f := range fs.files {
 		if strings.HasPrefix(f, prefix) {
+			return true
+		}
+	}
+	for l := range fs.links {
+		if strings.HasPrefix(l, prefix) {
 			return true
 		}
 	}
@@ -241,6 +277,9 @@ func (fs *MemFS) Stat(p string) (os.FileInfo, error) {
 	if data, ok := fs.files[p]; ok {
 		return memFileInfo{name: path.Base(p), size: int64(len(data)), mode: fs.modes[p]}, nil
 	}
+	if _, ok := fs.links[p]; ok {
+		return memFileInfo{name: path.Base(p), mode: os.ModeSymlink}, nil
+	}
 	if fs.existsLocked(p) {
 		return memFileInfo{name: path.Base(p), dir: true, mode: os.ModeDir | 0o755}, nil
 	}
@@ -266,6 +305,11 @@ func (fs *MemFS) RemoveAll(p string) error {
 			delete(fs.dirs, d)
 		}
 	}
+	for l := range fs.links {
+		if l == p || strings.HasPrefix(l, prefix) {
+			delete(fs.links, l)
+		}
+	}
 	return nil
 }
 
@@ -277,6 +321,22 @@ func (fs *MemFS) Chmod(p string, mode os.FileMode) error {
 		return err
 	}
 	fs.modes[p] = mode
+	return nil
+}
+
+// Symlink implements primitives.FileSystem. The target is stored exactly as
+// given, and any file at newname is dropped: a link replaces what was there,
+// which is what creating one means.
+func (fs *MemFS) Symlink(oldname, newname string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	if err, ok := fs.linkErr[newname]; ok {
+		return err
+	}
+	delete(fs.files, newname)
+	delete(fs.modes, newname)
+	fs.links[newname] = oldname
+	fs.writes[newname]++
 	return nil
 }
 
@@ -308,6 +368,11 @@ func (fs *MemFS) ReadDirNames(p string) ([]string, error) {
 	for d := range fs.dirs {
 		if strings.HasPrefix(d, prefix) {
 			add(d)
+		}
+	}
+	for l := range fs.links {
+		if strings.HasPrefix(l, prefix) {
+			add(l)
 		}
 	}
 	names := make([]string, 0, len(seen))
