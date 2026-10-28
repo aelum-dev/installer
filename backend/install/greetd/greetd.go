@@ -1,4 +1,4 @@
-// Package greetd provides greetd login manager configuration with DMS greeter support.
+// Package greetd provides greetd login manager configuration with Dux Greeter support.
 package greetd
 
 import (
@@ -24,7 +24,7 @@ type InstallContext struct {
 	Logger   shared.Logger
 }
 
-// ConfigureGreetd sets up greetd as the login manager with the DMS greeter.
+// ConfigureGreetd sets up greetd as the login manager with the Dux Greeter.
 // Runs inside the installed system via arch-chroot as root.
 func ConfigureGreetd(exec Executor, ctx *InstallContext) error {
 	// Step 1: Create greeter user and directories
@@ -61,13 +61,13 @@ func ConfigureGreetd(exec Executor, ctx *InstallContext) error {
 		return err
 	}
 
-	// Step 3: Sync DMS greeter.
+	// Step 3: Sync Dux Greeter.
 	// Fail loudly if this errors: a silently broken greeter (missing ACLs, home
 	// not ready, etc.) leaves the user at a login screen with no working theme,
 	// which is worse than a clear install failure they can act on.
 	if ctx.Username != "" {
 		if err := SyncDmsGreeter(exec, ctx); err != nil {
-			return fmt.Errorf("failed to sync DMS greeter: %w", err)
+			return fmt.Errorf("failed to sync Dux Greeter: %w", err)
 		}
 	}
 

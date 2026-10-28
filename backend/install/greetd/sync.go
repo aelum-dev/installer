@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// SyncDmsGreeter sets up the greeter cache so the DMS greeter displays the
+// SyncDmsGreeter sets up the greeter cache so the Dux Greeter displays the
 // user's wallpaper, theme, colors, and profile immediately at login.
 func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 	username := ctx.Username
@@ -47,12 +47,14 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 3. Set group ownership on DMS directories so the greeter can read theme
-	// and session metadata.
+	// 3. Set group ownership on the shell's directories so the greeter can read
+	// theme and session metadata. DMS 2.0 renamed the app dir from
+	// DankMaterialShell to dms; the installer ships 2.0 only, so it seeds the new
+	// name and does not carry the legacy one.
 	dmsConfigDirs := []string{
-		filepath.Join(home, ".config", "DankMaterialShell"),
-		filepath.Join(home, ".local", "state", "DankMaterialShell"),
-		filepath.Join(home, ".cache", "DankMaterialShell"),
+		filepath.Join(home, ".config", "dms"),
+		filepath.Join(home, ".local", "state", "dms"),
+		filepath.Join(home, ".cache", "dms"),
 	}
 	for _, dir := range dmsConfigDirs {
 		if _, err := exec.RunChroot("mkdir", "-p", dir); err != nil {
@@ -107,9 +109,9 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 	}
 
 	userSlotSymlinks := map[string]string{
-		filepath.Join(userSlot, "settings.json"): filepath.Join(home, ".config", "DankMaterialShell", "settings.json"),
-		filepath.Join(userSlot, "session.json"):  filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json"),
-		filepath.Join(userSlot, "colors.json"):   filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json"),
+		filepath.Join(userSlot, "settings.json"): filepath.Join(home, ".config", "dms", "settings.json"),
+		filepath.Join(userSlot, "session.json"):  filepath.Join(home, ".local", "state", "dms", "session.json"),
+		filepath.Join(userSlot, "colors.json"):   filepath.Join(home, ".cache", "dms", "dms-colors.json"),
 	}
 	for link, target := range userSlotSymlinks {
 		if _, err := exec.RunChroot("rm", "-f", link); err != nil {

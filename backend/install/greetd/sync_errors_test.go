@@ -42,8 +42,8 @@ func (f *scriptFS) WriteFile(path, content string) error {
 
 // TestSyncDmsGreeter_PropagatesRunErrors injects a failure at every RunChroot
 // call in turn and asserts the error is returned rather than swallowed. The
-// dirsOK variant also reaches the DMS chgrp/chmod branches, which are skipped
-// while `test -d` reports the directory as missing.
+// dirsOK variant also reaches the shell-dir chgrp/chmod branches, which are
+// skipped while `test -d` reports the directory as missing.
 func TestSyncDmsGreeter_PropagatesRunErrors(t *testing.T) {
 	for _, dirsOK := range []bool{false, true} {
 		for n := 1; n <= 80; n++ {

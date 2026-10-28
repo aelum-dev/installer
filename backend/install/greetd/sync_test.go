@@ -26,14 +26,14 @@ func (f *fakeFS) mkfileAbs(home, rel, content string) {
 }
 
 func (f *fakeFS) seedUser(home string) {
-	// DMS config files that the /etc/skel seeding during install would ship.
-	f.mkfileAbs(home, ".config/DankMaterialShell/settings.json",
-		`{"currentThemeName":"purple","customThemeFile":"~/.config/DankMaterialShell/themes/my-theme.json"}`)
-	f.mkfileAbs(home, ".config/DankMaterialShell/themes/my-theme.json",
+	// Shell config files that the /etc/skel seeding during install would ship.
+	f.mkfileAbs(home, ".config/dms/settings.json",
+		`{"currentThemeName":"purple","customThemeFile":"~/.config/dms/themes/my-theme.json"}`)
+	f.mkfileAbs(home, ".config/dms/themes/my-theme.json",
 		`{"fg":"#ffffff","bg":"#101010"}`)
-	f.mkfileAbs(home, ".local/state/DankMaterialShell/session.json",
+	f.mkfileAbs(home, ".local/state/dms/session.json",
 		`{"wallpaperPath":"~/Pictures/wall.jpg","isLightMode":false}`)
-	f.mkfileAbs(home, ".cache/DankMaterialShell/dms-colors.json",
+	f.mkfileAbs(home, ".cache/dms/dms-colors.json",
 		`{"colors":{"dark":{"primary":"#7b5cbff"}}}`)
 	f.mkfileAbs(home, "Pictures/wall.jpg", "\xff\xd8\xff\xe0JPGDATA")
 }
@@ -104,9 +104,9 @@ func TestSyncCreatesSymlinksToLiveConfig(t *testing.T) {
 	}
 
 	slot := filepath.Join("/var/cache/dms-greeter", "users", "aelum")
-	homeSettings := filepath.Join(home, ".config", "DankMaterialShell", "settings.json")
-	homeSession := filepath.Join(home, ".local", "state", "DankMaterialShell", "session.json")
-	homeColors := filepath.Join(home, ".cache", "DankMaterialShell", "dms-colors.json")
+	homeSettings := filepath.Join(home, ".config", "dms", "settings.json")
+	homeSession := filepath.Join(home, ".local", "state", "dms", "session.json")
+	homeColors := filepath.Join(home, ".cache", "dms", "dms-colors.json")
 
 	// Each config in the slot must be a symlink pointing at the live home file,
 	// not a static copy. This is what lets the greeter track post-install
@@ -143,7 +143,7 @@ func TestSyncCreatesSymlinksToLiveConfig(t *testing.T) {
 
 func TestSyncCreatesSymlinksEvenWhenConfigMissing(t *testing.T) {
 	fs := newFakeFS()
-	// No DMS config files seeded (home not yet populated by DMS).
+	// No shell config files seeded (home not yet populated by the shell).
 
 	ctx := testContext()
 	if err := SyncDmsGreeter(fs, ctx); err != nil {
@@ -152,7 +152,7 @@ func TestSyncCreatesSymlinksEvenWhenConfigMissing(t *testing.T) {
 
 	slot := filepath.Join("/var/cache/dms-greeter", "users", "aelum")
 	// Symlinks must still be created (dangling is fine) so the greeter picks up
-	// the config the moment DMS writes it after first login.
+	// the config the moment the shell writes it after first login.
 	for _, name := range []string{"settings.json", "session.json", "colors.json"} {
 		link := filepath.Join(slot, name)
 		if _, ok := fs.files[link]; !ok {
