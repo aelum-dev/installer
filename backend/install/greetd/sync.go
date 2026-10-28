@@ -97,29 +97,45 @@ func SyncDmsGreeter(exec Executor, ctx *InstallContext) error {
 		}
 	}
 
-	// 5. Create a per-user greeter slot with symlinks to the user's live config
-	// files. Using symlinks (not static copies) ensures the greeter always reads
-	// up-to-date settings — including wallpaper changes made after install — and
-	// keeps each user's slot independent on multi-user systems. The skel-seeded
-	// home defaults resolve immediately, and any later wallpaper the user picks
-	// in DMS is reflected at the greeter without another sync.
+	// 5. Link the user's live config files into the greeter cache. The greeter
+	// reads them from two places, and `dms-greeter status` checks both, so
+	// create both — this mirrors what a full `dms-greeter sync` writes:
+	//
+	//   <cacheDir>/users/<user>/  — the per-user slot the greeter switches to
+	//       after an account is selected (SettingsData.setConfigBaseDir). Each
+	//       user's slot stays independent on multi-user systems.
+	//   <cacheDir>/               — the default the greeter reads *before* an
+	//       account is selected: SettingsData.qml's configBaseDir defaults to
+	//       DMS_GREET_CFG_DIR (the cache root), and dms-greeter's launcher
+	//       applies the user's cursor from <cacheDir>/settings.json.
+	//
+	// Both sets are symlinks (not static copies) pointing directly at the live
+	// home files — never at the slot, because status compares each link's
+	// target against the home path. Using symlinks ensures the greeter always
+	// reads up-to-date settings — including wallpaper changes made after
+	// install — and the skel-seeded home defaults resolve immediately. Dangling
+	// links are fine: the shell writes the files on first login and the links
+	// resolve then.
 	userSlot := filepath.Join(cacheDir, "users", username)
 	if _, err := exec.RunChroot("mkdir", "-p", userSlot); err != nil {
 		return fmt.Errorf("failed to create user slot dir: %w", err)
 	}
 
-	userSlotSymlinks := map[string]string{
-		filepath.Join(userSlot, "settings.json"): filepath.Join(home, ".config", "dms", "settings.json"),
-		filepath.Join(userSlot, "session.json"):  filepath.Join(home, ".local", "state", "dms", "session.json"),
-		filepath.Join(userSlot, "colors.json"):   filepath.Join(home, ".cache", "dms", "dms-colors.json"),
+	configTargets := map[string]string{
+		"settings.json": filepath.Join(home, ".config", "dms", "settings.json"),
+		"session.json":  filepath.Join(home, ".local", "state", "dms", "session.json"),
+		"colors.json":   filepath.Join(home, ".cache", "dms", "dms-colors.json"),
 	}
-	for link, target := range userSlotSymlinks {
-		if _, err := exec.RunChroot("rm", "-f", link); err != nil {
-			return fmt.Errorf("failed to remove existing file %s: %w", link, err)
-		}
-		output, err := exec.RunChroot("ln", "-sf", target, link)
-		if err != nil {
-			return fmt.Errorf("failed to create symlink %s -> %s: %w: %s", link, target, err, string(output))
+	for _, dir := range []string{userSlot, cacheDir} {
+		for name, target := range configTargets {
+			link := filepath.Join(dir, name)
+			if _, err := exec.RunChroot("rm", "-f", link); err != nil {
+				return fmt.Errorf("failed to remove existing file %s: %w", link, err)
+			}
+			output, err := exec.RunChroot("ln", "-sf", target, link)
+			if err != nil {
+				return fmt.Errorf("failed to create symlink %s -> %s: %w: %s", link, target, err, string(output))
+			}
 		}
 	}
 

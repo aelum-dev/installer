@@ -55,6 +55,14 @@ func TestConfigureGreetd_Success(t *testing.T) {
 	if _, ok := fs.files["/var/cache/dms-greeter/users/aelum/settings.json"]; !ok {
 		t.Error("expected the per-user greeter slot to be created")
 	}
+
+	// …and the top-level config links the greeter reads before an account is
+	// selected (checked by `dms-greeter status`).
+	for _, name := range []string{"settings.json", "session.json", "colors.json"} {
+		if _, ok := fs.files["/var/cache/dms-greeter/"+name]; !ok {
+			t.Errorf("expected the top-level greeter config link %s to be created", name)
+		}
+	}
 }
 
 func TestConfigureGreetd_EmptyUsernameSkipsSync(t *testing.T) {
@@ -68,6 +76,11 @@ func TestConfigureGreetd_EmptyUsernameSkipsSync(t *testing.T) {
 	}
 	if _, ok := fs.files["/var/cache/dms-greeter/users/aelum/settings.json"]; ok {
 		t.Error("no user slot should be created when the username is empty")
+	}
+	for _, name := range []string{"settings.json", "session.json", "colors.json"} {
+		if _, ok := fs.files["/var/cache/dms-greeter/"+name]; ok {
+			t.Errorf("no top-level config link %s should be created when the username is empty", name)
+		}
 	}
 }
 

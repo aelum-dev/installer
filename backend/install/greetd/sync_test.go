@@ -103,14 +103,19 @@ func TestSyncCreatesSymlinksToLiveConfig(t *testing.T) {
 		t.Fatalf("SyncDmsGreeter: %v", err)
 	}
 
-	slot := filepath.Join("/var/cache/dms-greeter", "users", "aelum")
+	cache := "/var/cache/dms-greeter"
+	slot := filepath.Join(cache, "users", "aelum")
 	homeSettings := filepath.Join(home, ".config", "dms", "settings.json")
 	homeSession := filepath.Join(home, ".local", "state", "dms", "session.json")
 	homeColors := filepath.Join(home, ".cache", "dms", "dms-colors.json")
 
-	// Each config in the slot must be a symlink pointing at the live home file,
-	// not a static copy. This is what lets the greeter track post-install
-	// wallpaper changes.
+	// Each config in the per-user slot and at the cache root must be a symlink
+	// pointing at the live home file, not a static copy and not at the slot.
+	// The slot links are what let the greeter track post-install wallpaper
+	// changes after an account is selected; the top-level links are the default
+	// the greeter reads before selection (SettingsData.qml's configBaseDir
+	// defaults to the cache root), and `dms-greeter status` verifies their
+	// targets against the home paths.
 	cases := []struct {
 		link   string
 		target string
@@ -118,6 +123,9 @@ func TestSyncCreatesSymlinksToLiveConfig(t *testing.T) {
 		{filepath.Join(slot, "settings.json"), homeSettings},
 		{filepath.Join(slot, "session.json"), homeSession},
 		{filepath.Join(slot, "colors.json"), homeColors},
+		{filepath.Join(cache, "settings.json"), homeSettings},
+		{filepath.Join(cache, "session.json"), homeSession},
+		{filepath.Join(cache, "colors.json"), homeColors},
 	}
 	for _, c := range cases {
 		got, ok := fs.files[c.link]
@@ -150,13 +158,17 @@ func TestSyncCreatesSymlinksEvenWhenConfigMissing(t *testing.T) {
 		t.Fatalf("SyncDmsGreeter: %v", err)
 	}
 
-	slot := filepath.Join("/var/cache/dms-greeter", "users", "aelum")
-	// Symlinks must still be created (dangling is fine) so the greeter picks up
-	// the config the moment the shell writes it after first login.
-	for _, name := range []string{"settings.json", "session.json", "colors.json"} {
-		link := filepath.Join(slot, name)
-		if _, ok := fs.files[link]; !ok {
-			t.Errorf("%s symlink should be created even when target is missing", name)
+	cache := "/var/cache/dms-greeter"
+	slot := filepath.Join(cache, "users", "aelum")
+	// Symlinks must still be created (dangling is fine), in both the per-user
+	// slot and the cache root, so the greeter picks up the config the moment
+	// the shell writes it after first login.
+	for _, dir := range []string{slot, cache} {
+		for _, name := range []string{"settings.json", "session.json", "colors.json"} {
+			link := filepath.Join(dir, name)
+			if _, ok := fs.files[link]; !ok {
+				t.Errorf("%s symlink should be created even when target is missing", link)
+			}
 		}
 	}
 }
