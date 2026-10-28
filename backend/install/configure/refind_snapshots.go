@@ -284,6 +284,12 @@ default_path=$(btrfs subvolume get-default "$root" 2>/dev/null | sed -n 's/^ID [
 case "$default_path" in
     # The live root is itself a snapshot: the history is in the container above it.
     */` + shared.BtrfsSnapshotsDirName + `/*) container=${default_path%/` + shared.BtrfsSnapshotsDirName + `/*} ;;
+    # The history is at the top level of the filesystem and the default subvolume is
+    # inside it: a hand-built disk, or a set-default on the tree root. The arm above
+    # does not match, and falling through would make the container the snapshot
+    # itself - a history named ".snapshots/1/snapshot/.snapshots", which is in no
+    # tree.
+    ` + shared.BtrfsSnapshotsDirName + `/*) container="" ;;
     # Nothing to derive from: btrfs did not answer. Without the default subvolume
     # there is no correct path to name a snapshot by, and a fragment that names a
     # subvolume that does not exist is worse than the one already on the ESP.
@@ -384,6 +390,12 @@ default_number=""
 case "$default_path" in
     */` + shared.BtrfsSnapshotsDirName + `/*)
         default_number=${default_path##*/` + shared.BtrfsSnapshotsDirName + `/}
+        default_number=${default_number%%/snapshot}
+        ;;
+    # The history at the filesystem tree root (see the container case above): the
+    # same number, with no "/" to cut on.
+    ` + shared.BtrfsSnapshotsDirName + `/*)
+        default_number=${default_path##*` + shared.BtrfsSnapshotsDirName + `/}
         default_number=${default_number%%/snapshot}
         ;;
 esac
@@ -573,7 +585,11 @@ const snapperSnapshotPlugin = `#!/bin/sh
 #
 # snapper(8), PLUGINS: every executable in this directory runs with the action
 # snapper just performed as the first argument. Snapshot changes are the only
-# events the boot menu cares about.
+# events the boot menu cares about, and that is more than creating and deleting: a
+# transactional-ambit rollback creates no snapshots at all, it only calls
+# setDefault, and "snapper modify" rewrites the description, the cleanup tag and
+# the important= marking a menu title is built from. Leaving those out keeps a menu
+# naming a state the system no longer is until the next boot.
 #
 # The work is handed to aelum-refind-snapshots.service rather than done here,
 # for two reasons: the ESP is mounted so that only root can write it, and a
@@ -581,7 +597,7 @@ const snapperSnapshotPlugin = `#!/bin/sh
 # snapper's own operation from waiting on a boot menu.
 
 case "$1" in
-    create-snapshot-post|delete-snapshot-post) ;;
+    create-snapshot-post|delete-snapshot-post|set-default-snapshot-post|modify-snapshot-post|set-read-only-post) ;;
     *) exit 0 ;;
 esac
 

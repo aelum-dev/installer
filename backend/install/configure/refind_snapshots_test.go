@@ -2,6 +2,7 @@ package configure
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -147,23 +148,65 @@ func TestConfigureSnapper_InstallsSnapshotHooksAndMenu(t *testing.T) {
 	if !ok {
 		t.Fatalf("pacman post-transaction hook not written")
 	}
+	important, ok := fs.Read(shared.MountRoot + pacmanImportantHookPath)
+	if !ok {
+		t.Fatalf("pacman important-transaction hook not written (paths: %v)", fs.Paths())
+	}
 	for _, want := range []string{"When = PreTransaction", "Depends = snapper", "create -t pre", pacmanPreHookState} {
 		if !strings.Contains(pre, want) {
 			t.Errorf("pre hook missing %q:\n%s", want, pre)
 		}
 	}
-	for _, want := range []string{"When = PostTransaction", "Depends = snapper", "--pre-number", pacmanPreHookState} {
+	for _, want := range []string{"When = PostTransaction", "Depends = snapper", "--pre-number", pacmanPreHookState, pacmanPairState} {
 		if !strings.Contains(post, want) {
 			t.Errorf("post hook missing %q:\n%s", want, post)
 		}
 	}
-	// Both halves trigger on the same transactions, and only on ones that change
+	// The pre hook clears both state files first. A transaction killed between its
+	// pre and post hooks leaves a number behind, and without this the next
+	// transaction pairs with it: one pair whose diff spans two transactions.
+	if !strings.Contains(pre, "rm -f "+pacmanPreHookState+" "+pacmanPairState) {
+		t.Errorf("pre hook does not clear the state of an interrupted transaction:\n%s", pre)
+	}
+	// --no-dbus everywhere: the default path asks snapperd, and a snapperd that is
+	// masked or crashed would drop the undo path with no message and no failed
+	// install. The hooks run as root, so snapper can do the work itself.
+	for name, hook := range map[string]string{"pre": pre, "post": post, "important": important} {
+		if !strings.Contains(hook, "snapper --no-dbus -c "+snapperRootConfig) {
+			t.Errorf("%s hook talks to snapperd instead of running snapper directly:\n%s", name, hook)
+		}
+	}
+	// The third half marks the pair it did not create: the snapshots already exist,
+	// and marking them is what keeps a kernel update's state out of the ordinary
+	// count quota. Its Trigger is the narrow one, so it runs only for those.
+	for _, want := range []string{
+		"When = PostTransaction", "Depends = snapper", pacmanPairState,
+		"modify -u important=yes",
+		"Target = " + pacmanImportantTargetList,
+	} {
+		if !strings.Contains(important, want) {
+			t.Errorf("important hook missing %q:\n%s", want, important)
+		}
+	}
+	if strings.Contains(important, "Target = *") {
+		t.Error("the important hook triggers on every transaction, so nothing is distinguished:\n" + important)
+	}
+	for _, pkg := range []string{"linux-lts", "glibc", "systemd", "mkinitcpio", "btrfs-progs", "refind"} {
+		if !slices.Contains(pacmanImportantTargets, pkg) {
+			t.Errorf("%s is not an important transaction; a rollback of it would be cleaned away", pkg)
+		}
+	}
+	// All three trigger on the same operations and only on ones that change
 	// packages: a bare -Sy or a cache clean has no targets and no snapshot pair.
-	for _, hook := range []string{pre, post} {
-		for _, want := range []string{"Operation = Install", "Operation = Upgrade", "Operation = Remove", "Target = *"} {
+	// Only the two that create the pair trigger on every target.
+	for name, hook := range map[string]string{"pre": pre, "post": post, "important": important} {
+		for _, want := range []string{"Operation = Install", "Operation = Upgrade", "Operation = Remove"} {
 			if !strings.Contains(hook, want) {
-				t.Errorf("hook missing %q:\n%s", want, hook)
+				t.Errorf("%s hook missing %q:\n%s", name, want, hook)
 			}
+		}
+		if name != "important" && !strings.Contains(hook, "Target = *") {
+			t.Errorf("%s hook does not trigger on every package target:\n%s", name, hook)
 		}
 		// pacman allows exactly one Type per hook: declaring two makes pacman warn
 		// and the last one silently wins, which would leave the hooks matching
@@ -195,7 +238,7 @@ func TestConfigureSnapper_NoSnapshotHooksForExt4(t *testing.T) {
 		t.Fatalf("ConfigureSnapper(ext4) = %v, want nil", err)
 	}
 
-	for _, path := range []string{pacmanPreHookPath, pacmanPostHookPath, snapshotScriptPath, snapperPluginPath, snapshotUnitPath} {
+	for _, path := range []string{pacmanPreHookPath, pacmanPostHookPath, pacmanImportantHookPath, snapshotScriptPath, snapperPluginPath, snapshotUnitPath} {
 		if fs.Exists(shared.MountRoot + path) {
 			t.Errorf("%s was installed for an ext4 install", path)
 		}
@@ -388,7 +431,11 @@ func TestSnapperSnapshotPlugin(t *testing.T) {
 	plugin := snapperSnapshotPlugin
 	for _, want := range []string{
 		"#!/bin/sh",
-		"create-snapshot-post|delete-snapshot-post",
+		// Not only create and delete: a transactional rollback changes the default
+		// subvolume and creates no snapshot, and snapper modify rewrites the
+		// description and important= marking a menu title is built from. A plugin
+		// that ignores those keeps a menu naming a state the system no longer is.
+		"create-snapshot-post|delete-snapshot-post|set-default-snapshot-post|modify-snapshot-post|set-read-only-post",
 		`[ "$2" = "/" ] || exit 0`,
 		"systemctl start --no-block " + snapshotUnitName,
 		"exit 0",

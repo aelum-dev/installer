@@ -2,6 +2,7 @@ package configure
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -40,6 +41,20 @@ func snapperCalled(rec *primitivestest.Recorder, want ...string) bool {
 	return snapperCallIndex(rec, want...) >= 0
 }
 
+// snapperConfigValue reads one KEY="value" line out of a rendered config, which is
+// how a test asserts a value without restating it.
+func snapperConfigValue(t *testing.T, content, key string) string {
+	t.Helper()
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, key+"=") {
+			return strings.Trim(strings.TrimPrefix(line, key+"="), "\"")
+		}
+	}
+	t.Errorf("config has no %s line", key)
+	return ""
+}
+
 // snapperCallIndex is snapperCalled with the position of the call, which is what
 // a test needs when the order of two commands is the behaviour being pinned.
 func snapperCallIndex(rec *primitivestest.Recorder, want ...string) int {
@@ -70,17 +85,51 @@ func TestConfigureSnapper_Btrfs(t *testing.T) {
 		for _, want := range []string{
 			`SUBVOLUME="` + target.mountPoint + `"`,
 			`FSTYPE="btrfs"`,
-			`TIMELINE_CREATE="yes"`,
-			`TIMELINE_CLEANUP="yes"`,
-			`NUMBER_CLEANUP="yes"`,
-			`NUMBER_LIMIT="10"`,
-			`TIMELINE_LIMIT_HOURLY="6"`,
-			`ALLOW_GROUPS="wheel"`,
+			`QGROUP="` + target.qgroup + `"`,
 			`SPACE_LIMIT="0.5"`,
+			`FREE_LIMIT="0.2"`,
+			`ALLOW_GROUPS="wheel"`,
+			`NUMBER_CLEANUP="yes"`,
+			`TIMELINE_CLEANUP="yes"`,
+			// The retention the config is meant to have, read from the policy rather
+			// than repeated here: a test that copies the numbers only proves the
+			// numbers were typed twice.
+			`TIMELINE_CREATE="` + target.retention.timelineCreate + `"`,
+			`NUMBER_LIMIT="` + target.retention.numberLimit + `"`,
+			`NUMBER_LIMIT_IMPORTANT="` + target.retention.numberLimitImportant + `"`,
+			`TIMELINE_LIMIT_HOURLY="` + target.retention.hourly + `"`,
+			`TIMELINE_LIMIT_DAILY="` + target.retention.daily + `"`,
+			`TIMELINE_LIMIT_WEEKLY="` + target.retention.weekly + `"`,
+			`TIMELINE_LIMIT_MONTHLY="` + target.retention.monthly + `"`,
+			`TIMELINE_LIMIT_YEARLY="` + target.retention.yearly + `"`,
 		} {
 			if !strings.Contains(content, want) {
 				t.Errorf("config %s is missing %q:\n%s", target.configName, want, content)
 			}
+		}
+		// Every limit is a range. snapper skips its space-aware cleanup when the
+		// limits are degenerated (min == max), so a single number here silently
+		// switches SPACE_LIMIT / FREE_LIMIT off - the exact bug this pins.
+		for _, key := range []string{
+			"NUMBER_LIMIT", "NUMBER_LIMIT_IMPORTANT",
+			"TIMELINE_LIMIT_HOURLY", "TIMELINE_LIMIT_DAILY", "TIMELINE_LIMIT_WEEKLY",
+			"TIMELINE_LIMIT_MONTHLY", "TIMELINE_LIMIT_YEARLY",
+		} {
+			value := snapperConfigValue(t, content, key)
+			if !strings.Contains(value, "-") {
+				t.Errorf("config %s has a degenerated %s=%q; snapper would ignore the space limits",
+					target.configName, key, value)
+			}
+		}
+		// QGROUP is what snapper measures the snapshots against. Without it
+		// prepare_quota throws "qgroup not set" and no space limit is ever applied.
+		if snapperConfigValue(t, content, "QGROUP") != target.qgroup {
+			t.Errorf("config %s names qgroup %q, want %q",
+				target.configName, snapperConfigValue(t, content, "QGROUP"), target.qgroup)
+		}
+		if !snapperCalled(rec, "btrfs", "qgroup", "create", target.qgroup, shared.MountRoot) {
+			t.Errorf("qgroup %s was not created for config %s; calls = %v",
+				target.qgroup, target.configName, rec.Calls())
 		}
 	}
 
@@ -203,6 +252,111 @@ func TestConfigureSnapper_SkipsConfigWithoutSnapshotDir(t *testing.T) {
 	if !strings.Contains(sysconfig, `SNAPPER_CONFIGS="root"`) {
 		t.Errorf("SNAPPER_CONFIGS should list only the configs that exist:\n%s", sysconfig)
 	}
+}
+
+// TestConfigureSnapper_QuotaWithoutQGroup keeps the degradation honest: if the
+// aggregate group cannot be created, the config is still written and QGROUP stays
+// empty - snapper's own spelling for "no space accounting". A config naming a
+// group that does not exist makes every cleanup say "quota not working" for no
+// gain, and the count limits still bound the history either way.
+func TestConfigureSnapper_QuotaWithoutQGroup(t *testing.T) {
+	rec := mountedRunner().OnArgsError(
+		[]string{"btrfs", "qgroup", "create", snapperRootQGroup, shared.MountRoot},
+		errors.New("quota not supported on this filesystem"))
+	defer primitives.SetCommandRunner(rec)()
+	fs := primitivestest.NewMemFS()
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigureSnapper(snapperContext()); err != nil {
+		t.Fatalf("ConfigureSnapper() = %v, want nil", err)
+	}
+
+	content, ok := fs.Read(shared.MountRoot + snapperConfigPath(snapperRootConfig))
+	if !ok {
+		t.Fatal("the root config was not written")
+	}
+	if got := snapperConfigValue(t, content, "QGROUP"); got != "" {
+		t.Errorf("QGROUP=%q for a group that could not be created", got)
+	}
+	if got := snapperConfigValue(t, content, "NUMBER_LIMIT"); !strings.Contains(got, "-") {
+		t.Errorf("count limits lost when the qgroup failed: %q", got)
+	}
+}
+
+// TestSnapperConfigQGroupIsPerConfig pins the reason the two configs do not share
+// one group: SPACE_LIMIT is a property of a config, so a shared aggregate would
+// let @home snapshots delete the system's restore points.
+func TestSnapperConfigQGroupIsPerConfig(t *testing.T) {
+	seen := map[string]bool{}
+	for _, target := range snapperTargets {
+		if target.qgroup == "" {
+			t.Errorf("snapper config %s has no qgroup", target.configName)
+		}
+		if seen[target.qgroup] {
+			t.Errorf("snapper configs share qgroup %s", target.qgroup)
+		}
+		seen[target.qgroup] = true
+	}
+}
+
+// TestSnapperRetentionIsBounded pins the decisions the retention encodes: every
+// limit is a range (snapper only looks at space for ranges), the important quota
+// is not narrower than the ordinary one, the root has no timeline - the state
+// openSUSE's own default setup leaves it in - and @home, which shares the
+// filesystem with @, keeps the smaller history.
+func TestSnapperRetentionIsBounded(t *testing.T) {
+	for _, target := range snapperTargets {
+		if target.retention.timelineCreate != "no" {
+			t.Errorf("config %s takes timeline snapshots (%q); the history of a root is transactions, not a timer",
+				target.configName, target.retention.timelineCreate)
+		}
+		for _, value := range []string{target.retention.numberLimit, target.retention.numberLimitImportant} {
+			min, max := parseLimitRange(t, value)
+			if max < 1 || min > max {
+				t.Errorf("config %s has an unusable limit %q", target.configName, value)
+			}
+		}
+		if rangeMax(t, target.retention.numberLimitImportant) < rangeMax(t, target.retention.numberLimit) {
+			t.Errorf("config %s keeps fewer important snapshots (%q) than ordinary ones (%q)",
+				target.configName, target.retention.numberLimitImportant, target.retention.numberLimit)
+		}
+	}
+
+	home := snapperTargets[len(snapperTargets)-1]
+	if home.configName != "home" {
+		t.Fatalf("expected the home config last, got %q", home.configName)
+	}
+	if rangeMax(t, home.retention.numberLimit) >= rangeMax(t, snapperTargets[0].retention.numberLimit) {
+		t.Errorf("home retention %q is not smaller than the root's %q",
+			home.retention.numberLimit, snapperTargets[0].retention.numberLimit)
+	}
+}
+
+// parseLimitRange reads snapper's "min-max" (or a bare number) as the two values
+// snapper's own Range::parse takes from it.
+func parseLimitRange(t *testing.T, value string) (int, int) {
+	t.Helper()
+	minText, maxText := value, value
+	if i := strings.Index(value, "-"); i >= 0 {
+		minText, maxText = value[:i], value[i+1:]
+	}
+	min, err := strconv.Atoi(minText)
+	if err != nil {
+		t.Errorf("limit %q is not a number or a range: %v", value, err)
+		return 0, 0
+	}
+	max, err := strconv.Atoi(maxText)
+	if err != nil {
+		t.Errorf("limit %q has no usable max: %v", value, err)
+		return min, 0
+	}
+	return min, max
+}
+
+func rangeMax(t *testing.T, value string) int {
+	t.Helper()
+	_, max := parseLimitRange(t, value)
+	return max
 }
 
 // TestSnapperSysconfigContent pins the file format snapper parses.

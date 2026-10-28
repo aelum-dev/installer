@@ -75,6 +75,14 @@ func TestSnapshotStateGenerator(t *testing.T) {
 		`unit_name() {`,
 		`printf '%s.mount' "${1#/}" | tr '/' '-'`,
 		`> "$gen_dir/$name"`,
+		// And pulled in. A mount unit is started by whatever requires it, and
+		// nothing requires a unit nobody has heard of: measured on a real snapshot
+		// boot, /var/lib/systemd was mounted only because systemd-logind and four
+		// other units have RequiresMountsFor= on it, and /var/lib/greeter - which
+		// nobody asks for - stayed inactive. This is the link systemd's own
+		// generators write.
+		`mkdir -p "$gen_dir/local-fs.target.requires"`,
+		`ln -sf "../$name" "$gen_dir/local-fs.target.requires/$name"`,
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("generator is missing %q", want)

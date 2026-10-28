@@ -210,6 +210,22 @@ emit_mount() { # <where>
         # can.
         echo "Options=defaults,X-mount.mkdir"
     } > "$gen_dir/$name"
+
+    # Writing the unit is only half of it. A mount unit runs when something
+    # requires it, and nothing requires a unit nobody has heard of. This is how
+    # systemd's own generators do it: systemd-fstab-generator writes the .mount
+    # and a link from local-fs.target.requires/, which is what makes the mount
+    # happen on the way to local-fs.target.
+    #
+    # Measured on a real snapshot boot before this line existed:
+    # /var/lib/systemd came up anyway - systemd-logind, systemd-rfkill,
+    # systemd-timesyncd, shadow.timer and five others have RequiresMountsFor= on
+    # it - while /var/lib/greeter, which nobody asks for, sat inactive and
+    # systemd-tmpfiles logged "fchmod() of /var/lib/greeter failed: Read-only
+    # file system". The half of this feature that nobody else happens to need
+    # was the half that did not run.
+    mkdir -p "$gen_dir/local-fs.target.requires" 2>/dev/null
+    ln -sf "../$name" "$gen_dir/local-fs.target.requires/$name" 2>/dev/null
 }
 
 for where in ` + strings.Join(snapshotStateDirs, " ") + `; do
