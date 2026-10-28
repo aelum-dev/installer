@@ -73,7 +73,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants, ext4+LVM /home)
         bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options) + the empty snapshot fragment a btrfs install's refind.conf includes
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
-        greetd.go               — greetd + DMS greeter executor (greetdExecutor)
+        greetd.go               — greetd + Dux Greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + .hushlogin + aelum-boot-progress.service (finishes the splash bar)
         services.go             — zram swap config + systemd service enablement
         snapper.go              — snapper configs for @ and @home (quotas, timeline units), the @home .snapshots subvolume, the "after installation" snapshot and the pacman pre/post transaction snapshot hooks; btrfs only
@@ -186,7 +186,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), optional LUKS2 → LVM → mkfs stack, btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt` (activating the volume group first when LVM is on), the ESP to `/mnt/efi`, then bind this install's `aelum/<id>/` ESP directory at `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
-4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
+4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — useradd, chpasswd, sudoers, copy ISO skel files (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → system config → initramfs → bootloader → greetd → plymouth → zram → services → snapper (configs + pacman hooks + snapshot boot entries + snapshot-boot state mounts, btrfs only, **last** so the "after installation" snapshot is the finished system and contains everything written here) (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
@@ -245,7 +245,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 - Installation log at `/var/log/aelum-install-<timestamp>.log` (mirrored to `/shared` when it exists) is not encrypted.
 
 ## Desktop Environment
-Hyprland + DankMaterialShell (Quickshell-based) + DMS Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
+Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, imv, gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd. On btrfs installs only, the desktop set also carries `snapper` (base step) and `btrfs-assistant` (desktop step): the layout's snapshots and their GUI. Both must also be listed in `live-iso/packages.x86_64`, since the installer installs from the mirror embedded in the ISO.
 

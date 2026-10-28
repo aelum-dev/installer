@@ -16,7 +16,7 @@ import (
 //  3. Configure the initramfs HOOKS and regenerate the initramfs images
 //  4. Configure bootloader (must run after the initramfs exists, since the boot
 //     entry references the kernel + initrd it produces)
-//  5. greetd + DMS greeter setup
+//  5. greetd + Dux Greeter setup
 //  6. Aelum LUKS unlock Plymouth theme (matches the live ISO)
 //  7. zram swap configuration
 //  8. Point /etc/resolv.conf at /run (before the services and before the

@@ -1,12 +1,12 @@
-/* Material 3 color roles taken from the live DankMaterialShell (DMS) scheme.
-   Light mode uses the exported DMS light palette, dark mode the exported DMS
-   dark palette, so the installer matches the desktop exactly. The semantic
+/* Material 3 color roles taken from the live Dux Shell (DMS) scheme.
+   Light mode uses the exported Dux Shell light palette, dark mode the exported
+   Dux Shell dark palette, so the installer matches the desktop exactly. The semantic
    aliases below are derived from those roles with color-mix, which keeps both
    schemes in sync and avoids hard-coded tones drifting from the export. */
 :root {
     color-scheme: light;
 
-    /* ── M3 color roles — DMS light ── */
+    /* ── M3 color roles — Dux Shell light ── */
     --md-sys-color-primary: #834c74;
     --md-sys-color-on-primary: #ffffff;
     --md-sys-color-primary-container: #ffd7f0;
@@ -182,14 +182,14 @@
     --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Material 3 color roles — DMS dark scheme.
-   Near-black surfaces with a lavender primary, matching the DMS dark export.
+/* Material 3 color roles — Dux Shell dark scheme.
+   Near-black surfaces with a lavender primary, matching the Dux Shell dark export.
    Elevated cards use surface-container-high so they sit above the surface; the
    header and hover surfaces use the container-low/high steps. */
 [data-theme="dark"] {
     color-scheme: dark;
 
-    /* ── M3 color roles — DMS dark ── */
+    /* ── M3 color roles — Dux Shell dark ── */
     --md-sys-color-primary: #cfbdfe;
     --md-sys-color-on-primary: #36275d;
     --md-sys-color-primary-container: #4d3d75;
@@ -245,7 +245,7 @@
     --md-sys-color-background: #141218;
     --md-sys-color-on-background: #e6e0e9;
 
-    /* ── Semantic aliases (DMS dark palette) ── */
+    /* ── Semantic aliases (Dux Shell dark palette) ── */
     --color-surface: var(--md-sys-color-surface-container-high);
     --color-bg: var(--md-sys-color-surface);
     --color-bg-white: var(--md-sys-color-surface-container-low);

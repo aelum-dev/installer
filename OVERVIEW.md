@@ -33,7 +33,7 @@ It also ships a **CLI installer** (`aelum-installer-cli`) for headless/automated
 | **Backend** | Go 1.26 |
 | **Frontend** | Svelte 5 (TypeScript), Vite, Tailwind-like CSS variables |
 | **Target OS** | Arch Linux (installed via `pacstrap`) |
-| **Desktop** | Hyprland + DankMaterialShell (based on Quickshell) + DMS Greeter (greetd) |
+| **Desktop** | Hyprland + Dux Shell (based on Quickshell) + Dux Greeter (greetd) |
 | **Bootloader** | rEFInd (auto-detects other OSes for dualboot) |
 | **Filesystems** | ext4 or btrfs (with subvolumes) |
 | **Boot Splash** | Plymouth, branded Aelum theme (silent boot; LUKS passphrase unlock) |
@@ -109,7 +109,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 512MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
 | 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, the ESP to `/mnt/efi`, and this install's `aelum/<id>/` ESP directory at `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
-| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, DMS greeter, kitty, firefox, pipewire, etc. |
+| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
 | 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → system config → initramfs → bootloader → greetd → Plymouth → zram → resolver link → services → snapper (configs, pacman hooks, snapshot boot entries, snapshot-boot state mounts) — snapper last, see 6.9 |
 
@@ -121,7 +121,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 6.2 | Configure System | `ConfigureSystemBase` | Hostname, timezone, locale, keymap, NTP, mirrorlist |
 | 6.3 | Configure initramfs | `configureInitramfs` | HOOKS: plymouth always, `sd-encrypt` with LUKS, `lvm2` with LVM (after the encrypt hook); regenerates the images the boot entry will reference |
 | 6.4 | Configure Bootloader | `ConfigureBootloader` | rEFInd install onto the ESP, per-install `aelum/<id>.conf` menu fragment (loads this install's own `aelum/<id>/` kernel), the empty `aelum/<id>-snapshots.conf` a btrfs install's refind.conf includes, NVRAM boot entry |
-| 6.5 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs DMS greeter |
+| 6.5 | Configure greetd | `ConfigureGreetd` | Writes `/etc/greetd/config.toml`, creates greeter user, syncs Dux Greeter |
 | 6.6 | Configure Plymouth | `ConfigurePlymouth` | Aelum theme, mkinitcpio hook, `.hushlogin` |
 | 6.7 | Configure zram | `ConfigureZram` | Compressed swap via zram-generator |
 | 6.8 | Enable Services | `EnableServices` | Enables NetworkManager, greetd, bluetooth — **before** the snapshot below: an enable step that runs after it is simply absent from the state a user restores to |
@@ -188,7 +188,7 @@ System configuration inside the installed system uses `arch-chroot /mnt` directl
 Static files from the live ISO are copied to the installed system during `SetupUsers`:
 - `/etc/skel/` → user home directory
 - `/etc/dconf/profile/user` and `01-icons`
-- DMS wallpaper
+- Dux Shell wallpaper
 - `/etc/environment`
 - `/etc/greetd/hypr.lua`
 
@@ -312,11 +312,11 @@ Aelum-Installer/
 │   │   ├── bootloader.go        # rEFInd install + branded theme + per-install menu fragment
 │   │   ├── users.go             # User account creation + ISO copy
 │   │   ├── system.go            # Hostname, locale, timezone, mirrors
-│   │   ├── greetd.go            # Login manager config + DMS sync
+│   │   ├── greetd.go            # Login manager config + Dux Greeter sync
 │   │   ├── greetd/              # greetd package
 │   │   │   ├── greetd.go        # ConfigureGreetd + SyncDmsGreeter
 │   │   │   ├── config.go        # Embedded config.toml
-│   │   │   ├── sync.go          # DMS greeter sync
+│   │   │   ├── sync.go          # Dux Greeter sync
 │   │   │   └── memory.go        # Embedded memory.json
 │   │   ├── plymouth.go          # Silent boot (Aelum theme)
 │   │   ├── services.go          # systemd service enabling
@@ -367,8 +367,8 @@ Aelum-Installer/
 
 The installed system includes:
 - **Window Manager**: Hyprland (Wayland compositor)
-- **Shell**: DankMaterialShell (based on Quickshell) + dms-shell-hyprland
-- **Login Manager**: greetd + DMS greeter
+- **Shell**: Dux Shell (based on Quickshell, package `dux-shell`)
+- **Login Manager**: greetd + Dux Greeter
 - **Terminal**: Kitty
 - **File Manager**: Nautilus
 - **Browser**: Firefox

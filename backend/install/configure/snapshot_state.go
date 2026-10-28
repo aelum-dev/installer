@@ -83,7 +83,7 @@ var snapshotStateDirs = []string{
 	// systemd-logind's execution and state directories (sessions, users, inhibit)
 	// are here. Without logind there is no greeter, only getty@tty1.
 	"/var/lib/systemd",
-	// The DMS greeter's own state directory, which tmpfiles.d creates and chmods
+	// The Dux Greeter's own state directory, which tmpfiles.d creates and chmods
 	// at boot: with tmpfiles failing on it the greeter has nowhere to write.
 	"/var/lib/greeter",
 }

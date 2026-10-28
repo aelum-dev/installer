@@ -10,7 +10,7 @@ import (
 // greetd configuration
 // ============================================================================
 
-// ConfigureGreetd sets up greetd as the login manager with the DMS greeter.
+// ConfigureGreetd sets up greetd as the login manager with the Dux Greeter.
 func ConfigureGreetd(ctx *shared.InstallContext) error {
 	exec := &greetdExecutor{ctx: ctx}
 	gctx := &greetd.InstallContext{

@@ -11,12 +11,12 @@ Just boot the ISO and run the installer — a few clicks in the GUI, no terminal
 
 - **6 step wizard** — pick a language, create your user, choose a disk, confirm, and watch it install.
 - **ext4 or btrfs** — btrfs comes with a sensible automatic subvolume layout.
-- **Configured desktop** — Hyprland + DankMaterialShell, greetd login, Kitty terminal, Firefox, and PipeWire audio, all set up for you.
+- **Configured desktop** — Hyprland + Dux Shell, greetd login, Kitty terminal, Firefox, and PipeWire audio, all set up for you.
 - **Fast, quiet boot** — Plymouth boot splash
 
 ## Language selection
 
-The first thing you'll pick is your language — there are 28 to choose from. This sets the installer's own UI language, and it also chooses your system locale and the mirror country. The mirror country just configures your installed system's pacman mirror list for future online updates — the install itself pulls packages from the ISO's embedded offline repo, not from that mirror. Note that not all 28 languages are fully translated in the DMS desktop yet — you can always change the desktop language later in DMS settings.
+The first thing you'll pick is your language — there are 28 to choose from. This sets the installer's own UI language, and it also chooses your system locale and the mirror country. The mirror country just configures your installed system's pacman mirror list for future online updates — the install itself pulls packages from the ISO's embedded offline repo, not from that mirror. Note that not all 28 languages are fully translated in the Dux Shell desktop yet — you can always change the desktop language later in Dux Shell settings.
 
 ## Choosing a disk and partition mode
 
