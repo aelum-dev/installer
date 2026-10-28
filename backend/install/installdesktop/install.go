@@ -15,14 +15,14 @@ var DesktopPackages = []string{
 	// Login manager
 	"greetd",
 	"greetd-agreety",
-	"greetd-dms-greeter-bin",
+	"dux-greeter-bin",
 	"uwsm",
 
 	// Desktop environment
 	"hyprland",
-	"dms-shell",
+	"dux-shell",
 	"cava",
-	"dgop",
+	"dux-gop",
 	"matugen",
 	"qtengine",
 	"nautilus",
