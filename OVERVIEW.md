@@ -224,6 +224,38 @@ An entry copies this install's own loader, initramfs and kernel options and **ad
 
 **A snapshot boot reaches the greeter, not a text login** (`configure/snapshot_state.go`). What a snapshot boot does *not* keep separate is `/var/lib`, which is inside the root — and `systemd-logind` keeps its state directories there. Measured on a real snapshot boot, logind fails at `STATE_DIRECTORY` on the read-only root, retries to its start limit and the boot lands on `getty@tty1`: a recovery entry a user cannot log into. The installer therefore installs a **systemd generator**, `/usr/lib/systemd/system-generators/aelum-snapshot-state`, which emits a tmpfs `.mount` unit for each of `/var/lib/systemd` and `/var/lib/greeter` — ordered like a fstab mount, and before `systemd-logind`, which is the unit all of this exists for. It decides by **subvolume id**: `subvolid=` from the `/proc/self/mountinfo` entry for `/`, against the `ID` from `btrfs subvolume get-default /`. Equal means an ordinary boot and it writes nothing; different means the root is a snapshot and it writes the mounts. Nothing subtler works at generator time, all of it measured on a real boot: `ConditionPathIsReadWrite=!/` is unmet in a snapshot boot (a btrfs read-only subvolume mounted with `rw` looks read-write to the mount table), and an **ordinary boot has its root mounted read-only for the whole generator phase too** (`… / ro,relatime … - btrfs /dev/vda2 rw,…`, writable only once `systemd-remount-fs` has run), so a writability probe cannot tell the two apart. A generator is used rather than a unit because it runs before units are loaded, which is the only window in which a mount can land before logind. It is installed *before* the "after installation" snapshot, because a snapshot boots the generators and units the snapshot contains. Verified in real boots of the test disk: a snapshot entry (`rootflags=subvol=@/.snapshots/10/snapshot`) mounts `var-lib-systemd.mount`, starts logind and comes up at greetd/Hyprland; an ordinary boot gets no unit at all and its real directories stay mounted. The alternative — a separate `@var` subvolume, which is what SUSE does — is deliberately not taken: `/var/lib/pacman` is the package database, and a root rollback that left it current would make pacman claim the packages the rollback removed are installed.
 
+**A snapshot boot asks whether to keep it** (`configure/snapshot_restore.go` + `configure/snapshot_prompt.go`).
+The generator is the only thing that knows a snapshot boot is one at the moment it happens, so it also
+writes `/run/aelum-snapshot-boot` with `SNAPSHOT=<number>`, cut from the same mountinfo entry it detects
+with - a tmpfs file that belongs to one boot, is never written into the snapshot, and is gone at the next
+one. The desktop half is system-side, because nothing about the prompt is per-user and a file in one
+account's home belongs to that account - delete the user and create a new one, and the new user has no
+prompt. `/etc/xdg/quickshell/aelum-snapshot/shell.qml` - Quickshell scans every XDG config directory,
+`/etc/xdg` included, and its distribution guide tells packaged configs to live there - holds a
+plain-QtQuick dialog - "You booted snapshot N. Restore this state as the system?" with **OK** and
+**CANCEL**. Its colors are the user's live DMS scheme: the QML reads
+`~/.cache/dms/dms-colors.json` - the file DMS writes whenever matugen recolors the desktop - watches it for changes, and maps
+the dialog to Material color roles (`surface_container`, `primary`/`on_primary`, `outline_variant`, `error`), so the prompt is
+always the current theme in whichever mode the desktop is in and recolors live if the theme changes while it is open; only a
+missing or unreadable file falls back, per role, to the seeded brand palette. It is run by
+`/etc/systemd/user/aelum-snapshot-prompt.service`, a unit in a load path of
+every user manager, pulled in by `/etc/systemd/user/hyprland-session.target.wants/` - a target's
+`.wants/` is collected from every load path, which is how `systemctl enable` works - so it reaches the
+session target in every home, including one created after the install. It is gated with
+`ConditionPathExists=/run/aelum-snapshot-boot`, so an ordinary boot never starts it, and the snapshot
+number arrives through that same file. It is a standalone Quickshell instance (`QS_INSTANCE_ID`,
+`quickshell -c aelum-snapshot`), not a Dux Shell widget: DMS has no modal-dialog API and its
+`settings.json` is a seeded baseline, while Quickshell is DMS's own engine and ships as its dependency.
+OK runs `sudo -n /usr/local/bin/aelum-snapshot-restore` - the rollback wrapped once as
+`snapper --no-dbus -c root rollback`, with no number because from inside the snapshot that means exactly
+"the state I am booted in", which is why the helper refuses to run when the marker is absent - through
+`/etc/sudoers.d/aelum-snapshot-restore`, a rule naming that one program NOPASSWD for `%wheel`. After a
+successful rollback the dialog offers the reboot that boots the restored state. CANCEL closes and changes
+nothing, which is the point of a snapshot boot. The helper, its sudoers rule and the prompt files are
+root-side, written *before* the factory snapshot - a snapshot runs the binaries, rules and prompt it
+contains - and
+`docker/scripts/test-snapshot-rollback.sh` drives the exact OK path over SSH against the real disk.
+
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:
 - **Partition 1**: 512MB EFI (vfat, type GUID `C12A7328...`)
@@ -323,7 +355,10 @@ Aelum-Installer/
 │   │   ├── snapper.go           # Snapper configs + pacman transaction snapshot hooks
 │   │   ├── refind_snapshots.go  # Snapshot boot entries: generator, unit, snapper plugin
 │   │   ├── network.go           # /etc/resolv.conf linked into /run, so a snapshot boot has DNS
-│   │   ├── snapshot_state.go    # tmpfs over read-only state dirs, so a snapshot boots to the greeter
+│   │   ├── snapshot_state.go    # tmpfs over read-only state dirs, so a snapshot boots to the greeter;
+│   │   │                        # also announces the boot + snapshot number in /run
+│   │   ├── snapshot_restore.go  # aelum-snapshot-restore + its NOPASSWD sudoers rule (the OK button)
+│   │   ├── snapshot_prompt.go   # the Quickshell restore prompt + its gated user unit
 │   │   ├── zram.go              # Compressed swap via zram-generator
 │   │   ├── copy.go              # ISO-to-target file copying
 │   │   ├── cleanup.go           # Rollback + mount cleanup

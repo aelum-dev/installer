@@ -73,6 +73,15 @@ const (
 	// mkarchiso-style copies without exec bits are a failure mode this project has
 	// already hit.
 	snapshotStateScriptMode = 0o755
+
+	// snapshotBootMarkerPath is how a snapshot boot tells the rest of the system
+	// what it is. The generator is the only thing that knows at the moment it is
+	// true, so the generator writes it: the restore prompt's unit is gated on it
+	// (ConditionPathExists) and carries the snapshot number through it
+	// (EnvironmentFile), and the restore helper refuses to run without it. /run is
+	// tmpfs, so the marker belongs to one boot, is never written into the
+	// snapshot, and is gone at the next one.
+	snapshotBootMarkerPath = "/run/aelum-snapshot-boot"
 )
 
 // snapshotStateDirs are the directories a snapshot boot must be able to write to
@@ -138,6 +147,14 @@ var snapshotStateGenerator = `#!/bin/sh
 # under "set -u" fails the script on every real boot. And a failed redirection on
 # a *special builtin* - ": > file" - exits a non-interactive shell, which is how
 # this script used to die with status 1 before writing anything.
+#
+# The generator also announces the snapshot boot to the running system, because it
+# is the only thing that knows one is happening at the moment it happens: it
+# writes /run/aelum-snapshot-boot with the number of the snapshot this root is on.
+# The restore prompt (aelum-snapshot-prompt.service, a Quickshell dialog in the
+# desktop session) is gated on that file and shows that number; the restore helper
+# (aelum-snapshot-restore) refuses to run without it. /run is tmpfs, so the marker
+# belongs to this boot alone and is never written into the snapshot.
 
 set -u
 
@@ -156,13 +173,19 @@ mountinfo=${AELUM_MOUNTINFO:-/proc/self/mountinfo}
 get_default=${AELUM_GET_DEFAULT:-btrfs subvolume get-default /}
 
 # The subvolume the running root is on. mountinfo's entry for / carries it twice -
-# as its mount root, and as subvolid= inside the comma-separated super options -
-# and the id is the value the other lookup returns, so the id is what is compared.
-# The sub options are one field ("rw,discard=async,subvolid=270,subvol=/@/..."),
-# so subvolid= has to be found inside it rather than assumed to start one.
-root_subvol=$(awk '$5 == "/" && match($0, /subvolid=[0-9]+/) {
-    print substr($0, RSTART + 9, RLENGTH - 9); exit
+# as its mount root (field 4, the subvolume path from the top of the filesystem,
+# "/@/.snapshots/5/snapshot"), and as subvolid= inside the comma-separated super
+# options - and the id is the value the other lookup returns, so the id is what is
+# compared. The mount root is kept too: it is what names the snapshot number the
+# boot marker carries. mountinfo escapes spaces inside a path as \040, so the two
+# values split on a plain space. The sub options are one field
+# ("rw,discard=async,subvolid=270,subvol=/@/..."), so subvolid= has to be found
+# inside it rather than assumed to start one.
+root_info=$(awk '$5 == "/" && match($0, /subvolid=[0-9]+/) {
+    print $4, substr($0, RSTART + 9, RLENGTH - 9); exit
 }' "$mountinfo" 2>/dev/null)
+root_path=${root_info% *}
+root_subvol=${root_info##* }
 
 # The subvolume the system boots by default: the pointer a rollback moves, and the
 # one an ordinary boot is on.
@@ -175,6 +198,24 @@ default_subvol=$($get_default 2>/dev/null |
 [ -n "$root_subvol" ] || exit 0
 [ -n "$default_subvol" ] || exit 0
 [ "$root_subvol" != "$default_subvol" ] || exit 0
+
+# This boot is a snapshot. Say so, and say which one: the mount root names the
+# snapshot directory (/@/.snapshots/5/snapshot), and the number is what the prompt
+# shows so the question names the state it is about. An unparseable number is
+# written as empty - the marker's existence is the fact, the number is detail.
+# AELUM_SNAPSHOT_MARKER is the same kind of seam as the two above: it chooses
+# where the answer is written, not what the answer is (see
+# docker/scripts/fake-snapshot-state.sh).
+marker=${AELUM_SNAPSHOT_MARKER:-` + snapshotBootMarkerPath + `}
+snapshot_number=""
+case "$root_path" in
+    */` + shared.BtrfsSnapshotsDirName + `/*)
+        snapshot_number=${root_path##*/` + shared.BtrfsSnapshotsDirName + `/}
+        snapshot_number=${snapshot_number%%/snapshot*}
+        ;;
+esac
+case "$snapshot_number" in ""|*[!0-9]*) snapshot_number="" ;; esac
+printf 'SNAPSHOT=%s\n' "$snapshot_number" > "$marker" || true
 
 # A mount unit must be named after the path it mounts, each "/" replaced by "-"
 # and the ".mount" suffix added.

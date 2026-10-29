@@ -83,6 +83,16 @@ func TestSnapshotStateGenerator(t *testing.T) {
 		// generators write.
 		`mkdir -p "$gen_dir/local-fs.target.requires"`,
 		`ln -sf "../$name" "$gen_dir/local-fs.target.requires/$name"`,
+		// The announcement. The generator is the only thing that knows a snapshot
+		// boot is one at the moment it happens; the prompt unit and the restore
+		// helper both read this marker, and the number in it is what the prompt
+		// shows. It is written only past the snapshot-boot guard - an ordinary boot
+		// writes nothing at all - and the mount root the number is cut from is the
+		// same mountinfo field the detector already reads.
+		`print $4, substr($0, RSTART + 9, RLENGTH - 9)`,
+		`AELUM_SNAPSHOT_MARKER`,
+		snapshotBootMarkerPath,
+		`printf 'SNAPSHOT=%s\n' "$snapshot_number" > "$marker" || true`,
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("generator is missing %q", want)

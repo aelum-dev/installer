@@ -320,9 +320,10 @@ func writePacmanSnapshotHooks() error {
 // snapshotted subvolume, the .snapshots subvolume snapper requires inside each
 // one, the config list in /etc/conf.d/snapper, btrfs quotas, the units that take
 // the timeline snapshots, a snapshot pair around every pacman transaction, the
-// machinery that puts the snapshots in the boot menu, the state mounts a snapshot
-// boot needs, and finally the "after installation" snapshot - finally because it
-// is the finished system, and because everything written here has to be inside it.
+// machinery that puts the snapshots in the boot menu, the state mounts and the
+// restore prompt a snapshot boot needs, and finally the "after installation"
+// snapshot - finally because it is the finished system, and because everything
+// written here has to be inside it.
 //
 // Nothing here aborts an otherwise complete install: a system without snapshots
 // still installs and boots, so a command that fails is reported and the config it
@@ -399,6 +400,18 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 	// contains, so the mounts a snapshot boot needs have to be inside it. The
 	// "after installation" snapshot is taken last for the same reason (configure.go).
 	if err := configureSnapshotStateDirs(ctx); err != nil {
+		return err
+	}
+	// Same rule, one step further: the restore helper and its sudoers rule are
+	// root-side, so a snapshot that predates them could be booted but not restored.
+	// The prompt is system-side config for the same reason (/etc/xdg/quickshell +
+	// /etc/systemd/user): it belongs to the system, not to the account the
+	// installer happened to create, so a user created later - or recreated after
+	// deletion - gets it too, and a snapshot runs the prompt it contains.
+	if err := configureSnapshotRestore(ctx); err != nil {
+		return err
+	}
+	if err := configureSnapshotPrompt(ctx); err != nil {
 		return err
 	}
 	if err := createInstallationSnapshot(ctx); err != nil {
