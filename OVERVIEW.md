@@ -254,15 +254,23 @@ choose a snapshot, so it is not asked. It is gated with
 number arrives through that same file. It is a standalone Quickshell instance (`QS_INSTANCE_ID`,
 `quickshell -c aelum-snapshot`), not a Dux Shell widget: DMS has no modal-dialog API and its
 `settings.json` is a seeded baseline, while Quickshell is DMS's own engine and ships as its dependency.
-OK runs `sudo -n /usr/local/bin/aelum-snapshot-restore` - the rollback wrapped once as
+OK runs `pkexec /usr/local/bin/aelum-snapshot-restore` - the rollback wrapped once as
 `snapper --no-dbus -c root rollback`, with no number because from inside the snapshot that means exactly
-"the state I am booted in", which is why the helper refuses to run when the marker is absent - through
-`/etc/sudoers.d/aelum-snapshot-restore`, a rule naming that one program NOPASSWD for `%wheel`. After a
+"the state I am booted in", which is why the helper refuses to run when the marker is absent. The root
+access is polkit's, not sudo's: the installer writes
+`/usr/share/polkit-1/actions/dev.aelum.snapshot.restore.policy`, whose defaults refuse the action
+everywhere and whose `exec.path` annotation is what makes `pkexec <helper>` resolve to it, and
+`/etc/polkit-1/rules.d/aelum-snapshot-restore.rules`, the only grant - `subject.local && subject.active
+&& polkit.user_is_admin`, the session of the person who pressed OK (polkit's admin is `wheel` on Arch).
+An SSH session, the greeter, and every other user get the refusal. (A NOPASSWD sudoers drop-in was the
+first version and failed on the real install: sudoers is last-match-wins, and the installer's own
+`/etc/sudoers.d/wheel` sorts after `aelum-snapshot-restore`.) After a
 successful rollback the dialog offers the reboot that boots the restored state. CANCEL closes and changes
-nothing, which is the point of a snapshot boot. The helper, its sudoers rule and the prompt files are
+nothing, which is the point of a snapshot boot. The helper, its polkit files and the prompt files are
 root-side, written *before* the factory snapshot - a snapshot runs the binaries, rules and prompt it
 contains - and
-`docker/scripts/test-snapshot-rollback.sh` drives the exact OK path over SSH against the real disk.
+`docker/scripts/test-snapshot-rollback.sh` asserts the polkit scope and runs the exact command pkexec
+execs, against the real disk.
 
 ### Partition Layout
 Both ext4 and btrfs use the same 2-partition GPT layout:
@@ -365,7 +373,7 @@ Aelum-Installer/
 │   │   ├── network.go           # /etc/resolv.conf linked into /run, so a snapshot boot has DNS
 │   │   ├── snapshot_state.go    # tmpfs over read-only state dirs, so a snapshot boots to the greeter;
 │   │   │                        # also announces the boot + snapshot number in /run
-│   │   ├── snapshot_restore.go  # aelum-snapshot-restore + its NOPASSWD sudoers rule (the OK button)
+│   │   ├── snapshot_restore.go  # aelum-snapshot-restore + its polkit policy/rule (the OK button, via pkexec)
 │   │   ├── snapshot_prompt.go   # the Quickshell restore prompt + its gated user unit
 │   │   ├── zram.go              # Compressed swap via zram-generator
 │   │   ├── copy.go              # ISO-to-target file copying

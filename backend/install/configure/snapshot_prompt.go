@@ -57,7 +57,7 @@ import (
 //     visible to every user; the home's wants link is what starts it, exactly
 //     as the seeded dms.service link starts Dux Shell.
 //
-// Like the restore helper and its sudoers rule, these files are inside the
+// Like the restore helper and its polkit action, these files are inside the
 // root and are written before the "after installation" snapshot: a snapshot
 // boots the prompt it contains, which is the same rule that makes the OK button
 // work from inside an old state.
@@ -125,7 +125,7 @@ const snapshotPromptUnit = `# SPDX-License-Identifier: GPL-3.0
 #
 # The dialog is /etc/xdg/quickshell/aelum-snapshot/shell.qml, run as its own
 # Quickshell instance (QS_INSTANCE_ID) so it never shares an IPC socket with Dux
-# Shell. OK runs /usr/local/bin/aelum-snapshot-restore through the sudoers rule
+# Shell. OK runs /usr/local/bin/aelum-snapshot-restore through the polkit action
 # the installer writes for it; CANCEL closes and changes nothing.
 
 [Unit]
@@ -168,8 +168,10 @@ const snapshotPromptQML = `// SPDX-License-Identifier: GPL-3.0
 // It runs only on a snapshot boot: aelum-snapshot-prompt.service is gated on the
 // marker the aelum-snapshot-state generator writes, and the snapshot number comes
 // through that same file (EnvironmentFile), so the question names the state it is
-// about. OK runs /usr/local/bin/aelum-snapshot-restore - the sudoers rule the
-// installer writes allows exactly that program without a password. CANCEL closes
+// about. OK runs /usr/local/bin/aelum-snapshot-restore through pkexec - the
+// polkit action the installer writes grants it to the local, active session of
+// an admin user, which is exactly the session of the person who chose OK;
+// everywhere else it is refused. CANCEL closes
 // and changes nothing, which is the point of a snapshot boot.
 //
 // It is a real window, not a layer surface: the seeded Hyprland config floats
@@ -259,7 +261,11 @@ Scope {
 
   Process {
     id: restoreProc
-    command: ["sudo", "-n", "/usr/local/bin/aelum-snapshot-restore"]
+    // pkexec resolves the helper to the dev.aelum.snapshot.restore action through
+    // the policy file's exec.path annotation; the rules file grants it to this
+    // session. A denial is an ordinary exit code with polkit's own message on
+    // stderr - the failure line below shows it, it is not a silent nothing.
+    command: ["pkexec", "/usr/local/bin/aelum-snapshot-restore"]
     onExited: (code) => { prompt.phase = code === 0 ? "done" : "failed"; }
     // Both channels collected so snapper's progress output never blocks on a
     // closed pipe, and its error is the message the failure line shows.
@@ -272,7 +278,7 @@ Scope {
   // systemctl. --reboot-only because the OK button's call already rolled back;
   // a second rollback would take a second undo snapshot of a restored system.
   function reboot() {
-    Quickshell.execDetached(["sudo", "-n", "/usr/local/bin/aelum-snapshot-restore", "--reboot-only"]);
+    Quickshell.execDetached(["pkexec", "/usr/local/bin/aelum-snapshot-restore", "--reboot-only"]);
   }
 
   FloatingWindow {

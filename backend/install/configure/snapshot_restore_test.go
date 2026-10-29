@@ -16,7 +16,7 @@ func TestSnapshotRestoreScript(t *testing.T) {
 	for _, want := range []string{
 		"#!/bin/sh",
 		"set -u",
-		// Root-only: the sudoers rule runs it as root, and anything else is a
+		// Root-only: pkexec runs it as root, and anything else is a
 		// mistake worth naming rather than a confusing snapper failure.
 		`[ "$(id -u)" = 0 ]`,
 		// The guard that makes "no number" mean the right thing: snapper's no-number
@@ -51,24 +51,50 @@ func TestSnapshotRestoreScript(t *testing.T) {
 	}
 }
 
-// TestSnapshotRestoreSudoersIsNarrow: the passwordless rule names one absolute
-// program and nothing else. A broader rule (NOPASSWD: ALL, or a wildcard path)
-// would hand every wheel user a passwordless root shell, which is not what an OK
-// button is for.
-func TestSnapshotRestoreSudoersIsNarrow(t *testing.T) {
-	line := "%wheel ALL=(ALL) NOPASSWD: " + snapshotRestoreScriptPath
-	if !strings.Contains(snapshotRestoreSudoers, line) {
-		t.Errorf("sudoers rule does not contain %q:\n%s", line, snapshotRestoreSudoers)
+// TestSnapshotRestorePolkitIsScoped: the policy's defaults refuse the action
+// everywhere, and the only grant is the rules file's - local, active, admin.
+// A grant that dropped subject.active would hand the action to every SSH session;
+// one that dropped user_is_admin would hand it to the greeter; an allow_* of yes
+// would answer before the rules were even consulted. All three are the same bug:
+// a root action that answers for someone who never asked.
+func TestSnapshotRestorePolkitIsScoped(t *testing.T) {
+	policy := snapshotRestorePolicy
+	for _, want := range []string{
+		`<action id="` + snapshotRestorePolkitAction + `">`,
+		"<allow_any>no</allow_any>",
+		"<allow_inactive>no</allow_inactive>",
+		"<allow_active>no</allow_active>",
+		// The annotation is what makes `pkexec <helper>` resolve to this action;
+		// without it pkexec refuses the program before polkit is consulted at all.
+		`<annotate key="org.freedesktop.policykit.exec.path">` + snapshotRestoreScriptPath + `</annotate>`,
+	} {
+		if !strings.Contains(policy, want) {
+			t.Errorf("polkit policy is missing %q:\n%s", want, policy)
+		}
 	}
-	for _, unwanted := range []string{"NOPASSWD: ALL", "NOPASSWD: *"} {
-		if strings.Contains(snapshotRestoreSudoers, unwanted) {
-			t.Errorf("sudoers rule contains %q; the rule must name one program", unwanted)
+
+	rules := snapshotRestoreRules
+	for _, want := range []string{
+		"polkit.addRule",
+		`action.id === "` + snapshotRestorePolkitAction + `"`,
+		"subject.local",
+		"subject.active",
+		"polkit.user_is_admin",
+		"polkit.Result.YES",
+	} {
+		if !strings.Contains(rules, want) {
+			t.Errorf("polkit rules are missing %q:\n%s", want, rules)
+		}
+	}
+	for _, unwanted := range []string{"allow_any>yes", "allow_inactive>yes", "allow_active>yes", "NOPASSWD"} {
+		if strings.Contains(policy, unwanted) {
+			t.Errorf("polkit policy contains %q; the grant belongs to the rules file only", unwanted)
 		}
 	}
 }
 
-// TestConfigureSnapshotRestore installs the helper executable and the sudoers rule
-// with the mode sudo accepts (sudo refuses a world-writable sudoers file).
+// TestConfigureSnapshotRestore installs the helper executable and the polkit
+// policy + rules that authorize it.
 func TestConfigureSnapshotRestore(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
@@ -90,17 +116,29 @@ func TestConfigureSnapshotRestore(t *testing.T) {
 	if mode := fs.Mode(scriptPath); mode&0o111 == 0 {
 		t.Errorf("%s is not executable (%v): the prompt runs it, it does not read it", scriptPath, mode)
 	}
+	// pkexec's own authenticity check for a program an action execs: root-owned
+	// and not group- or world-writable. The 0755 the helper is written with is
+	// what satisfies it.
+	if mode := fs.Mode(scriptPath); mode&0o022 != 0 {
+		t.Errorf("%s is group/world-writable (%v): pkexec refuses to exec such a program", scriptPath, mode)
+	}
 
-	sudoersPath := shared.MountRoot + snapshotRestoreSudoersPath
-	sudoers, ok := fs.Read(sudoersPath)
+	policyPath := shared.MountRoot + snapshotRestorePolicyPath
+	policy, ok := fs.Read(policyPath)
 	if !ok {
-		t.Fatalf("%s was not written (paths: %v)", sudoersPath, fs.Paths())
+		t.Fatalf("%s was not written (paths: %v)", policyPath, fs.Paths())
 	}
-	if !strings.Contains(sudoers, "%wheel ALL=(ALL) NOPASSWD: "+snapshotRestoreScriptPath) {
-		t.Errorf("sudoers rule missing from %s:\n%s", sudoersPath, sudoers)
+	if !strings.Contains(policy, `<action id="`+snapshotRestorePolkitAction+`">`) {
+		t.Errorf("polkit action missing from %s:\n%s", policyPath, policy)
 	}
-	if mode := fs.Mode(sudoersPath); mode&0o022 != 0 {
-		t.Errorf("%s is group/world-writable (%v): sudo refuses a writable sudoers file", sudoersPath, mode)
+
+	rulesPath := shared.MountRoot + snapshotRestoreRulesPath
+	rules, ok := fs.Read(rulesPath)
+	if !ok {
+		t.Fatalf("%s was not written (paths: %v)", rulesPath, fs.Paths())
+	}
+	if !strings.Contains(rules, "polkit.addRule") {
+		t.Errorf("polkit rule missing from %s:\n%s", rulesPath, rules)
 	}
 
 	if !hasCall(rec.CallsFor("mkdir"), "mkdir", "-p", shared.MountRoot+"/usr/local/bin") {
@@ -110,7 +148,7 @@ func TestConfigureSnapshotRestore(t *testing.T) {
 
 // TestConfigureSnapper_InstallsRestoreBeforeTheSnapshot is the ordering that is
 // easy to get wrong and impossible to fix later: a snapshot runs the binaries and
-// sudoers rules it contains. A helper written after the "after installation"
+// authorization rules it contains. A helper written after the "after installation"
 // snapshot is absent from every state this system can boot into.
 func TestConfigureSnapper_InstallsRestoreBeforeTheSnapshot(t *testing.T) {
 	rec := mountedRunner()
@@ -131,8 +169,11 @@ func TestConfigureSnapper_InstallsRestoreBeforeTheSnapshot(t *testing.T) {
 	if !fs.Exists(shared.MountRoot + snapshotRestoreScriptPath) {
 		t.Fatalf("%s was not installed by the snapper step", snapshotRestoreScriptPath)
 	}
-	if !fs.Exists(shared.MountRoot + snapshotRestoreSudoersPath) {
-		t.Fatalf("%s was not installed by the snapper step", snapshotRestoreSudoersPath)
+	if !fs.Exists(shared.MountRoot + snapshotRestorePolicyPath) {
+		t.Fatalf("%s was not installed by the snapper step", snapshotRestorePolicyPath)
+	}
+	if !fs.Exists(shared.MountRoot + snapshotRestoreRulesPath) {
+		t.Fatalf("%s was not installed by the snapper step", snapshotRestoreRulesPath)
 	}
 	written := snapperCallIndex(rec, "mkdir", "-p", shared.MountRoot+"/usr/local/bin")
 	if written < 0 {
@@ -144,7 +185,7 @@ func TestConfigureSnapper_InstallsRestoreBeforeTheSnapshot(t *testing.T) {
 }
 
 // TestConfigureSnapper_NoRestoreForExt4: an ext4 install has no snapshot to
-// restore, so it gets neither the helper nor the passwordless rule.
+// restore, so it gets neither the helper nor its polkit authorization.
 func TestConfigureSnapper_NoRestoreForExt4(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
@@ -157,7 +198,10 @@ func TestConfigureSnapper_NoRestoreForExt4(t *testing.T) {
 	if fs.Exists(shared.MountRoot + snapshotRestoreScriptPath) {
 		t.Errorf("%s was installed for an ext4 install", snapshotRestoreScriptPath)
 	}
-	if fs.Exists(shared.MountRoot + snapshotRestoreSudoersPath) {
-		t.Errorf("%s was installed for an ext4 install", snapshotRestoreSudoersPath)
+	if fs.Exists(shared.MountRoot + snapshotRestorePolicyPath) {
+		t.Errorf("%s was installed for an ext4 install", snapshotRestorePolicyPath)
+	}
+	if fs.Exists(shared.MountRoot + snapshotRestoreRulesPath) {
+		t.Errorf("%s was installed for an ext4 install", snapshotRestoreRulesPath)
 	}
 }

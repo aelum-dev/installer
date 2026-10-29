@@ -101,12 +101,13 @@ func TestSnapshotPromptQML(t *testing.T) {
 		"implicitHeight: content.height",
 		// The number arrives through the unit's EnvironmentFile.
 		`Quickshell.env("SNAPSHOT")`,
-		// OK runs exactly the helper the sudoers rule allows, with -n so a missing
-		// rule fails visibly instead of prompting for a password nobody typed.
-		`command: ["sudo", "-n", "` + snapshotRestoreScriptPath + `"]`,
+		// OK runs exactly the helper the polkit action names, through pkexec -
+		// never a shell, never sudo. The action is resolved from the policy's
+		// exec.path annotation, so the QML only ever spells the program.
+		`command: ["pkexec", "` + snapshotRestoreScriptPath + `"]`,
 		// The reboot is detached (closing the dialog would kill a tracked child
 		// first) and reboot-only (the OK call already rolled back).
-		`Quickshell.execDetached(["sudo", "-n", "` + snapshotRestoreScriptPath + `", "--reboot-only"])`,
+		`Quickshell.execDetached(["pkexec", "` + snapshotRestoreScriptPath + `", "--reboot-only"])`,
 		// CANCEL is a first-class outcome: a snapshot boot is non-destructive and
 		// plenty of people boot one just to look.
 		`text: "CANCEL"`,
