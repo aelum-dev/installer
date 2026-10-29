@@ -279,6 +279,13 @@ Exec = ` + pacmanImportantHookExec + `
 // stays readable. All three end in a truthy command: a PreTransaction hook that
 // fails aborts the transaction, and a snapshot that could not be taken is never a
 // reason to refuse an update.
+//
+// The command body carries no single quotes: pacman splits the Exec line on
+// quoting, so a single quote nested inside the sh -c wrapper ends the quoting
+// there and sh receives a truncated command (measured: an earlier
+// printf '%s %s\n' made every transaction fail with "unexpected end of file
+// from `if'"). Quote what the shell needs with double quotes - inert inside
+// the outer single quotes, and the space they protect survives pacman's split.
 const (
 	pacmanPreHookExec = `/bin/sh -c 'mkdir -p /run/aelum-snapper && rm -f ` + pacmanPreHookState + ` ` + pacmanPairState +
 		` && snapper --no-dbus -c ` + snapperRootConfig + ` create -t pre -p -c number -d pacman > ` +
@@ -286,7 +293,7 @@ const (
 
 	pacmanPostHookExec = `/bin/sh -c 'n=$(cat ` + pacmanPreHookState + ` 2>/dev/null); if [ -n "$n" ]; then ` +
 		`m=$(snapper --no-dbus -c ` + snapperRootConfig + ` create -t post --pre-number "$n" -p -c number -d pacman 2>/dev/null); ` +
-		`printf '%s %s\n' "$n" "$m" > ` + pacmanPairState + `; fi; true'`
+		`printf "%s %s\n" "$n" "$m" > ` + pacmanPairState + `; fi; true'`
 
 	pacmanImportantHookExec = `/bin/sh -c 'set -- $(cat ` + pacmanPairState + ` 2>/dev/null); ` +
 		`for n in "$1" "$2"; do case "$n" in ""|*[!0-9]*) continue ;; esac; ` +

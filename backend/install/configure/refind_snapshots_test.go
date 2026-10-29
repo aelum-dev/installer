@@ -217,6 +217,30 @@ func TestConfigureSnapper_InstallsSnapshotHooksAndMenu(t *testing.T) {
 		if !strings.Contains(hook, "Type = Package") {
 			t.Errorf("hook does not trigger on Type = Package:\n%s", hook)
 		}
+		// The Exec line must survive pacman's argument splitting as one command:
+		// the sh -c wrapper's quotes are the only single quotes on the line. A
+		// single quote nested inside ends the quoting there, pacman splits the
+		// Exec at the next space, and sh receives a truncated command — the exact
+		// failure an earlier printf '%s %s\n' caused on a real installed system,
+		// where every transaction died on "unexpected end of file from `if'".
+		// The fake command runner never parses the hook, so this is the seam
+		// that catches it.
+		execLine := ""
+		for _, line := range strings.Split(hook, "\n") {
+			if strings.HasPrefix(line, "Exec = ") {
+				execLine = strings.TrimPrefix(line, "Exec = ")
+			}
+		}
+		if execLine == "" {
+			t.Errorf("%s hook has no Exec line:\n%s", name, hook)
+			continue
+		}
+		if !strings.HasPrefix(execLine, `/bin/sh -c '`) || !strings.HasSuffix(execLine, `'`) {
+			t.Errorf("%s hook Exec is not a single-quoted sh command: %s", name, execLine)
+		}
+		if n := strings.Count(execLine, `'`); n != 2 {
+			t.Errorf("%s hook Exec carries %d single quotes, want only the wrapper pair: %s", name, n, execLine)
+		}
 	}
 
 	for _, path := range []string{snapshotScriptPath, snapperPluginPath, snapshotUnitPath} {
