@@ -36,15 +36,19 @@ func TestSnapshotPromptUnit(t *testing.T) {
 	}
 }
 
-// TestSnapshotPromptIsSystemSide is the property the per-home version did not
-// have: the prompt belongs to the system, not to the account the installer
-// happened to create. Every path it writes is under /etc, nothing is written
-// into a home, and the unit and its pull-in live where the user manager loads
-// units for every login (/etc/systemd/user) and Quickshell finds packaged
-// configs (/etc/xdg/quickshell). A user created later - or recreated after
-// deletion - gets the prompt with no extra work.
+// TestSnapshotPromptIsSystemSide is the property the per-home version of the
+// prompt did not have: the two files the installer writes belong to the system,
+// not to the account the installer happened to create. Every path it writes is
+// under /etc, nothing is written into a home, and the unit and its config live
+// where the user manager loads units for every login (/etc/systemd/user) and
+// Quickshell finds packaged configs (/etc/xdg/quickshell). A user created later
+// - or recreated after deletion - gets the prompt with no extra work. The
+// session pull-in is the deliberate exception: it is per-home by design, seeded
+// into /etc/skel by live-iso, because a system-side pull-in would ask the
+// greeter too - and the greeter cannot run the restore and did not choose a
+// snapshot. The installer must not write one.
 func TestSnapshotPromptIsSystemSide(t *testing.T) {
-	for _, dir := range []string{snapshotPromptConfigDir, snapshotPromptUnitDir, snapshotPromptWantsDir} {
+	for _, dir := range []string{snapshotPromptConfigDir, snapshotPromptUnitDir} {
 		if !strings.HasPrefix(dir, "/etc/") {
 			t.Errorf("prompt path %q is not system-side", dir)
 		}
@@ -77,22 +81,24 @@ func TestSnapshotPromptQML(t *testing.T) {
 		"import Quickshell",
 		"import Quickshell.Io",
 		"import QtQuick",
-		// The dialog shape: a layer surface the size of the card, centered by
-		// margins. A full-screen anchored surface would swallow every click in
-		// the session (Wayland input follows geometry, not opacity), so the
-		// margins that shrink it to the card are part of the contract.
-		"PanelWindow",
-		"exclusionMode: ExclusionMode.Ignore",
+		// The dialog is a real window, not a layer surface: a layer surface is
+		// fixed to the screen by its anchors and the compositor cannot move
+		// one, which is what made the dialog impossible to drag. The title is
+		// the handle the seeded Hyprland window rule matches (float + center),
+		// so it is part of the contract too.
+		"FloatingWindow",
+		`title: "aelum-snapshot-prompt"`,
+		// Pressing the card body asks the compositor to move the window
+		// (xdg_toplevel's start_move, honored by Hyprland 0.56+): dragging the
+		// dialog needs no compositor-side mouse bind.
+		"startSystemMove",
 		`color: "transparent"`,
-		"anchors { top: true; bottom: true; left: true; right: true }",
-		"margins {",
-		"screen.width",
-		"Math.max(0",
-		// The height follows the content: the Column reports its own height and
-		// the surface margins are computed from it, so no phase reserves dead
-		// space under its buttons.
+		// The window is the card: the width is fixed so the text does not
+		// reflow while it is read, and the height comes from the Column's own
+		// height, so no phase reserves dead space under its buttons.
 		"id: content",
-		"property int cardHeight: content.height",
+		"implicitWidth: cardWidth",
+		"implicitHeight: content.height",
 		// The number arrives through the unit's EnvironmentFile.
 		`Quickshell.env("SNAPSHOT")`,
 		// OK runs exactly the helper the sudoers rule allows, with -n so a missing
@@ -130,6 +136,11 @@ func TestSnapshotPromptQML(t *testing.T) {
 	if strings.Contains(qml, "import QtQuick.Controls") {
 		t.Error("prompt config imports QtQuick.Controls, which is not a Quickshell dependency")
 	}
+	// A layer surface again would undo the drag fix: Hyprland cannot move a
+	// surface that is anchored to the screen edges.
+	if strings.Contains(qml, "PanelWindow") {
+		t.Error("prompt config is a PanelWindow again; a layer surface cannot be dragged")
+	}
 	// No regression to a fixed palette: the colors the dialog hardcoded before it
 	// read the live scheme must be gone from the QML entirely.
 	for _, gone := range []string{"#1e1e2e", "#89b4fa", "#cdd6f4", "#313244", "#f38ba8"} {
@@ -157,7 +168,7 @@ func TestConfigureSnapshotPrompt(t *testing.T) {
 	if !ok {
 		t.Fatalf("%s was not written (paths: %v)", qmlPath, fs.Paths())
 	}
-	if !strings.Contains(content, "PanelWindow") {
+	if !strings.Contains(content, "FloatingWindow") {
 		t.Errorf("%s is not the dialog:\n%s", qmlPath, content)
 	}
 
@@ -166,16 +177,16 @@ func TestConfigureSnapshotPrompt(t *testing.T) {
 		t.Fatalf("%s was not written", unitPath)
 	}
 
-	// The pull-in. A target's .wants/ directory is collected from every load
-	// path, so this system-side link reaches the per-user session target; the
-	// link and its target are both chroot paths, resolved inside the install.
-	if snapperCallIndex(rec, "arch-chroot", shared.MountRoot, "mkdir", "-p", snapshotPromptWantsDir) < 0 {
-		t.Errorf("the wants directory was not created; calls = %v", rec.Calls())
-	}
-	if snapperCallIndex(rec, "arch-chroot", shared.MountRoot, "ln", "-sf",
-		snapshotPromptUnitDir+"/"+snapshotPromptUnitName,
-		snapshotPromptWantsDir+"/"+snapshotPromptUnitName) < 0 {
-		t.Errorf("the prompt was not linked into hyprland-session.target.wants; calls = %v", rec.Calls())
+	// The pull-in is not written here. It is the wants link seeded into
+	// /etc/skel by live-iso and copied into every real home with the rest of
+	// the session config; a system-side link would pull the prompt into the
+	// greeter's session too, and the greeter must not be asked.
+	for _, call := range rec.Calls() {
+		for _, arg := range call.Args {
+			if strings.Contains(arg, "hyprland-session.target.wants") {
+				t.Errorf("the installer wrote a system-side wants link (%v); the pull-in belongs to /etc/skel", call.Args)
+			}
+		}
 	}
 }
 
@@ -206,15 +217,9 @@ func TestConfigureSnapper_InstallsPrompt(t *testing.T) {
 	if snapshot < 0 {
 		t.Fatalf("no \"after installation\" snapshot; calls = %v", rec.Calls())
 	}
-	written := snapperCallIndex(rec, "arch-chroot", shared.MountRoot, "ln", "-sf",
-		snapshotPromptUnitDir+"/"+snapshotPromptUnitName,
-		snapshotPromptWantsDir+"/"+snapshotPromptUnitName)
-	if written < 0 {
-		t.Fatalf("the prompt was not linked; calls = %v", rec.Calls())
-	}
-	if written > snapshot {
-		t.Error("the prompt was installed after the snapshot was taken, so it is not inside it")
-	}
+	// That the prompt is inside the snapshot (written before it) is a property
+	// of the call order in configureSnapper; verify-installed.sh checks it for
+	// real by reading the factory snapshot's own contents.
 
 	fs2 := primitivestest.NewMemFS()
 	defer primitives.SetFileSystem(fs2)()

@@ -2,7 +2,6 @@ package configure
 
 import (
 	"fmt"
-	"strings"
 
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
@@ -18,23 +17,35 @@ import (
 //
 //     "You booted snapshot N. Restore this state as the system?"   OK / CANCEL
 //
-// Three pieces, all system-side:
+// Three pieces, two of them system-side:
 //
 //   /etc/xdg/quickshell/aelum-snapshot/shell.qml                    the dialog
 //   /etc/systemd/user/aelum-snapshot-prompt.service                 runs it,
 //       gated on the /run marker the state generator writes (an ordinary boot
 //       never starts it)
-//   /etc/systemd/user/hyprland-session.target.wants/…service        the pull-in
+//   ~/.config/systemd/user/hyprland-session.target.wants/…service   the pull-in,
+//       seeded into every home by /etc/skel (live-iso), not written here
 //
-// Why system-side and not in the install user's home: nothing about the prompt
-// is per-user. The dialog is static, the unit is generic, and both its gate and
-// its snapshot number come from system state (/run). A file in one account's
-// home belongs to that account: delete the user, create a new one, and the new
-// user has no prompt. These three files belong to the system, so every user -
-// the install user, one created later, one recreated after deletion - gets the
-// prompt, and no home directory is written into at all.
+// The dialog and the unit are system-side: nothing about them is per-user, the
+// dialog is static, the unit is generic, and both its gate and its snapshot
+// number come from system state (/run). A file in one account's home belongs to
+// that account; these two belong to the system, so every user - the install
+// user, one created later, one recreated after deletion - has the prompt
+// available with no extra work.
 //
-// The placement is the documented one for each half:
+// The pull-in is deliberately per-home, and that is the whole difference from
+// the other two files. A target's .wants/ directory is collected from every
+// load path, so a system-side link would pull the prompt into every Hyprland
+// session - including the greeter's, which is a Hyprland session too
+// (dms-greeter --command hyprland, as user greeter). The greeter must not be
+// asked: it is not in wheel, so it cannot run the restore, and it is not the
+// person who chose a snapshot in the boot menu. So the link lives where the
+// session config already lives - in /etc/skel, next to the seeded
+// hyprland-session.target and the dms.service link, copied into every real
+// home by the installer's skel copy and by useradd -m, and never into the
+// greeter, whose home is not seeded from skel at all.
+//
+// The placement of each piece is the documented one for it:
 //
 //   - Quickshell scans every XDG config directory, /etc/xdg included, for
 //     quickshell/<name>/shell.qml; its own distribution guide tells packaged
@@ -42,11 +53,9 @@ import (
 //     selects this config for any user, and a user's own ~/.config copy of the
 //     same name would take precedence - a deliberate override, not a conflict.
 //   - systemd's user manager loads units from /etc/systemd/user for every
-//     login ("user units created by the administrator"), and a target's .wants/
-//     directory is collected from every load path - that is how `systemctl
-//     enable` pulls a packaged unit into a target. So this system-side link
-//     pulls the prompt into the per-user hyprland-session.target that the
-//     installer seeds into every home, without writing anything into a home.
+//     login ("user units created by the administrator"), so the unit itself is
+//     visible to every user; the home's wants link is what starts it, exactly
+//     as the seeded dms.service link starts Dux Shell.
 //
 // Like the restore helper and its sudoers rule, these files are inside the
 // root and are written before the "after installation" snapshot: a snapshot
@@ -67,18 +76,19 @@ const (
 	snapshotPromptConfigDir  = "/etc/xdg/quickshell/aelum-snapshot"
 	snapshotPromptConfigName = "shell.qml"
 
-	// snapshotPromptUnitName is the user unit. It is not "enabled" per user -
-	// the system-side wants link below pulls it into every session.
+	// snapshotPromptUnitName is the user unit. It is not enabled system-side -
+	// the wants link seeded into every home by /etc/skel pulls it into the
+	// session; see the header above for why the pull-in is per-home.
 	snapshotPromptUnitName = "aelum-snapshot-prompt.service"
 	snapshotPromptUnitDir  = "/etc/systemd/user"
-	snapshotPromptWantsDir = snapshotPromptUnitDir + "/hyprland-session.target.wants"
 )
 
-// configureSnapshotPrompt writes the dialog, its unit, and the session pull-in
-// into the installed system's own /etc. It is btrfs-only with the rest of the
-// snapshot machinery, and it belongs before the "after installation" snapshot
-// for the same reason the restore helper does: a snapshot runs the units and
-// configs it contains.
+// configureSnapshotPrompt writes the dialog and its unit into the installed
+// system's own /etc. The session pull-in is not written here: it is the skel
+// link shipped by live-iso, copied into every home with the rest of the seeded
+// session config. It is btrfs-only with the rest of the snapshot machinery, and
+// it belongs before the "after installation" snapshot for the same reason the
+// restore helper does: a snapshot runs the units and configs it contains.
 func configureSnapshotPrompt(ctx *shared.InstallContext) error {
 	if err := primitives.WriteFile(snapshotPromptConfigDir+"/"+snapshotPromptConfigName, snapshotPromptQML); err != nil {
 		return fmt.Errorf("failed to write the snapshot prompt config: %w", err)
@@ -86,19 +96,6 @@ func configureSnapshotPrompt(ctx *shared.InstallContext) error {
 	unitPath := snapshotPromptUnitDir + "/" + snapshotPromptUnitName
 	if err := primitives.WriteFile(unitPath, snapshotPromptUnit); err != nil {
 		return fmt.Errorf("failed to write %s: %w", snapshotPromptUnitName, err)
-	}
-
-	// The pull-in. systemd starts a user unit that a target's .wants/ directory
-	// names, and it collects that directory from every load path - so this link
-	// reaches the per-user hyprland-session.target the installer seeds into
-	// every home. There is no user manager running during the install to ask,
-	// which is why this is a link and not `systemctl --user enable`.
-	linkPath := snapshotPromptWantsDir + "/" + snapshotPromptUnitName
-	if out, err := primitives.RunChroot("mkdir", "-p", snapshotPromptWantsDir); err != nil {
-		return fmt.Errorf("failed to create %s: %w: %s", snapshotPromptWantsDir, err, strings.TrimSpace(string(out)))
-	}
-	if out, err := primitives.RunChroot("ln", "-sf", unitPath, linkPath); err != nil {
-		return fmt.Errorf("failed to link %s into hyprland-session.target.wants: %w: %s", snapshotPromptUnitName, err, strings.TrimSpace(string(out)))
 	}
 
 	if ctx.Logger != nil {
@@ -116,11 +113,13 @@ const snapshotPromptUnit = `# SPDX-License-Identifier: GPL-3.0
 # Ask whether to restore the snapshot this system booted into.
 #
 # This unit is system-side (/etc/systemd/user, a load path of every user
-# manager) and is pulled in by
-# /etc/systemd/user/hyprland-session.target.wants/ - a target's .wants/ is
-# collected from every load path, so this one link reaches the session target in
-# every home, including homes created after this install. It runs only when
-# ` + snapshotBootMarkerPath + ` exists, which the aelum-snapshot-state generator
+# manager) so every account can run it, but it is pulled in per-home: the wants
+# link seeded into ~/.config/systemd/user/hyprland-session.target.wants/ by
+# /etc/skel - the same mechanism that starts dms.service - starts it in real
+# user sessions only. The greeter runs a Hyprland session too, and a
+# system-side link would ask it as well; the greeter cannot run the restore
+# (it is not in wheel) and did not choose a snapshot, so it is not asked. It
+# runs only when ` + snapshotBootMarkerPath + ` exists, which the aelum-snapshot-state generator
 # writes exactly when the root is not the default subvolume. An ordinary boot
 # never runs this unit.
 #
@@ -150,7 +149,10 @@ WantedBy=hyprland-session.target
 
 // snapshotPromptQML is the dialog. It is deliberately plain QtQuick - no
 // QtQuick.Controls, no theme files - so the only thing it depends on is
-// Quickshell itself. Its colors are the user's live Dux Shell scheme: the QML
+// Quickshell itself. It is a real window (FloatingWindow), not a layer surface:
+// the seeded Hyprland config floats and centers it by its title, and pressing
+// its body starts the compositor's own move request, so it is draggable like
+// any other window. Its colors are the user's live Dux Shell scheme: the QML
 // reads ~/.cache/dms/dms-colors.json (mode + Material color roles), watches it
 // for changes, and falls back per role to the brand scheme only when that file
 // is missing or unreadable.
@@ -169,6 +171,11 @@ const snapshotPromptQML = `// SPDX-License-Identifier: GPL-3.0
 // about. OK runs /usr/local/bin/aelum-snapshot-restore - the sudoers rule the
 // installer writes allows exactly that program without a password. CANCEL closes
 // and changes nothing, which is the point of a snapshot boot.
+//
+// It is a real window, not a layer surface: the seeded Hyprland config floats
+// and centers it by its title, and pressing the card body starts the
+// compositor's own move request, so the dialog can be dragged out of the way.
+// Only a real user session pulls it in - the greeter is not asked.
 //
 // The colors are the user's live Dux Shell scheme, read from
 // ~/.cache/dms/dms-colors.json - the file DMS writes whenever matugen recolors
@@ -268,34 +275,25 @@ Scope {
     Quickshell.execDetached(["sudo", "-n", "/usr/local/bin/aelum-snapshot-restore", "--reboot-only"]);
   }
 
-  PanelWindow {
+  FloatingWindow {
     id: dialog
     visible: true
 
-    // The Quickshell shape for a dialog: a layer surface the size of the card,
-    // centered by margins. Wayland input follows surface geometry, not opacity -
-    // a full-screen transparent surface swallows every click in the session and
-    // holds the keyboard, which makes a question you may want to think about
-    // block everything. Anchoring all four sides forces each dimension to the
-    // screen size, and margins pull the surface back to the card, so every
-    // click and key outside the card reaches the session as if the prompt were
-    // not there. The width is fixed; the height is the Column's own height plus
-    // the card's vertical padding, so no phase reserves space its text and
-    // buttons do not use. On a screen smaller than the card the margins clamp
-    // to zero and the card fills the screen.
-    property int cardWidth: 540
-    property int cardHeight: content.height + 56 // 28px of padding above and below
+    // The title is the handle the seeded Hyprland config matches its window
+    // rule on (float + center): the prompt is a real window, which is what
+    // keeps it out of the tile layout and lets the compositor move it. It must
+    // stay in sync with that rule.
+    title: "aelum-snapshot-prompt"
 
-    anchors { top: true; bottom: true; left: true; right: true }
-    margins {
-      left: Math.max(0, Math.round((screen.width - cardWidth) / 2))
-      right: Math.max(0, Math.round((screen.width - cardWidth) / 2))
-      top: Math.max(0, Math.round((screen.height - cardHeight) / 2))
-      bottom: Math.max(0, Math.round((screen.height - cardHeight) / 2))
-    }
-    exclusionMode: ExclusionMode.Ignore
+    // The window is the card. The width is fixed so the text does not reflow
+    // while it is being read; the height is the Column's own height plus the
+    // card's vertical padding, so no phase reserves space its text and buttons
+    // do not use.
+    property int cardWidth: 540
+    implicitWidth: cardWidth
+    implicitHeight: content.height + 56 // 28px of padding above and below
+
     color: "transparent"
-    focusable: true
 
     Rectangle {
       id: card
@@ -305,6 +303,18 @@ Scope {
       border.color: prompt.phase === "failed" ? prompt.color("error") : prompt.color("primary")
       border.width: 2
       focus: true
+
+      // Dragging the dialog: startSystemMove is the compositor-owned move
+      // request (xdg_toplevel's start_move, honored by Hyprland 0.56+), so
+      // pressing the card body and dragging moves the window like any other -
+      // no compositor-side mouse bind needed. The buttons' own MouseAreas are
+      // declared after this one and stack above it, so pressing a button never
+      // starts a move.
+      MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onPressed: dialog.startSystemMove()
+      }
 
       Keys.onEscapePressed: prompt.close()
       Keys.onReturnPressed: {

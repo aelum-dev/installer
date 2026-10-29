@@ -228,20 +228,28 @@ An entry copies this install's own loader, initramfs and kernel options and **ad
 The generator is the only thing that knows a snapshot boot is one at the moment it happens, so it also
 writes `/run/aelum-snapshot-boot` with `SNAPSHOT=<number>`, cut from the same mountinfo entry it detects
 with - a tmpfs file that belongs to one boot, is never written into the snapshot, and is gone at the next
-one. The desktop half is system-side, because nothing about the prompt is per-user and a file in one
+one. The dialog and its unit are system-side, because nothing about them is per-user and a file in one
 account's home belongs to that account - delete the user and create a new one, and the new user has no
-prompt. `/etc/xdg/quickshell/aelum-snapshot/shell.qml` - Quickshell scans every XDG config directory,
+prompt. (The session pull-in is the deliberate exception - per-home, see below.) `/etc/xdg/quickshell/aelum-snapshot/shell.qml` - Quickshell scans every XDG config directory,
 `/etc/xdg` included, and its distribution guide tells packaged configs to live there - holds a
 plain-QtQuick dialog - "You booted snapshot N. Restore this state as the system?" with **OK** and
 **CANCEL**. Its colors are the user's live DMS scheme: the QML reads
 `~/.cache/dms/dms-colors.json` - the file DMS writes whenever matugen recolors the desktop - watches it for changes, and maps
 the dialog to Material color roles (`surface_container`, `primary`/`on_primary`, `outline_variant`, `error`), so the prompt is
 always the current theme in whichever mode the desktop is in and recolors live if the theme changes while it is open; only a
-missing or unreadable file falls back, per role, to the seeded brand palette. It is run by
-`/etc/systemd/user/aelum-snapshot-prompt.service`, a unit in a load path of
-every user manager, pulled in by `/etc/systemd/user/hyprland-session.target.wants/` - a target's
-`.wants/` is collected from every load path, which is how `systemctl enable` works - so it reaches the
-session target in every home, including one created after the install. It is gated with
+missing or unreadable file falls back, per role, to the seeded brand palette. It is a real window - a
+Quickshell `FloatingWindow` titled `aelum-snapshot-prompt`, not a layer surface: a layer surface is
+anchored to the screen edges and the compositor cannot move one, which is what made the first version
+impossible to drag. The seeded `hyprland.lua` matches that title with a `float` + `center` window rule,
+and pressing the card body calls `startSystemMove()` (xdg_toplevel's `start_move`, honored by Hyprland
+0.56+), so the dialog is centered when it opens and draggable from there with no compositor-side mouse
+bind. It is run by
+`/etc/systemd/user/aelum-snapshot-prompt.service`, a unit in a load path of every user manager, but
+pulled in **per-home**: the wants link seeded into
+`/etc/skel/.config/systemd/user/hyprland-session.target.wants/` - the same mechanism that starts
+`dms.service` - is copied into every real home, including one created after the install, and no
+system-side link is written: the greeter runs a Hyprland session too, is not in `wheel`, and did not
+choose a snapshot, so it is not asked. It is gated with
 `ConditionPathExists=/run/aelum-snapshot-boot`, so an ordinary boot never starts it, and the snapshot
 number arrives through that same file. It is a standalone Quickshell instance (`QS_INSTANCE_ID`,
 `quickshell -c aelum-snapshot`), not a Dux Shell widget: DMS has no modal-dialog API and its
