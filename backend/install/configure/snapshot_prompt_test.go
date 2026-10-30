@@ -74,7 +74,7 @@ func TestSnapshotPromptIsSystemSide(t *testing.T) {
 
 // TestSnapshotPromptQML pins the dialog against the two things it must not become:
 // a dependency on anything Quickshell does not ship, and a question that can run
-// the restore without the narrow sudoers path.
+// the restore without the polkit action it names.
 func TestSnapshotPromptQML(t *testing.T) {
 	qml := snapshotPromptQML
 	for _, want := range []string{
@@ -94,11 +94,20 @@ func TestSnapshotPromptQML(t *testing.T) {
 		"startSystemMove",
 		`color: "transparent"`,
 		// The window is the card: the width is fixed so the text does not
-		// reflow while it is read, and the height comes from the Column's own
-		// height, so no phase reserves dead space under its buttons.
+		// reflow while it is read. The text is anchored to the card's top and
+		// the buttons are a footer anchored to its bottom-right corner - the
+		// dialog convention, primary action rightmost. The body reserves the
+		// ask phase's height, measured from the ask copy itself laid out
+		// hidden, so the card keeps one size through the flow and pressing OK
+		// swaps the buttons in place.
 		"id: content",
 		"implicitWidth: cardWidth",
 		"implicitHeight: content.height",
+		"id: buttons",
+		"anchors.bottom: parent.bottom",
+		"anchors.right: parent.right",
+		"id: askBody",
+		"height: Math.max(implicitHeight, askBody.height)",
 		// The number arrives through the unit's EnvironmentFile.
 		`Quickshell.env("SNAPSHOT")`,
 		// OK runs exactly the helper the polkit action names, through pkexec -
@@ -131,6 +140,16 @@ func TestSnapshotPromptQML(t *testing.T) {
 			t.Errorf("prompt config is missing %q", want)
 		}
 	}
+	// The footer's declaration order is its left-to-right order: CANCEL before
+	// OK, CLOSE before REBOOT NOW - the primary action rightmost in both
+	// phases, which is the corner a hand reaches for by default.
+	for _, pair := range [][2]string{{`text: "CANCEL"`, `text: "OK"`}, {`text: "CLOSE"`, `text: "REBOOT NOW"`}} {
+		first, second := strings.Index(qml, pair[0]), strings.Index(qml, pair[1])
+		if first < 0 || second < 0 || first > second {
+			t.Errorf("buttons are not primary-rightmost: %q at %d, %q at %d", pair[0], first, pair[1], second)
+		}
+	}
+
 	// QtQuick.Controls is a separate QML module; depending on it would make the
 	// dialog depend on a package the install does not name. The card is plain
 	// QtQuick items for exactly that reason.

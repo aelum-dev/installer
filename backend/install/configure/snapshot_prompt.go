@@ -202,6 +202,14 @@ Scope {
   property string phase: "ask"
   property string detail: ""
 
+  // The ask copy, spelled once: it is shown in the ask phase and laid out
+  // (hidden) in every other phase, because its height is the space the card
+  // reserves so the window never resizes mid-conversation.
+  property string askCopy: "Restore this state as the system?\n\n"
+      + "The system you were using is kept as an undo snapshot, and the "
+      + "restored state boots after a reboot. Nothing changes until you "
+      + "press OK."
+
   // The live DMS scheme. watchChanges + reload is what makes "always the current
   // DMS colors" true rather than "the colors as of when the dialog opened":
   // matugen recolors DMS by rewriting this file, and the view follows it.
@@ -292,12 +300,19 @@ Scope {
     title: "aelum-snapshot-prompt"
 
     // The window is the card. The width is fixed so the text does not reflow
-    // while it is being read; the height is the Column's own height plus the
-    // card's vertical padding, so no phase reserves space its text and buttons
-    // do not use.
+    // while it is being read. The text block is anchored to the card's top and
+    // the buttons to its bottom-right corner, and the body reserves the ask
+    // phase's height in every phase (see askBody), so the card keeps one size
+    // through the whole flow: pressing OK swaps the buttons in place instead of
+    // moving them out from under the hand. A failure detail longer than the
+    // ask copy still grows the card.
     property int cardWidth: 540
+    property int cardPadding: 28
+    property int sidePadding: 32
+    property int buttonGap: 24
+    property int buttonHeight: 42
     implicitWidth: cardWidth
-    implicitHeight: content.height + 56 // 28px of padding above and below
+    implicitHeight: content.height + buttonGap + buttonHeight + 2 * cardPadding
 
     color: "transparent"
 
@@ -337,9 +352,9 @@ Scope {
 
       Column {
         id: content
-        x: 32
-        y: 28
-        width: parent.width - 64
+        x: dialog.sidePadding
+        y: dialog.cardPadding
+        width: parent.width - 2 * dialog.sidePadding
         spacing: 16
 
         Text {
@@ -350,16 +365,19 @@ Scope {
         }
 
         Text {
+          id: bodyText
           width: parent.width
+          // Reserve the ask phase's height in every phase: the card keeps one
+          // size through the flow and the footer stays anchored where the
+          // person already reached for the buttons. A longer failure detail
+          // still wins - the reserve is a floor, not a cap.
+          height: Math.max(implicitHeight, askBody.height)
           wrapMode: Text.WordWrap
           color: prompt.phase === "failed" ? prompt.color("error") : prompt.color("on_surface_variant")
           font.pixelSize: 15
           text: {
             if (prompt.phase === "ask") {
-              return "Restore this state as the system?\n\n"
-                  + "The system you were using is kept as an undo snapshot, and the "
-                  + "restored state boots after a reboot. Nothing changes until you "
-                  + "press OK.";
+              return prompt.askCopy;
             }
             if (prompt.phase === "restoring") {
               return "Restoring\u2026";
@@ -371,93 +389,117 @@ Scope {
                 + (prompt.detail || "aelum-snapshot-restore exited with an error");
           }
         }
+      }
 
-        Row {
-          spacing: 12
+      // Measurement, not display: the ask copy laid out at the body's width.
+      // Text computes its layout even when invisible, so askBody.height is the
+      // exact reserve the body takes in the other phases - if the copy or the
+      // font changes, the reserve follows it.
+      Text {
+        id: askBody
+        visible: false
+        width: content.width
+        wrapMode: Text.WordWrap
+        font.pixelSize: 15
+        text: prompt.askCopy
+      }
 
-          Rectangle {
-            visible: prompt.phase === "ask"
-            width: 130
-            height: 42
-            radius: 10
-            color: prompt.color("primary")
-            Text {
-              anchors.centerIn: parent
-              text: "OK"
-              color: prompt.color("on_primary")
-              font.pixelSize: 15
-              font.bold: true
-            }
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                prompt.phase = "restoring";
-                restoreProc.running = true;
-              }
+      // The buttons are a footer: anchored to the card's bottom-right corner -
+      // the dialog convention, primary action rightmost - with the fixed gap
+      // the height formula above reserves between text and footer. Declared
+      // after the card's drag MouseArea, so pressing a button never starts a
+      // move, and the empty footer area drags the window like the rest of the
+      // card.
+      Row {
+        id: buttons
+        anchors.right: parent.right
+        anchors.rightMargin: dialog.sidePadding
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: dialog.cardPadding
+        spacing: 12
+
+        Rectangle {
+          visible: prompt.phase === "ask"
+          width: 130
+          height: dialog.buttonHeight
+          radius: 10
+          color: prompt.color("surface_bright")
+          border.color: prompt.color("outline_variant")
+          Text {
+            anchors.centerIn: parent
+            text: "CANCEL"
+            color: prompt.color("on_surface")
+            font.pixelSize: 15
+          }
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: prompt.close()
+          }
+        }
+
+        Rectangle {
+          visible: prompt.phase === "ask"
+          width: 130
+          height: dialog.buttonHeight
+          radius: 10
+          color: prompt.color("primary")
+          Text {
+            anchors.centerIn: parent
+            text: "OK"
+            color: prompt.color("on_primary")
+            font.pixelSize: 15
+            font.bold: true
+          }
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              prompt.phase = "restoring";
+              restoreProc.running = true;
             }
           }
+        }
 
-          Rectangle {
-            visible: prompt.phase === "ask"
-            width: 130
-            height: 42
-            radius: 10
-            color: prompt.color("surface_bright")
-            border.color: prompt.color("outline_variant")
-            Text {
-              anchors.centerIn: parent
-              text: "CANCEL"
-              color: prompt.color("on_surface")
-              font.pixelSize: 15
-            }
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: prompt.close()
-            }
+        Rectangle {
+          visible: prompt.phase === "done" || prompt.phase === "failed"
+          width: 130
+          height: dialog.buttonHeight
+          radius: 10
+          color: prompt.color("surface_bright")
+          border.color: prompt.color("outline_variant")
+          Text {
+            anchors.centerIn: parent
+            text: "CLOSE"
+            color: prompt.color("on_surface")
+            font.pixelSize: 15
           }
-
-          Rectangle {
-            visible: prompt.phase === "done"
-            width: 170
-            height: 42
-            radius: 10
-            color: prompt.color("primary")
-            Text {
-              anchors.centerIn: parent
-              text: "REBOOT NOW"
-              color: prompt.color("on_primary")
-              font.pixelSize: 15
-              font.bold: true
-            }
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                prompt.reboot();
-                prompt.close();
-              }
-            }
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: prompt.close()
           }
+        }
 
-          Rectangle {
-            visible: prompt.phase === "done" || prompt.phase === "failed"
-            width: 130
-            height: 42
-            radius: 10
-            color: prompt.color("surface_bright")
-            border.color: prompt.color("outline_variant")
-            Text {
-              anchors.centerIn: parent
-              text: "CLOSE"
-              color: prompt.color("on_surface")
-              font.pixelSize: 15
-            }
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: prompt.close()
+        Rectangle {
+          visible: prompt.phase === "done"
+          width: 170
+          height: dialog.buttonHeight
+          radius: 10
+          color: prompt.color("primary")
+          Text {
+            anchors.centerIn: parent
+            text: "REBOOT NOW"
+            color: prompt.color("on_primary")
+            font.pixelSize: 15
+            font.bold: true
+          }
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              prompt.reboot();
+              prompt.close();
             }
           }
         }
