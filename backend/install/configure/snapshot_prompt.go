@@ -127,6 +127,13 @@ const snapshotPromptUnit = `# SPDX-License-Identifier: GPL-3.0
 # Quickshell instance (QS_INSTANCE_ID) so it never shares an IPC socket with Dux
 # Shell. OK runs /usr/local/bin/aelum-snapshot-restore through the polkit action
 # the installer writes for it; CANCEL closes and changes nothing.
+#
+# The ExecStartPre delay is about the race with Dux Shell: this unit and
+# dms.service are pulled into the session by the same wants link, and the
+# dialog is a small plain-QtQuick instance - it maps its window while Dux
+# Shell is still loading its bar, so the question would appear over an empty
+# desktop. 5s lets the session exist first, which is also when the
+# dms-colors.json the dialog reads its colors from is freshly written.
 
 [Unit]
 Description=Aelum: ask about restoring the snapshot this system booted into
@@ -137,6 +144,7 @@ ConditionPathExists=` + snapshotBootMarkerPath + `
 
 [Service]
 Type=simple
+ExecStartPre=/usr/bin/sleep 5
 Environment=QS_INSTANCE_ID=aelum-snapshot
 EnvironmentFile=` + snapshotBootMarkerPath + `
 ExecStart=/usr/bin/quickshell -c aelum-snapshot

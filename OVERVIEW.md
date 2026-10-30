@@ -251,7 +251,9 @@ pulled in **per-home**: the wants link seeded into
 system-side link is written: the greeter runs a Hyprland session too, is not in `wheel`, and did not
 choose a snapshot, so it is not asked. It is gated with
 `ConditionPathExists=/run/aelum-snapshot-boot`, so an ordinary boot never starts it, and the snapshot
-number arrives through that same file. It is a standalone Quickshell instance (`QS_INSTANCE_ID`,
+number arrives through that same file. `ExecStartPre=/usr/bin/sleep 5` delays it past Dux Shell's own
+start: the prompt and `dms.service` are pulled in by the same wants link, and the small dialog would
+otherwise map its question over a still-empty desktop. It is a standalone Quickshell instance (`QS_INSTANCE_ID`,
 `quickshell -c aelum-snapshot`), not a Dux Shell widget: DMS has no modal-dialog API and its
 `settings.json` is a seeded baseline, while Quickshell is DMS's own engine and ships as its dependency.
 OK runs `pkexec /usr/local/bin/aelum-snapshot-restore` - the rollback wrapped once as

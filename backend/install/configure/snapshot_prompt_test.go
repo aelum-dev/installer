@@ -21,6 +21,10 @@ func TestSnapshotPromptUnit(t *testing.T) {
 		// Its own Quickshell instance, and only our config: -c selects the named
 		// config so a user's own ~/.config/quickshell config is not pulled in too.
 		"ExecStart=/usr/bin/quickshell -c aelum-snapshot",
+		// The prompt and dms.service are pulled in by the same wants link; the
+		// delay lets Dux Shell draw its bar before the dialog maps over an
+		// empty desktop (and reads a freshly written dms-colors.json).
+		"ExecStartPre=/usr/bin/sleep 5",
 		"Environment=QS_INSTANCE_ID=aelum-snapshot",
 		"PartOf=graphical-session.target",
 		"After=graphical-session.target",
