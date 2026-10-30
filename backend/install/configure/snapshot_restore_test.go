@@ -79,16 +79,19 @@ func TestSnapshotRestorePolkitIsScoped(t *testing.T) {
 		`action.id === "` + snapshotRestorePolkitAction + `"`,
 		"subject.local",
 		"subject.active",
-		"polkit.user_is_admin",
+		// The admin question in a polkit local rule is isInGroup("wheel") - the
+		// polkit object has no user_is_admin, and a rule that calls it throws,
+		// silently falls through, and the button gets "Not authorized".
+		`subject.isInGroup("wheel")`,
 		"polkit.Result.YES",
 	} {
 		if !strings.Contains(rules, want) {
 			t.Errorf("polkit rules are missing %q:\n%s", want, rules)
 		}
 	}
-	for _, unwanted := range []string{"allow_any>yes", "allow_inactive>yes", "allow_active>yes", "NOPASSWD"} {
-		if strings.Contains(policy, unwanted) {
-			t.Errorf("polkit policy contains %q; the grant belongs to the rules file only", unwanted)
+	for _, unwanted := range []string{"allow_any>yes", "allow_inactive>yes", "allow_active>yes", "NOPASSWD", "user_is_admin"} {
+		if strings.Contains(policy, unwanted) || strings.Contains(rules, unwanted) {
+			t.Errorf("polkit policy/rules contain %q: the grant belongs to the rules file, and its admin check is isInGroup", unwanted)
 		}
 	}
 }

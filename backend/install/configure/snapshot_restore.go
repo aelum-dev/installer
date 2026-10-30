@@ -181,20 +181,35 @@ const snapshotRestorePolicy = `<?xml version="1.0" encoding="UTF-8"?>
 // snapshotRestoreRules is the grant, and the only place that gives one. Local
 // rules are consulted before the policy defaults, so this decides the one case
 // that needs no asking and nothing else changes.
+//
+// Two measured facts about polkit's rule language, each learned from this file
+// failing on a real install:
+//
+//   - The global `polkit` object has exactly addRule, addAdminRule, log and
+//     spawn (polkit(8) lists them; polkit 128's embedded JS confirms it). There
+//     is no polkit.user_is_admin - calling it throws inside the rule, polkitd
+//     treats the rule as not-handled, and the policy's "no" default answers:
+//     pkexec's "Not authorized". The documented way to ask the admin question in
+//     a local rule is subject.isInGroup, and Arch's admin group is wheel - the
+//     group the installer puts its users in.
+//   - subject.active is true for processes under systemd *user* units, not just
+//     for processes spawned by the compositor (measured with pkcheck against a
+//     user service's MainPID on a real session). That is what lets the grant
+//     reach the prompt's OK button: the dialog runs as a user unit.
 const snapshotRestoreRules = `// SPDX-License-Identifier: GPL-3.0
 // Written by the Aelum installer: who may run the snapshot-restore helper without
 // further authentication.
 //
 // The grant is the session of the person who pressed OK: a session on the local
 // machine (subject.local), in the foreground of a seat (subject.active), and an
-// administrator - polkit's admin is the wheel group on Arch, the group the
-// installer puts its users in. Everything else - an SSH session (local but not
-// active), the greeter (active but not admin), another user, another seat -
-// falls through to the policy's refusal, and a refusal is the right answer for a
-// request to replace the system.
+// administrator - on Arch that is membership in wheel, the group the installer
+// puts its users in. Everything else - an SSH session (local but not active),
+// the greeter (active, but the greeter user is not in wheel), another user,
+// another seat - falls through to the policy's refusal, and a refusal is the
+// right answer for a request to replace the system.
 polkit.addRule(function(action, subject) {
     if (action.id === "` + snapshotRestorePolkitAction + `" &&
-        subject.local && subject.active && polkit.user_is_admin) {
+        subject.local && subject.active && subject.isInGroup("wheel")) {
         return polkit.Result.YES;
     }
 });

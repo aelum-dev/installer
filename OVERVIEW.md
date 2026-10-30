@@ -261,7 +261,9 @@ access is polkit's, not sudo's: the installer writes
 `/usr/share/polkit-1/actions/dev.aelum.snapshot.restore.policy`, whose defaults refuse the action
 everywhere and whose `exec.path` annotation is what makes `pkexec <helper>` resolve to it, and
 `/etc/polkit-1/rules.d/aelum-snapshot-restore.rules`, the only grant - `subject.local && subject.active
-&& polkit.user_is_admin`, the session of the person who pressed OK (polkit's admin is `wheel` on Arch).
+&& subject.isInGroup("wheel")`, the session of the person who pressed OK (Arch's admin group is `wheel`;
+polkit's rule language has no `user_is_admin` helper - a rule calling it throws and the policy's refusal
+answers).
 An SSH session, the greeter, and every other user get the refusal. (A NOPASSWD sudoers drop-in was the
 first version and failed on the real install: sudoers is last-match-wins, and the installer's own
 `/etc/sudoers.d/wheel` sorts after `aelum-snapshot-restore`.) After a
