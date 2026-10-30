@@ -110,7 +110,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, the ESP to `/mnt/efi`, and this install's `aelum/<id>/` ESP directory at `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
 | 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, etc. |
-| 5 | Setup Users | 2 | `SetupUsers` | Creates user (wheel group), sets passwords, copies ISO skel files, sudoers |
+| 5 | Setup Users | 2 | `SetupUsers` | Copies what the live ISO ships (`install/isocopy/`: skel skeleton, greeter config, branding, and on btrfs the whole snapshot-restore path), then creates user (wheel group), sets passwords, sudoers |
 | 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → system config → initramfs → bootloader → greetd → Plymouth → zram → resolver link → services → snapper (configs, pacman hooks, snapshot boot entries, snapshot-boot state mounts) — snapper last, see 6.9 |
 
 **Step 6 sub-steps (in order):**
@@ -224,7 +224,11 @@ An entry copies this install's own loader, initramfs and kernel options and **ad
 
 **A snapshot boot reaches the greeter, not a text login** (`configure/snapshot_state.go`). What a snapshot boot does *not* keep separate is `/var/lib`, which is inside the root — and `systemd-logind` keeps its state directories there. Measured on a real snapshot boot, logind fails at `STATE_DIRECTORY` on the read-only root, retries to its start limit and the boot lands on `getty@tty1`: a recovery entry a user cannot log into. The installer therefore installs a **systemd generator**, `/usr/lib/systemd/system-generators/aelum-snapshot-state`, which emits a tmpfs `.mount` unit for each of `/var/lib/systemd` and `/var/lib/greeter` — ordered like a fstab mount, and before `systemd-logind`, which is the unit all of this exists for. It decides by **subvolume id**: `subvolid=` from the `/proc/self/mountinfo` entry for `/`, against the `ID` from `btrfs subvolume get-default /`. Equal means an ordinary boot and it writes nothing; different means the root is a snapshot and it writes the mounts. Nothing subtler works at generator time, all of it measured on a real boot: `ConditionPathIsReadWrite=!/` is unmet in a snapshot boot (a btrfs read-only subvolume mounted with `rw` looks read-write to the mount table), and an **ordinary boot has its root mounted read-only for the whole generator phase too** (`… / ro,relatime … - btrfs /dev/vda2 rw,…`, writable only once `systemd-remount-fs` has run), so a writability probe cannot tell the two apart. A generator is used rather than a unit because it runs before units are loaded, which is the only window in which a mount can land before logind. It is installed *before* the "after installation" snapshot, because a snapshot boots the generators and units the snapshot contains. Verified in real boots of the test disk: a snapshot entry (`rootflags=subvol=@/.snapshots/10/snapshot`) mounts `var-lib-systemd.mount`, starts logind and comes up at greetd/Hyprland; an ordinary boot gets no unit at all and its real directories stay mounted. The alternative — a separate `@var` subvolume, which is what SUSE does — is deliberately not taken: `/var/lib/pacman` is the package database, and a root rollback that left it current would make pacman claim the packages the rollback removed are installed.
 
-**A snapshot boot asks whether to keep it** (`configure/snapshot_restore.go` + `configure/snapshot_prompt.go`).
+**A snapshot boot asks whether to keep it.** The whole restore path — the helper, its polkit policy and
+rule, the dialog, its translated copy, and the unit that runs it — is **source in the live-ISO repo**
+(`live-iso/airootfs/…` at exactly these paths); the installer copies it unchanged through the btrfs-only
+jobs in `install/isocopy/` during SetupUsers, holds none of its text, and `configure/snapshot_shipped_test.go`
+is what holds the shipped files against the path constants in `shared/config.go`.
 The generator is the only thing that knows a snapshot boot is one at the moment it happens, so it also
 writes `/run/aelum-snapshot-boot` with `SNAPSHOT=<number>`, cut from the same mountinfo entry it detects
 with - a tmpfs file that belongs to one boot, is never written into the snapshot, and is gone at the next
@@ -233,11 +237,18 @@ account's home belongs to that account - delete the user and create a new one, a
 prompt. (The session pull-in is the deliberate exception - per-home, see below.) `/etc/xdg/quickshell/aelum-snapshot/shell.qml` - Quickshell scans every XDG config directory,
 `/etc/xdg` included, and its distribution guide tells packaged configs to live there - holds a
 plain-QtQuick dialog - "You booted snapshot N. Restore this state as the system?" with **OK** and
-**CANCEL**. Its colors are the user's live DMS scheme: the QML reads
+**CANCEL**. Its copy is the user's language: every string it shows is a `snapshot.prompt.*` key read from
+`i18n/<locale>.json` next to the config — the installer's own UI translations, extracted there by
+`backend/scripts/gen-snapshot-prompt-i18n.go` — resolved when the dialog runs
+(`LC_ALL`/`LC_MESSAGES`/`LANG` → `/etc/locale.conf` → `en-US.json` → the English last resorts in the
+config), so the prompt follows the system's language rather than the language some install happened to
+run in, and `LayoutMirroring.enabled` mirrors the whole card for ar-SA/he-IL/fa-IR. Its colors are the
+user's live DMS scheme: the QML reads
 `~/.cache/dms/dms-colors.json` - the file DMS writes whenever matugen recolors the desktop - watches it for changes, and maps
 the dialog to Material color roles (`surface_container`, `primary`/`on_primary`, `outline_variant`, `error`), so the prompt is
 always the current theme in whichever mode the desktop is in and recolors live if the theme changes while it is open; only a
-missing or unreadable file falls back, per role, to the seeded brand palette. It is a real window - a
+missing or unreadable file falls back, per role, to the seeded brand scheme at `/etc/skel/.cache/dms/dms-colors.json` —
+the file every home is seeded from — so the dialog owns no palette of its own. It is a real window - a
 Quickshell `FloatingWindow` titled `aelum-snapshot-prompt`, not a layer surface: a layer surface is
 anchored to the screen edges and the compositor cannot move one, which is what made the first version
 impossible to drag. The seeded `hyprland.lua` matches that title with a `float` + `center` window rule,
@@ -258,11 +269,12 @@ otherwise map its question over a still-empty desktop. It is a standalone Quicks
 `settings.json` is a seeded baseline, while Quickshell is DMS's own engine and ships as its dependency.
 OK runs `pkexec /usr/local/bin/aelum-snapshot-restore` - the rollback wrapped once as
 `snapper --no-dbus -c root rollback`, with no number because from inside the snapshot that means exactly
-"the state I am booted in", which is why the helper refuses to run when the marker is absent. The root
-access is polkit's, not sudo's: the installer writes
-`/usr/share/polkit-1/actions/dev.aelum.snapshot.restore.policy`, whose defaults refuse the action
-everywhere and whose `exec.path` annotation is what makes `pkexec <helper>` resolve to it, and
-`/etc/polkit-1/rules.d/aelum-snapshot-restore.rules`, the only grant - `subject.local && subject.active
+"the state I am booted in", which is why the helper refuses to run when the marker is absent; `docker/scripts/fake-snapshot-restore.sh`
+runs that exact script against stubbed `snapper`/`systemctl`/`id`, no root and no disk. The root
+access is polkit's, not sudo's: the shipped
+`/usr/share/polkit-1/actions/dev.aelum.snapshot.restore.policy` refuses the action
+everywhere by default, and its `exec.path` annotation is what makes `pkexec <helper>` resolve to it;
+`/etc/polkit-1/rules.d/aelum-snapshot-restore.rules` is the only grant - `subject.local && subject.active
 && subject.isInGroup("wheel")`, the session of the person who pressed OK (Arch's admin group is `wheel`;
 polkit's rule language has no `user_is_admin` helper - a rule calling it throws and the policy's refusal
 answers).
@@ -271,9 +283,11 @@ first version and failed on the real install: sudoers is last-match-wins, and th
 `/etc/sudoers.d/wheel` sorts after `aelum-snapshot-restore`.) After a
 successful rollback the dialog offers the reboot that boots the restored state. CANCEL closes and changes
 nothing, which is the point of a snapshot boot. The helper, its polkit files and the prompt files are
-root-side, written *before* the factory snapshot - a snapshot runs the binaries, rules and prompt it
-contains - and
-`docker/scripts/test-snapshot-rollback.sh` asserts the polkit scope and runs the exact command pkexec
+root-side, **copied before** the factory snapshot - a snapshot runs the binaries, rules and prompt it
+contains - which is why the copy runs in SetupUsers, the step `Steps()` puts before the ConfigureSystem
+step that takes the snapshot (`install/step_test.go` keeps that order asserted), and
+`docker/scripts/test-snapshot-rollback.sh` asserts the polkit scope, the copy for the installed language,
+and runs the exact command pkexec
 execs, against the real disk.
 
 ### Partition Layout
@@ -362,7 +376,7 @@ Aelum-Installer/
 │   │   ├── install.go           # Pacstrap progress tracking
 │   │   ├── fstab.go             # fstab generation + verification
 │   │   ├── bootloader.go        # rEFInd install + branded theme + per-install menu fragment
-│   │   ├── users.go             # User account creation + ISO copy
+│   │   ├── users.go             # User account creation (runs the install/isocopy copy first)
 │   │   ├── system.go            # Hostname, locale, timezone, mirrors
 │   │   ├── greetd.go            # Login manager config + Dux Greeter sync
 │   │   ├── greetd/              # greetd package
@@ -377,10 +391,12 @@ Aelum-Installer/
 │   │   ├── network.go           # /etc/resolv.conf linked into /run, so a snapshot boot has DNS
 │   │   ├── snapshot_state.go    # tmpfs over read-only state dirs, so a snapshot boots to the greeter;
 │   │   │                        # also announces the boot + snapshot number in /run
-│   │   ├── snapshot_restore.go  # aelum-snapshot-restore + its polkit policy/rule (the OK button, via pkexec)
-│   │   ├── snapshot_prompt.go   # the Quickshell restore prompt + its gated user unit
+│   │   ├── (no snapshot_restore.go / snapshot_prompt.go: the helper, its polkit policy/rule, the
+│   │   │    Quickshell prompt, its i18n/ and its user unit are live-iso/airootfs source, copied
+│   │   │    unchanged by install/isocopy; shared/config.go owns the paths, snapshot_shipped_test.go
+│   │   │    holds the shipped files against them)
 │   │   ├── zram.go              # Compressed swap via zram-generator
-│   │   ├── copy.go              # ISO-to-target file copying
+│   │   ├── isocopy/             # Files the live ISO ships, copied unchanged (skel, branding, dconf, snapshot-restore path)
 │   │   ├── cleanup.go           # Rollback + mount cleanup
 │   │   ├── primitives.go        # Run/RunChroot/WriteFile/AppendFile/CleanupMounts
 │   │   ├── rollback.go          # Rollback partial installations

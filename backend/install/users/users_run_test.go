@@ -127,6 +127,10 @@ func TestRun_SudoersWriteFails(t *testing.T) {
 	}
 }
 
+// TestRun_CopyJobsFail holds the one property the step has toward the copy: what
+// install/isocopy reports as a failure, Run reports too, before useradd ran and a
+// half-seeded home existed. The copy's own behaviour (optional sources, dconf) is
+// asserted in install/isocopy/isocopy_test.go.
 func TestRun_CopyJobsFail(t *testing.T) {
 	rec := mountedRunner().OnError("cp", errors.New("exit status 1"))
 	defer primitives.SetCommandRunner(rec)()
@@ -136,17 +140,14 @@ func TestRun_CopyJobsFail(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "copy job") {
 		t.Fatalf("Run() error = %v, want copy-job failure", err)
 	}
-}
-
-func TestRun_DconfUpdateFailureIsNonFatal(t *testing.T) {
-	rec := mountedRunner().OnArgsError([]string{"arch-chroot", shared.MountRoot, "dconf"}, errors.New("dconf: not found"))
-	defer primitives.SetCommandRunner(rec)()
-	defer primitives.SetFileSystem(mountedFS())()
-
-	// dconf is only a transitive desktop dependency; losing it must not abort
-	// the install after both pacstrap steps have completed.
-	if err := Run(&shared.InstallContext{Username: "alice", Password: []byte("secret")}); err != nil {
-		t.Fatalf("Run() = %v, want nil when dconf update fails", err)
+	// useradd -m seeds the home out of the skeleton the copy just failed to
+	// place; running it anyway would create a home seeded from the ISO's own.
+	for _, argv := range rec.Calls() {
+		for _, arg := range argv.Args {
+			if arg == "useradd" {
+				t.Errorf("useradd ran even though the copy failed: %v", argv.Args)
+			}
+		}
 	}
 }
 

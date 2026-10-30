@@ -74,14 +74,12 @@ const (
 	// already hit.
 	snapshotStateScriptMode = 0o755
 
-	// snapshotBootMarkerPath is how a snapshot boot tells the rest of the system
-	// what it is. The generator is the only thing that knows at the moment it is
-	// true, so the generator writes it: the restore prompt's unit is gated on it
-	// (ConditionPathExists) and carries the snapshot number through it
-	// (EnvironmentFile), and the restore helper refuses to run without it. /run is
-	// tmpfs, so the marker belongs to one boot, is never written into the
-	// snapshot, and is gone at the next one.
-	snapshotBootMarkerPath = "/run/aelum-snapshot-boot"
+	// snapshotBootMarkerPath is shared.SnapshotBootMarkerPath, named here because
+	// this generator is what writes it and the shipped prompt unit and helper are
+	// what read it. The value lives in shared/config.go: the two files this
+	// feature ships in live-iso spell it as a literal, and the assertions that
+	// they spell it correctly match against this name.
+	snapshotBootMarkerPath = shared.SnapshotBootMarkerPath
 )
 
 // snapshotStateDirs are the directories a snapshot boot must be able to write to

@@ -278,6 +278,67 @@ const BtrfsInitialSnapshotNumber = 1
 // working in it.
 const BtrfsSnapshotsMountPoint = "/.snapshots"
 
+// --- Snapshot restore (shipped by the live ISO) ------------------------------
+//
+// The paths of the pieces a snapshot boot uses to offer "make this state the
+// system again". They are here, and not in the package that used to write them,
+// because two repositories name them: they are source files in live-iso
+// (airootfs/...) that the installer copies into the target unchanged, so the
+// installer's side of the feature is the copy job and the assertions, and those
+// need the same paths the shipped files carry.
+//
+// They are btrfs-only with the rest of the snapshot machinery: an ext4 install has
+// no snapshot to restore and gets none of these files.
+
+// SnapshotBootMarkerPath is how a snapshot boot tells the rest of the system what
+// it is. The state generator (configure/snapshot_state.go, written by the
+// installer) is the only thing that knows at the moment it is true, so the
+// generator writes it; the prompt's unit is gated on it (ConditionPathExists) and
+// carries the snapshot number through it (EnvironmentFile), and the restore helper
+// refuses to run without it. /run is tmpfs, so the marker belongs to one boot, is
+// never written into a snapshot, and is gone at the next one.
+const SnapshotBootMarkerPath = "/run/aelum-snapshot-boot"
+
+// SnapshotRestoreScriptPath is the rollback helper: `snapper -c root rollback`
+// wrapped once, so the polkit action, the prompt, the acceptance test and a person
+// in a terminal all run the same command. pkexec requires it to be root-owned and
+// not group- or world-writable, which is why its 0755 is declared in
+// live-iso/profiledef.sh: mkarchiso does not carry exec bits.
+const SnapshotRestoreScriptPath = "/usr/local/bin/aelum-snapshot-restore"
+
+// SnapshotRestorePolkitAction is the action id. pkexec resolves it from the policy
+// file's exec.path annotation, so the desktop only ever names the helper; the id
+// is what the rules file, the tests and the acceptance scripts match on.
+const SnapshotRestorePolkitAction = "dev.aelum.snapshot.restore"
+
+// SnapshotRestorePolicyPath is the action definition, which refuses the action
+// everywhere by default; the grant is the rules file's job.
+const SnapshotRestorePolicyPath = "/usr/share/polkit-1/actions/" + SnapshotRestorePolkitAction + ".policy"
+
+// SnapshotRestoreRulesPath is the only grant: the local, active session of a
+// member of wheel, which is the session of the person who pressed OK.
+const SnapshotRestoreRulesPath = "/etc/polkit-1/rules.d/aelum-snapshot-restore.rules"
+
+// SnapshotPromptConfigDir is the Quickshell config holding the dialog. Quickshell
+// treats each named subfolder of an XDG config directory's quickshell/ that
+// contains a shell.qml as a config, and its distribution guide tells packaged
+// configs to live under $XDG_CONFIG_DIRS; the unit selects this one by name (-c).
+// Its i18n/ holds the snapshot.prompt.* namespace of the installer's translations,
+// extracted there by backend/scripts/gen-snapshot-prompt-i18n.go.
+const SnapshotPromptConfigDir = "/etc/xdg/quickshell/aelum-snapshot"
+
+// SnapshotPromptI18nDirName is the directory of translated copy inside it.
+const SnapshotPromptI18nDirName = "i18n"
+
+// SnapshotPromptUnitName is the user unit that runs the dialog. It is not enabled
+// system-side: the wants link seeded into every home by /etc/skel pulls it into
+// the session, and a system-side link would ask the greeter too.
+const SnapshotPromptUnitName = "aelum-snapshot-prompt.service"
+
+// SnapshotPromptUnitDir is a unit load path of every user manager, which is why
+// the unit belongs to the system and not to one account.
+const SnapshotPromptUnitDir = "/etc/systemd/user"
+
 // --- Kernel / boot entry -----------------------------------------------------
 
 // KernelFilePrefix is the filename prefix for vmlinuz kernel files.

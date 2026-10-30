@@ -402,18 +402,12 @@ func ConfigureSnapper(ctx *shared.InstallContext) error {
 	if err := configureSnapshotStateDirs(ctx); err != nil {
 		return err
 	}
-	// Same rule, one step further: the restore helper and its sudoers rule are
-	// root-side, so a snapshot that predates them could be booted but not restored.
-	// The prompt is system-side config for the same reason (/etc/xdg/quickshell +
-	// /etc/systemd/user): it belongs to the system, not to the account the
-	// installer happened to create, so a user created later - or recreated after
-	// deletion - gets it too, and a snapshot runs the prompt it contains.
-	if err := configureSnapshotRestore(ctx); err != nil {
-		return err
-	}
-	if err := configureSnapshotPrompt(ctx); err != nil {
-		return err
-	}
+	// The restore path - the helper, its polkit action and grant, the prompt that
+	// asks - is not written here: it is source in the live ISO and the SetupUsers
+	// step copied it into this tree (install/isocopy, btrfs-only). That step runs
+	// before this one, which is what keeps the property this step has to keep: a
+	// snapshot boots the binaries, rules and prompt it contains, so they had to be
+	// here before the factory snapshot was taken.
 	if err := createInstallationSnapshot(ctx); err != nil {
 		return err
 	}
