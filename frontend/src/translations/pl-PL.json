@@ -124,7 +124,7 @@
   "page.welcome.requirements": "Wymagania systemowe",
   "page.welcome.subtitle": "Ten instalator poprowadzi Cię przez konfigurację systemu.",
   "page.welcome.title": "Witamy w Aelum",
-  "snapshot.prompt.body": "System, którego używano, jest zachowany jako migawka cofnięcia, a przywrócony stan uruchomi się po restarcie. Nic się nie zmieni, dopóki nie naciśniesz OK.",
+  "snapshot.prompt.body": "System, którego używałeś, jest zachowany jako migawka cofnięcia, a przywrócony stan uruchomi się po restarcie. Nic się nie zmieni, dopóki nie naciśniesz OK.",
   "snapshot.prompt.cancel": "Anuluj",
   "snapshot.prompt.close": "Zamknij",
   "snapshot.prompt.failed": "Przywracanie nie powiodło się: {detail}",

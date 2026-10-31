@@ -124,7 +124,7 @@
   "page.welcome.requirements": "Systeemvereisten",
   "page.welcome.subtitle": "Deze installatiewizard leidt je door het instellen van je systeem.",
   "page.welcome.title": "Welkom bij Aelum",
-  "snapshot.prompt.body": "Het systeem dat je gebruikte blijft bewaard als een ongedaanmakende momentopname, en de herstelde staat start na een herstart. Er verandert niets tot je op OK drukt.",
+  "snapshot.prompt.body": "Het systeem dat je gebruikte blijft bewaard als een momentopname, zodat je kunt terugdraaien, en de herstelde staat start na een herstart. Er verandert niets tot je op OK drukt.",
   "snapshot.prompt.cancel": "Annuleren",
   "snapshot.prompt.close": "Sluiten",
   "snapshot.prompt.failed": "Herstellen mislukt: {detail}",

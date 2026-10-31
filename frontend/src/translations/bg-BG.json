@@ -127,7 +127,7 @@
   "snapshot.prompt.body": "Системата, която използвахте, се запазва като снимка за отмяна, а възстановеното състояние се стартира след рестарт. Нищо не се променя, докато не натиснете ОК.",
   "snapshot.prompt.cancel": "Отказ",
   "snapshot.prompt.close": "Затваряне",
-  "snapshot.prompt.failed": "Възстановяването не успя: {detail}",
+  "snapshot.prompt.failed": "Възстановяването не бе успешно: {detail}",
   "snapshot.prompt.failedUnknown": "aelum-snapshot-restore завърши с грешка",
   "snapshot.prompt.ok": "ОК",
   "snapshot.prompt.question": "Да се възстанови ли това състояние като системата?",

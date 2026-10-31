@@ -124,7 +124,7 @@
   "page.welcome.requirements": "Järjestelmävaatukset",
   "page.welcome.subtitle": "Tämä asennusohjelma opastaa sinua järjestelmän asetuksissa.",
   "page.welcome.title": "Tervetuloa Aelum:iin",
-  "snapshot.prompt.body": "Käyttämäsi järjestelmä säilytetään kumoussnapshotina, ja palautettu tila käynnistyy uudelleenkäynnistyksen jälkeen. Mikään ei muutu ennen kuin painat OK.",
+  "snapshot.prompt.body": "Käyttämäsi järjestelmä tallennetaan snapshotiksi, johon voit palata, ja palautettu tila käynnistyy uudelleenkäynnistyksen jälkeen. Mikään ei muutu ennen kuin painat OK.",
   "snapshot.prompt.cancel": "Peruuta",
   "snapshot.prompt.close": "Sulje",
   "snapshot.prompt.failed": "Palautus epäonnistui: {detail}",
