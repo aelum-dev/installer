@@ -307,16 +307,21 @@ else
 fi
 
 # --- How a snapshot is named in the menu ------------------------------------
-# A title is the snapshot's number and its date, and nothing else. That is a
+# A title is the snapshot's number, its date and its type - the columns of
+# snapper's own list, in the same order, minus the cleanup column - and the
+# date spelled the way that list spells it ("10/31/26 9:35 AM"), so a menu
+# title and a snapper row are recognisably the same snapshot. That is a
 # deliberately bounded shape, because rEFInd's text renderer neither wraps nor
 # ellipsizes: a line it cannot fit is cut at the screen edge - or, for the
 # selection text under the icons, dropped entirely. Measured at 1280x720, a
 # 60-character title ("Aelum snapshot 3 - rollback backup of #1 (31 Oct 2026
 # 11:07)") lost its selection text in the main menu and lost its date in the
-# submenu header. The number is what snapper and btrfs-assistant name a
-# snapshot by anyway, and the date is what a person scans a history for; what
-# a snapshot is *for* is said by the restore prompt - a desktop window, where
-# any language and any length renders (see "What this boot is").
+# submenu header; this shape stays in its mid-40s even for the longest
+# spelling. The number is what snapper and btrfs-assistant name a snapshot by
+# anyway, the date is what a person scans a history for, and the type says
+# which half of a transaction the state is; what a snapshot is *for* is said
+# by the restore prompt - a desktop window, where any language and any length
+# renders (see "What this boot is").
 #
 # rEFInd tokenizes its config and draws it with a bitmap font covering ASCII
 # 32-126, so the text it is given must be one line of printable ASCII. The
@@ -329,31 +334,36 @@ menu_text() {
 }
 
 human_date() {
-    # info.xml writes "YYYY-MM-DD HH:MM:SS". A boot menu is read by a person,
-    # so it gets "DD Mon YYYY HH:MM". Anything that is not that shape is passed
-    # through rather than guessed at.
+    # info.xml writes "YYYY-MM-DD HH:MM:SS". The menu spells the date the way
+    # snapper's own list does - short date plus 12-hour clock with an unpadded
+    # hour, "10/31/26 9:35 AM" - so a menu title and a snapper row name the
+    # same state in the same words. Anything that is not the info.xml shape is
+    # passed through rather than guessed at.
     case "$1" in
         [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*) ;;
         *) printf '%s' "$1"; return 0 ;;
     esac
-    year=$(printf '%s' "$1" | cut -c1-4)
+    year=$(printf '%s' "$1" | cut -c3-4)
     month=$(printf '%s' "$1" | cut -c6-7)
     day=$(printf '%s' "$1" | cut -c9-10)
     clock=$(printf '%s' "$1" | cut -c12-16)
-    case "$month" in
-        01) month=Jan ;; 02) month=Feb ;; 03) month=Mar ;; 04) month=Apr ;;
-        05) month=May ;; 06) month=Jun ;; 07) month=Jul ;; 08) month=Aug ;;
-        09) month=Sep ;; 10) month=Oct ;; 11) month=Nov ;; 12) month=Dec ;;
-    esac
-    printf '%s %s %s %s' "$day" "$month" "$year" "$clock"
+    # 24-hour to 12-hour. Stripping one leading zero keeps the arithmetic
+    # decimal ("09" -> 9, "00" -> ""; "10" and "11" keep both digits); 0 and 12
+    # both read as 12, and the half-day names the rest.
+    hour=$(printf '%s' "$clock" | cut -c1-2 | sed -e 's/^0//')
+    [ -n "$hour" ] || hour=0
+    if [ "$hour" -ge 12 ]; then half=PM; else half=AM; fi
+    hour=$((hour % 12))
+    [ "$hour" -eq 0 ] && hour=12
+    printf '%s/%s/%s %s:%s %s' "$month" "$day" "$year" "$hour" "$(printf '%s' "$clock" | cut -c4-5)" "$half"
 }
 
 # --- What this boot is ------------------------------------------------------
 # The restore prompt (aelum-snapshot-prompt) asks its question out of the marker
 # /run/aelum-snapshot-boot, which the aelum-snapshot-state generator writes with
 # the number of the snapshot this root is on. The menu names a snapshot by its
-# number and date - words short enough for rEFInd to draw on any screen - so
-# what the state is *for* has to reach the person from here: the snapshot's own
+# number, date and type - words short enough for rEFInd to draw on any screen -
+# so what the state is *for* has to reach the person from here: the snapshot's own
 # description, unaltered, or the words its type implies when it has none. This
 # is the one place both halves exist: the history is mounted, and info.xml is
 # readable. The prompt renders those words as they are, in any language.
@@ -423,8 +433,8 @@ fi
 #
 # Both titles name the same snapshot in the two shapes a menu needs: plain
 # inside the submenu, qualified as the entry that boots it. They carry the
-# number and the date and no free text (see "How a snapshot is named in the
-# menu"), so every field is authored here; '|' still separates them, and
+# number, the date and the type and no free text (see "How a snapshot is named
+# in the menu"), so every field is authored here; '|' still separates them, and
 # menu_text keeps the one field read from info.xml - the date - free of it.
 #
 # rank is what a snapshot is worth *listing*: 0 for a state a transaction or a
@@ -495,9 +505,10 @@ list=$(
                 rank=0
             fi
 
-            # Number and date, and nothing else. menu_text guards the date field
-            # (the only title part not authored here) against anything rEFInd
-            # cannot tokenize or draw.
+            # Number, date and type - snapper's list columns without the cleanup
+            # one. menu_text guards the date field (the only title part not
+            # authored here) against anything rEFInd cannot tokenize or draw; the
+            # type is already limited to pre|post|single above.
             stamp=$(menu_text "$(human_date "$date")")
 
             title="Snapshot $number"
@@ -506,6 +517,8 @@ list=$(
                 title="$title - $stamp"
                 entry_title="$entry_title - $stamp"
             fi
+            title="$title - $type"
+            entry_title="$entry_title - $type"
             printf '%s|%s|%s|%s|%s|%s|%s\n' \
                 "$rank" "$number" "$type" "$cleanup" "$important" \
                 "$title" "$entry_title"

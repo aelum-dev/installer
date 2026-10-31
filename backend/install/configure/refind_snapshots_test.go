@@ -319,15 +319,23 @@ func TestSnapshotMenuScript(t *testing.T) {
 		`echo "menuentry \"$target_entry_title\" {"`,
 		`echo "    icon $SNAPSHOT_ICON"`,
 		`echo "    submenuentry \"$title\" {"`,
-		// Menu naming: the number and the date, and nothing else. rEFInd neither
-		// wraps nor ellipsizes menu text - a 60-character title lost its selection
-		// text entirely on a 1280x720 screen - so the titles are a bounded shape.
-		// The words that say what a state is for belong to the restore prompt.
+		// Menu naming: number, date and type - the columns of snapper's own list,
+		// minus its cleanup column. rEFInd neither wraps nor ellipsizes menu text
+		// - a 60-character title lost its selection text entirely on a 1280x720
+		// screen - so the titles are a bounded shape. The words that say what a
+		// state is for belong to the restore prompt.
 		`title="Snapshot $number"`,
 		`entry_title="Aelum snapshot $number"`,
 		`stamp=$(menu_text "$(human_date "$date")")`,
 		`title="$title - $stamp"`,
 		`entry_title="$entry_title - $stamp"`,
+		`title="$title - $type"`,
+		`entry_title="$entry_title - $type"`,
+		// The date is spelled the way snapper's list spells it - short date,
+		// 12-hour clock with an unpadded hour - so a menu title and a snapper row
+		// name the same state in the same words.
+		`printf '%s/%s/%s %s:%s %s'`,
+		`hour=$((hour % 12))`,
 		// The marker's phrase fallback: without a description, the snapshot's own
 		// type names it; "pacman" is the installer's tag, not words for a person.
 		`phrase="Before system update"`,
@@ -410,11 +418,12 @@ func TestSnapshotMenuScript(t *testing.T) {
 	if !strings.Contains(script, `tr -cd ' -~'`) {
 		t.Error("generator does not cut menu titles to printable ASCII")
 	}
-	// No description reaches a menu title at all: the titles are number and date.
-	// menu_phrase - the old length-bounded description half - must stay gone, and
-	// the description must reach the user only through the marker and the prompt.
+	// No description reaches a menu title at all: the titles are number, date
+	// and type. menu_phrase - the old length-bounded description half - must stay
+	// gone, and the description must reach the user only through the marker and
+	// the prompt.
 	if strings.Contains(script, "menu_phrase") {
-		t.Error("generator still builds a menu phrase; rEFInd titles carry the number and the date only")
+		t.Error("generator still builds a menu phrase; rEFInd titles carry the number, the date and the type only")
 	}
 	if !strings.Contains(script, `phrase=$(printf '%s' "$2" | tr -d '\n\r'`) {
 		t.Error("snapshot_phrase does not take the description verbatim")
