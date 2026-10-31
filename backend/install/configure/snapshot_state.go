@@ -152,9 +152,10 @@ var snapshotStateGenerator = `#!/bin/sh
 # The restore prompt (aelum-snapshot-prompt.service, a Quickshell dialog in the
 # desktop session) is gated on that file and shows that number; the restore helper
 # (aelum-snapshot-restore) refuses to run without it. The menu generator
-# (aelum-refind-snapshots) later adds the phrase and date it titles that snapshot
-# with in the boot menu to the same file, so the prompt can name the state by the
-# words it was chosen with - the number is this generator's whole answer. /run is
+# (aelum-refind-snapshots) later adds that snapshot's own description and date
+# to the same file - the menu titles snapshots by number and date alone, so the
+# marker is where what the state was for reaches the person - the number is
+# this generator's whole answer. /run is
 # tmpfs, so the marker belongs to this boot alone and is never written into the
 # snapshot.
 

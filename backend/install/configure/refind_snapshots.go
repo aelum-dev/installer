@@ -150,9 +150,9 @@ const snapshotMenuScript = `#!/bin/sh
 # snapper creates or deletes (its plugin in /usr/lib/snapper/plugins), and once
 # while the system is being installed (aelum-refind-snapshots --root <mount>,
 # see below) so that the first boot already has a menu. When it runs inside a
-# snapshot boot it also adds that snapshot's own menu title words - phrase and
-# date - to the restore prompt's marker, so the prompt asks about the state by
-# the words it was chosen with (see "What this boot is").
+# snapshot boot it also writes that snapshot's description and date into the
+# restore prompt's marker, so the prompt can say what the booted state was for
+# (see "What this boot is").
 #
 # What an entry boots is this installation's current kernel and initramfs - they
 # live on the ESP, outside every snapshot - with the snapshot as root. Snapper's
@@ -307,24 +307,25 @@ else
 fi
 
 # --- How a snapshot is named in the menu ------------------------------------
-# Two rules shape every title. rEFInd's menu font covers ASCII 32-126, so a
-# character outside it renders as a fallback box: names are cut to printable
-# ASCII, which still keeps "GPU driver" readable. And rEFInd tokenizes its
-# config, so a quote or a brace would end the stanza early.
-# menu_text: keep only printable ASCII, collapse runs of spaces, trim. No length
-# limit here - cutting a title would cut the date, which is the one thing a
-# snapshot is identified by.
-# '|' is this script's own field separator (see the collected list below), so it
-# cannot be allowed inside a field: a description containing one would otherwise
-# shift every field after it and put a title in the wrong column.
+# A title is the snapshot's number and its date, and nothing else. That is a
+# deliberately bounded shape, because rEFInd's text renderer neither wraps nor
+# ellipsizes: a line it cannot fit is cut at the screen edge - or, for the
+# selection text under the icons, dropped entirely. Measured at 1280x720, a
+# 60-character title ("Aelum snapshot 3 - rollback backup of #1 (31 Oct 2026
+# 11:07)") lost its selection text in the main menu and lost its date in the
+# submenu header. The number is what snapper and btrfs-assistant name a
+# snapshot by anyway, and the date is what a person scans a history for; what
+# a snapshot is *for* is said by the restore prompt - a desktop window, where
+# any language and any length renders (see "What this boot is").
+#
+# rEFInd tokenizes its config and draws it with a bitmap font covering ASCII
+# 32-126, so the text it is given must be one line of printable ASCII. The
+# titles are authored here and meet that by construction; menu_text is the
+# guard on the one title part that comes from elsewhere - the date read out
+# of info.xml - and on '|' , this script's own field separator (see the
+# collected list below), which no field may contain.
 menu_text() {
     printf '%s' "$1" | tr -cd ' -~' | tr -d '|' | tr -s ' ' | sed -e 's/^ *//' -e 's/ *$//'
-}
-
-# A description is free text written by a person or by btrfs-assistant, so it is
-# the only part that is bounded: a long one would push the date off the line.
-menu_phrase() {
-    menu_text "$1" | cut -c1-48
 }
 
 human_date() {
@@ -347,13 +348,26 @@ human_date() {
     printf '%s %s %s %s' "$day" "$month" "$year" "$clock"
 }
 
-# What a snapshot is *for*. A description written by a user (or by
-# btrfs-assistant) is the best label there is, so it wins. With none, snapper's
-# own type says it: a pre snapshot is the state before a transaction, a post
-# snapshot the state after one. "pacman" is this installer's own tag, not
-# something a person would read, so it is replaced by the words the type implies.
+# --- What this boot is ------------------------------------------------------
+# The restore prompt (aelum-snapshot-prompt) asks its question out of the marker
+# /run/aelum-snapshot-boot, which the aelum-snapshot-state generator writes with
+# the number of the snapshot this root is on. The menu names a snapshot by its
+# number and date - words short enough for rEFInd to draw on any screen - so
+# what the state is *for* has to reach the person from here: the snapshot's own
+# description, unaltered, or the words its type implies when it has none. This
+# is the one place both halves exist: the history is mounted, and info.xml is
+# readable. The prompt renders those words as they are, in any language.
+
+# What a snapshot is *for*, in full and in whatever language it was written. A
+# description written by a person or by btrfs-assistant is the best label there
+# is, so it is used verbatim - the prompt is a desktop window, not a firmware
+# menu, and it is not limited to ASCII or to one line's width. With none,
+# snapper's own type says it: a pre snapshot is the state before a transaction,
+# a post snapshot the state after one. "pacman" is this installer's own tag,
+# not something a person would read, so it is replaced by the words the type
+# implies. Only newlines are cut, because the marker is an EnvironmentFile.
 snapshot_phrase() {
-    phrase=$(menu_phrase "$2")
+    phrase=$(printf '%s' "$2" | tr -d '\n\r' | sed -e 's/^ *//' -e 's/ *$//')
     case "$phrase" in pacman) phrase="" ;; esac
     if [ -z "$phrase" ]; then
         case "$1" in
@@ -364,15 +378,6 @@ snapshot_phrase() {
     printf '%s' "$phrase"
 }
 
-# --- What this boot is ------------------------------------------------------
-# The restore prompt (aelum-snapshot-prompt) asks its question out of the marker
-# /run/aelum-snapshot-boot, which the aelum-snapshot-state generator writes with
-# the number of the snapshot this root is on. A number alone names the snapshot;
-# this menu titles it with a phrase and a date, and the person chose this state
-# in the menu by those words - so the same words are added to the marker here,
-# where both halves exist: the history is mounted, and info.xml is readable. The
-# prompt then asks about the state by the words it was chosen with.
-#
 # Only a run from inside this boot enriches it: with --root the history belongs
 # to a system that is not the one running, and neither the live ISO nor the
 # installer has a marker at all. An unreadable info.xml leaves the marker exactly
@@ -416,10 +421,11 @@ fi
 #
 #     rank|number|type|cleanup|important|submenu title|entry title
 #
-# A pipe separates them because a title is free text - menu_text drops every pipe,
-# which is what makes a field the field - and both titles name the same snapshot
-# in the two shapes a menu needs: short inside the submenu, qualified as the entry
-# that boots it.
+# Both titles name the same snapshot in the two shapes a menu needs: plain
+# inside the submenu, qualified as the entry that boots it. They carry the
+# number and the date and no free text (see "How a snapshot is named in the
+# menu"), so every field is authored here; '|' still separates them, and
+# menu_text keeps the one field read from info.xml - the date - free of it.
 #
 # rank is what a snapshot is worth *listing*: 0 for a state a transaction or a
 # person created (a pre/post pair, or one marked important=yes), 1 for the rest.
@@ -460,7 +466,10 @@ list=$(
             info="$dir/info.xml"
             type=$(sed -n 's/.*<type>\([^<]*\)<\/type>.*/\1/p' "$info" 2>/dev/null | head -n 1)
             date=$(sed -n 's/.*<date>\([^<]*\)<\/date>.*/\1/p' "$info" 2>/dev/null | head -n 1)
-            desc=$(sed -n 's/.*<description>\([^<]*\)<\/description>.*/\1/p' "$info" 2>/dev/null | head -n 1)
+            # The description is deliberately not read here. It is free text in
+            # any language, and a menu title is not where it can be shown (see
+            # "How a snapshot is named in the menu"); it reaches the person
+            # through the restore prompt instead.
             # <cleanup> names the algorithm that owns a snapshot: "number" for
             # transaction pairs and rollbacks, "timeline" for the automatic
             # history. Userdata is a list of <key>/<value> pairs, which is what
@@ -486,22 +495,20 @@ list=$(
                 rank=0
             fi
 
-            phrase=$(snapshot_phrase "$type" "$desc")
-            stamp=$(human_date "$date")
+            # Number and date, and nothing else. menu_text guards the date field
+            # (the only title part not authored here) against anything rEFInd
+            # cannot tokenize or draw.
+            stamp=$(menu_text "$(human_date "$date")")
 
             title="Snapshot $number"
             entry_title="Aelum snapshot $number"
-            if [ -n "$phrase" ]; then
-                title="$title - $phrase"
-                entry_title="$entry_title - $phrase"
-            fi
             if [ -n "$stamp" ]; then
                 title="$title - $stamp"
-                entry_title="$entry_title ($stamp)"
+                entry_title="$entry_title - $stamp"
             fi
             printf '%s|%s|%s|%s|%s|%s|%s\n' \
                 "$rank" "$number" "$type" "$cleanup" "$important" \
-                "$(menu_text "$title")" "$(menu_text "$entry_title")"
+                "$title" "$entry_title"
         done
     fi \
         | sort -t'|' -k1,1n -k2,2rn \

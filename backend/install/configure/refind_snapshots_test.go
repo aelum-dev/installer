@@ -319,16 +319,23 @@ func TestSnapshotMenuScript(t *testing.T) {
 		`echo "menuentry \"$target_entry_title\" {"`,
 		`echo "    icon $SNAPSHOT_ICON"`,
 		`echo "    submenuentry \"$title\" {"`,
-		// Menu naming (Option A): the number stays, because it is what snapper and
-		// btrfs-assistant show, and the words say what the state is for.
+		// Menu naming: the number and the date, and nothing else. rEFInd neither
+		// wraps nor ellipsizes menu text - a 60-character title lost its selection
+		// text entirely on a 1280x720 screen - so the titles are a bounded shape.
+		// The words that say what a state is for belong to the restore prompt.
 		`title="Snapshot $number"`,
 		`entry_title="Aelum snapshot $number"`,
+		`stamp=$(menu_text "$(human_date "$date")")`,
+		`title="$title - $stamp"`,
+		`entry_title="$entry_title - $stamp"`,
+		// The marker's phrase fallback: without a description, the snapshot's own
+		// type names it; "pacman" is the installer's tag, not words for a person.
 		`phrase="Before system update"`,
 		`phrase="After system update"`,
 		`case "$phrase" in pacman) phrase="" ;;`,
-		// '|' is the field separator of the collected list, so it cannot be allowed
-		// inside a field: a description containing one would shift every field after
-		// it and put a title in the wrong column.
+		// '|' is the field separator of the collected list, so it cannot appear
+		// in any field; menu_text is what keeps the one field read from info.xml
+		// (the date) free of it and of anything rEFInd cannot draw.
 		`tr -cd ' -~' | tr -d '|'`,
 		// The entry boots the newest snapshot taken before a change, else the newest
 		// important one, else the newest one - not the newest one full stop, which
@@ -360,10 +367,11 @@ func TestSnapshotMenuScript(t *testing.T) {
 		// that is half-written.
 		`tmp="$out.tmp"`,
 		`mv -f "$tmp" "$out"`,
-		// A snapshot boot carries the words this menu titles the booted snapshot
-		// with: the prompt reads phrase and date out of the same marker the state
-		// generator writes the number into, so its question names the state by the
-		// words the person chose it with. Only a run from inside this boot enriches
+		// A snapshot boot carries the words that say what the booted snapshot is
+		// for: the prompt reads phrase and date out of the same marker the state
+		// generator writes the number into. The phrase is the snapshot's own
+		// description, unaltered and in any language - the prompt is a desktop
+		// window, not a firmware menu. Only a run from inside this boot enriches
 		// it - --root is a history belonging to a system that is not the one running.
 		"marker=${AELUM_SNAPSHOT_MARKER:-" + shared.SnapshotBootMarkerPath + "}",
 		`if [ "$root" = "/" ] && [ -r "$marker" ]; then`,
@@ -402,10 +410,14 @@ func TestSnapshotMenuScript(t *testing.T) {
 	if !strings.Contains(script, `tr -cd ' -~'`) {
 		t.Error("generator does not cut menu titles to printable ASCII")
 	}
-	// Only the free-text part of a title is length-bounded. Cutting a whole title
-	// would cut the date, which is what a snapshot is actually identified by.
-	if !strings.Contains(script, "menu_phrase") || !strings.Contains(script, "cut -c1-48") {
-		t.Error("generator does not bound only the description part of a title")
+	// No description reaches a menu title at all: the titles are number and date.
+	// menu_phrase - the old length-bounded description half - must stay gone, and
+	// the description must reach the user only through the marker and the prompt.
+	if strings.Contains(script, "menu_phrase") {
+		t.Error("generator still builds a menu phrase; rEFInd titles carry the number and the date only")
+	}
+	if !strings.Contains(script, `phrase=$(printf '%s' "$2" | tr -d '\n\r'`) {
+		t.Error("snapshot_phrase does not take the description verbatim")
 	}
 	// The snapshot entry carries the theme's history glyph rather than the Aelum
 	// mark, so it never reads as a second copy of the system.
