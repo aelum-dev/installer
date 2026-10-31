@@ -360,6 +360,16 @@ func TestSnapshotMenuScript(t *testing.T) {
 		// that is half-written.
 		`tmp="$out.tmp"`,
 		`mv -f "$tmp" "$out"`,
+		// A snapshot boot carries the words this menu titles the booted snapshot
+		// with: the prompt reads phrase and date out of the same marker the state
+		// generator writes the number into, so its question names the state by the
+		// words the person chose it with. Only a run from inside this boot enriches
+		// it - --root is a history belonging to a system that is not the one running.
+		"marker=${AELUM_SNAPSHOT_MARKER:-" + shared.SnapshotBootMarkerPath + "}",
+		`if [ "$root" = "/" ] && [ -r "$marker" ]; then`,
+		`boot_number=$(sed -n 's/^SNAPSHOT=//p' "$marker" | head -n 1)`,
+		`printf 'SNAPSHOT_PHRASE="%s"\n' "$(quote "$boot_phrase")"`,
+		`printf 'SNAPSHOT_DATE="%s"\n' "$(quote "$boot_stamp")"`,
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("generator is missing %q", want)

@@ -229,20 +229,33 @@ func TestShippedSnapshotPromptQML(t *testing.T) {
 		// needs no compositor-side mouse bind.
 		"startSystemMove",
 		`color: "transparent"`,
-		// The window is the card: fixed width so the text does not reflow while it
-		// is read, text anchored to the top, buttons as a footer on the bottom-right
-		// corner, and the body reserving the ask phase's height so pressing OK swaps
-		// the buttons in place instead of moving them out from under the hand.
+		// The window is the card: its width is measured once from the buttons and
+		// fixed from then on, the text is anchored to the top, the buttons are a
+		// footer on the bottom-right corner, and the body reserves the ask phase's
+		// height so pressing OK swaps the buttons in place instead of moving them
+		// out from under the hand. Each button is as wide as its own label (with a
+		// floor), and the window takes the widest footer the flow could need - no
+		// language gets its label cut by a fixed width, and the card never resizes
+		// mid-conversation.
 		"id: content",
-		"implicitWidth: cardWidth",
+		"implicitWidth: Math.max(cardWidth, footerWidth + 2 * sidePadding)",
 		"implicitHeight: content.height",
+		"Math.max(dialog.buttonMinWidth, cancelLabel.implicitWidth",
+		"Math.max(dialog.buttonMinWidth, okLabel.implicitWidth",
+		"Math.max(dialog.buttonMinWidth, closeLabel.implicitWidth",
+		"Math.max(dialog.buttonMinWidth, rebootLabel.implicitWidth",
 		"id: buttons",
 		"anchors.bottom: parent.bottom",
 		"anchors.right: parent.right",
 		"id: askBody",
 		"height: Math.max(implicitHeight, askBody.height)",
-		// The number arrives through the unit's EnvironmentFile.
+		// The number, the phrase and the date arrive through the unit's
+		// EnvironmentFile; the phrase and date are the menu's own words for the
+		// booted snapshot, and the dialog shows them under the title so its
+		// question names the state the way the menu entry did.
 		`Quickshell.env("SNAPSHOT")`,
+		`Quickshell.env("SNAPSHOT_PHRASE")`,
+		`Quickshell.env("SNAPSHOT_DATE")`,
 		// OK runs exactly the helper the polkit action names, through pkexec - never
 		// a shell, never sudo. The action is resolved from the policy's exec.path
 		// annotation, so the QML only ever spells the program.

@@ -149,7 +149,10 @@ const snapshotMenuScript = `#!/bin/sh
 # It runs at every boot (aelum-refind-snapshots.service), after every snapshot
 # snapper creates or deletes (its plugin in /usr/lib/snapper/plugins), and once
 # while the system is being installed (aelum-refind-snapshots --root <mount>,
-# see below) so that the first boot already has a menu.
+# see below) so that the first boot already has a menu. When it runs inside a
+# snapshot boot it also adds that snapshot's own menu title words - phrase and
+# date - to the restore prompt's marker, so the prompt asks about the state by
+# the words it was chosen with (see "What this boot is").
 #
 # What an entry boots is this installation's current kernel and initramfs - they
 # live on the ESP, outside every snapshot - with the snapshot as root. Snapper's
@@ -360,6 +363,49 @@ snapshot_phrase() {
     fi
     printf '%s' "$phrase"
 }
+
+# --- What this boot is ------------------------------------------------------
+# The restore prompt (aelum-snapshot-prompt) asks its question out of the marker
+# /run/aelum-snapshot-boot, which the aelum-snapshot-state generator writes with
+# the number of the snapshot this root is on. A number alone names the snapshot;
+# this menu titles it with a phrase and a date, and the person chose this state
+# in the menu by those words - so the same words are added to the marker here,
+# where both halves exist: the history is mounted, and info.xml is readable. The
+# prompt then asks about the state by the words it was chosen with.
+#
+# Only a run from inside this boot enriches it: with --root the history belongs
+# to a system that is not the one running, and neither the live ISO nor the
+# installer has a marker at all. An unreadable info.xml leaves the marker exactly
+# as the generator wrote it - the number is the fact, the words are detail.
+marker=${AELUM_SNAPSHOT_MARKER:-` + shared.SnapshotBootMarkerPath + `}
+if [ "$root" = "/" ] && [ -r "$marker" ]; then
+    boot_number=$(sed -n 's/^SNAPSHOT=//p' "$marker" | head -n 1)
+    case "$boot_number" in ""|*[!0-9]*) boot_number="" ;; esac
+    boot_info="$snapshot_dir/$boot_number/info.xml"
+    if [ -n "$boot_number" ] && [ -r "$boot_info" ]; then
+        boot_type=$(sed -n 's/.*<type>\([^<]*\)<\/type>.*/\1/p' "$boot_info" 2>/dev/null | head -n 1)
+        boot_date=$(sed -n 's/.*<date>\([^<]*\)<\/date>.*/\1/p' "$boot_info" 2>/dev/null | head -n 1)
+        boot_desc=$(sed -n 's/.*<description>\([^<]*\)<\/description>.*/\1/p' "$boot_info" 2>/dev/null | head -n 1)
+        case "$boot_type" in pre|post) ;; *) boot_type="single" ;; esac
+        boot_phrase=$(snapshot_phrase "$boot_type" "$boot_desc")
+        boot_stamp=$(human_date "$boot_date")
+        quote() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+        # The prompt unit reads the marker as an EnvironmentFile, so free text
+        # goes in quoted, with the two characters that quoting would otherwise
+        # eat. The whole file is rewritten, so a second run (snapper's plugin
+        # starts this service after every snapshot change) cannot accumulate
+        # duplicate lines.
+        marker_tmp="$marker.tmp"
+        {
+            printf 'SNAPSHOT=%s\n' "$boot_number"
+            if [ -n "$boot_phrase" ]; then printf 'SNAPSHOT_PHRASE="%s"\n' "$(quote "$boot_phrase")"; fi
+            if [ -n "$boot_stamp" ]; then printf 'SNAPSHOT_DATE="%s"\n' "$(quote "$boot_stamp")"; fi
+        } > "$marker_tmp" && mv -f "$marker_tmp" "$marker" || {
+            rm -f "$marker_tmp"
+            echo "aelum-refind-snapshots: could not enrich $marker; the prompt will ask with the number alone" >&2
+        }
+    fi
+fi
 
 # --- Which snapshots to offer -----------------------------------------------
 # Snapshot numbers are directory names. info.xml is read directly rather than
