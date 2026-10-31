@@ -12,6 +12,10 @@ Thanks for your interest in contributing! This guide covers the basics.
 ./run.sh
 ```
 
+`./build.sh` also accepts `SHARED_DIR=` (the directory the QEMU test guest mounts at `/shared`) and
+`BIN_DIR=` if you want the binaries placed for you. To try a build in a real ISO, don't copy it by hand:
+[aelum/docker](https://github.com/aelum-dev/docker) builds the installer as part of building the ISO.
+
 ### Prerequisites
 
 - Go 1.25+
@@ -33,6 +37,9 @@ cd frontend && npm run check
 
 # Lint + auto-fix formatting (run after every Go change)
 golangci-lint run ./... --fix
+
+# End-to-end against the real Wails app (details in AGENTS.md → Build & Test)
+cd frontend && npm run e2e:install && npm run e2e
 ```
 
 ## Project Structure

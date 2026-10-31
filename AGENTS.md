@@ -207,6 +207,22 @@ cd frontend && npm run check        # TypeScript type checking
 Binaries: `build/bin/aelum-installer` (GUI), `build/bin/aelum-installer-cli` (CLI)
 The GUI spawns the CLI via `sudo` for all privileged operations.
 
+### End-to-end (Playwright — drives the real app, not a mock)
+
+```bash
+cd frontend && npm run e2e:install   # one-time: downloads Playwright's Chromium
+cd frontend && npm run e2e           # headless suite
+cd frontend && npm run e2e:headed    # visible browser, for debugging
+cd frontend && npm run e2e:report    # the HTML report after a run
+```
+
+`playwright.config.ts` starts `wails dev` itself, so the suite runs Go backend + Svelte UI together: the
+wizard, manual partitioning and the full install flow in dry-run mode against synthetic disks
+(`AELUM_DRY_RUN` / `FAKE_DISKS`), so no real disk is touched. On a headless CI runner wrap it in
+`xvfb-run` and install the browser system deps (`npx playwright install-deps chromium`). Details in
+`frontend/e2e/README.md`. This is a frontend harness — a real install against a real disk is tested in
+QEMU from `docker/`, never here.
+
 ## Environment Variables
 | Variable | Purpose |
 |----------|---------|
@@ -242,6 +258,10 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 - **Constants live in `backend/shared/config.go`** — never duplicate constants across packages.
 - **Frontend constants are auto-generated** from Go via `backend/scripts/gen-ts-constants.go` → `frontend/src/lib/constants.ts`. Regenerate after changing Go constants.
 - **Run `golangci-lint run ./... --fix` after every Go code change.** This lints the code and auto-fixes formatting issues. Fix any remaining lint errors before committing.
+
+- **`images/installer-screenshot.png` is a copy, not an original.** It is the website's own welcome-screen
+  shot (`website/assets/installer-step-1-dark.png`, 1200×800, dark theme). Re-copy it when the UI or the
+  site's captures change — never hand-edit or re-screenshot it here.
 
 ## Security
 - Passwords read from stdin (never CLI flags — avoids /proc, ps, shell history).
