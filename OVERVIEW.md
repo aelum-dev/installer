@@ -187,7 +187,7 @@ System configuration inside the installed system uses `arch-chroot /mnt` directl
 ### ISO File Copying
 Static files from the live ISO are copied to the installed system during `SetupUsers`:
 - `/etc/skel/` → user home directory
-- `/etc/dconf/profile/user` and `01-icons`
+- `/etc/dconf/profile/user` and the `db/local.d/` keyfiles (icons, the nautilus terminal, the dark color-scheme)
 - Dux Shell wallpaper
 - `/etc/environment`
 - `/etc/greetd/hypr.lua`
