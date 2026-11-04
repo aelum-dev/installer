@@ -64,6 +64,11 @@ var Jobs = []Job{
 	{Source: "/etc/dconf/db/local.d/03-dark-theme", Dest: "/mnt/etc/dconf/db/local.d/03-dark-theme", Flags: []string{"-a"}, Optional: true},
 	{Source: "/etc/os-release", Dest: "/mnt/etc/os-release", Flags: []string{}, Optional: true}, // Aelum branding, overwrites the archlinux-release default
 	{Source: "/etc/environment", Dest: "/mnt/etc/environment", Flags: []string{}, Optional: true},
+	// The Aelum release public key, fed to pacman-key by
+	// configure.ConfigurePacmanRepo so the [aelum] repository verifies from the
+	// first boot. Not Optional: a live ISO without it is a broken image, and the
+	// configure step fails with a message naming the file.
+	{Source: shared.AelumKeyringPath, Dest: shared.MountRoot + shared.AelumKeyringPath, Flags: []string{"-a"}},
 	{Source: "/etc/greetd/hypr.lua", Dest: "/mnt/etc/greetd/hypr.lua", Flags: []string{}},
 	{Source: "/usr/lib/firefox/distribution/policies.json", Dest: "/mnt/usr/lib/firefox/distribution/policies.json", Flags: []string{}, Optional: true},
 	{Source: shared.WallpaperSourceDark, Dest: "/mnt" + shared.WallpaperSourceDark, Flags: []string{}, Optional: true},

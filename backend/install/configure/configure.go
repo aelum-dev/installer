@@ -22,7 +22,10 @@ import (
 //  8. Point /etc/resolv.conf at /run (before the services and before the
 //     snapshot, so the factory snapshot already carries the link)
 //  9. Enable systemd services
-//  10. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
+//  10. Enable the [aelum] package repository and trust its signing key (all
+//     filesystems): a fresh install installs the distro's own applications with
+//     no hand-editing
+//  11. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
 //     hooks, the boot-menu entries for the snapshots, the state mounts a snapshot
 //     boot needs, and the "after installation" snapshot - last, because it is the
 //     finished system and because a snapshot only contains what was written before
@@ -63,6 +66,12 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 	if err := EnableServices(ctx); err != nil {
+		return err
+	}
+	// Before the snapshot: the factory snapshot is the state a user restores to,
+	// and restoring to a system that cannot verify its own repository would
+	// quietly lose the feature.
+	if err := ConfigurePacmanRepo(ctx); err != nil {
 		return err
 	}
 	// Last, and it has to stay last: the "after installation" snapshot is the state

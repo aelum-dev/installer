@@ -74,6 +74,8 @@ func TestConfigureNetworkDNSRunsBeforeTheInstallationSnapshot(t *testing.T) {
 	fs := primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/locale.gen", "#en_US.UTF-8 UTF-8\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base udev autodetect modconf block filesystems)\n").
+		WithFile(shared.MountRoot+"/etc/pacman.conf", stockPacmanConf).
+		WithFile(shared.MountRoot+shared.AelumKeyringPath, "binary keyring fixture").
 		WithFile("/proc/meminfo", "MemTotal:        8155136 kB\n").
 		WithFile(shared.MountRoot+"/boot/vmlinuz-linux", "kernel").
 		WithFile(shared.MountRoot+"/boot/initramfs-linux.img", "initrd")
@@ -104,14 +106,19 @@ func TestConfigureNetworkDNSRunsBeforeTheInstallationSnapshot(t *testing.T) {
 	}
 }
 
+// TestConfigurePacmanRepoIsInsideTheFactorySnapshot lives in pacman_repo_test.go.
+
 // snapshotWatcher records whether the resolver link existed at the moment the
 // "after installation" snapshot command ran - the only moment that decides what
 // is inside that snapshot.
 type snapshotWatcher struct {
-	rec     *primitivestest.Recorder
-	fs      *primitivestest.MemFS
-	linkAt  bool
-	checked bool
+	rec        *primitivestest.Recorder
+	fs         *primitivestest.MemFS
+	linkAt     bool
+	repoAt     bool
+	keyringAt  bool
+	keyTrusted bool
+	checked    bool
 }
 
 func (w *snapshotWatcher) observe(cmd *primitives.Command) {
@@ -123,6 +130,12 @@ func (w *snapshotWatcher) observe(cmd *primitives.Command) {
 		return
 	}
 	_, w.linkAt = w.fs.SymlinkTarget(shared.MountRoot + resolvConfPath)
+	if content, ok := w.fs.Read(shared.MountRoot + "/etc/pacman.conf"); ok {
+		w.repoAt = strings.Contains(content, "["+shared.PacmanRepoName+"]")
+	}
+	w.keyringAt = w.fs.Exists(shared.MountRoot + shared.AelumKeyringPath)
+	w.keyTrusted = hasCall(w.rec.CallsFor("arch-chroot"),
+		"arch-chroot", shared.MountRoot, "pacman-key", "--lsign-key", shared.AelumSigningKeyFingerprint)
 	w.checked = true
 }
 

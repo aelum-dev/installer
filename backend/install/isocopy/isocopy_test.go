@@ -95,6 +95,31 @@ func TestJobs_CarrysSnapshotRestore(t *testing.T) {
 	}
 }
 
+// TestJobs_CarriesAelumKeyring verifies the release key is carried for every
+// filesystem (the repository is not snapshot machinery) and that the job is not
+// Optional: a live ISO without the key is a broken image, and
+// configure.ConfigurePacmanRepo fails with a message naming the file.
+func TestJobs_CarriesAelumKeyring(t *testing.T) {
+	found := findJobFor(Jobs, shared.AelumKeyringPath)
+	if found == nil {
+		t.Fatalf("no copy job carries %s; the [aelum] repository could not be verified", shared.AelumKeyringPath)
+	}
+	if found.Dest != shared.MountRoot+shared.AelumKeyringPath {
+		t.Errorf("the key copies to %q, want %q", found.Dest, shared.MountRoot+shared.AelumKeyringPath)
+	}
+	if found.BtrfsOnly {
+		t.Error("the key is marked btrfs-only; an ext4 install gets the repository too")
+	}
+	if found.Optional {
+		t.Error("the key is Optional; a missing one should fail the install, not surface as signature errors later")
+	}
+	for _, fsType := range []string{shared.FileSystemExt4, shared.FileSystemBtrfs} {
+		if findJobFor(For(&shared.InstallContext{Username: "aelum", FileSystem: fsType}), shared.AelumKeyringPath) == nil {
+			t.Errorf("a %s install would not receive the signing key", fsType)
+		}
+	}
+}
+
 // TestFor_NoSnapshotFilesForExt4: an ext4 install gets no snapshots, so it gets none
 // of the files that only serve them. verify-installed.sh asserts the same absence on
 // the real disk.

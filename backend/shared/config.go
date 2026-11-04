@@ -175,6 +175,45 @@ const MirrorListCommentedServerPrefix = "#Server = "
 // MirrorListServerPrefix is the prefix for an active mirror server line.
 const MirrorListServerPrefix = "Server = "
 
+// --- Aelum package repository -------------------------------------------------
+//
+// The installed system gets the [aelum] pacman repository enabled and its
+// signing key trusted, so a fresh install can install the distro's own
+// applications (currently aelum-video-player) with no hand-editing. The
+// repository itself lives in the release bucket under repo/ (see repo/REPO.md);
+// the installer's job is only the config block and the key.
+//
+// There is no drop-in directory in pacman.conf (checked against the pacman
+// 7.1.0 man page: /etc/pacman.conf.d is not a feature, the only hook is an
+// explicit Include line the stock file does not have), so the block is
+// appended to the pacman-owned file. A modified pacman-owned file keeps its
+// edits across pacman updates — pacman installs a .pacnew to diff instead.
+
+// PacmanRepoName is the repository section name — and with it the DB file name
+// pacman looks for (aelum.db.tar.gz).
+const PacmanRepoName = "aelum"
+
+// PacmanRepoServer is the repository's Server line. $arch is expanded by
+// pacman, so the same block serves every architecture the repo is published for.
+const PacmanRepoServer = "https://cdn.aelum.dev/repo/$arch"
+
+// PacmanRepoSigLevel pins signature checking for the repository. Required on
+// packages and database: the repo is signed with the same release key as the
+// ISOs, and the installer puts that key in the target's keyring below, so
+// there is no reason to weaken the check.
+const PacmanRepoSigLevel = "Required DatabaseRequired"
+
+// AelumKeyringPath is the Aelum release public key. It is source in the live
+// ISO (live-iso/airootfs/usr/share/aelum/keyring/), copied to the target by
+// install/isocopy at the same path, and fed to pacman-key by
+// configure.ConfigurePacmanRepo.
+const AelumKeyringPath = "/usr/share/aelum/keyring/aelum-release.gpg"
+
+// AelumSigningKeyFingerprint is the fingerprint of the release key (
+// release@aelum.dev, the same key that signs the ISOs and is published via
+// WKD). pacman-key --lsign-key takes the fingerprint, not the key file.
+const AelumSigningKeyFingerprint = "728F5F59FB2F5A88C6EE28D4930A672A3A1B5B60"
+
 // --- Fstab -------------------------------------------------------------------
 
 // MinFstabContentLengthBytes is the minimum expected fstab content length.
