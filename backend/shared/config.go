@@ -179,7 +179,8 @@ const MirrorListServerPrefix = "Server = "
 //
 // The installed system gets the [aelum] pacman repository enabled and its
 // signing key trusted, so a fresh install can install the distro's own
-// applications (currently aelum-video-player) with no hand-editing. The
+// applications (currently aelum-video-player and aelum-package-installer) with
+// no hand-editing. The
 // repository itself lives in the release bucket under repo/ (see repo/REPO.md);
 // the installer's job is only the config block and the key.
 //
@@ -213,6 +214,18 @@ const AelumKeyringPath = "/usr/share/aelum/keyring/aelum-release.gpg"
 // release@aelum.dev, the same key that signs the ISOs and is published via
 // WKD). pacman-key --lsign-key takes the fingerprint, not the key file.
 const AelumSigningKeyFingerprint = "728F5F59FB2F5A88C6EE28D4930A672A3A1B5B60"
+
+// PacmanConfPath is pacman's configuration file, chroot-relative: the target's
+// copy is MountRoot + PacmanConfPath. There is no drop-in directory, so the
+// repository block is appended to it (see the note above).
+const PacmanConfPath = "/etc/pacman.conf"
+
+// PacmanSyncDir is where pacman keeps the database of every repository it
+// knows, chroot-relative like PacmanConfPath. `pacstrap -K` resolves names
+// through the live session's pacman.conf, so the database it resolved from
+// lands in the target's copy of this directory; configure.dropForeignSyncDBs
+// says why that file cannot stay.
+const PacmanSyncDir = "/var/lib/pacman/sync"
 
 // --- Fstab -------------------------------------------------------------------
 

@@ -1,7 +1,9 @@
 package configure
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
@@ -13,9 +15,11 @@ import (
 // ============================================================================
 
 // ConfigurePacmanRepo enables the [aelum] repository in the installed system's
-// pacman.conf and trusts its signing key in the target's keyring. A fresh
-// install can then install the distro's own applications with no hand-editing;
-// the repository itself is published by repo/publish-repo.sh (repo/REPO.md).
+// pacman.conf, trusts its signing key in the target's keyring, and drops the
+// sync databases of repositories the target does not configure (see
+// dropForeignSyncDBs). A fresh install can then install the distro's own
+// applications with no hand-editing; the repository itself is published by
+// repo/publish-repo.sh (repo/REPO.md).
 //
 // It runs on every filesystem — the repository is not part of the snapshot
 // machinery — and it must run before ConfigureSnapper, because the "after
@@ -26,22 +30,29 @@ func ConfigurePacmanRepo(ctx *shared.InstallContext) error {
 		return err
 	}
 
-	if err := enablePacmanRepo(ctx); err != nil {
+	content, err := enablePacmanRepo(ctx)
+	if err != nil {
 		return err
+	}
+	// After the append, so the decision is made with the repository block the
+	// target really has.
+	if err := dropForeignSyncDBs(ctx, content); err != nil && ctx.Logger != nil {
+		ctx.Logger.Error("Warning: could not clear the live session's package databases (non-fatal): %v", err)
 	}
 	return trustAelumKey(ctx)
 }
 
-// enablePacmanRepo appends the repository block to the target's pacman.conf.
-// The file comes from the pacman package via pacstrap; there is no drop-in
-// directory to write instead (see the constants' note), so the append is the
-// normal Arch way — a modified pacman-owned file keeps its edits across
-// updates, pacman only drops a .pacnew to diff.
-func enablePacmanRepo(ctx *shared.InstallContext) error {
-	hostPath := shared.MountRoot + "/etc/pacman.conf"
+// enablePacmanRepo appends the repository block to the target's pacman.conf
+// and returns the file as it now reads. The file comes from the pacman package
+// via pacstrap; there is no drop-in directory to write instead (see the
+// constants' note), so the append is the normal Arch way — a modified
+// pacman-owned file keeps its edits across updates, pacman only drops a
+// .pacnew to diff.
+func enablePacmanRepo(ctx *shared.InstallContext) (string, error) {
+	hostPath := shared.MountRoot + shared.PacmanConfPath
 	data, err := primitives.ReadFile(hostPath)
 	if err != nil {
-		return fmt.Errorf("failed to read pacman.conf: %w", err)
+		return "", fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 	// Idempotent: re-running the installer over an existing system must not
 	// stack a second [aelum] section (later sections would shadow the first).
@@ -49,7 +60,7 @@ func enablePacmanRepo(ctx *shared.InstallContext) error {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("pacman repository [%s] already enabled", shared.PacmanRepoName)
 		}
-		return nil
+		return string(data), nil
 	}
 
 	block := "\n# Aelum repository - applications shipped by the distro.\n" +
@@ -58,13 +69,13 @@ func enablePacmanRepo(ctx *shared.InstallContext) error {
 		fmt.Sprintf("[%s]\n", shared.PacmanRepoName) +
 		"SigLevel = " + shared.PacmanRepoSigLevel + "\n" +
 		"Server = " + shared.PacmanRepoServer + "\n"
-	if err := primitives.AppendFile("/etc/pacman.conf", block); err != nil {
-		return err
+	if err := primitives.AppendFile(shared.PacmanConfPath, block); err != nil {
+		return "", err
 	}
 	if ctx.Logger != nil {
 		ctx.Logger.Info("pacman repository [%s] enabled: %s", shared.PacmanRepoName, shared.PacmanRepoServer)
 	}
-	return nil
+	return string(data) + block, nil
 }
 
 // hasPacmanSection reports whether pacman.conf already defines the section.
@@ -78,6 +89,60 @@ func hasPacmanSection(content, name string) bool {
 		}
 	}
 	return false
+}
+
+// syncDBSuffixes are the per-repository files pacman writes in its sync
+// directory: the package database and its file index.
+var syncDBSuffixes = []string{".db", ".files"}
+
+// dropForeignSyncDBs removes every sync database in the target whose
+// repository the target's own pacman.conf does not name.
+//
+// The one that is always there is the live session's. `pacstrap -K` copies no
+// pacman.conf and resolves every name through the live session's
+// ([aelum-offline], live-iso/airootfs/etc/pacman.conf), and pacman writes the
+// database it resolved from under the --root it was given — so a fresh install
+// owns /var/lib/pacman/sync/aelum-offline.db for a repository its pacman.conf
+// never mentions, and nothing removes it later: -Scc cleans the package cache,
+// not the databases. pacman itself ignores the file (measured with pacman 7
+// against two throwaway repositories: with zz-first.db in sync/ and only
+// zz-second in the config, -Sl lists only zz-second). Anything that reads the
+// directory instead of the config does not — which is how the package manager
+// came to show one installed package twice, once as "Install" from
+// [aelum-offline].
+//
+// Non-fatal by design: a leftover database costs a duplicate row in a GUI, not
+// a broken system.
+func dropForeignSyncDBs(ctx *shared.InstallContext, pacmanConf string) error {
+	dir := shared.MountRoot + shared.PacmanSyncDir
+	names, err := primitives.ReadDirNames(dir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil // no sync directory: there is nothing to clean
+		}
+		return fmt.Errorf("failed to list %s: %w", dir, err)
+	}
+
+	for _, name := range names {
+		repo := ""
+		for _, suffix := range syncDBSuffixes {
+			if rest, ok := strings.CutSuffix(name, suffix); ok {
+				repo = rest
+				break
+			}
+		}
+		if repo == "" || hasPacmanSection(pacmanConf, repo) {
+			continue
+		}
+		path := dir + "/" + name
+		if err := primitives.RemoveAll(path); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", path, err)
+		}
+		if ctx.Logger != nil {
+			ctx.Logger.Info("removed the live session's package database: %s", path)
+		}
+	}
+	return nil
 }
 
 // trustAelumKey imports the release key into the target's pacman keyring and

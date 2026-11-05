@@ -41,6 +41,64 @@ func withPacmanConf(content string) func(*primitivestest.MemFS) {
 	}
 }
 
+// withSyncDBs is what a fresh install's target really holds: pacstrap resolved
+// every package through the live session's [aelum-offline] repository, and
+// pacman wrote that database under the --root it was given.
+func withSyncDBs(fs *primitivestest.MemFS) {
+	fs.WithFile(shared.MountRoot+shared.PacmanSyncDir+"/aelum-offline.db", "offline mirror fixture")
+	fs.WithFile(shared.MountRoot+shared.PacmanSyncDir+"/core.db", "configured repository fixture")
+}
+
+func TestConfigurePacmanRepo_DropsTheLiveSessionsDatabase(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	fs := pacmanRepoFS(withKeyring, withSyncDBs)
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil", err)
+	}
+
+	// The target's pacman.conf names no [aelum-offline], so pacman would never
+	// read this database again — and the package manager, which reads the sync
+	// directory, listed every package in it a second time.
+	if fs.Exists(shared.MountRoot + shared.PacmanSyncDir + "/aelum-offline.db") {
+		t.Error("the live session's sync database was left in the target")
+	}
+	// A database for a repository the config does name is not foreign: it is
+	// what the Updates page is about.
+	if !fs.Exists(shared.MountRoot + shared.PacmanSyncDir + "/core.db") {
+		t.Error("a configured repository's sync database was removed")
+	}
+}
+
+func TestConfigurePacmanRepo_ForeignDatabaseIsNotFatal(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	fs := pacmanRepoFS(withKeyring, withSyncDBs)
+	fs.WithRemoveError(shared.MountRoot+shared.PacmanSyncDir+"/aelum-offline.db", errors.New("read-only tree"))
+	defer primitives.SetFileSystem(fs)()
+
+	// A leftover database costs a duplicate row in a GUI, not a broken system.
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil when only the cleanup failed", err)
+	}
+	if !fs.Exists(shared.MountRoot + shared.PacmanSyncDir + "/aelum-offline.db") {
+		t.Error("the database was reported removed although the removal failed")
+	}
+}
+
+func TestConfigurePacmanRepo_NoSyncDirectoryIsNotFatal(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	fs := pacmanRepoFS(withKeyring) // an install that never refreshed a database
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil", err)
+	}
+}
+
 func TestConfigurePacmanRepo_AppendsBlockAndTrustsKey(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
