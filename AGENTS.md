@@ -271,7 +271,8 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 ## Desktop Environment
 Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
 
-Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player, imv,
+Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player,
+aelum-package-installer, imv,
 gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd. On btrfs installs
 only, the desktop set also carries `snapper` (base step) and `btrfs-assistant` (desktop step): the layout's
 snapshots and their GUI. All of these must also be resolvable by the ISO build — official/`[aelum]` names

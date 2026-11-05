@@ -28,9 +28,11 @@ var DesktopPackages = []string{
 	"nautilus",
 	"firefox",
 	"mpv",
-	// Aelum's own media player: resolved from the [aelum] repo by the ISO build
-	// and baked into the offline mirror, so this pacstrap needs no network.
+	// Aelum's own media player and package manager: resolved from the [aelum]
+	// repo by the ISO build and baked into the offline mirror, so this pacstrap
+	// needs no network.
 	"aelum-video-player",
+	"aelum-package-installer",
 	"imv",
 	"gnome-text-editor",
 
