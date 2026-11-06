@@ -5,9 +5,17 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-// desktopPackages are user-space packages installed during the desktop
+// DesktopPackages are user-space packages installed during the desktop
 // environment step. Split from basePackages so the install progress bar
 // moves smoothly instead of stalling during the long pacstrap call.
+//
+// This list is also read by the ISO build (docker/scripts/build-iso.sh runs
+// `go run ./backend/scripts/pkg-list.go`): the offline mirror embedded in the
+// image is the union of these lists and the live profile's package list, so a
+// package added here is installable without network by every install of that
+// image. It is deliberately not repeated in live-iso/packages.x86_64 — the
+// live session is a host that boots, displays and installs, not a copy of the
+// desktop it writes.
 var DesktopPackages = []string{
 	// Boot splash
 	"plymouth",
@@ -18,7 +26,9 @@ var DesktopPackages = []string{
 	"dux-greeter-bin",
 	"uwsm",
 
-	// Desktop environment
+	// Desktop environment. dux-shell is DMS 2.0 (renamed from dms-shell) and
+	// dux-gop is Dux GOP (renamed from dgop); both Provides/Replaces/Conflicts
+	// the old names, so an existing install upgrades in place.
 	"hyprland",
 	"dux-shell",
 	"cava",
@@ -43,6 +53,13 @@ var DesktopPackages = []string{
 	"adw-gtk-theme",
 	"fluent-icon-theme",
 	"breeze",
+
+	// Dux Shell's other optional dependencies are deliberately not shipped:
+	//   cups-pk-helper  - no CUPS in this image, so there is no printer to manage
+	//   i2c-tools       - external-monitor brightness already goes through ddcutil
+	//   qt6ct           - Qt theming goes through qtengine (QT_QPA_PLATFORMTHEME)
+	//   qt6-multimedia  - shell sound effects; not part of the Aelum desktop
+	//   wtype           - 2.0 pastes the clipboard through zwp_virtual_keyboard_v1
 
 	// Utilities
 	"btop",

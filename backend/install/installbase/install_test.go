@@ -14,7 +14,9 @@ func TestBasePackages_NotEmpty(t *testing.T) {
 }
 
 func TestBasePackages_ContainsEssential(t *testing.T) {
-	expected := []string{"base", "linux-lts", "linux-firmware"}
+	// base-devel is the AUR build tools: the package installer's AUR page runs
+	// makepkg on the installed machine, and it refuses to run without them.
+	expected := []string{"base", "linux-lts", "linux-firmware", "base-devel"}
 	for _, pkg := range expected {
 		found := false
 		for _, p := range BasePackages {

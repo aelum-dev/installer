@@ -122,6 +122,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       validation.go             — Centralized validation (delegates to shared package)
     scripts/
       gen-ts-constants.go       — Generates frontend wailsjs/go models from Go constants
+      pkg-list.go               — Prints every package name this installer installs (`go run ./backend/scripts/pkg-list.go`). docker/scripts/build-iso.sh feeds it to the same `pacman -Syw`/`--print` pair that reads live-iso/packages.x86_64, so the offline mirror is the union of the two and the desktop set is written once, here. Adding a package to installbase/installdesktop therefore also puts it in the image's mirror.
       gen-snapshot-prompt-i18n.go — Extracts the snapshot.prompt.* namespace from frontend/src/translations/*.json into live-iso/airootfs/etc/xdg/quickshell/aelum-snapshot/i18n/ (the dialog's translated copy; a generated baseline, run manually when the copy changes — it writes into another repo, so build.sh does not call it; AELUM_LIVE_ISO_DIR overrides the sibling-tree default)
   frontend/
     src/
@@ -257,6 +258,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 - **Run git commands one at a time.** Never chain multiple git operations in a single bash call — each can acquire locks and batching causes `index.lock` errors.
 - **Constants live in `backend/shared/config.go`** — never duplicate constants across packages.
 - **Frontend constants are auto-generated** from Go via `backend/scripts/gen-ts-constants.go` → `frontend/src/lib/constants.ts`. Regenerate after changing Go constants.
+- **The package lists in `installbase`/`installdesktop` are the only copy of the desktop set.** The ISO build reads them through `backend/scripts/pkg-list.go`; `live-iso/packages.x86_64` describes the live host instead (kernel, boot entries, the tools the installer *runs* there, the session the installer draws in). A package only the installed system needs goes here, never there — see live-iso/AGENTS.md → the mirror note.
 - **Run `golangci-lint run ./... --fix` after every Go code change.** This lints the code and auto-fixes formatting issues. Fix any remaining lint errors before committing.
 
 - **`images/installer-screenshot.png` is a copy, not an original.** It is the website's own welcome-screen

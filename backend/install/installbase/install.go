@@ -43,6 +43,13 @@ var BasePackages = []string{
 	"power-profiles-daemon",
 	"zram-generator",
 
+	// Build tools. The package installer's AUR page builds what it installs on
+	// this machine, and makepkg refuses to run without these; an install that
+	// lacks them can only take repository packages. They are in the image's
+	// mirror through live-iso/packages.target.x86_64 rather than in the live
+	// session, which needs no compiler.
+	"base-devel",
+
 	// Bootloader (installed onto the ESP by the configure step; efibootmgr is
 	// pulled in as its dependency)
 	"refind",
@@ -65,7 +72,8 @@ var BtrfsOnlyBasePackages = []string{
 // btrfs-assistant the same way.
 //
 // A btrfs-only package must also be listed in the live ISO's package list
-// (live-iso/packages.x86_64): the installer installs from the mirror embedded in
+// (live-iso/packages.x86_64, or packages.target.x86_64 for a package the live
+// session does not run): the installer installs from the mirror embedded in
 // the ISO, so a package that is not in that mirror cannot be installed.
 func AppendBtrfsOnly(ctx *shared.InstallContext, packages, extra []string) []string {
 	if ctx.FileSystem != shared.FileSystemBtrfs {
