@@ -441,7 +441,7 @@ The installed system includes:
 - **Shell**: Dux Shell (based on Quickshell, package `dux-shell`)
 - **Login Manager**: greetd + Dux Greeter
 - **Terminal**: Kitty
-- **File Manager**: Nautilus
+- **File Manager**: Nautilus (video thumbnails through ffmpegthumbnailer + ffmpegthumbs)
 - **Browser**: Firefox
 - **Audio**: PipeWire + WirePlumber
 - **Utilities**: btop, fastfetch, brightnessctl, ddcutil, cava, matugen

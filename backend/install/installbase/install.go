@@ -45,9 +45,9 @@ var BasePackages = []string{
 
 	// Build tools. The package installer's AUR page builds what it installs on
 	// this machine, and makepkg refuses to run without these; an install that
-	// lacks them can only take repository packages. They are in the image's
-	// mirror through live-iso/packages.target.x86_64 rather than in the live
-	// session, which needs no compiler.
+	// lacks them can only take repository packages. This list is what puts them
+	// in the image's mirror — the ISO build reads it through
+	// backend/scripts/pkg-list.go — so the live session needs no compiler.
 	"base-devel",
 
 	// Bootloader (installed onto the ESP by the configure step; efibootmgr is
@@ -71,10 +71,11 @@ var BtrfsOnlyBasePackages = []string{
 // packages unchanged otherwise. Exported for installdesktop, which gates
 // btrfs-assistant the same way.
 //
-// A btrfs-only package must also be listed in the live ISO's package list
-// (live-iso/packages.x86_64, or packages.target.x86_64 for a package the live
-// session does not run): the installer installs from the mirror embedded in
-// the ISO, so a package that is not in that mirror cannot be installed.
+// A btrfs-only package needs no second listing. pkg-list.go prints the btrfs-only
+// lists unconditionally and the ISO build bakes their union with
+// live-iso/packages.x86_64 into the mirror embedded in the image, which is what
+// the installer installs from — so a package no list here or there names is the
+// only kind that cannot be installed.
 func AppendBtrfsOnly(ctx *shared.InstallContext, packages, extra []string) []string {
 	if ctx.FileSystem != shared.FileSystemBtrfs {
 		return packages

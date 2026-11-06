@@ -36,6 +36,12 @@ var DesktopPackages = []string{
 	"matugen",
 	"qtengine",
 	"nautilus",
+	// Video thumbnails for the file manager. ffmpegthumbnailer installs the
+	// freedesktop entries in /usr/share/thumbnailers that gnome-desktop (and so
+	// Nautilus) runs; ffmpegthumbs is the KF6 thumbcreator plugin the KIO/Qt side
+	// loads. Both depend on ffmpeg, which mpv already brings in.
+	"ffmpegthumbnailer",
+	"ffmpegthumbs",
 	"firefox",
 	"mpv",
 	// Aelum's own media player and package manager: resolved from the [aelum]

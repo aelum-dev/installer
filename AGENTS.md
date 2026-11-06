@@ -275,11 +275,14 @@ Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Kitty + Firefox
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player,
 aelum-package-installer, imv,
-gnome-text-editor, nautilus, and Noto fonts (CJK + Emoji) + Terminus + JetBrains Mono Nerd. On btrfs installs
+gnome-text-editor, nautilus (+ the ffmpegthumbnailer/ffmpegthumbs video thumbnailers), and Noto fonts (CJK + Emoji)
++ Terminus + JetBrains Mono Nerd. On btrfs installs
 only, the desktop set also carries `snapper` (base step) and `btrfs-assistant` (desktop step): the layout's
-snapshots and their GUI. All of these must also be resolvable by the ISO build — official/`[aelum]` names
-via `live-iso/packages.x86_64`, AUR names via `packages.aur.x86_64` — since the installer installs from the
-mirror embedded in the ISO.
+snapshots and their GUI. All of these must also be resolvable by the ISO build, and they are:
+`docker/scripts/build-iso.sh` reads these lists through `backend/scripts/pkg-list.go` and bakes their union
+with `live-iso/packages.x86_64` into the mirror embedded in the ISO — official and `[aelum]` names from the
+mirrors, AUR names built from `packages.aur.x86_64`. A name none of those lists carries is the only kind
+that cannot be installed.
 
 ## Frontend Pages (Wizard Flow)
 ```
