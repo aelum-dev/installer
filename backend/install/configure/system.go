@@ -3,6 +3,7 @@ package configure
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
@@ -135,6 +136,30 @@ func configureInitramfs(ctx *shared.InstallContext) error {
 		return fmt.Errorf("HOOKS not found in %s", confPath)
 	}
 	content = re.ReplaceAllString(content, newBlock)
+
+	// NVIDIA early KMS: the HOOKS above end in autodetect, and autodetect
+	// inspects the *live session*, which has no NVIDIA module loaded — an
+	// NVIDIA install's initramfs would carry no nvidia module and the branded
+	// splash would not come up before root. When the desktop step chose the
+	// NVIDIA set, name the modules in this same pass (the names are the same
+	// for the open kernel module); the packages exist by now because the
+	// desktop step installed them and mkinitcpio -P below runs after this
+	// edit. Whether nvidia_drm.modeset=1 must also go into the boot entry is
+	// measured on real hardware, not assumed here.
+	if slices.Contains(ctx.DriverPackages, shared.NvidiaDriverPackage) {
+		modules := "MODULES=(" + strings.Join(shared.NvidiaInitramfsModules, " ") + ")"
+		modulesRe := regexp.MustCompile(`(?ms)^MODULES=\(.*?\)`)
+		if modulesRe.MatchString(content) {
+			content = modulesRe.ReplaceAllString(content, modules)
+		} else {
+			// The stock file always has MODULES=(); if a future one does not,
+			// adding the line is the only way the modules can be named.
+			content = modules + "\n" + content
+		}
+		if ctx.Logger != nil {
+			ctx.Logger.Info("initramfs %s", modules)
+		}
+	}
 
 	if err := primitives.WriteFile(confPath, content); err != nil {
 		return err

@@ -503,6 +503,29 @@ const RefindIconPath = RefindThemeDir + "/icons/os_arch.png"
 // second copy of it. live-iso/scripts/gen-refind-theme.py renders it.
 const RefindSnapshotIconPath = RefindThemeDir + "/icons/os_snapshot.png"
 
+// --- GPU driver selection ----------------------------------------------------
+
+// SysfsRoot is the sysfs mount the desktop step walks (bus/pci/devices) to
+// detect the machine's GPUs. The live ISO runs on the same hardware as the
+// install it writes, so the live session's PCI tree is the target's.
+const SysfsRoot = "/sys"
+
+// NvidiaDriverPackage is the NVIDIA kernel-module package of the NVIDIA driver
+// set. It is carried by that set alone, so its presence in a chosen
+// DriverPackages list is how the configure step knows the initramfs needs the
+// NVIDIA modules. Current Arch has no proprietary `nvidia` package — only
+// nvidia-open, nvidia-open-dkms, nvidia-open-lts — and the installer's kernel
+// is linux-lts, so the matching module is nvidia-open-lts.
+const NvidiaDriverPackage = "nvidia-open-lts"
+
+// NvidiaInitramfsModules are the kernel modules an NVIDIA install's initramfs
+// must carry for early KMS: configure's HOOKS end in autodetect, and autodetect
+// inspects the live session, which has no NVIDIA module loaded. So when the
+// NVIDIA set was chosen, configure names these in MODULES= itself and the
+// branded Plymouth splash comes up before root. The names are the same for the
+// open kernel module.
+var NvidiaInitramfsModules = []string{"nvidia", "nvidia_drm", "nvidia_modeset"}
+
 // --- Progress tick ----------------------------------------------------------
 
 // DryRunStepDuration is how long each install step sleeps in dry-run mode.

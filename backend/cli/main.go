@@ -29,6 +29,7 @@ import (
 	"syscall"
 
 	"aelum-installer/backend/install"
+	"aelum-installer/backend/install/installdesktop"
 	"aelum-installer/backend/install/partition"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
@@ -103,6 +104,7 @@ func run(args []string) int {
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout (formats the selected Boot and System partitions)")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
 	lvmFlag := fs.Bool("lvm", false, "Place the root (and, for ext4, home) on LVM logical volumes")
+	gpuDriverFlag := fs.String("gpu-driver", installdesktop.DriverOverrideAuto, "GPU driver set: auto|amd|intel|nvidia|mesa (auto detects from the PCI bus)")
 	logPathFlag := fs.String("log-path", "", "Installation log path (the GUI passes this; defaults to /var/log/aelum-install-<timestamp>.log)")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
@@ -167,8 +169,15 @@ func run(args []string) int {
 		return 1
 	}
 
+	// The GPU driver override is validated before anything runs: a typo here
+	// would otherwise surface minutes later as an unexpected driver set.
+	if !installdesktop.ValidDriverOverride(*gpuDriverFlag) {
+		fmt.Fprintf(os.Stderr, "Error: --gpu-driver must be one of auto, amd, intel, nvidia, mesa (got %q)\n", *gpuDriverFlag)
+		return 1
+	}
+
 	// Run the installation
-	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag, *luksFlag, *lvmFlag)
+	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag, *luksFlag, *lvmFlag, *gpuDriverFlag)
 }
 
 // resolveUsername resolves the username from flag or stdin.
@@ -188,7 +197,7 @@ func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
 }
 
 // runInstallation performs validation and runs the installation.
-func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string, luks, lvm bool) int {
+func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string, luks, lvm bool, gpuDriver string) int {
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
@@ -272,6 +281,7 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 		Luks:           luks,           // encrypt root with LUKS2
 		LuksPassphrase: luksPassphrase, // read from stdin
 		Lvm:            lvm,            // root/home on logical volumes
+		GPUDriver:      gpuDriver,      // --gpu-driver override (validated by run)
 		DryRun:         dryRun,
 	})
 
@@ -440,7 +450,7 @@ func resolveDiskAndStep(flags ...stepFlag) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--luks] [--lvm] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--luks] [--lvm] [--gpu-driver auto|amd|intel|nvidia|mesa] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
@@ -461,6 +471,10 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "When --lvm is set, the System partition becomes an LVM physical volume and\n")
 	fmt.Fprintf(os.Stderr, "root lives on a logical volume (ext4 also gets a separate home volume).\n")
 	fmt.Fprintf(os.Stderr, "LUKS always sits below LVM: --luks --lvm encrypts the single physical volume.\n")
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "GPU drivers are chosen from the PCI bus (auto). --gpu-driver forces one set\n")
+	fmt.Fprintf(os.Stderr, "(amd, intel, nvidia, mesa) when the hardware cannot be classified — it is also\n")
+	fmt.Fprintf(os.Stderr, "how a VM exercises the paths its virtual hardware would never take.\n")
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])

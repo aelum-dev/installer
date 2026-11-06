@@ -224,6 +224,31 @@ func TestCheckPackages_BtrfsOnlyPackagesAreGated(t *testing.T) {
 	}
 }
 
+// TestCheckPackages_VerifiesTheChosenDriverSet: the GPU driver set is chosen at
+// install time and recorded on the context (installdesktop/drivers.go), so the
+// verify step checks exactly what the desktop step installed.
+func TestCheckPackages_VerifiesTheChosenDriverSet(t *testing.T) {
+	drivers := []string{"vulkan-radeon", "lib32-vulkan-radeon", "lib32-mesa"}
+	seen := queriedPackages(t, &shared.InstallContext{DriverPackages: drivers})
+	for _, pkg := range drivers {
+		if !seen[pkg] {
+			t.Errorf("the chosen driver set was not verified: %q missing", pkg)
+		}
+	}
+}
+
+// TestCheckPackages_NoDriverSetWithoutADesktopRun: a context that never ran the
+// desktop step carries no chosen set, and the check does not invent one — the
+// old hardcoded vendor names must not come back as fixed expectations.
+func TestCheckPackages_NoDriverSetWithoutADesktopRun(t *testing.T) {
+	seen := queriedPackages(t, &shared.InstallContext{})
+	for _, pkg := range []string{"vulkan-radeon", "vulkan-intel", "vulkan-nouveau", "vulkan-swrast"} {
+		if seen[pkg] {
+			t.Errorf("%q was verified although no driver set was recorded", pkg)
+		}
+	}
+}
+
 // TestCheckPackages_SummaryCountsWhatItChecked pins the log line to the list the
 // check actually walked, so a btrfs install reports its snapshot packages too
 // instead of the unconditional count.

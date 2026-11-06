@@ -2,10 +2,12 @@ package configure
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
+	"aelum-installer/backend/install/installdesktop"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/install/primitives/primitivestest"
 	"aelum-installer/backend/shared"
@@ -15,6 +17,20 @@ import (
 // filesystem and nothing else.
 func snapperContext() *shared.InstallContext {
 	return &shared.InstallContext{FileSystem: shared.FileSystemBtrfs}
+}
+
+// TestPacmanImportantTargetsCoverDriverCandidates pins the important-transaction
+// list to the GPU driver table: the installed system's driver set depends on
+// the hardware, so every name installdesktop can choose must be one whose
+// transactions are marked important — "before I changed the GPU driver" is the
+// state a rollback is for. A candidate added to the table without a matching
+// Target would lose its snapshot protection on real hardware only.
+func TestPacmanImportantTargetsCoverDriverCandidates(t *testing.T) {
+	for _, pkg := range installdesktop.DriverCandidatePackages {
+		if !slices.Contains(pacmanImportantTargets, pkg) {
+			t.Errorf("%q is a driver candidate but not an important transaction target", pkg)
+		}
+	}
 }
 
 // TestSnapperTargetsMatchSubvolumeScheme pins the snapper list to the subvolume

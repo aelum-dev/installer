@@ -23,12 +23,18 @@ var expectedPackages = append(append([]string{}, installbase.BasePackages...), i
 // ext4 install would report a package that was never meant to be there.
 var btrfsOnlyPackages = append(append([]string{}, installbase.BtrfsOnlyBasePackages...), installdesktop.BtrfsOnlyDesktopPackages...)
 
-// expectedPackagesFor returns the package set this install must contain.
+// expectedPackagesFor returns the package set this install must contain. The
+// GPU driver set is not in DesktopPackages — the desktop step chose it for the
+// detected hardware and recorded it on the context (installdesktop/drivers.go)
+// — so the recorded set is what this install must contain. A context that never
+// ran the desktop step (a standalone --verify-system) carries none and the
+// driver packages are not checked; the base and desktop sets still are.
 func expectedPackagesFor(ctx *shared.InstallContext) []string {
-	if ctx.FileSystem != shared.FileSystemBtrfs {
-		return expectedPackages
+	list := append([]string{}, expectedPackages...)
+	if ctx.FileSystem == shared.FileSystemBtrfs {
+		list = append(list, btrfsOnlyPackages...)
 	}
-	return append(append([]string{}, expectedPackages...), btrfsOnlyPackages...)
+	return append(list, ctx.DriverPackages...)
 }
 
 // Run verifies that the installed system (mounted at /mnt) is complete and

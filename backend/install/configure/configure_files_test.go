@@ -669,6 +669,78 @@ func TestConfigureInitramfs_NoHooks(t *testing.T) {
 	}
 }
 
+// TestConfigureInitramfs_NvidiaModules: autodetect inspects the live session,
+// which has no NVIDIA module loaded, so an NVIDIA install must name the modules
+// in MODULES= itself — otherwise the branded splash never comes up early. A
+// non-NVIDIA set must leave MODULES alone, and a chosen NVIDIA set whose file
+// has no MODULES= line still gets the line.
+func TestConfigureInitramfs_NvidiaModules(t *testing.T) {
+	nvidiaSet := []string{"nvidia-open-lts", "nvidia-utils", "lib32-nvidia-utils"}
+	wantModules := "MODULES=(nvidia nvidia_drm nvidia_modeset)"
+
+	tests := []struct {
+		name    string
+		ctx     *shared.InstallContext
+		content string
+		want    []string
+		unwant  []string
+	}{
+		{
+			name:    "NVIDIA set names the modules",
+			ctx:     &shared.InstallContext{DriverPackages: nvidiaSet},
+			content: "MODULES=()\nHOOKS=(base)\n",
+			want:    []string{wantModules},
+		},
+		{
+			name:    "NVIDIA overwrites pre-existing modules",
+			ctx:     &shared.InstallContext{DriverPackages: nvidiaSet},
+			content: "MODULES=(foo bar)\nHOOKS=(base)\n",
+			want:    []string{wantModules},
+			unwant:  []string{"foo bar"},
+		},
+		{
+			name:    "NVIDIA set without a MODULES line",
+			ctx:     &shared.InstallContext{DriverPackages: nvidiaSet},
+			content: "HOOKS=(base)\n",
+			want:    []string{wantModules},
+		},
+		{
+			name:    "non-NVIDIA set keeps MODULES untouched",
+			ctx:     &shared.InstallContext{DriverPackages: []string{"vulkan-radeon", "lib32-vulkan-radeon", "lib32-mesa"}},
+			content: "MODULES=()\nHOOKS=(base)\n",
+			unwant:  []string{"nvidia"},
+		},
+		{
+			name:    "no driver set at all keeps MODULES untouched",
+			ctx:     &shared.InstallContext{},
+			content: "MODULES=()\nHOOKS=(base)\n",
+			unwant:  []string{"nvidia"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
+			fs := primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", tt.content)
+			defer primitives.SetFileSystem(fs)()
+
+			if err := configureInitramfs(tt.ctx); err != nil {
+				t.Fatalf("configureInitramfs() = %v, want nil", err)
+			}
+			got, _ := fs.Read(shared.MountRoot + "/etc/mkinitcpio.conf")
+			for _, want := range tt.want {
+				if !strings.Contains(got, want) {
+					t.Errorf("mkinitcpio.conf missing %q:\n%s", want, got)
+				}
+			}
+			for _, unwant := range tt.unwant {
+				if strings.Contains(got, unwant) {
+					t.Errorf("mkinitcpio.conf unexpectedly contains %q:\n%s", unwant, got)
+				}
+			}
+		})
+	}
+}
+
 // --- installLuksHint ---------------------------------------------------------
 
 func TestInstallLuksHint(t *testing.T) {

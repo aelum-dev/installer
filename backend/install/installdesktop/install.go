@@ -2,6 +2,7 @@ package installdesktop
 
 import (
 	"aelum-installer/backend/install/installbase"
+	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
 )
 
@@ -81,10 +82,10 @@ var DesktopPackages = []string{
 	"ttf-jetbrains-mono",
 	"ttf-jetbrains-mono-nerd",
 
-	// GPU drivers
-	"vulkan-radeon",
-	"vulkan-intel",
-	"vulkan-nouveau",
+	// GPU drivers are deliberately not here: the set depends on the hardware,
+	// and a fixed list is what made `pacman -S steam` ask between 13 providers
+	// for lib32-vulkan-driver. drivers.go picks the set for the detected GPU
+	// at the start of Run, and it always provides both Vulkan virtuals.
 
 	// Audio
 	"pipewire",
@@ -102,8 +103,21 @@ var BtrfsOnlyDesktopPackages = []string{
 	"btrfs-assistant",
 }
 
-// Run installs the desktop environment packages via pacstrap.
+// Run installs the desktop environment packages via pacstrap. The GPU driver
+// set is chosen first (drivers.go): the hardware decides which vendor's stack
+// ships, the set is never empty, and every set provides both the vulkan-driver
+// and lib32-vulkan-driver virtuals — so an installed system never gets the
+// provider question. The chosen set is recorded on ctx.DriverPackages for the
+// verify step to check.
 func Run(ctx *shared.InstallContext) error {
-	packages := installbase.AppendBtrfsOnly(ctx, DesktopPackages, BtrfsOnlyDesktopPackages)
+	if err := primitives.ValidateMountedSystem(); err != nil {
+		return err
+	}
+
+	drivers := ChooseDriverPackages(ctx)
+	base := installbase.AppendBtrfsOnly(ctx, DesktopPackages, BtrfsOnlyDesktopPackages)
+	packages := make([]string, 0, len(base)+len(drivers))
+	packages = append(packages, base...)
+	packages = append(packages, drivers...)
 	return installbase.InstallPackages(ctx, packages, "desktop environment")
 }

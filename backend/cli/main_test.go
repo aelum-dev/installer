@@ -229,6 +229,30 @@ func TestRun_RollbackInvalidDisk(t *testing.T) {
 	}
 }
 
+// --- --gpu-driver ------------------------------------------------------------
+
+func TestRun_InvalidGPUDriver(t *testing.T) {
+	// A bad --gpu-driver value is rejected before any step runs, so the
+	// failure is the flag itself and not a wrong driver set minutes later.
+	args := []string{"test", "--install", "/dev/vda", "--gpu-driver", "s3", "--dry-run"}
+	if code := run(args); code != 1 {
+		t.Errorf("run(--gpu-driver s3) = %d, want 1", code)
+	}
+}
+
+func TestRun_GPUDriverAccepted(t *testing.T) {
+	oldPath := validateDiskPathFunc
+	validateDiskPathFunc = func(string) error { return nil }
+	defer func() { validateDiskPathFunc = oldPath }()
+
+	for _, driver := range []string{"auto", "amd", "intel", "nvidia", "mesa"} {
+		args := []string{"test", "--format-disk", "/dev/vda", "--gpu-driver", driver, "--dry-run"}
+		if code := run(args); code != 0 {
+			t.Errorf("run(--gpu-driver %s) = %d, want 0", driver, code)
+		}
+	}
+}
+
 // Note: Full installation tests are omitted because they run the complete
 // installation simulation (60 seconds). See backend/install/installer_test.go
 // for installation logic tests.

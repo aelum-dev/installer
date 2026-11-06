@@ -173,7 +173,10 @@ const (
 // initramfs, the C library and init system everything else is built against, the
 // tools that write the boot and the filesystem a snapshot is made of, and the
 // display drivers - "before I changed the GPU driver" is the example every
-// snapshot doc uses. snapper keeps snapshots marked important=yes in their own
+// snapshot doc uses, and the driver set now depends on the hardware, so the
+// list carries every name installdesktop.DriverCandidatePackages can choose
+// (TestPacmanImportantTargetsCoverDriverCandidates pins the two together).
+// snapper keeps snapshots marked important=yes in their own
 // NUMBER_LIMIT_IMPORTANT quota, so without this list one kernel update's history
 // is evicted by ten unrelated small updates, which is exactly the state a user
 // wants to go back to. SUSE's snapper-zypp-plugin marks the same set.
@@ -181,7 +184,10 @@ const (
 // pacman matches Target against package names, so these are names, not globs.
 const pacmanImportantTargetList = "linux linux-lts linux-zen linux-hardened linux-rt linux-rt-lts " +
 	"linux-firmware mkinitcpio glibc systemd btrfs-progs snapper refind " +
-	"mesa nvidia vulkan-radeon vulkan-intel vulkan-nouveau"
+	"mesa lib32-mesa nvidia nvidia-open-lts nvidia-utils lib32-nvidia-utils " +
+	"vulkan-radeon lib32-vulkan-radeon vulkan-intel lib32-vulkan-intel " +
+	"vulkan-nouveau lib32-vulkan-nouveau vulkan-swrast lib32-vulkan-swrast " +
+	"vulkan-virtio"
 
 // pacmanImportantTargets is the same list as a slice, for tests that need to read
 // it back rather than grep a hook file.

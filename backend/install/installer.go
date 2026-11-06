@@ -36,6 +36,7 @@ type Installer struct {
 	lvm            bool
 	dryRun         bool
 	esp            string // ESP mount point (default: /mnt/efi)
+	gpuDriver      string // --gpu-driver override for the desktop step
 
 	// manualMode enables manual partitioning. When set, the format step runs
 	// partition.Apply with manualLayout instead of the automatic format.Run.
@@ -85,6 +86,9 @@ type InstallerConfig struct {
 	// sits below LVM, so enabling both encrypts the single physical volume.
 	Lvm    bool
 	DryRun bool
+	// GPUDriver is the --gpu-driver override for the desktop step's GPU
+	// detection: "auto" (detect) or a fixed vendor set. Empty means "auto".
+	GPUDriver string
 }
 
 // NewInstaller creates a new Installer instance from cfg.
@@ -101,6 +105,7 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		lvm:            cfg.Lvm,
 		dryRun:         cfg.DryRun,
 		esp:            shared.ESPMountPoint,
+		gpuDriver:      cfg.GPUDriver,
 		Logger:         shared.NewConsoleLogger(),
 	}
 }
@@ -372,6 +377,7 @@ func (inst *Installer) context() *InstallContext {
 		Luks:           inst.luks,
 		LuksPassphrase: luksPassphrase,
 		Lvm:            inst.lvm,
+		GPUDriver:      inst.gpuDriver,
 		Logger:         inst.Logger,
 		Cancel:         inst.cancel,
 	}

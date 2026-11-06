@@ -35,6 +35,20 @@ type InstallContext struct {
 	FileSystem string // root filesystem: "ext4" or "btrfs"
 	Logger     Logger // injected by Installer; nil if not set
 
+	// GPUDriver is the --gpu-driver override: "auto" (or empty — detect from
+	// the PCI bus) or one fixed vendor set ("amd", "intel", "nvidia",
+	// "mesa"). It is the escape hatch for hardware the vendor table cannot
+	// classify; the GUI never sets it.
+	GPUDriver string
+
+	// DriverPackages is the GPU driver set chosen for this install: recorded
+	// by the desktop step (install/installdesktop/drivers.go) from the
+	// detected hardware or the override, and reused by the verify step. It is
+	// never empty once the desktop step has run — every set provides both the
+	// vulkan-driver and lib32-vulkan-driver virtuals, which is what keeps
+	// pacman's provider question from ever appearing on an installed system.
+	DriverPackages []string
+
 	// ProgressCallback reports intermediate progress during a step.
 	// Called by the installer's tick goroutine to animate long-running steps.
 	// nil when no progress reporting is needed (e.g. CLI without UI).
