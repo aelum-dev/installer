@@ -240,6 +240,44 @@ The installer does not configure Secure Boot. If Secure Boot is enabled, the ker
 
 The installer rejects disks smaller than 8 GB. This is a hard limit because the base system + desktop require approximately 6–7 GB. Swap is provided by zram (compressed RAM) rather than an on-disk swap file, so no disk space is reserved for swap.
 
+### The provider question ("There are N providers available for vulkan-driver")
+
+`steam` and friends depend on the virtuals `vulkan-driver` and `lib32-vulkan-driver`, never on a
+driver by name. With no provider installed, pacman either asks — listing every candidate in
+repository order, which is ~13 for `lib32-vulkan-driver` — or, with `--noconfirm`, silently takes
+candidate #1 (`lib32-nvidia-utils`, ~430 MiB of wrong-hardware userspace on an AMD or Intel
+machine).
+
+A normal Aelum install never shows this question: the desktop step reads the PCI bus
+(`backend/install/installdesktop/drivers.go`) and installs the matching set — `vulkan-radeon` +
+`lib32-vulkan-radeon` for AMD, `vulkan-intel` + `lib32-vulkan-intel` for Intel,
+`nvidia-open-lts` + `nvidia-utils` + `lib32-nvidia-utils` for NVIDIA (Turing and newer),
+`vulkan-nouveau` for older NVIDIA, and Mesa/virtio for VMs. If the question appears anyway
+(detection missed the card, or a new virtual showed up), pick by vendor:
+
+| GPU | pick these names, not numbers |
+|-----|-------------------------------|
+| AMD | `vulkan-radeon`, `lib32-vulkan-radeon` |
+| Intel | `vulkan-intel`, `lib32-vulkan-intel` |
+| NVIDIA (Turing or newer) | `nvidia-open-lts`, `nvidia-utils`, `lib32-nvidia-utils` |
+| NVIDIA (older than Turing) | `vulkan-nouveau`, `lib32-vulkan-nouveau` |
+
+The numbers in the list are not stable — they follow repository order — so match the names.
+The package manager's provider chooser (`aelum-package-installer`) asks the same question once per
+install request and preselects pacman's own default.
+
+To force a set regardless of detection (testing, or the professional-NVIDIA PCI-id blind spot):
+
+```bash
+aelum-installer-cli --install /dev/sda --gpu-driver nvidia   # auto|amd|intel|nvidia|mesa
+```
+
+`--gpu-driver auto` (the default) detects from the PCI bus. Every set the table can produce is in
+the offline mirror because `backend/scripts/pkg-list.go` prints `DriverCandidatePackages` into the
+ISO build's list — and `lib32-*` names resolve there because the ISO build enables `[multilib]`
+(`docker/scripts/build-iso.sh`); the installed system gets `[multilib]` from
+`configure/pacman_repo.go`.
+
 ## Recovery: Starting Over
 
 If an installation is partially complete and you want to start fresh:
