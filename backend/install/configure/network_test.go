@@ -116,6 +116,7 @@ type snapshotWatcher struct {
 	fs         *primitivestest.MemFS
 	linkAt     bool
 	repoAt     bool
+	multilibAt bool
 	keyringAt  bool
 	keyTrusted bool
 	checked    bool
@@ -132,6 +133,7 @@ func (w *snapshotWatcher) observe(cmd *primitives.Command) {
 	_, w.linkAt = w.fs.SymlinkTarget(shared.MountRoot + resolvConfPath)
 	if content, ok := w.fs.Read(shared.MountRoot + "/etc/pacman.conf"); ok {
 		w.repoAt = strings.Contains(content, "["+shared.PacmanRepoName+"]")
+		w.multilibAt = hasPacmanSection(content, shared.PacmanMultilibRepoName)
 	}
 	w.keyringAt = w.fs.Exists(shared.MountRoot + shared.AelumKeyringPath)
 	w.keyTrusted = hasCall(w.rec.CallsFor("arch-chroot"),

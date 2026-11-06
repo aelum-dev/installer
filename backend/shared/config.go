@@ -204,6 +204,18 @@ const PacmanRepoServer = "https://cdn.aelum.dev/repo/$arch"
 // there is no reason to weaken the check.
 const PacmanRepoSigLevel = "Required DatabaseRequired"
 
+// PacmanMultilibRepoName is the 32-bit compatibility repository. The stock
+// pacman.conf ships it commented out and configure.enableMultilibRepo turns it
+// on: multilib is the only source of steam and the lib32-* libraries it needs,
+// and the package manager lists exactly the repositories pacman.conf names, so a
+// commented section is simply an invisible one.
+const PacmanMultilibRepoName = "multilib"
+
+// PacmanMirrorListPath is where every official repository's Server lines come
+// from. The file carries $repo, so the same list answers for core, extra and
+// multilib — which is why enabling multilib needs no Server line of its own.
+const PacmanMirrorListPath = "/etc/pacman.d/mirrorlist"
+
 // AelumKeyringPath is the Aelum release public key. It is source in the live
 // ISO (live-iso/airootfs/usr/share/aelum/keyring/), copied to the target by
 // install/isocopy at the same path, and fed to pacman-key by

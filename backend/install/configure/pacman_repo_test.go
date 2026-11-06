@@ -11,7 +11,9 @@ import (
 )
 
 // The stock pacman.conf as pacstrap lays it down, trimmed to the parts this
-// step must not disturb.
+// step must not disturb. The commented multilib block is here because it is what
+// the pacman package really ships, and because the section right above it must
+// not be the one that comes out uncommented.
 const stockPacmanConf = `[options]
 SigLevel = Required DatabaseOptional
 Include = /etc/pacman.d/mirrorlist
@@ -21,6 +23,21 @@ Include = /etc/pacman.d/mirrorlist
 
 [extra]
 Include = /etc/pacman.d/mirrorlist
+
+# If you want to run 32 bit applications on your x86_64 system,
+# enable the multilib repositories as required here.
+
+#[multilib-testing]
+#Include = /etc/pacman.d/mirrorlist
+
+#[multilib]
+#Include = /etc/pacman.d/mirrorlist
+
+# An example of a custom package repository.  See the pacman manpage for
+# tips on creating your own repositories.
+#[custom]
+#SigLevel = Optional TrustAll
+#Server = file:///home/custompkgs
 `
 
 func pacmanRepoFS(preloads ...func(*primitivestest.MemFS)) *primitivestest.MemFS {
@@ -47,6 +64,9 @@ func withPacmanConf(content string) func(*primitivestest.MemFS) {
 func withSyncDBs(fs *primitivestest.MemFS) {
 	fs.WithFile(shared.MountRoot+shared.PacmanSyncDir+"/aelum-offline.db", "offline mirror fixture")
 	fs.WithFile(shared.MountRoot+shared.PacmanSyncDir+"/core.db", "configured repository fixture")
+	// A database for a repository this installer enables is not foreign either,
+	// which is only true because the config is written first.
+	fs.WithFile(shared.MountRoot+shared.PacmanSyncDir+"/multilib.db", "multilib fixture")
 }
 
 func TestConfigurePacmanRepo_DropsTheLiveSessionsDatabase(t *testing.T) {
@@ -69,6 +89,11 @@ func TestConfigurePacmanRepo_DropsTheLiveSessionsDatabase(t *testing.T) {
 	// what the Updates page is about.
 	if !fs.Exists(shared.MountRoot + shared.PacmanSyncDir + "/core.db") {
 		t.Error("a configured repository's sync database was removed")
+	}
+	// multilib is configured by this same step, so its database is kept too —
+	// that is the order of ConfigurePacmanRepo, in an assertion.
+	if !fs.Exists(shared.MountRoot + shared.PacmanSyncDir + "/multilib.db") {
+		t.Error("the sync database of a repository this step enables was removed")
 	}
 }
 
@@ -142,10 +167,11 @@ func TestConfigurePacmanRepo_AppendsBlockAndTrustsKey(t *testing.T) {
 func TestConfigurePacmanRepo_Idempotent(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
-	// A pacman.conf that already carries the block (the installer re-run over
-	// an existing system).
-	enabled := stockPacmanConf + "\n[aelum]\nSigLevel = Required DatabaseRequired\nServer = https://cdn.aelum.dev/repo/$arch\n"
-	fs := pacmanRepoFS(withKeyring, withPacmanConf(enabled))
+	// A pacman.conf that already carries both blocks: the installer re-run over
+	// an existing Aelum system, where multilib is uncommented too.
+	installed := strings.Replace(stockPacmanConf, "#[multilib]\n#Include", "[multilib]\nInclude", 1) +
+		"\n[aelum]\nSigLevel = Required DatabaseRequired\nServer = https://cdn.aelum.dev/repo/$arch\n"
+	fs := pacmanRepoFS(withKeyring, withPacmanConf(installed))
 	defer primitives.SetFileSystem(fs)()
 
 	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
@@ -153,12 +179,134 @@ func TestConfigurePacmanRepo_Idempotent(t *testing.T) {
 	}
 
 	content, _ := fs.Read(shared.MountRoot + "/etc/pacman.conf")
-	if content != enabled {
+	if content != installed {
 		t.Errorf("an enabled pacman.conf was modified:\n%s", content)
 	}
 	if strings.Count(content, "["+shared.PacmanRepoName+"]") != 1 {
 		t.Errorf("a second [%s] section was appended; a later section would shadow the first", shared.PacmanRepoName)
 	}
+}
+
+func TestConfigurePacmanRepo_EnablesMultilib(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	fs := pacmanRepoFS(withKeyring)
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil", err)
+	}
+
+	content, ok := fs.Read(shared.MountRoot + "/etc/pacman.conf")
+	if !ok {
+		t.Fatal("pacman.conf was not written")
+	}
+	// The stock example, uncommented: the same mirrorlist core and extra use,
+	// because it carries $repo. No SigLevel line — multilib is signed with the
+	// Arch keys the system already trusts.
+	want := "\n[" + shared.PacmanMultilibRepoName + "]\nInclude = " + shared.PacmanMirrorListPath + "\n"
+	if !strings.Contains(content, want) {
+		t.Errorf("multilib was not enabled on the mirrorlist the file already uses:\n%s", content)
+	}
+	if strings.Count(content, "\n["+shared.PacmanMultilibRepoName+"]\n") != 1 {
+		t.Errorf("the [%s] section was not written exactly once:\n%s", shared.PacmanMultilibRepoName, content)
+	}
+	// The other commented examples stay commented: [multilib-testing] would add a
+	// channel nobody asked for, and an empty [custom] would stop pacman — and with
+	// it the package manager — on every command.
+	for _, other := range []string{"multilib-testing", "custom"} {
+		if hasPacmanSection(content, other) {
+			t.Errorf("the [%s] example was enabled too:\n%s", other, content)
+		}
+	}
+	if !hasPacmanSection(content, "core") || !hasPacmanSection(content, "extra") {
+		t.Errorf("the stock repositories were disturbed:\n%s", content)
+	}
+}
+
+func TestConfigurePacmanRepo_LeavesAHandEnabledMultilibAlone(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	// A system where someone enabled multilib by hand, in the shape the stock
+	// example suggests. A second [multilib] section would shadow their Server
+	// line, which is the same failure the [aelum] idempotence guard exists for.
+	handEnabled := "[options]\nSigLevel = Required DatabaseOptional\nInclude = /etc/pacman.d/mirrorlist\n\n" +
+		"[multilib]\nSigLevel = Optional TrustAll\nServer = https://mirrors.kernel.org/archlinux/$repo/os/$arch\n"
+	fs := pacmanRepoFS(withKeyring, withPacmanConf(handEnabled))
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil", err)
+	}
+
+	content, _ := fs.Read(shared.MountRoot + "/etc/pacman.conf")
+	if strings.Count(content, "\n["+shared.PacmanMultilibRepoName+"]\n") != 1 {
+		t.Errorf("a second [%s] section was appended:\n%s", shared.PacmanMultilibRepoName, content)
+	}
+	if !strings.Contains(content, "Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch") {
+		t.Errorf("the Server line chosen by hand was not preserved:\n%s", content)
+	}
+}
+
+func TestConfigurePacmanRepo_WritesMultilibWhenTheExampleIsGone(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	// A pacman.conf someone edited by hand: no commented example to uncomment, so
+	// the section has to be written.
+	handEdited := "[options]\nSigLevel = Required DatabaseOptional\nInclude = /etc/pacman.d/mirrorlist\n\n[core]\nInclude = /etc/pacman.d/mirrorlist\n"
+	fs := pacmanRepoFS(withKeyring, withPacmanConf(handEdited))
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil", err)
+	}
+
+	content, _ := fs.Read(shared.MountRoot + "/etc/pacman.conf")
+	if !strings.Contains(content, "\n["+shared.PacmanMultilibRepoName+"]\nInclude = "+shared.PacmanMirrorListPath) {
+		t.Errorf("multilib was not written into a config that carries no example:\n%s", content)
+	}
+	if !hasPacmanSection(content, "core") {
+		t.Errorf("the existing repositories were not preserved:\n%s", content)
+	}
+}
+
+func TestUncommentPacmanSection(t *testing.T) {
+	t.Run("uncomments the example and stops at the next one", func(t *testing.T) {
+		got, found := uncommentPacmanSection(
+			"#[multilib]\n#Include = /etc/pacman.d/mirrorlist\n#[custom]\n#Server = file:///home/custompkgs\n",
+			shared.PacmanMultilibRepoName)
+		if !found {
+			t.Fatal("the commented section was not found")
+		}
+		want := "[multilib]\nInclude = /etc/pacman.d/mirrorlist\n#[custom]\n#Server = file:///home/custompkgs\n"
+		if got != want {
+			t.Errorf("uncommented the wrong lines:\n%s", got)
+		}
+	})
+
+	t.Run("a header with nothing under it gets the mirrorlist", func(t *testing.T) {
+		// A repository with no Server or Include line is a config error, and a
+		// config error stops every pacman command on the system.
+		got, found := uncommentPacmanSection(
+			"#[multilib]\n\n[extra]\nServer = file:///extra\n", shared.PacmanMultilibRepoName)
+		if !found {
+			t.Fatal("the commented section was not found")
+		}
+		if !strings.Contains(got, "[multilib]\nInclude = "+shared.PacmanMirrorListPath+"\n") {
+			t.Errorf("the section was left with no download source:\n%s", got)
+		}
+		if !strings.Contains(got, "[extra]\nServer = file:///extra") {
+			t.Errorf("the section after it was changed:\n%s", got)
+		}
+	})
+
+	t.Run("a config without the section is returned unchanged", func(t *testing.T) {
+		content := "[core]\nInclude = /etc/pacman.d/mirrorlist\n"
+		got, found := uncommentPacmanSection(content, shared.PacmanMultilibRepoName)
+		if found || got != content {
+			t.Errorf("found a section that is not there: found=%v\n%s", found, got)
+		}
+	})
 }
 
 func TestConfigurePacmanRepo_MissingKeyringFails(t *testing.T) {
@@ -233,6 +381,9 @@ func TestConfigurePacmanRepoIsInsideTheFactorySnapshot(t *testing.T) {
 	}
 	if !watch.repoAt {
 		t.Error("the [aelum] repository was not enabled when the snapshot was taken")
+	}
+	if !watch.multilibAt {
+		t.Error("multilib was not enabled when the snapshot was taken")
 	}
 	if !watch.keyTrusted {
 		t.Error("pacman-key did not trust the Aelum key before the snapshot was taken")

@@ -41,6 +41,8 @@ export const MirrorListServerPrefix = "Server = ";
 export const PacmanRepoName = "aelum";
 export const PacmanRepoServer = "https://cdn.aelum.dev/repo/$arch";
 export const PacmanRepoSigLevel = "Required DatabaseRequired";
+export const PacmanMultilibRepoName = "multilib";
+export const PacmanMirrorListPath = "/etc/pacman.d/mirrorlist";
 export const AelumKeyringPath = "/usr/share/aelum/keyring/aelum-release.gpg";
 export const AelumSigningKeyFingerprint = "728F5F59FB2F5A88C6EE28D4930A672A3A1B5B60";
 export const PacmanConfPath = "/etc/pacman.conf";

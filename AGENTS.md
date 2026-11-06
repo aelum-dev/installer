@@ -75,6 +75,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants, ext4+LVM /home)
         bootloader.go           — rEFInd install + branded theme + per-install menu fragment (loads aelum/<id>/ kernel; LUKS-aware root options) + the empty snapshot fragment a btrfs install's refind.conf includes
         system.go               — hostname/timezone/locale/keymap/NTP/mirrorlist + initramfs HOOKS
+        pacman_repo.go          — the installed system's pacman.conf: appends the [aelum] block, trusts the release key in the target's keyring, uncomments the stock [multilib] section (the only source of steam and its lib32-* dependencies; the mirrorlist carries $repo so no Server line is needed), and drops sync DBs of repositories the target does not name (+ pacman_repo_test.go)
         greetd.go               — greetd + Dux Greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + aelum-boot-progress.service (finishes the splash bar)
         services.go             — zram swap config + systemd service enablement
@@ -82,7 +83,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         refind_snapshots.go     — the installed system's snapshot boot entries: aelum-refind-snapshots generator, its systemd unit, and the snapper plugin that runs it; btrfs only
         snapshot_state.go       — the systemd generator that gives a snapshot boot writable state directories (aelum-snapshot-state → tmpfs .mount units) and announces the boot in /run/aelum-snapshot-boot, so a snapshot comes up at the greeter and the prompt knows its number; btrfs only
         (no snapshot_restore.go / snapshot_prompt.go any more: the helper, its polkit policy + rule, the Quickshell dialog, its i18n/ and its user unit are **source in live-iso/airootfs** and reach the target through the btrfs-only copy jobs in install/isocopy/. The paths they land at are the constants in shared/config.go — SnapshotRestore*/SnapshotPrompt* — and snapshot_shipped_test.go is what holds the shipped files against them)
-        (+ fstab_test.go, swap_test.go, snapper_test.go, refind_snapshots_test.go, snapshot_state_test.go, snapshot_shipped_test.go)
+        (+ fstab_test.go, swap_test.go, snapper_test.go, pacman_repo_test.go, refind_snapshots_test.go, snapshot_state_test.go, snapshot_shipped_test.go)
       partition/
         partition.go            — ComputeLayout(), Apply() (manual partitioning: formats Boot + System)
         validate.go             — Validate()/ValidateFeasible() invariants

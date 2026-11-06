@@ -82,7 +82,7 @@ func copyMirrorList(regionCode string) error {
 		return fmt.Errorf("no mirror list available for region %q: %w", regionCode, err)
 	}
 	content := uncommentMirrors(string(rawContent))
-	return primitives.WriteFile("/etc/pacman.d/mirrorlist", content)
+	return primitives.WriteFile(shared.PacmanMirrorListPath, content)
 }
 
 // configureInitramfs writes the installed system's mkinitcpio HOOKS line so the

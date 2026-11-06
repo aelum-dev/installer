@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"aelum-installer/backend/install/primitives"
@@ -14,12 +15,12 @@ import (
 // Aelum package repository
 // ============================================================================
 
-// ConfigurePacmanRepo enables the [aelum] repository in the installed system's
-// pacman.conf, trusts its signing key in the target's keyring, and drops the
-// sync databases of repositories the target does not configure (see
-// dropForeignSyncDBs). A fresh install can then install the distro's own
-// applications with no hand-editing; the repository itself is published by
-// repo/publish-repo.sh (repo/REPO.md).
+// ConfigurePacmanRepo enables the [aelum] repository and the multilib one in the
+// installed system's pacman.conf, trusts the Aelum signing key in the target's
+// keyring, and drops the sync databases of repositories the target does not
+// configure (see dropForeignSyncDBs). A fresh install can then install the
+// distro's own applications, and anything 32-bit, with no hand-editing; the
+// [aelum] repository itself is published by repo/publish-repo.sh (repo/REPO.md).
 //
 // It runs on every filesystem — the repository is not part of the snapshot
 // machinery — and it must run before ConfigureSnapper, because the "after
@@ -34,8 +35,11 @@ func ConfigurePacmanRepo(ctx *shared.InstallContext) error {
 	if err != nil {
 		return err
 	}
-	// After the append, so the decision is made with the repository block the
-	// target really has.
+	if content, err = enableMultilibRepo(ctx, content); err != nil {
+		return err
+	}
+	// After both, so the decision is made with the repository blocks the target
+	// really has.
 	if err := dropForeignSyncDBs(ctx, content); err != nil && ctx.Logger != nil {
 		ctx.Logger.Error("Warning: could not clear the live session's package databases (non-fatal): %v", err)
 	}
@@ -76,6 +80,84 @@ func enablePacmanRepo(ctx *shared.InstallContext) (string, error) {
 		ctx.Logger.Info("pacman repository [%s] enabled: %s", shared.PacmanRepoName, shared.PacmanRepoServer)
 	}
 	return string(data) + block, nil
+}
+
+// enableMultilibRepo turns the stock file's commented multilib section into a
+// live one and returns pacman.conf as it now reads.
+//
+// multilib is the only source of steam and of the lib32-* libraries it depends
+// on, and the package manager's Browse lists exactly the repositories
+// pacman.conf names (package-installer/src/db.rs::read_config_repos) — a
+// commented section is an invisible one, so an install that left it commented
+// could not list or install any of it without the user editing a config file.
+// The mirrorlist this installer writes carries $repo, so core, extra and
+// multilib are answered by the same mirrors and the section is the two lines the
+// stock file already ships, uncommented. No SigLevel line is written: multilib is
+// signed with the Arch packager keys the system already trusts, so the stock
+// example's "Optional TrustAll" would only weaken a check that works.
+func enableMultilibRepo(ctx *shared.InstallContext, content string) (string, error) {
+	if hasPacmanSection(content, shared.PacmanMultilibRepoName) {
+		if ctx.Logger != nil {
+			ctx.Logger.Info("pacman repository [%s] already enabled", shared.PacmanMultilibRepoName)
+		}
+		return content, nil
+	}
+
+	updated, found := uncommentPacmanSection(content, shared.PacmanMultilibRepoName)
+	if !found {
+		// Nothing commented to uncomment — a pacman.conf someone edited by hand.
+		// The section has to be written instead, on the same mirrorlist.
+		updated += "\n[" + shared.PacmanMultilibRepoName + "]\n" +
+			"Include = " + shared.PacmanMirrorListPath + "\n"
+	}
+	if err := primitives.WriteFile(shared.PacmanConfPath, updated); err != nil {
+		return "", fmt.Errorf("failed to enable [%s] in pacman.conf: %w", shared.PacmanMultilibRepoName, err)
+	}
+	if ctx.Logger != nil {
+		ctx.Logger.Info("pacman repository [%s] enabled through %s",
+			shared.PacmanMultilibRepoName, shared.PacmanMirrorListPath)
+	}
+	return updated, nil
+}
+
+// uncommentPacmanSection uncomments a commented-out repository section — its
+// header and the commented lines up to the first blank one, which is where that
+// example ends — and reports whether it found one. A section left without a
+// Server or Include line gets the mirrorlist the rest of the file uses: pacman
+// treats a repository with no download source as a config error, and a config
+// error stops every pacman command on the system.
+func uncommentPacmanSection(content, name string) (string, bool) {
+	lines := strings.Split(content, "\n")
+	for i := range lines {
+		if strings.TrimSpace(lines[i]) != "#["+name+"]" {
+			continue
+		}
+		lines[i] = "[" + name + "]"
+		end, hasSource := i+1, false
+		for end < len(lines) {
+			line := strings.TrimSpace(lines[end])
+			// A blank line, a real section header, or the next commented example
+			// all mean this section's lines are behind us.
+			if line == "" || strings.HasPrefix(line, "[") || strings.HasPrefix(line, "#[") {
+				break
+			}
+			if strings.HasPrefix(line, "#") {
+				line = strings.TrimPrefix(line, "#")
+				lines[end] = line
+			}
+			if key, _, ok := strings.Cut(line, "="); ok {
+				if k := strings.TrimSpace(key); strings.EqualFold(k, "Server") || strings.EqualFold(k, "Include") {
+					hasSource = true
+				}
+			}
+			end++
+		}
+		if !hasSource {
+			lines = slices.Insert(lines, end, "Include = "+shared.PacmanMirrorListPath)
+		}
+		return strings.Join(lines, "\n"), true
+	}
+	return content, false
 }
 
 // hasPacmanSection reports whether pacman.conf already defines the section.
