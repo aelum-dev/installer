@@ -1,0 +1,21 @@
+# gitleaks config for the Aelum installer (CI: .github/workflows/ci.yml → security).
+#
+# [extend] + useDefault keeps gitleaks' built-in rules — this file only allows
+# one value through, so a real secret still fails the build.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+A PGP fingerprint is a public identifier, not a credential: the release key's is
+published on aelum.dev over WKD and quoted in repo/REPO.md, and pacman itself
+prints it when it trusts the key. The installer holds it as one constant
+(backend/shared/config.go → AelumSigningKeyFingerprint), which
+backend/scripts/gen-ts-constants.go copies into frontend/src/lib/constants.ts,
+so the same public value appears in two tracked files. Same value as that
+constant — if the signing key ever rotates, update it here too.
+"""
+regexes = [
+  '''728F5F59FB2F5A88C6EE28D4930A672A3A1B5B60''',
+]
