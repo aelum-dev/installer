@@ -58,8 +58,16 @@ export function GetManualMode() {
   return window['go']['gui']['App']['GetManualMode']();
 }
 
+export function GetRegions() {
+  return window['go']['gui']['App']['GetRegions']();
+}
+
 export function GetSelectedLanguage() {
   return window['go']['gui']['App']['GetSelectedLanguage']();
+}
+
+export function GetSelectedRegion() {
+  return window['go']['gui']['App']['GetSelectedRegion']();
 }
 
 export function GetStartPage() {
@@ -108,6 +116,10 @@ export function SetLvm(arg1) {
 
 export function SetSelectedLanguage(arg1) {
   return window['go']['gui']['App']['SetSelectedLanguage'](arg1);
+}
+
+export function SetSelectedRegion(arg1) {
+  return window['go']['gui']['App']['SetSelectedRegion'](arg1);
 }
 
 export function SetStartPage(arg1) {

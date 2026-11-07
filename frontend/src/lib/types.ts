@@ -63,11 +63,23 @@ export interface ManualLayout {
 }
 
 // LanguageOption is one entry in the language picker, mirrored from the backend
-// GetLanguages() binding.
+// GetLanguages() binding. A language is only what the system reads and writes —
+// where the machine is comes from RegionOption.
 export interface LanguageOption {
-	code: string; // backend locale code, e.g. "en_US"
-	name: string; // display name, e.g. "English (US)"
+	code: string; // backend language code, e.g. "en_US"
+	name: string; // display name, e.g. "English"
 	locale: string; // full backend locale, e.g. "en_US.UTF-8"
+}
+
+// RegionOption is one entry in the location picker, mirrored from the backend
+// GetRegions() binding: a country Arch has mirrors for, or the worldwide list.
+// Choosing one sets the installed system's clock, console keymap and mirrors —
+// never its language.
+export interface RegionOption {
+	code: string; // ISO 3166-1 alpha-2 (or "worldwide")
+	name: string; // display name, as the Arch mirrorlist spells its sections
+	timezone: string; // zoneinfo name, e.g. "Europe/Kyiv"
+	keymap: string; // console keymap name, e.g. "ua"
 }
 
 // DiskInfo represents a block device discovered on the system.

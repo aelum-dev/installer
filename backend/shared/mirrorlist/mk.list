@@ -1,0 +1,7 @@
+##
+## Arch Linux mirrorlist for North Macedonia (mk)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://mk.mirrors.mk/archlinux/$repo/os/$arch
+#Server = https://mirror.t-home.mk/archlinux/$repo/os/$arch

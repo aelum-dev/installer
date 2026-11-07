@@ -20,6 +20,8 @@ import {
 	GetLanguages as rawGetLanguages,
 	GetManualLayout as rawGetManualLayout,
 	GetSelectedLanguage,
+	GetSelectedRegion,
+	GetRegions as rawGetRegions,
 	GetStartPage as rawGetStartPage,
 	RebootAndClose,
 	SaveDiskSelection,
@@ -30,6 +32,7 @@ import {
 	SetLuksPassphrase,
 	SetLvm,
 	SetSelectedLanguage,
+	SetSelectedRegion,
 	SetStartPage,
 	SetWallpaper,
 	StartInstallation,
@@ -40,7 +43,7 @@ import {
 import { EventsOn, LogInfo } from '@wails/runtime/runtime.js';
 import { gui } from '@wails/go/models';
 import type { shared } from '@wails/go/models';
-import type { DiskInfo, LanguageOption, ManualLayout, PartitionEntry } from '$lib/types';
+import type { DiskInfo, LanguageOption, ManualLayout, PartitionEntry, RegionOption } from '$lib/types';
 
 // ── Pass-through bindings (signatures already line up) ──────────────────────
 
@@ -48,6 +51,7 @@ export {
 	ClearStartPage,
 	GetDryRun,
 	GetSelectedLanguage,
+	GetSelectedRegion,
 	RebootAndClose,
 	SaveDiskSelection,
 	SaveUserAccount,
@@ -56,6 +60,7 @@ export {
 	SetLuksPassphrase,
 	SetLvm,
 	SetSelectedLanguage,
+	SetSelectedRegion,
 	SetStartPage,
 	SetWallpaper,
 	StartInstallation,
@@ -98,6 +103,12 @@ export async function GetDiskPartitions(path: string): Promise<PartitionEntry[]>
 
 export async function GetLanguages(): Promise<LanguageOption[]> {
 	return (await rawGetLanguages()) as unknown as LanguageOption[];
+}
+
+// GetRegions returns the locations the backend can supply: the countries Arch has
+// mirror sections for, plus the worldwide list.
+export async function GetRegions(): Promise<RegionOption[]> {
+	return (await rawGetRegions()) as unknown as RegionOption[];
 }
 
 export async function GetStartPage(): Promise<number> {

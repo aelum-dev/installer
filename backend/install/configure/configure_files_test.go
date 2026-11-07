@@ -492,10 +492,14 @@ func TestConfigureSystemBase(t *testing.T) {
 	fs := primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/locale.gen", "#en_US.UTF-8 UTF-8\n")
 	defer primitives.SetFileSystem(fs)()
 
+	// The case the split exists for: an English-speaking person in Ukraine. Each
+	// half of the system config must follow its own input — the locale follows the
+	// language, the clock, console keymap and mirrors follow the country.
 	ctx := &shared.InstallContext{
 		Username: "alice",
 		Hostname: "aelum",
-		Region:   shared.Regions["en_US"],
+		Locale:   "en_US.UTF-8",
+		Region:   shared.GetRegion("ua"),
 	}
 	if err := ConfigureSystemBase(ctx); err != nil {
 		t.Fatalf("ConfigureSystemBase() = %v, want nil", err)
@@ -510,13 +514,31 @@ func TestConfigureSystemBase(t *testing.T) {
 	if got, _ := fs.Read(shared.MountRoot + "/etc/locale.conf"); got != "LANG=en_US.UTF-8\n" {
 		t.Errorf("locale.conf = %q", got)
 	}
+
+	ln := rec.CallsFor("ln")
+	if len(ln) != 1 || !strings.Contains(strings.Join(ln[0], " "), "/usr/share/zoneinfo/Europe/Kyiv") {
+		t.Errorf("timezone not set from the region (ln calls: %v)", ln)
+	}
+
 	vconsole, _ := fs.Read(shared.MountRoot + "/etc/vconsole.conf")
-	if !strings.Contains(vconsole, "KEYMAP=us") || !strings.Contains(vconsole, "FONT=ter-132n") {
+	if !strings.Contains(vconsole, "KEYMAP=ua") || !strings.Contains(vconsole, "FONT=ter-132n") {
 		t.Errorf("vconsole.conf = %q", vconsole)
 	}
+
 	mirror, ok := fs.Read(shared.MountRoot + "/etc/pacman.d/mirrorlist")
 	if !ok || !strings.Contains(mirror, "Server = ") {
-		t.Errorf("mirrorlist not written/uncommented (ok=%v):\n%s", ok, mirror)
+		t.Fatalf("mirrorlist not written/uncommented (ok=%v):\n%s", ok, mirror)
+	}
+	// The chosen country's mirrors lead, and the worldwide list is behind them:
+	// a thin national section must not be the only thing an install can reach.
+	if !strings.Contains(mirror, "Server = https://mirror.mirohost.net/archlinux/") {
+		t.Errorf("mirrorlist has no Ukrainian mirror:\n%s", mirror)
+	}
+	if !strings.Contains(mirror, "Server = https://geo.mirror.pkgbuild.com/") {
+		t.Errorf("mirrorlist has no worldwide fallback:\n%s", mirror)
+	}
+	if strings.Index(mirror, "mirohost.net") > strings.Index(mirror, "geo.mirror.pkgbuild.com") {
+		t.Error("the worldwide fallback is listed before the country's own mirrors")
 	}
 }
 
@@ -528,6 +550,7 @@ func TestConfigureSystemBase_Preconditions(t *testing.T) {
 	}{
 		{"no username", func(c *shared.InstallContext) { c.Username = "" }, "username not set"},
 		{"no region", func(c *shared.InstallContext) { c.Region.Code = "" }, "region not set"},
+		{"no locale", func(c *shared.InstallContext) { c.Locale = "" }, "locale not set"},
 		{"no hostname", func(c *shared.InstallContext) { c.Hostname = "" }, "hostname not set"},
 	}
 	for _, tt := range tests {
@@ -536,13 +559,23 @@ func TestConfigureSystemBase_Preconditions(t *testing.T) {
 			defer primitives.SetCommandRunner(rec)()
 			defer primitives.SetFileSystem(primitivestest.NewMemFS())()
 
-			ctx := &shared.InstallContext{Username: "alice", Hostname: "aelum", Region: shared.Regions["en_US"]}
+			ctx := newSystemContext()
 			tt.mutate(ctx)
 			err := ConfigureSystemBase(ctx)
 			if err == nil || !strings.Contains(err.Error(), tt.wantMsg) {
 				t.Fatalf("error = %v, want %q", err, tt.wantMsg)
 			}
 		})
+	}
+}
+
+// newSystemContext is the ordinary case: one language, one country, both set.
+func newSystemContext() *shared.InstallContext {
+	return &shared.InstallContext{
+		Username: "alice",
+		Hostname: "aelum",
+		Locale:   "en_US.UTF-8",
+		Region:   shared.GetRegion("us"),
 	}
 }
 
@@ -554,7 +587,7 @@ func TestConfigureSystemBase_LocaleNotInGen(t *testing.T) {
 
 	// A locale.gen without the locale must not abort the install after the
 	// (long) pacstrap steps: append the UTF-8 line and let locale-gen verify it.
-	ctx := &shared.InstallContext{Username: "alice", Hostname: "aelum", Region: shared.Regions["en_US"]}
+	ctx := newSystemContext()
 	if err := ConfigureSystemBase(ctx); err != nil {
 		t.Fatalf("ConfigureSystemBase() = %v, want nil", err)
 	}
@@ -570,7 +603,7 @@ func TestConfigureSystemBase_AlreadyEnabledLocale(t *testing.T) {
 	fs := primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/locale.gen", "en_US.UTF-8 UTF-8\n#de_DE.UTF-8 UTF-8\n")
 	defer primitives.SetFileSystem(fs)()
 
-	ctx := &shared.InstallContext{Username: "alice", Hostname: "aelum", Region: shared.Regions["en_US"]}
+	ctx := newSystemContext()
 	if err := ConfigureSystemBase(ctx); err != nil {
 		t.Fatalf("ConfigureSystemBase() = %v, want nil for an already-enabled locale", err)
 	}

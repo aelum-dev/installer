@@ -1,0 +1,9 @@
+##
+## Arch Linux mirrorlist for Worldwide (worldwide)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://fastly.mirror.pkgbuild.com/$repo/os/$arch
+#Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
+#Server = https://ftpmirror.infania.net/mirror/archlinux/$repo/os/$arch
+#Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch

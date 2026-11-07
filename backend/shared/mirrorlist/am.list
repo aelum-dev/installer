@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for Armenia (am)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://mirrors.teamcloud.am/archlinux/$repo/os/$arch

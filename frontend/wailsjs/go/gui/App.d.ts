@@ -32,7 +32,11 @@ export function GetManualLayout(arg1:string):Promise<shared.ManualLayout>;
 
 export function GetManualMode():Promise<boolean>;
 
+export function GetRegions():Promise<Array<shared.Region>>;
+
 export function GetSelectedLanguage():Promise<string>;
+
+export function GetSelectedRegion():Promise<string>;
 
 export function GetStartPage():Promise<number>;
 
@@ -57,6 +61,8 @@ export function SetLuksPassphrase(arg1:string):Promise<void>;
 export function SetLvm(arg1:boolean):Promise<void>;
 
 export function SetSelectedLanguage(arg1:string):Promise<void>;
+
+export function SetSelectedRegion(arg1:string):Promise<void>;
 
 export function SetStartPage(arg1:gui.PageID):Promise<void>;
 

@@ -19,11 +19,27 @@ func TestBindings_GetLanguages(t *testing.T) {
 	}
 }
 
+func TestBindings_GetRegions(t *testing.T) {
+	a := NewApp(false)
+	regions := a.GetRegions()
+	if len(regions) == 0 {
+		t.Fatal("GetRegions() returned no regions")
+	}
+	for _, r := range regions {
+		if r.Code == "" || r.Name == "" || r.Timezone == "" {
+			t.Errorf("region is incomplete: %+v", r)
+		}
+	}
+}
+
 func TestBindings_SelectionRoundTrip(t *testing.T) {
 	a := NewApp(false)
 
 	if a.GetSelectedLanguage() != "" {
 		t.Errorf("fresh selected language = %q, want empty", a.GetSelectedLanguage())
+	}
+	if a.GetSelectedRegion() != "" {
+		t.Errorf("fresh selected region = %q, want empty", a.GetSelectedRegion())
 	}
 	if err := a.SetSelectedLanguage("de_DE"); err != nil {
 		t.Fatalf("SetSelectedLanguage: %v", err)
@@ -31,8 +47,34 @@ func TestBindings_SelectionRoundTrip(t *testing.T) {
 	if got := a.GetSelectedLanguage(); got != "de_DE" {
 		t.Errorf("GetSelectedLanguage() = %q, want de_DE", got)
 	}
-	if a.region.Code != "de_DE" {
-		t.Errorf("region = %+v, want de_DE", a.region)
+	// Choosing a language pre-fills the country of that language — that is the
+	// whole link that remains between the two.
+	if got := a.GetSelectedRegion(); got != "de" {
+		t.Errorf("selected region = %q, want de", got)
+	}
+	if a.locale != "de_DE.UTF-8" {
+		t.Errorf("locale = %q, want de_DE.UTF-8", a.locale)
+	}
+
+	// The location is then its own choice: English, on Ukrainian mirrors.
+	if err := a.SetSelectedLanguage("en_US"); err != nil {
+		t.Fatalf("SetSelectedLanguage(en_US): %v", err)
+	}
+	if err := a.SetSelectedRegion("ua"); err != nil {
+		t.Fatalf("SetSelectedRegion(ua): %v", err)
+	}
+	if got := a.GetSelectedRegion(); got != "ua" {
+		t.Errorf("selected region = %q, want ua", got)
+	}
+	if a.region.Timezone != "Europe/Kyiv" || a.region.Keymap != "ua" {
+		t.Errorf("region = %+v, want the Ukrainian clock and keyboard", a.region)
+	}
+	if a.locale != "en_US.UTF-8" {
+		t.Errorf("locale = %q, want en_US.UTF-8 — the location must not move the language", a.locale)
+	}
+
+	if err := a.SetSelectedRegion("not-a-country"); err == nil {
+		t.Error("SetSelectedRegion accepted a code that is not a country")
 	}
 
 	a.SaveDiskSelection(shared.DiskSelectionData{DiskID: "/dev/vda", FileSystem: shared.FileSystemBtrfs})

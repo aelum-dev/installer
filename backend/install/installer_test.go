@@ -50,7 +50,8 @@ func TestInstaller_Context(t *testing.T) {
 		diskID:   "/dev/sda",
 		username: "testuser",
 		password: []byte("testpass"),
-		region:   shared.GetRegion("en_US"),
+		locale:   "en_US.UTF-8",
+		region:   shared.GetRegion("us"),
 		esp:      shared.ESPMountPoint,
 	}
 
@@ -63,6 +64,14 @@ func TestInstaller_Context(t *testing.T) {
 	}
 	if ctx.Username != "testuser" {
 		t.Errorf("expected username testuser, got %s", ctx.Username)
+	}
+	// Language and location travel apart: the context must carry both, and the
+	// locale must not be derived from the region.
+	if ctx.Locale != "en_US.UTF-8" {
+		t.Errorf("ctx.Locale = %q, want en_US.UTF-8", ctx.Locale)
+	}
+	if ctx.Region.Code != "us" {
+		t.Errorf("ctx.Region.Code = %q, want us", ctx.Region.Code)
 	}
 }
 

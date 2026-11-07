@@ -25,6 +25,9 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	if ctx.Region.Code == "" {
 		return fmt.Errorf("region not set")
 	}
+	if ctx.Locale == "" {
+		return fmt.Errorf("locale not set")
+	}
 	region := ctx.Region
 
 	if ctx.Hostname == "" {
@@ -45,7 +48,10 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to read locale.gen: %w", err)
 	}
-	localeGenContent := enableLocale(string(data), region.Locale)
+	// The locale comes from the language the person chose; the timezone, console
+	// keymap and mirrors below come from where the machine is. They are separate
+	// inputs because they are separate questions.
+	localeGenContent := enableLocale(string(data), ctx.Locale)
 	if err := primitives.WriteFile("/etc/locale.gen", localeGenContent); err != nil {
 		return err
 	}
@@ -58,7 +64,7 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	if err := primitives.WriteFile("/etc/locale.conf", "LANG="+region.Locale+"\n"); err != nil {
+	if err := primitives.WriteFile("/etc/locale.conf", "LANG="+ctx.Locale+"\n"); err != nil {
 		return err
 	}
 
@@ -77,8 +83,12 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	return copyMirrorList(region.Code)
 }
 
+// copyMirrorList writes the installed system's mirror list: the chosen country's
+// mirrors first, then the worldwide ones as a fallback (shared.BuildMirrorList),
+// with the Server lines activated. This list is only ever used after the install
+// — the install itself reads the mirror inside the ISO.
 func copyMirrorList(regionCode string) error {
-	rawContent, err := shared.GetEmbeddedMirrorList(regionCode)
+	rawContent, err := shared.BuildMirrorList(regionCode)
 	if err != nil {
 		return fmt.Errorf("no mirror list available for region %q: %w", regionCode, err)
 	}

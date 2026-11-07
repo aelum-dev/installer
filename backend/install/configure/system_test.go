@@ -46,12 +46,12 @@ func TestUncommentMirrors(t *testing.T) {
 	}
 }
 
-// TestUncommentMirrors_RealMirrorList runs the rewrite over a real embedded
+// TestUncommentMirrors_RealMirrorList runs the rewrite over a real built
 // mirrorlist and asserts every server line ends up active.
 func TestUncommentMirrors_RealMirrorList(t *testing.T) {
-	content, err := shared.GetEmbeddedMirrorList(shared.DefaultLanguageCode)
+	content, err := shared.BuildMirrorList("ua")
 	if err != nil {
-		t.Fatalf("GetEmbeddedMirrorList: %v", err)
+		t.Fatalf("BuildMirrorList: %v", err)
 	}
 	out := uncommentMirrors(string(content))
 	if strings.Contains(out, shared.MirrorListCommentedServerPrefix) {

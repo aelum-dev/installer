@@ -1,0 +1,6 @@
+##
+## Arch Linux mirrorlist for Mauritius (mu)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://archlinux-mirror.cloud.mu/$repo/os/$arch

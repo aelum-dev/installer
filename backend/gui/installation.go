@@ -75,7 +75,17 @@ func (a *App) StartInstallation() error {
 		return fmt.Errorf("no target disk selected")
 	}
 
-	args := []string{"--install", diskID, "--username", a.userAccount.Username, "--filesystem", a.fileSystem, "--language", a.selectedLanguage}
+	args := []string{
+		"--install", diskID,
+		"--username", a.userAccount.Username,
+		"--filesystem", a.fileSystem,
+		// Language and location travel as separate flags: the CLI writes the
+		// system locale from one, and the clock, console keymap and mirrors from
+		// the other. An empty region code means "the country of the language",
+		// which is what the CLI falls back to.
+		"--language", a.selectedLanguage,
+		"--region", a.region.Code,
+	}
 	if a.luks {
 		args = append(args, "--luks")
 	}

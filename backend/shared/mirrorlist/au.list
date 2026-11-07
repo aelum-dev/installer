@@ -1,0 +1,11 @@
+##
+## Arch Linux mirrorlist for Australia (au)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://mirror.aarnet.edu.au/pub/archlinux/$repo/os/$arch
+#Server = https://au.mirrors.cicku.me/archlinux/$repo/os/$arch
+#Server = https://archlinux.mirror.digitalpacific.com.au/$repo/os/$arch
+#Server = https://gsl-syd.mm.fcix.net/archlinux/$repo/os/$arch
+#Server = https://au.arch.niranjan.co/$repo/os/$arch
+#Server = https://syd.mirror.rackspace.com/archlinux/$repo/os/$arch

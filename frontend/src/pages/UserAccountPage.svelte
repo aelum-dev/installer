@@ -133,30 +133,8 @@
 		letter-spacing: 0.02em;
 	}
 
-	.line-edit {
-		background-color: var(--color-bg-white);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-xl);
-		padding: 11px 20px;
-		font-family: inherit;
-		font-size: var(--font-size-base);
-		color: var(--color-text);
-		transition: background-color 0.15s ease, border-color 0.15s ease;
-	}
-
-	.line-edit::placeholder {
-		color: var(--color-text-light);
-	}
-
-
-	.line-edit--error {
-		border-color: var(--color-danger);
-	}
-
-	.line-edit--error:focus {
-		border-color: var(--color-danger);
-	}
-
+	/* The input look itself is shared (.line-edit in style.css); only the error
+	   state and the message row are this page's. */
 	.error {
 		font-size: var(--font-size-sm);
 		color: var(--color-danger);

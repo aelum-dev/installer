@@ -100,6 +100,7 @@ func run(args []string) int {
 	cleanupFlag := fs.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
 	fileSystemFlag := fs.String("filesystem", shared.DefaultFileSystem, "Root filesystem type: ext4 or btrfs")
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
+	regionFlag := fs.String("region", "", "Location: ISO 3166-1 alpha-2 code (e.g. ua, de). Defaults to the country of --language.")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout (formats the selected Boot and System partitions)")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
@@ -177,7 +178,16 @@ func run(args []string) int {
 	}
 
 	// Run the installation
-	return runInstallation(disk, stepName, username, *fileSystemFlag, *languageFlag, *dryRun, *manualLayoutFlag, *luksFlag, *lvmFlag, *gpuDriverFlag)
+	return runInstallation(disk, stepName, username, installOptions{
+		fileSystem:       *fileSystemFlag,
+		language:         *languageFlag,
+		region:           *regionFlag,
+		dryRun:           *dryRun,
+		manualLayoutJSON: *manualLayoutFlag,
+		luks:             *luksFlag,
+		lvm:              *lvmFlag,
+		gpuDriver:        *gpuDriverFlag,
+	})
 }
 
 // resolveUsername resolves the username from flag or stdin.
@@ -196,8 +206,26 @@ func resolveUsername(usernameFlag string, dryRun bool) (string, error) {
 	return usernameFlag, nil
 }
 
+// installOptions is what the flags select for one installation run. It replaced a
+// positional list of ten arguments; with a language code and a region code now
+// sitting next to each other, that list was exactly the kind of mistake a struct
+// prevents.
+type installOptions struct {
+	fileSystem       string
+	language         string
+	region           string
+	dryRun           bool
+	manualLayoutJSON string
+	luks, lvm        bool
+	gpuDriver        string
+}
+
 // runInstallation performs validation and runs the installation.
-func runInstallation(disk, stepName, username, fileSystem, language string, dryRun bool, manualLayoutJSON string, luks, lvm bool, gpuDriver string) int {
+func runInstallation(disk, stepName, username string, opts installOptions) int {
+	fileSystem, language, region := opts.fileSystem, opts.language, opts.region
+	dryRun, manualLayoutJSON := opts.dryRun, opts.manualLayoutJSON
+	luks, lvm, gpuDriver := opts.luks, opts.lvm, opts.gpuDriver
+
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
@@ -267,16 +295,40 @@ func runInstallation(disk, stepName, username, fileSystem, language string, dryR
 		}
 	}
 
+	// Language and location are resolved apart from each other, and each failure
+	// names the flag that caused it. An unknown language gets no guessed locale:
+	// writing LANG=xx_YY.UTF-8 for something locale.gen cannot generate is a
+	// system that boots straight into a broken locale.
 	lang := language
 	if lang == "" {
 		lang = shared.DefaultLanguageCode
 	}
+	locale := shared.LocaleForLanguage(lang)
+	if locale == "" {
+		log.Error(`unknown language %q (see --help for the codes this installer offers)`, language)
+		return 1
+	}
+
+	// --language still picks the country of that language, which is what it did
+	// before the two were split apart: --language de_DE means German on German
+	// mirrors. Only --region says otherwise, and that is the flag a person who
+	// reads English and lives somewhere else uses.
+	location := shared.RegionForLanguage(lang)
+	if region != "" {
+		location = shared.GetRegion(region)
+		if location.Code == "" {
+			log.Error("unknown region %q (a region is an ISO 3166-1 alpha-2 code, e.g. ua or de)", region)
+			return 1
+		}
+	}
+
 	installer := install.NewInstaller(install.InstallerConfig{
 		DiskID:         disk,
 		Username:       username,               // from --username flag or stdin
 		Password:       password,               // read from stdin
 		Hostname:       shared.DefaultHostname, // hostname
-		Region:         shared.GetRegion(lang), // from --language or default
+		Locale:         locale,                 // from --language or default
+		Region:         location,               // from --region, else --language
 		FileSystem:     fileSystem,
 		Luks:           luks,           // encrypt root with LUKS2
 		LuksPassphrase: luksPassphrase, // read from stdin
@@ -397,7 +449,8 @@ func handleRollback(disk string, dryRun *bool) int {
 		DiskID:     disk,
 		Username:   shared.DefaultCLIUsername,
 		Hostname:   shared.DefaultHostname,
-		Region:     shared.GetRegion(shared.DefaultLanguageCode),
+		Locale:     shared.LocaleForLanguage(shared.DefaultLanguageCode),
+		Region:     shared.RegionForLanguage(shared.DefaultLanguageCode),
 		FileSystem: "ext4",
 	})
 	installer.Logger = log
@@ -450,7 +503,7 @@ func resolveDiskAndStep(flags ...stepFlag) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--username <user>] [--luks] [--lvm] [--gpu-driver auto|amd|intel|nvidia|mesa] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--region <iso>] [--username <user>] [--luks] [--lvm] [--gpu-driver auto|amd|intel|nvidia|mesa] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
@@ -476,8 +529,17 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "(amd, intel, nvidia, mesa) when the hardware cannot be classified — it is also\n")
 	fmt.Fprintf(os.Stderr, "how a VM exercises the paths its virtual hardware would never take.\n")
 	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "Language and location are separate questions. --language is what the system\n")
+	fmt.Fprintf(os.Stderr, "speaks (en_US, de_DE, uk_UA, ...); --region is where the machine is, an ISO\n")
+	fmt.Fprintf(os.Stderr, "3166-1 alpha-2 code (ua, de, us, ...), and it sets the clock, the console\n")
+	fmt.Fprintf(os.Stderr, "keymap and which Arch mirrors the installed system gets. --region defaults to\n")
+	fmt.Fprintf(os.Stderr, "the country of --language; say otherwise when they differ:\n")
+	fmt.Fprintf(os.Stderr, "  English on Ukrainian mirrors  --language en_US --region ua\n")
+	fmt.Fprintf(os.Stderr, "  Every mirror, no country      --region worldwide\n")
+	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --language en_US --region ua\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --manual-layout '<json>'   Manual: format only the Boot/System partitions in the layout\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem ext4 --dry-run\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback /dev/vda\n", os.Args[0])

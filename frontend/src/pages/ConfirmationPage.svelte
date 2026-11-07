@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { GetSelectedLanguage, GetLanguages } from '$lib/backend';
+	import { GetSelectedLanguage, GetSelectedRegion, GetLanguages, GetRegions } from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 import { uiState } from '$lib/ui.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import type { LanguageOption } from '$lib/types';
+	import type { LanguageOption, RegionOption } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
@@ -34,20 +34,26 @@ import { uiState } from '$lib/ui.svelte';
 	});
 
 	let languages = $state<LanguageOption[]>([]);
+	let regions = $state<RegionOption[]>([]);
 	let selectedLanguageName = $state<string>('—');
+	let selectedRegionName = $state<string>('—');
 
-	async function loadLanguageInfo(): Promise<void> {
+	// The summary names both choices separately: the language the system speaks and
+	// the country whose clock, keyboard and mirrors it gets. They are separate
+	// choices, so the summary must not read as one.
+	async function loadChoices(): Promise<void> {
 		try {
-			languages = await GetLanguages();
-			const code = await GetSelectedLanguage();
-			const lang = languages.find((l) => l.code === code);
-			selectedLanguageName = lang?.name || code || '—';
+			[languages, regions] = await Promise.all([GetLanguages(), GetRegions()]);
+			const [languageCode, regionCode] = await Promise.all([GetSelectedLanguage(), GetSelectedRegion()]);
+			selectedLanguageName = languages.find((l) => l.code === languageCode)?.name || languageCode || '—';
+			selectedRegionName = regions.find((r) => r.code === regionCode)?.name || regionCode || '—';
 		} catch {
 			selectedLanguageName = '—';
+			selectedRegionName = '—';
 		}
 	}
 
-	loadLanguageInfo();
+	loadChoices();
 
 	// Whether the manual layout has at least one designated (ESP or System) row.
 	const hasDesignated = $derived.by(
@@ -97,6 +103,11 @@ import { uiState } from '$lib/ui.svelte';
 		<div class="summary-section">
 			<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
 			<p class="section-value">{selectedLanguageName}</p>
+		</div>
+
+		<div class="summary-section">
+			<h3 class="section-title">{t('page.confirmation.sectionRegion')}</h3>
+			<p class="section-value">{selectedRegionName}</p>
 		</div>
 
 		<div class="summary-section">

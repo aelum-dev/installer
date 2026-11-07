@@ -9,8 +9,16 @@ import { SetLuks, SetLuksPassphrase, SetLvm } from '$lib/backend';
 // Durable wizard data. Ephemeral view state (dialog flags, previews, inline
 // errors) lives in uiState (ui.svelte.ts), not here.
 export const installState = $state({
-	// Language selection
+	// Language (what the system reads and writes) and location (where the machine
+	// is: clock, console keymap, Arch mirrors). The backend pre-fills the location
+	// from the language's country, so only someone whose language and country
+	// differ has to touch it.
 	locale: '',
+	region: '',
+	// regionChosen records that the person picked a location by hand. A language
+	// change re-prefills the location from its country only until then — an
+	// explicit choice must not quietly disappear when someone edits their language.
+	regionChosen: false as boolean,
 
 	// User account
 	username: '',

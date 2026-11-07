@@ -1,0 +1,198 @@
+//go:build ignore
+
+// This file is meant to be run with: go run ./backend/shared/regions_gen.go
+// It regenerates regions_table.go — the locations the installer offers.
+//
+// The two sources are not ours to copy: the country sections of the Arch
+// mirrorlist (the same file the embedded mirror lists are built from, so the
+// location list can never offer a country with no mirrors behind it) and the
+// tzdata zone table. What neither of them carries — which ISO code a section name
+// means, which zone a country that spans several gets, which console keymap
+// belongs where — is curated in countries.go.
+//
+// ZONE_TABLE_PATH overrides the tzdata file when it is not where Arch puts it.
+
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"aelum-installer/backend/shared"
+)
+
+func main() {
+	// Change to the shared package directory so relative paths resolve correctly.
+	if err := os.Chdir("backend/shared"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error changing directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	zonePath := os.Getenv("ZONE_TABLE_PATH")
+	if zonePath == "" {
+		zonePath = shared.ZoneTablePath
+	}
+
+	if err := generate(zonePath); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func generate(zonePath string) error {
+	lists, err := shared.ParseMirrorList(filepath.Join(shared.MirrorListsRelativeDir, shared.RawMirrorlistFileName))
+	if err != nil {
+		return fmt.Errorf("read the upstream mirrorlist: %w", err)
+	}
+
+	zones, err := readZoneTable(zonePath)
+	if err != nil {
+		return fmt.Errorf("read the tzdata zone table: %w", err)
+	}
+
+	table := make([]shared.Region, 0, len(lists.Sections)+1)
+	var problems []string
+
+	for _, section := range lists.Sections {
+		if section.Code == "" {
+			problems = append(problems, fmt.Sprintf("%q has no ISO code (add it to ArchCountryISO)", section.Name))
+			continue
+		}
+		zone, err := pickZone(section.Code, zones)
+		if err != nil {
+			problems = append(problems, err.Error())
+			continue
+		}
+		keymap, ok := shared.KeymapByISO[section.Code]
+		if !ok {
+			keymap = shared.DefaultKeymap
+		}
+		table = append(table, shared.Region{
+			Code:     section.Code,
+			Name:     section.Name,
+			Timezone: zone,
+			Keymap:   keymap,
+		})
+	}
+
+	// The worldwide location is not a country, so it is not in the mirrorlist's
+	// country sections; it is written here and reads like the rest.
+	table = append(table, shared.Region{
+		Code:     shared.DefaultRegionCode,
+		Name:     "Worldwide",
+		Timezone: "Etc/UTC",
+		Keymap:   shared.DefaultKeymap,
+	})
+
+	if len(problems) > 0 {
+		sort.Strings(problems)
+		return fmt.Errorf("the region table is incomplete:\n  %s", strings.Join(problems, "\n  "))
+	}
+
+	sort.Slice(table, func(i, j int) bool {
+		return strings.ToLower(table[i].Name) < strings.ToLower(table[j].Name)
+	})
+
+	if err := writeTable(table); err != nil {
+		return err
+	}
+	fmt.Printf("Wrote %d regions (upstream mirrorlist of %s).\n", len(table), orUnknown(lists.GeneratedOn))
+	return nil
+}
+
+func orUnknown(s string) string {
+	if s == "" {
+		return "date unknown"
+	}
+	return s
+}
+
+// pickZone resolves a country to one zoneinfo name: the curated pick where one
+// exists, otherwise the only row tzdata has for it. A country with several rows
+// and no curated pick is an error rather than a guess — tzdata orders its rows by
+// coordinates, so "the first one" is Lord Howe Island for Australia and
+// Simferopol for Ukraine.
+func pickZone(code string, zones map[string][]string) (string, error) {
+	if zone, ok := shared.PreferredZone[code]; ok {
+		return zone, nil
+	}
+	rows := zones[code]
+	if len(rows) == 0 {
+		return "", fmt.Errorf("%q has no zone in the tzdata table and no entry in PreferredZone", code)
+	}
+	if len(rows) > 1 {
+		return "", fmt.Errorf("%q spans %d zones and has no entry in PreferredZone", code, len(rows))
+	}
+	return rows[0], nil
+}
+
+// readZoneTable reads tzdata's zone1970.tab: columns are a comma-separated list
+// of ISO 3166 codes, coordinates, the zone name, and a comment.
+func readZoneTable(path string) (map[string][]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+
+	zones := make(map[string][]string)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if len(fields) < 3 {
+			continue
+		}
+		for _, code := range strings.Split(fields[0], ",") {
+			code = strings.ToLower(strings.TrimSpace(code))
+			if len(code) != 2 {
+				continue
+			}
+			zones[code] = append(zones[code], fields[2])
+		}
+	}
+	return zones, scanner.Err()
+}
+
+func writeTable(table []shared.Region) error {
+	out, err := os.Create("regions_table.go")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = out.Close() }()
+
+	w := bufio.NewWriter(out)
+	defer func() { _ = w.Flush() }()
+
+	_, _ = w.WriteString(`// Code generated by regions_gen.go. DO NOT EDIT.
+//
+// The locations the installer offers: exactly the countries Arch has a mirror
+// section for, plus the worldwide list, so a location can never be offered
+// without mirrors behind it. Regenerate with
+//
+//	go run ./backend/shared/regions_gen.go
+//
+// Names are exactly how the Arch mirrorlist spells its country sections.
+// Timezones come from the tzdata zone table; the choices tzdata cannot make are
+// curated in countries.go.
+
+package shared
+
+// regionTable is every location the installer can offer.
+var regionTable = []Region{
+`)
+	for _, r := range table {
+		_, _ = fmt.Fprintf(w, "\t{Code: %q, Name: %q, Timezone: %q, Keymap: %q},\n",
+			r.Code, r.Name, r.Timezone, r.Keymap)
+	}
+	_, _ = w.WriteString("}\n")
+
+	return w.Flush()
+}

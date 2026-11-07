@@ -29,6 +29,7 @@ type Installer struct {
 	username       string
 	password       []byte // zeroed after being copied to InstallContext
 	hostname       string
+	locale         string // the installed system's locale, from the chosen language
 	region         shared.Region
 	fileSystem     string // root filesystem: "ext4" or "btrfs"
 	luks           bool
@@ -74,10 +75,16 @@ type Installer struct {
 // example, swapping the account password for the LUKS passphrase) and makes
 // future fields additive instead of signature-breaking.
 type InstallerConfig struct {
-	DiskID         string
-	Username       string
-	Password       string
-	Hostname       string
+	DiskID   string
+	Username string
+	Password string
+	Hostname string
+	// Locale is the installed system's locale ("en_US.UTF-8"), from the language
+	// the person chose. Region is where the machine is: its clock, console keymap
+	// and Arch mirrors. They arrive as two inputs because they are two questions —
+	// a person in Ukraine who reads English wants an English system on Ukrainian
+	// mirrors, and one field for both used to make that impossible.
+	Locale         string
 	Region         shared.Region
 	FileSystem     string // root filesystem: "ext4" or "btrfs"
 	Luks           bool
@@ -98,6 +105,7 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		username:       cfg.Username,
 		password:       []byte(cfg.Password),
 		hostname:       cfg.Hostname,
+		locale:         cfg.Locale,
 		region:         cfg.Region,
 		fileSystem:     cfg.FileSystem,
 		luks:           cfg.Luks,
@@ -119,6 +127,9 @@ func (inst *Installer) Install() error {
 	}
 	if inst.region.Code == "" {
 		return fmt.Errorf("region not set")
+	}
+	if inst.locale == "" {
+		return fmt.Errorf("locale not set")
 	}
 
 	// In manual mode, validate the layout up front so the user gets a clear
@@ -372,6 +383,7 @@ func (inst *Installer) context() *InstallContext {
 		Username:       inst.username,
 		Password:       password,
 		Hostname:       inst.hostname,
+		Locale:         inst.locale,
 		Region:         inst.region,
 		FileSystem:     fileSystem,
 		Luks:           inst.luks,

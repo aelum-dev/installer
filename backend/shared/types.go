@@ -30,8 +30,13 @@ type InstallContext struct {
 	// below LVM: at most one encrypted PV, one passphrase.
 	Lvm bool
 
-	Hostname   string
-	Region     Region
+	Hostname string
+	// Locale is the installed system's locale, e.g. "en_US.UTF-8". It comes from
+	// the language the person chose, never from the region: what a machine's
+	// mirrors and clock should be is a separate question from what language it
+	// speaks.
+	Locale     string
+	Region     Region // location: timezone, console keymap, mirrors
 	FileSystem string // root filesystem: "ext4" or "btrfs"
 	Logger     Logger // injected by Installer; nil if not set
 

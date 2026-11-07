@@ -88,7 +88,8 @@ func TestConfigureNetworkDNSRunsBeforeTheInstallationSnapshot(t *testing.T) {
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", EFIUUID: "EFI-UUID"},
 		Username:   "alice",
 		Hostname:   "aelum",
-		Region:     shared.Regions["en_US"],
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: shared.FileSystemBtrfs,
 	}
 	if err := Run(ctx); err != nil {

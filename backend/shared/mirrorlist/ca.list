@@ -1,0 +1,23 @@
+##
+## Arch Linux mirrorlist for Canada (ca)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://mirror.0xem.ma/arch/$repo/os/$arch
+#Server = https://mirror.acadielinux.ca/mirror/arch/$repo/os/$arch
+#Server = https://arch.mirror.winslow.cloud/$repo/os/$arch
+#Server = https://ca.mirrors.cicku.me/archlinux/$repo/os/$arch
+#Server = https://mirror.cpsc.ucalgary.ca/mirror/archlinux.org/$repo/os/$arch
+#Server = https://mirror.csclub.uwaterloo.ca/archlinux/$repo/os/$arch
+#Server = https://mirror2.evolution-host.com/archlinux/$repo/os/$arch
+#Server = https://stygian.failzero.net/mirror/archlinux/$repo/os/$arch
+#Server = https://mirror.franscorack.com/archlinux/$repo/os/$arch
+#Server = https://ca.mirror.cx/archlinux/$repo/os/$arch
+#Server = https://mirror.quantum5.ca/archlinux/$repo/os/$arch
+#Server = https://ca.mirrors.mk/archlinux/$repo/os/$arch
+#Server = https://muug.ca/mirror/archlinux/$repo/os/$arch
+#Server = https://mirrors.pablonara.com/archlinux/$repo/os/$arch
+#Server = https://upstream-1.pablonara.com/archlinux/$repo/os/$arch
+#Server = https://mirror.scd31.com/arch/$repo/os/$arch
+#Server = https://archlinux-mirror.techticity.com/$repo/os/$arch
+#Server = https://mirror.xenyth.net/archlinux/$repo/os/$arch

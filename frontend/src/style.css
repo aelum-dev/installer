@@ -384,6 +384,30 @@ body {
     margin: 0;
 }
 
+/* ═══ Shared form input ═══
+   The text-input look, shared by the account form and any other field the wizard
+   draws (the location picker's filter). Kept here rather than in one page's
+   <style> block so a second input cannot drift from the first. */
+.line-edit {
+    background-color: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 11px 20px;
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.line-edit::placeholder {
+    color: var(--color-text-light);
+}
+
+.line-edit--error,
+.line-edit--error:focus {
+    border-color: var(--color-danger);
+}
+
 #app {
     height: 100%;
     text-align: center;

@@ -203,6 +203,24 @@ export namespace shared {
 	        this.mountpoints = source["mountpoints"];
 	    }
 	}
+	export class Region {
+	    code: string;
+	    name: string;
+	    timezone: string;
+	    keymap: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Region(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.code = source["code"];
+	        this.name = source["name"];
+	        this.timezone = source["timezone"];
+	        this.keymap = source["keymap"];
+	    }
+	}
 	export class UserAccountData {
 	    username: string;
 	    password: string;

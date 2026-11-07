@@ -1,19 +1,33 @@
 <script lang="ts">
-	import { GetLanguages, GetSelectedLanguage, SetSelectedLanguage } from '$lib/backend';
+	import {
+		GetLanguages,
+		GetRegions,
+		GetSelectedLanguage,
+		GetSelectedRegion,
+		SetSelectedLanguage,
+		SetSelectedRegion,
+	} from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
+	import OptionList from '$components/OptionList.svelte';
+	import RegionPicker from '$components/RegionPicker.svelte';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { PAGE_IDS } from '$lib/types';
-	import type { LanguageOption } from '$lib/types';
+	import type { LanguageOption, RegionOption } from '$lib/types';
 
 	const pageIcon = glyph(STEP_ICONS.welcome);
 
 	let languages = $state<LanguageOption[]>([]);
+	let regions = $state<RegionOption[]>([]);
 	let loading = $state(true);
+	let showRegionPicker = $state(false);
 
-	// Apply the UI translation that belongs to a backend language/region code.
+	const selectedRegion = $derived(regions.find((r) => r.code === installState.region));
+	const selectedRegionName = $derived(selectedRegion?.name || '—');
+
+	// Apply the UI translation that belongs to a backend language code.
 	// Used for both the restored selection and a user click, so the UI language
 	// always matches the selected install language.
 	function applyUiLocale(code: string): void {
@@ -22,11 +36,12 @@
 		if (uiLocale) setLocale(uiLocale);
 	}
 
-	async function loadLanguages(): Promise<void> {
+	async function loadChoices(): Promise<void> {
 		try {
-			languages = await GetLanguages();
+			[languages, regions] = await Promise.all([GetLanguages(), GetRegions()]);
+
 			const saved = await GetSelectedLanguage();
-			if (saved && languages.some(l => l.code === saved)) {
+			if (saved && languages.some((l) => l.code === saved)) {
 				installState.locale = saved;
 				applyUiLocale(saved);
 			} else if (languages.length > 0) {
@@ -34,6 +49,10 @@
 				applyUiLocale(installState.locale);
 				await SetSelectedLanguage(installState.locale);
 			}
+
+			// The location is whatever the backend holds: selecting a language
+			// pre-fills its country, so nobody chooses their country twice.
+			installState.region = await GetSelectedRegion();
 		} catch (err) {
 			console.error(`Failed to load languages: ${err}`);
 		} finally {
@@ -47,12 +66,28 @@
 
 		try {
 			await SetSelectedLanguage(code);
+			// A language re-prefills the location only until the person has said
+			// where they are; an explicit choice outlives a language change.
+			if (installState.regionChosen && installState.region) {
+				await SetSelectedRegion(installState.region);
+			}
+			installState.region = await GetSelectedRegion();
 		} catch (err) {
 			console.error(`Failed to set language: ${err}`);
 		}
 	}
 
-	loadLanguages();
+	async function selectRegion(code: string): Promise<void> {
+		try {
+			await SetSelectedRegion(code);
+			installState.region = code;
+			installState.regionChosen = true;
+		} catch (err) {
+			console.error(`Failed to set region: ${err}`);
+		}
+	}
+
+	loadChoices();
 </script>
 
 <PageLayout
@@ -63,10 +98,17 @@
 	wideInset
 >
 	{#snippet info()}
-		<div class="requirements">
-			<div class="requirement-header">{t('page.welcome.requirements')}</div>
-			<div class="requirement-item">{t('page.welcome.reqUEFI')}</div>
-			<div class="requirement-item">{t('page.welcome.reqDisk')}</div>
+		<div class="region-block">
+			<div class="region-header">{t('page.welcome.region')}</div>
+			<button type="button" class="region-select" onclick={() => (showRegionPicker = true)}>
+				<span>{selectedRegionName}</span>
+				<span class="region-caret" aria-hidden="true">
+					<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</span>
+			</button>
+			<div class="region-hint">{t('page.welcome.regionHint')}</div>
 		</div>
 	{/snippet}
 
@@ -74,22 +116,22 @@
 		<span class="loading-text">{t('page.welcome.loading')}</span>
 	{:else}
 		<ScrollBox persistKey={PAGE_IDS.WELCOME}>
-			<ul class="language-list">
-				{#each languages as lang (lang.code)}
-					<li>
-						<button
-							type="button"
-							class={['lang-item', { 'lang-item--selected': lang.code === installState.locale }]}
-							onclick={() => selectLanguage(lang.code)}
-						>
-							{lang.name}
-						</button>
-					</li>
-				{/each}
-			</ul>
+			<OptionList
+				items={languages}
+				selected={installState.locale}
+				onSelect={selectLanguage}
+				label={t('page.welcome.title')}
+			/>
 		</ScrollBox>
 	{/if}
 </PageLayout>
+
+<RegionPicker
+	bind:show={showRegionPicker}
+	{regions}
+	selected={installState.region}
+	onSelect={selectRegion}
+/>
 
 <style>
 	.loading-text {
@@ -98,15 +140,19 @@
 		margin-top: 16px;
 	}
 
-	.requirements {
+	/* The location block is the info rail's one control: the header speaks in the
+	   rail's quiet voice, and the button says plainly what it changes. Language is
+	   the list on the right; this is the only place that says the clock, keyboard
+	   and mirrors come from somewhere else. */
+	.region-block {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-sm);
+		gap: var(--spacing-xs);
 		width: fit-content;
 		margin-inline: auto;
 	}
 
-	.requirement-header {
+	.region-header {
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-600);
 		color: var(--color-text-muted);
@@ -114,62 +160,44 @@
 		margin-bottom: var(--spacing-xs);
 	}
 
-	.requirement-item {
+	.region-select {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm);
+		justify-content: space-between;
+		gap: var(--spacing-md);
+		min-width: 15rem;
+		padding: 9px 14px 9px 18px;
+		border: 1.5px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		background: transparent;
+		font-family: inherit;
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		text-align: start;
+		cursor: pointer;
+		transition: background-color 0.15s ease, border-color 0.15s ease;
+	}
+
+	.region-select:hover {
+		background-color: var(--color-primary-light);
+		border-color: var(--color-primary);
+	}
+
+	.region-caret {
+		flex-shrink: 0;
+		color: var(--color-text-light);
+		display: inline-flex;
+	}
+
+	.region-caret svg {
+		width: 1em;
+		height: 1em;
+	}
+
+	.region-hint {
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
 		line-height: 1.4;
-		margin: 0;
 		text-align: left;
-		white-space: nowrap;
-	}
-
-	.requirement-item::before {
-		content: "•";
-		flex-shrink: 0;
-		color: var(--color-text-muted);
-	}
-
-	.language-list {
-		list-style: none;
-		display: flex;
-		flex-direction: column;
-		gap: var(--spacing-xs);
-		width: 100%;
-		padding: 0;
-		margin: 0;
-	}
-
-	.lang-item {
-		width: 100%;
-		padding: 10px 20px 10px 24px;
-		border: none;
-		border-radius: var(--radius-xl);
-		background: transparent;
-		font-size: var(--font-size-base);
-		/* Arabic/Hebrew glyphs already resolve to the compact Noto variants via
-		   the base --font-family stack in style.css (fixed app-wide), so no
-		   per-font pin is needed here. line-height/min-height set the row height;
-		   display:flex + align-items:center center the flag + name. */
-		line-height: 1.3;
-		min-height: 2.35em;
-		display: flex;
-		align-items: center;
-		color: var(--color-text);
-		text-align: left;
-		cursor: pointer;
-		transition: background-color 0.15s ease;
-	}
-
-	.lang-item:not(.lang-item--selected):hover {
-		background-color: var(--color-primary-light);
-	}
-
-
-	.lang-item--selected {
-		background-color: var(--color-primary);
-		color: var(--color-on-primary);
 	}
 </style>

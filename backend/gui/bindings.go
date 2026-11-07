@@ -19,20 +19,47 @@ func (a *App) GetDiskPartitions(diskPath string) ([]shared.PartitionEntry, error
 	return shared.GetDiskPartitions(diskPath)
 }
 
-// GetLanguages returns the list of available languages/regions. Wails binding.
+// GetLanguages returns the list of available languages. Wails binding.
+// A language is only how the system reads and writes text — it is not a place.
 func (a *App) GetLanguages() []shared.Language {
 	return shared.GetLanguages()
 }
 
-// GetSelectedLanguage returns the currently selected language/region code.
+// GetRegions returns the list of locations the installer can offer: the countries
+// Arch has mirrors for, plus the worldwide list. Wails binding.
+func (a *App) GetRegions() []shared.Region {
+	return shared.GetRegions()
+}
+
+// GetSelectedLanguage returns the currently selected language code.
 func (a *App) GetSelectedLanguage() string {
 	return a.selectedLanguage
 }
 
-// SetSelectedLanguage sets the selected language/region.
+// SetSelectedLanguage sets the selected language and pre-fills the location from
+// its country. That is the whole of the link between the two: most people's
+// language and country do agree, so they never have to touch the location, and
+// the ones whose do not say so directly.
 func (a *App) SetSelectedLanguage(code string) error {
 	a.selectedLanguage = code
-	a.region = shared.GetRegion(code)
+	a.locale = shared.LocaleForLanguage(code)
+	a.region = shared.RegionForLanguage(code)
+	return nil
+}
+
+// GetSelectedRegion returns the code of the currently selected location.
+func (a *App) GetSelectedRegion() string {
+	return a.region.Code
+}
+
+// SetSelectedRegion sets the location: the installed system's clock, console
+// keymap and Arch mirrors. It is independent of the language.
+func (a *App) SetSelectedRegion(code string) error {
+	region := shared.GetRegion(code)
+	if region.Code == "" {
+		return fmt.Errorf("unknown region: %s", code)
+	}
+	a.region = region
 	return nil
 }
 

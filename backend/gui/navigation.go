@@ -34,10 +34,11 @@ type App struct {
 	diskSelection       shared.DiskSelectionData
 	hostname            string
 	selectedLanguage    string
-	region              shared.Region
-	uiLocale            string // UI language (separate from installed system locale)
-	fileSystem          string // root filesystem: "ext4" or "btrfs"
-	manualMode          bool   // manual partitioning enabled
+	locale              string        // system locale implied by selectedLanguage
+	region              shared.Region // location: timezone, keymap, mirrors
+	uiLocale            string        // UI language (separate from installed system locale)
+	fileSystem          string        // root filesystem: "ext4" or "btrfs"
+	manualMode          bool          // manual partitioning enabled
 	manualLayout        shared.ManualLayout
 	installationRunning atomic.Bool
 

@@ -10,7 +10,7 @@ This repo is the **installer**; the [Aelum](https://github.com/aelum-dev/live-is
 - The ISO is barebones — on boot, greetd starts a minimal Hyprland that auto-launches `aelum-installer`.
 - Built binaries are baked into the ISO at `airootfs/usr/local/bin/` (`aelum-installer`, `aelum-installer-cli`), via `BIN_DIR` in `build.sh`.
 - Every install package comes from the ISO's embedded offline mirror (`airootfs/var/cache/aelum/offline-mirror/`); the install needs no network.
-- After install, the target is a normal Arch machine and uses the internet normally. The per-region mirrorlist written here (`/etc/pacman.d/mirrorlist`) is only for future online updates — it does **not** feed the install.
+- After install, the target is a normal Arch machine and uses the internet normally. The mirrorlist written here (`/etc/pacman.d/mirrorlist` — the chosen location's country mirrors followed by the worldwide ones) is only for future online updates — it does **not** feed the install.
 
 In short: this repo = what installs onto the disk; the Aelum repo = the ISO that boots and launches this repo.
 
@@ -33,7 +33,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
     cli/main_test.go            — CLI tests
     gui/
       app.go                    — Wails app struct, NewApp, StartUp (CheckRoot→dry-run fallback, GetUILocale), OnBeforeClose, CancelInstallation, WaitForCleanup, SetStartPage
-      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetFileSystem, GetUILocale, SetUILocale)
+      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetRegions, GetFileSystem, GetUILocale, SetUILocale)
       installation.go           — StartInstallation (spawns CLI via sudo, reads JSON progress from stderr)
       navigation.go             — Page IDs, navigation state, GetUILocale/SetUILocale
       root_check.go             — Sudo verification
@@ -109,14 +109,17 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
       disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath()
       disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1, also used in dry-run)
-      regions.go                — Locale/region definitions
-      locales.go                — Language list (28 languages)
+      regions.go                — Location model: Region (ISO code, name, timezone, keymap), GetRegions/GetRegion, RegionForLanguage (the language→location pre-fill), LocaleForLanguage
+      regions_table.go          — GENERATED baseline: 74 locations = every Arch mirrorlist country + the worldwide entry (regions_gen.go writes it)
+      regions_gen.go            — Region-table generator (go run ./backend/shared/regions_gen.go; reads all_https.txt + zone1970.tab, ZONE_TABLE_PATH overrides)
+      countries.go              — the curated half of the region table: Arch section name → ISO code, PreferredZone for multi-zone countries, KeymapByISO (default us)
+      locales.go                — Language list (28 languages; locale only — names carry no country)
       btrfs.go                  — BtrfsSubvolume definitions + GetBtrfsSubvolumes()
       validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection(), ValidateDiskSize()
-      mirrorlist.go             — Embedded mirrorlists per region (falls back to default.list)
-      mirrorlist_gen.go         — Mirrorlist refresh script
+      mirrorlist.go             — Embedded mirrorlists + ParseMirrorList + BuildMirrorList(code): the chosen country's servers followed by the worldwide ones, deduped (falls back to worldwide.list for an unknown code)
+      mirrorlist_gen.go         — Mirrorlist refresh script (force-refreshes every file; build.sh runs it)
       logpath.go                — GetLogPath()
-      mirrorlist/               — 28 .list files: 25 region files (of the 28 Regions) + zh_Hans/zh_Hant aliases + default.list; ar_SA, ca_ES and eo use default.list. all_https.txt is the raw Arch mirrorlist they are generated from.
+      mirrorlist/               — 74 .list files named by ISO code (one per Arch mirrorlist country + worldwide.list); all_https.txt is the raw Arch mirrorlist they are generated from. Generated files carry upstream's own "Generated on" date, never a build timestamp, so the per-build refresh does not dirty the tree.
       disks_test.go             — Disk tests
       validators_test.go        — Validator tests
     validation/
@@ -142,7 +145,9 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         Button.svelte           — Reusable button component
         ConfirmDialog.svelte    — Confirmation/validation modal (uses Dialog)
         Dialog.svelte           — Shared modal chrome: overlay, Escape, focus restore
+        OptionList.svelte       — The wizard's selectable-row list (language list + location picker render it)
         PageLayout.svelte       — Shared two-column wizard page shell (info rail + content)
+        RegionPicker.svelte     — Location chooser dialog: filter field + ScrollBox of the countries Arch has mirrors for
         ScrollBox.svelte        — Scrollable container component
       lib/
         constants.ts            — Frontend constants (auto-generated from Go via gen-ts-constants.go)
@@ -160,7 +165,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         validate-messages.ts    — Validation message strings
         validate.test.ts        — Validation tests
       pages/
-        WelcomePage.svelte      — Language/region selection
+        WelcomePage.svelte      — Language selection (list) + location picker (info-rail block → RegionPicker dialog)
         UserAccountPage.svelte  — Username + password (interactive validation hints)
         DiskSelectionPage.svelte — Disk cards + filesystem pills
         ManualPartitionPage.svelte — Manual partition editor
@@ -237,6 +242,8 @@ QEMU from `docker/`, never here.
 ## Internationalization (i18n)
 All UI strings are translated by a small custom flat-key runtime in `frontend/src/lib/i18n/` (`t()` with English fallback, glob-imported locale JSON). Frontend locales live in `frontend/src/translations/*.json` (28 locales); locale display names + the RTL set are in `frontend/src/lib/i18n/locales.ts`. Backend locale codes (`de_DE.UTF-8`) map mechanically to frontend codes (`de-DE`). RTL is supported for Arabic (`ar-SA`), Hebrew (`he-IL`), and Persian (`fa-IR`). Backend exposes `GetUILocale()`/`SetUILocale()` for auto-detection + persistence.
 
+**Language and location are separate inputs.** The Welcome page's list is a language list — it sets the UI language and the installed system's locale, nothing else. The location (a block in the info rail, opened as a searchable dialog) sets the installed system's timezone, console keymap and mirror list, and is pre-filled from the language's territory so the common case stays one choice. `shared.Region` carries location only (ISO code, name, timezone, keymap); the location list is generated from Arch's own mirror sections (`regions_gen.go`), so it can never offer a country without mirrors behind it. `RegionForLanguage` is the only link between the two tables, and it is a pre-fill, not a fallback.
+
 ## Key Patterns (Follow These)
 - **CLI spawns via sudo**: The GUI calls `StartInstallation()` which spawns `sudo aelum-installer-cli --install <disk>` and reads JSON progress from stderr.
 - **Direct exec for root ops**: Install steps use `Run()` (exec.Command) and `RunChroot()` (arch-chroot) directly — no helper binary. Both go through the `primitives.CommandRunner` seam: tests inject a fake with `primitives.SetCommandRunner(rec)()` (see `primitives/primitivestest`) to assert argv and simulate output/failure without root. Commands are `*primitives.Command` (mirrors `exec.Cmd`'s `Args`/`Stdin`/`Run`/`Output`/`CombinedOutput`). Note: `installbase` and the GUI spawn streaming processes (`Start`/`Wait`/pipes) via `os/exec` directly — those are not behind the seam.
@@ -287,7 +294,7 @@ that cannot be installed.
 
 ## Frontend Pages (Wizard Flow)
 ```
-Welcome (language select)
+Welcome (language list + location picker)
   → User Account (username + password)
     → Disk Selection (disk cards + filesystem pills)
       → Confirmation (summary + root check + confirm dialog)

@@ -38,20 +38,34 @@ func TestFindLanguage(t *testing.T) {
 	}
 }
 
-// TestLanguagesMatchRegions guards the language/region tables against drift:
-// every selectable language must resolve to a region (otherwise the install
-// aborts with "region not set"), and every region must be selectable.
-func TestLanguagesMatchRegions(t *testing.T) {
-	langCodes := map[string]bool{}
+// TestLanguagesResolveToLocaleAndLocation guards the two tables against drift.
+// Every selectable language must carry a locale (otherwise the install aborts with
+// "locale not set"), and a language whose code names a country must resolve to
+// that location — a language with no country of its own ("eo") is the one case
+// where inventing one would be wrong.
+func TestLanguagesResolveToLocaleAndLocation(t *testing.T) {
 	for _, l := range GetLanguages() {
-		langCodes[l.Code] = true
-		if r := GetRegion(l.Code); r.Code != l.Code {
-			t.Errorf("language %q does not resolve to a region (got %q)", l.Code, r.Code)
+		if got := LocaleForLanguage(l.Code); got != l.Locale {
+			t.Errorf("language %q: LocaleForLanguage = %q, want %q", l.Code, got, l.Locale)
 		}
-	}
-	for code := range Regions {
-		if !langCodes[code] {
-			t.Errorf("region %q has no matching language entry", code)
+
+		r := RegionForLanguage(l.Code)
+		if r.Code == "" {
+			t.Errorf("language %q resolves to no location at all", l.Code)
+			continue
+		}
+		territory := ""
+		if i := strings.IndexByte(l.Code, '_'); i >= 0 {
+			territory = strings.ToLower(l.Code[i+1:])
+		}
+		if territory == "" {
+			if r.Code != DefaultRegionCode {
+				t.Errorf("language %q has no territory but resolved to %q", l.Code, r.Code)
+			}
+			continue
+		}
+		if r.Code != territory && GetRegion(territory).Code != "" {
+			t.Errorf("language %q resolved to %q, not its own territory %q", l.Code, r.Code, territory)
 		}
 	}
 }

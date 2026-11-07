@@ -92,6 +92,16 @@ const (
 // DefaultLanguageCode is the fallback language when none is selected.
 const DefaultLanguageCode = "en_US"
 
+// DefaultRegionCode is the location used when a language implies no country (a
+// language with no territory, or one whose territory has no Arch mirror section).
+// It is a real entry in the region table, so the lookup needs no special case.
+const DefaultRegionCode = "worldwide"
+
+// DefaultKeymap is the console keymap for a country with no entry in
+// KeymapByISO. A wrong keymap is a typing nuisance on a text console; a name
+// loadkeys does not have is a boot you cannot log into.
+const DefaultKeymap = "us"
+
 // --- Btrfs subvolumes --------------------------------------------------------
 
 // DefaultBtrfsCompression is the compression algorithm for btrfs subvolumes.
@@ -174,6 +184,17 @@ const MirrorListCommentedServerPrefix = "#Server = "
 
 // MirrorListServerPrefix is the prefix for an active mirror server line.
 const MirrorListServerPrefix = "Server = "
+
+// MirrorListGeneratedOnPrefix is the comment the upstream mirrorlist carries its
+// own generation date in ("## Generated on 2026-07-25"). The generated files
+// carry that date rather than a build timestamp: build.sh refreshes the lists on
+// every build, and a build timestamp would make every build dirty the tree.
+const MirrorListGeneratedOnPrefix = "## Generated on "
+
+// ZoneTablePath is the tzdata zone table the region generator reads, in the form
+// with ISO 3166 country codes. tzdata is a dependency of every Arch system, so
+// it is present wherever the generator runs. ZONE_TABLE_PATH overrides it.
+const ZoneTablePath = "/usr/share/zoneinfo/zone1970.tab"
 
 // --- Aelum package repository -------------------------------------------------
 //

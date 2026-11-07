@@ -1,247 +1,120 @@
 package shared
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
-// Region represents a regional configuration that maps language to all
-// regional parameters: locale, timezone, keyboard layout, and mirrors.
+// Region is a location: what an installed machine's clock, console keyboard and
+// Arch mirrors are set to. It carries no language and no locale on purpose.
+//
+// Those used to be one record, and one Welcome-page click wrote all of it, so a
+// person in Ukraine who chose English got 74 US mirrors and a clock set to
+// America/New_York. Language says how someone wants to read a screen; it says
+// nothing about where the machine is. The language list lives in locales.go and
+// the location list is generated here.
 type Region struct {
-	Code     string // e.g., "en_US", "ru_RU", "uk_UA"
-	Name     string // e.g., "English (United States)"
-	Locale   string // e.g., "en_US.UTF-8"
-	Timezone string // e.g., "America/New_York"
-	Keymap   string // e.g., "us"
+	// Code is the ISO 3166-1 alpha-2 code, lowercase — the same key the generated
+	// mirror file is named by (mirrorlist/<code>.list) — or DefaultRegionCode for
+	// the worldwide list.
+	Code string `json:"code"`
+	// Name is the display name, exactly as Arch's mirrorlist spells its country
+	// sections. It is English for every locale: these are the names of the mirrors'
+	// countries, not UI text, and they are what a user recognises on a map.
+	Name     string `json:"name"`
+	Timezone string `json:"timezone"` // zoneinfo name, e.g. "Europe/Kyiv"
+	Keymap   string `json:"keymap"`   // console keymap name, e.g. "ua"
 }
 
-// Regions provides access to predefined regional configurations.
-var Regions = map[string]Region{
-	"en_US": {
-		Code:     "en_US",
-		Name:     "English (United States)",
-		Locale:   "en_US.UTF-8",
-		Timezone: "America/New_York",
-		Keymap:   "us",
-	},
-	"bg_BG": {
-		Code:     "bg_BG",
-		Name:     "Български (България)",
-		Locale:   "bg_BG.UTF-8",
-		Timezone: "Europe/Sofia",
-		Keymap:   "us",
-	},
-	"ca_ES": {
-		Code:     "ca_ES",
-		Name:     "Català (Catalunya)",
-		Locale:   "ca_ES.UTF-8",
-		Timezone: "Europe/Madrid",
-		Keymap:   "es",
-	},
-	"zh_CN": {
-		Code:     "zh_CN",
-		Name:     "中文 (简体)",
-		Locale:   "zh_CN.UTF-8",
-		Timezone: "Asia/Shanghai",
-		Keymap:   "us",
-	},
-	"zh_TW": {
-		Code:     "zh_TW",
-		Name:     "中文 (繁體)",
-		Locale:   "zh_TW.UTF-8",
-		Timezone: "Asia/Taipei",
-		Keymap:   "us",
-	},
-	"nl_NL": {
-		Code:     "nl_NL",
-		Name:     "Nederlands (Nederland)",
-		Locale:   "nl_NL.UTF-8",
-		Timezone: "Europe/Amsterdam",
-		Keymap:   "us",
-	},
-	"eo": {
-		Code:     "eo",
-		Name:     "Esperanto",
-		Locale:   "eo.UTF-8",
-		Timezone: "Europe/Berlin",
-		Keymap:   "us",
-	},
-	"fi_FI": {
-		Code:     "fi_FI",
-		Name:     "Suomi (Suomi)",
-		Locale:   "fi_FI.UTF-8",
-		Timezone: "Europe/Helsinki",
-		Keymap:   "fi",
-	},
-	"fr_FR": {
-		Code:     "fr_FR",
-		Name:     "Français (France)",
-		Locale:   "fr_FR.UTF-8",
-		Timezone: "Europe/Paris",
-		Keymap:   "fr",
-	},
-	"el_GR": {
-		Code:     "el_GR",
-		Name:     "Ελληνικά (Ελλάδα)",
-		Locale:   "el_GR.UTF-8",
-		Timezone: "Europe/Athens",
-		Keymap:   "us",
-	},
-	"hu_HU": {
-		Code:     "hu_HU",
-		Name:     "Magyar (Magyarország)",
-		Locale:   "hu_HU.UTF-8",
-		Timezone: "Europe/Budapest",
-		Keymap:   "hu",
-	},
-	"id_ID": {
-		Code:     "id_ID",
-		Name:     "Bahasa Indonesia (Indonesia)",
-		Locale:   "id_ID.UTF-8",
-		Timezone: "Asia/Jakarta",
-		Keymap:   "us",
-	},
-	"ja_JP": {
-		Code:     "ja_JP",
-		Name:     "日本語 (日本)",
-		Locale:   "ja_JP.UTF-8",
-		Timezone: "Asia/Tokyo",
-		Keymap:   "jp106",
-	},
-	"ko_KR": {
-		Code:     "ko_KR",
-		Name:     "한국어 (대한민국)",
-		Locale:   "ko_KR.UTF-8",
-		Timezone: "Asia/Seoul",
-		Keymap:   "us",
-	},
-	"nb_NO": {
-		Code:     "nb_NO",
-		Name:     "Norsk bokmål (Norge)",
-		Locale:   "nb_NO.UTF-8",
-		Timezone: "Europe/Oslo",
-		Keymap:   "no",
-	},
-	"fa_IR": {
-		Code:     "fa_IR",
-		Name:     "فارسی (ایران)",
-		Locale:   "fa_IR.UTF-8",
-		Timezone: "Asia/Tehran",
-		Keymap:   "us",
-	},
-	"pl_PL": {
-		Code:     "pl_PL",
-		Name:     "Polski (Polska)",
-		Locale:   "pl_PL.UTF-8",
-		Timezone: "Europe/Warsaw",
-		Keymap:   "pl",
-	},
-	"pt_BR": {
-		Code:     "pt_BR",
-		Name:     "Português (Brasil)",
-		Locale:   "pt_BR.UTF-8",
-		Timezone: "America/Sao_Paulo",
-		Keymap:   "br-abnt2",
-	},
-	"ru_RU": {
-		Code:     "ru_RU",
-		Name:     "Русский (Россия)",
-		Locale:   "ru_RU.UTF-8",
-		Timezone: "Europe/Moscow",
-		Keymap:   "us",
-	},
-	"es_ES": {
-		Code:     "es_ES",
-		Name:     "Español (España)",
-		Locale:   "es_ES.UTF-8",
-		Timezone: "Europe/Madrid",
-		Keymap:   "es",
-	},
-	"sv_SE": {
-		Code:     "sv_SE",
-		Name:     "Svenska (Sverige)",
-		Locale:   "sv_SE.UTF-8",
-		Timezone: "Europe/Stockholm",
-		Keymap:   "sv-latin1",
-	},
-	"tr_TR": {
-		Code:     "tr_TR",
-		Name:     "Türkçe (Türkiye)",
-		Locale:   "tr_TR.UTF-8",
-		Timezone: "Europe/Istanbul",
-		Keymap:   "trq",
-	},
-	"vi_VN": {
-		Code:     "vi_VN",
-		Name:     "Tiếng Việt (Việt Nam)",
-		Locale:   "vi_VN.UTF-8",
-		Timezone: "Asia/Ho_Chi_Minh",
-		Keymap:   "us",
-	},
-	"ar_SA": {
-		Code:     "ar_SA",
-		Name:     "العربية (السعودية)",
-		Locale:   "ar_SA.UTF-8",
-		Timezone: "Asia/Riyadh",
-		Keymap:   "us",
-	},
-	"de_DE": {
-		Code:     "de_DE",
-		Name:     "Deutsch (Deutschland)",
-		Locale:   "de_DE.UTF-8",
-		Timezone: "Europe/Berlin",
-		Keymap:   "de-latin1",
-	},
-	"he_IL": {
-		Code:     "he_IL",
-		Name:     "עברית (ישראל)",
-		Locale:   "he_IL.UTF-8",
-		Timezone: "Asia/Jerusalem",
-		Keymap:   "us",
-	},
-	"it_IT": {
-		Code:     "it_IT",
-		Name:     "Italiano (Italia)",
-		Locale:   "it_IT.UTF-8",
-		Timezone: "Europe/Rome",
-		Keymap:   "it",
-	},
-	"uk_UA": {
-		Code:     "uk_UA",
-		Name:     "Українська (Україна)",
-		Locale:   "uk_UA.UTF-8",
-		Timezone: "Europe/Kyiv",
-		Keymap:   "us",
-	},
+// regionsByCode indexes the generated table. Package initialisation is enough:
+// the table is a literal, so there is no I/O and no ordering hazard.
+var regionsByCode = func() map[string]Region {
+	m := make(map[string]Region, len(regionTable))
+	for _, r := range regionTable {
+		m[r.Code] = r
+	}
+	return m
+}()
+
+// GetRegions returns every location the installer can offer, sorted by display
+// name. The list is exactly the countries Arch has a mirror section for, plus the
+// worldwide entry — a location with no mirrors behind it would be a choice the
+// installer cannot honour.
+func GetRegions() []Region {
+	out := make([]Region, len(regionTable))
+	copy(out, regionTable)
+	sort.Slice(out, func(i, j int) bool {
+		return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name)
+	})
+	return out
 }
 
 // GetRegion returns a region by code, or an empty region if not found.
 //
-// Lookups tolerate the spelling differences between callers: the region table
-// is keyed on "en_US"-style codes, but --language is hand-typed on the CLI and
-// tools commonly pass POSIX tags ("en-US") or full locales ("en_US.UTF-8").
-// Without normalization those return an empty region, and the installer then
-// aborts with "region not set" before the first step.
+// Lookups tolerate what callers type: the table is keyed on lowercase ISO codes,
+// but --region is hand-typed on the CLI and tools pass territory codes in every
+// case ("UA", "ua", "uk_UA").
 func GetRegion(code string) Region {
-	if r, ok := Regions[code]; ok {
+	if r, ok := regionsByCode[code]; ok {
 		return r
 	}
-	return Regions[canonicalRegionCode(code)]
+	return regionsByCode[canonicalRegionCode(code)]
 }
 
-// canonicalRegionCode maps a caller-supplied language code onto the form used by
-// Regions: the language half lowercased, the territory half uppercased, and the
-// separators normalized — so "en-US", "en-us", "EN_us" and "en_US.UTF-8" all
-// become "en_US". A code without a territory ("eo") is only lowercased.
-func canonicalRegionCode(code string) string {
-	code = strings.TrimSpace(code)
-	if code == "" {
-		return ""
+// RegionForLanguage returns the location a language code implies: the territory
+// half of "uk_UA" is Ukraine, "pt_BR" is Brazil. It is how the installer
+// pre-fills the location from the language someone chose, so the person whose
+// language and country agree still makes one choice, and only the person whose do
+// not has to say where they are.
+//
+// Only the territory half counts. The language half is deliberately not a
+// fallback: ISO 639's "uk" is Ukrainian and ISO 3166's "uk" is the United
+// Kingdom, and a language with no territory ("eo") or one whose territory Arch has
+// no mirrors for gets the worldwide region. Guessing a country is the mistake this
+// split exists to stop.
+func RegionForLanguage(languageCode string) Region {
+	if r, ok := regionsByCode[territoryOf(languageCode)]; ok {
+		return r
 	}
-	// Drop any encoding suffix (en_US.UTF-8 -> en_US).
+	return regionsByCode[DefaultRegionCode]
+}
+
+// canonicalRegionCode normalises a caller-supplied location code to the form the
+// table is keyed on: lowercased, separators unified, and any language or encoding
+// half dropped — so "UA", "ua", "uk_UA" and "uk_UA.UTF-8" all become "ua". A code
+// with no separator is taken whole ("uk" is the United Kingdom).
+func canonicalRegionCode(code string) string {
+	if territory := territoryOf(code); territory != "" {
+		return territory
+	}
+	return normalizeTag(code)
+}
+
+// territoryOf returns the lowercased territory half of a language tag —
+// "uk_UA", "uk-UA" and "uk_UA.UTF-8" all give "ua" — or "" when it has none.
+func territoryOf(code string) string {
+	normalized := normalizeTag(code)
+	if i := strings.LastIndexByte(normalized, '_'); i >= 0 {
+		return normalized[i+1:]
+	}
+	return ""
+}
+
+// normalizeTag lowercases a language or location code, trims it, drops any
+// encoding suffix and unifies the separators.
+func normalizeTag(code string) string {
+	code = strings.ToLower(strings.TrimSpace(code))
 	if i := strings.IndexByte(code, '.'); i >= 0 {
 		code = code[:i]
 	}
-	code = strings.ReplaceAll(code, "-", "_")
-	if i := strings.IndexByte(code, '_'); i > 0 {
-		return strings.ToLower(code[:i]) + "_" + strings.ToUpper(code[i+1:])
+	return strings.ReplaceAll(code, "-", "_")
+}
+
+// LocaleForLanguage returns the system locale ("en_US.UTF-8") a language code
+// selects, or "" when the code is not one the installer offers.
+func LocaleForLanguage(code string) string {
+	if lang := FindLanguage(code); lang != nil {
+		return lang.Locale
 	}
-	return strings.ToLower(code)
+	return ""
 }

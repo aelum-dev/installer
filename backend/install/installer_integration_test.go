@@ -34,7 +34,8 @@ func TestInstall_DryRun_FullFlow(t *testing.T) {
 		Username:   "testuser",
 		Password:   "testpass",
 		Hostname:   "testhost",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 		DryRun:     true,
 	})
@@ -75,7 +76,8 @@ func TestInstall_DryRun_Btrfs(t *testing.T) {
 		Username:   "testuser",
 		Password:   "testpass",
 		Hostname:   "testhost",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "btrfs",
 		DryRun:     true,
 	})
@@ -105,7 +107,8 @@ func TestInstall_EmptyDiskID(t *testing.T) {
 		Username:   "user",
 		Password:   "pass",
 		Hostname:   "host",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 	})
 
@@ -118,13 +121,16 @@ func TestInstall_EmptyDiskID(t *testing.T) {
 	}
 }
 
-// TestInstall_EmptyRegion verifies that Install rejects an empty region.
+// TestInstall_EmptyRegion verifies that Install rejects an empty region. The
+// locale is set here on purpose: the failure must be about the location, not
+// about the other half of the pair.
 func TestInstall_EmptyRegion(t *testing.T) {
 	inst := NewInstaller(InstallerConfig{
 		DiskID:     "/dev/vda",
 		Username:   "user",
 		Password:   "pass",
 		Hostname:   "host",
+		Locale:     "en_US.UTF-8",
 		Region:     shared.GetRegion(""),
 		FileSystem: "ext4",
 	})
@@ -138,6 +144,27 @@ func TestInstall_EmptyRegion(t *testing.T) {
 	}
 }
 
+// TestInstall_EmptyLocale verifies that Install rejects a missing locale. It is a
+// separate input from the region, so it fails with its own message.
+func TestInstall_EmptyLocale(t *testing.T) {
+	inst := NewInstaller(InstallerConfig{
+		DiskID:     "/dev/vda",
+		Username:   "user",
+		Password:   "pass",
+		Hostname:   "host",
+		Region:     shared.GetRegion("us"),
+		FileSystem: "ext4",
+	})
+
+	err := inst.Install()
+	if err == nil {
+		t.Fatal("expected error for empty locale, got nil")
+	}
+	if !strings.Contains(err.Error(), "locale not set") {
+		t.Errorf("expected 'locale not set' error, got: %v", err)
+	}
+}
+
 // TestInstall_ProgressPercentages verifies that progress percentages
 // are monotonically non-decreasing across steps.
 func TestInstall_ProgressPercentages(t *testing.T) {
@@ -148,7 +175,8 @@ func TestInstall_ProgressPercentages(t *testing.T) {
 		Username:   "user",
 		Password:   "pass",
 		Hostname:   "host",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 		DryRun:     true,
 	})
@@ -188,7 +216,8 @@ func TestInstall_ErrorCleanup(t *testing.T) {
 		Username:   "user",
 		Password:   "pass",
 		Hostname:   "host",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 	})
 
@@ -215,7 +244,8 @@ func TestRollback_ValidDisk(t *testing.T) {
 
 	inst := NewInstaller(InstallerConfig{
 		DiskID:     "/dev/vda",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 	})
 
@@ -233,7 +263,8 @@ func TestRollback_ValidDisk(t *testing.T) {
 // TestRollback_EmptyDiskID verifies that Rollback rejects an empty disk.
 func TestRollback_EmptyDiskID(t *testing.T) {
 	inst := NewInstaller(InstallerConfig{
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 	})
 
@@ -253,7 +284,8 @@ func TestRunStep_UnknownStep(t *testing.T) {
 		Username:   "user",
 		Password:   "pass",
 		Hostname:   "host",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 	})
 
@@ -273,7 +305,8 @@ func TestRunStep_DryRun(t *testing.T) {
 		Username:   "user",
 		Password:   "pass",
 		Hostname:   "host",
-		Region:     shared.GetRegion("en_US"),
+		Locale:     "en_US.UTF-8",
+		Region:     shared.GetRegion("us"),
 		FileSystem: "ext4",
 		DryRun:     true,
 	})

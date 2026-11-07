@@ -1,0 +1,7 @@
+##
+## Arch Linux mirrorlist for Iran (ir)
+## Source: https://archlinux.org/mirrorlist/all/https/ (upstream list generated on 2026-07-25)
+##
+
+#Server = https://mirror.arvancloud.ir/archlinux/$repo/os/$arch
+#Server = https://mirror.mobinhost.com/archlinux/$repo/os/$arch
