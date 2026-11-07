@@ -24,6 +24,8 @@ export function GetFileSystem():Promise<string>;
 
 export function GetHostname():Promise<string>;
 
+export function GetInputMethodSummary(arg1:string):Promise<Array<string>>;
+
 export function GetInstallationRunning():Promise<boolean>;
 
 export function GetLanguages():Promise<Array<shared.Language>>;

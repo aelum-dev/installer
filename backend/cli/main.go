@@ -106,6 +106,7 @@ func run(args []string) int {
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
 	lvmFlag := fs.Bool("lvm", false, "Place the root (and, for ext4, home) on LVM logical volumes")
 	gpuDriverFlag := fs.String("gpu-driver", installdesktop.DriverOverrideAuto, "GPU driver set: auto|amd|intel|nvidia|mesa (auto detects from the PCI bus)")
+	inputMethodFlag := fs.String("input-method", installdesktop.InputMethodOverrideAuto, "Input method addons: auto|none (auto follows the --language table; the fcitx5 core is installed on every install)")
 	logPathFlag := fs.String("log-path", "", "Installation log path (the GUI passes this; defaults to /var/log/aelum-install-<timestamp>.log)")
 	versionFlag := fs.Bool("version", false, "Print version and exit")
 	if err := fs.Parse(args[1:]); err != nil {
@@ -177,6 +178,13 @@ func run(args []string) int {
 		return 1
 	}
 
+	// Same for the input method override — a typo must not decide the language
+	// table's outcome by accident.
+	if !installdesktop.ValidInputMethodOverride(*inputMethodFlag) {
+		fmt.Fprintf(os.Stderr, "Error: --input-method must be one of auto, none (got %q)\n", *inputMethodFlag)
+		return 1
+	}
+
 	// Run the installation
 	return runInstallation(disk, stepName, username, installOptions{
 		fileSystem:       *fileSystemFlag,
@@ -187,6 +195,7 @@ func run(args []string) int {
 		luks:             *luksFlag,
 		lvm:              *lvmFlag,
 		gpuDriver:        *gpuDriverFlag,
+		inputMethod:      *inputMethodFlag,
 	})
 }
 
@@ -218,6 +227,7 @@ type installOptions struct {
 	manualLayoutJSON string
 	luks, lvm        bool
 	gpuDriver        string
+	inputMethod      string
 }
 
 // runInstallation performs validation and runs the installation.
@@ -225,6 +235,7 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 	fileSystem, language, region := opts.fileSystem, opts.language, opts.region
 	dryRun, manualLayoutJSON := opts.dryRun, opts.manualLayoutJSON
 	luks, lvm, gpuDriver := opts.luks, opts.lvm, opts.gpuDriver
+	inputMethod := opts.inputMethod
 
 	if err := validateDiskPathFunc(disk); err != nil {
 		log.Error("%v", err)
@@ -334,6 +345,7 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 		LuksPassphrase: luksPassphrase, // read from stdin
 		Lvm:            lvm,            // root/home on logical volumes
 		GPUDriver:      gpuDriver,      // --gpu-driver override (validated by run)
+		InputMethod:    inputMethod,    // --input-method override (validated by run)
 		DryRun:         dryRun,
 	})
 
@@ -503,7 +515,8 @@ func resolveDiskAndStep(flags ...stepFlag) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--region <iso>] [--username <user>] [--luks] [--lvm] [--gpu-driver auto|amd|intel|nvidia|mesa] [--dry-run]   Full installation\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--region <iso>]"+
+		" [--username <user>] [--luks] [--lvm] [--gpu-driver auto|amd|intel|nvidia|mesa] [--input-method auto|none] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --mount-filesystem <disk> [--dry-run]                          Mount partitions\n", os.Args[0])
@@ -528,6 +541,11 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "GPU drivers are chosen from the PCI bus (auto). --gpu-driver forces one set\n")
 	fmt.Fprintf(os.Stderr, "(amd, intel, nvidia, mesa) when the hardware cannot be classified — it is also\n")
 	fmt.Fprintf(os.Stderr, "how a VM exercises the paths its virtual hardware would never take.\n")
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "Input method: the fcitx5 core installs on every system. The language decides\n")
+	fmt.Fprintf(os.Stderr, "which engines are added (Pinyin, Zhuyin, Mozc, Hangul, Bamboo); --input-method\n")
+	fmt.Fprintf(os.Stderr, "none installs none of them, for a machine whose language was chosen for its\n")
+	fmt.Fprintf(os.Stderr, "UI rather than its keyboard.\n")
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Language and location are separate questions. --language is what the system\n")
 	fmt.Fprintf(os.Stderr, "speaks (en_US, de_DE, uk_UA, ...); --region is where the machine is, an ISO\n")

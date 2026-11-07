@@ -89,6 +89,7 @@
   "page.confirmation.password": "パスワード",
   "page.confirmation.sectionDisk": "ターゲットディスク",
   "page.confirmation.sectionLanguage": "言語",
+  "page.confirmation.sectionInputMethod": "入力メソッド",
   "page.confirmation.sectionRegion": "場所",
   "page.confirmation.sectionUser": "ユーザーアカウント",
   "page.confirmation.subtitle": "続行する前にインストール設定を確認してください。",

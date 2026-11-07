@@ -89,6 +89,7 @@
   "page.confirmation.password": "Lösenord",
   "page.confirmation.sectionDisk": "Måldisk",
   "page.confirmation.sectionLanguage": "Språk",
+  "page.confirmation.sectionInputMethod": "Inmatningsmetod",
   "page.confirmation.sectionRegion": "Plats",
   "page.confirmation.sectionUser": "Användarkonto",
   "page.confirmation.subtitle": "Granska dina installationsinställningar innan du fortsätter.",

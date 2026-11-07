@@ -157,6 +157,73 @@ func TestRun_DetectsWhenNothingRecorded(t *testing.T) {
 	}
 }
 
+// TestRun_InstallsTheChosenIMEAddons pins the input method wiring the same way
+// TestRun_InstallsTheChosenDriverSet pins the drivers: the set recorded on the
+// context goes to pacstrap with the desktop set.
+func TestRun_InstallsTheChosenIMEAddons(t *testing.T) {
+	args := desktopArgs(t, &shared.InstallContext{
+		FileSystem: shared.FileSystemExt4,
+		Locale:     "en_US.UTF-8",
+		IMPackages: []string{"fcitx5-hangul"},
+	})
+	if !hasPackage(args, "fcitx5-hangul") {
+		t.Errorf("the chosen addon set is missing from the pacstrap args: %v", args)
+	}
+	for _, core := range []string{"fcitx5", "fcitx5-gtk", "fcitx5-qt", "fcitx5-configtool"} {
+		if !hasPackage(args, core) {
+			t.Errorf("the fcitx5 core %q is missing from the pacstrap args: %v", core, args)
+		}
+	}
+}
+
+// TestRun_ChoosesIMEAddonsFromTheLanguage proves the step itself runs the
+// table: with nothing recorded, the chosen language decides what pacstrap is
+// asked for, and the choice is recorded on the context.
+func TestRun_ChoosesIMEAddonsFromTheLanguage(t *testing.T) {
+	ctx := &shared.InstallContext{FileSystem: shared.FileSystemExt4, Locale: "zh_CN.UTF-8"}
+	args := desktopArgs(t, ctx)
+	if !hasPackage(args, "fcitx5-chinese-addons") {
+		t.Errorf("the language's addon set did not reach pacstrap: %v", args)
+	}
+	if len(ctx.IMPackages) == 0 {
+		t.Error("the desktop step did not record its input method choice on the context")
+	}
+	// A language the keyboard covers gets the core and no addons — and the
+	// empty decision is still recorded.
+	plain := &shared.InstallContext{FileSystem: shared.FileSystemExt4, Locale: "de_DE.UTF-8"}
+	plainArgs := desktopArgs(t, plain)
+	for _, addon := range IMCandidatePackages {
+		if hasPackage(plainArgs, addon) {
+			t.Errorf("a Latin-language install was asked for %q: %v", addon, plainArgs)
+		}
+	}
+	if !hasPackage(plainArgs, "fcitx5") {
+		t.Errorf("a Latin-language install lost the fcitx5 core: %v", plainArgs)
+	}
+	if plain.IMPackages == nil {
+		t.Error("the empty input method decision was not recorded on the context")
+	}
+}
+
+// TestRun_InputMethodNoneAddsNothing checks the override at the step: an
+// IME-language install with --input-method none gets the core and no engine.
+func TestRun_InputMethodNoneAddsNothing(t *testing.T) {
+	ctx := &shared.InstallContext{
+		FileSystem:  shared.FileSystemExt4,
+		Locale:      "zh_TW.UTF-8",
+		InputMethod: InputMethodOverrideNone,
+	}
+	args := desktopArgs(t, ctx)
+	for _, addon := range IMCandidatePackages {
+		if hasPackage(args, addon) {
+			t.Errorf("--input-method none still asked for %q: %v", addon, args)
+		}
+	}
+	if !hasPackage(args, "fcitx5") {
+		t.Errorf("--input-method none dropped the fcitx5 core: %v", args)
+	}
+}
+
 // TestBtrfsOnlyPackagesAreNotInDesktopPackages keeps btrfs-assistant out of the
 // unconditional list: it is added by the gate, and a copy in both places would
 // install it on ext4 too.

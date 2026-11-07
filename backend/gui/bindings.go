@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"aelum-installer/backend/install/installdesktop"
 	"aelum-installer/backend/install/partition"
 	"aelum-installer/backend/shared"
 )
@@ -29,6 +30,15 @@ func (a *App) GetLanguages() []shared.Language {
 // Arch has mirrors for, plus the worldwide list. Wails binding.
 func (a *App) GetRegions() []shared.Region {
 	return shared.GetRegions()
+}
+
+// GetInputMethodSummary returns the input method engine names the install for
+// this language gets — Pinyin, Zhuyin, Mozc, … — proper nouns shown after the
+// framework name on the Confirmation page. Empty for a language typed through
+// keyboard layouts; the fcitx5 core ships on every install and the page names
+// it regardless. Wails binding.
+func (a *App) GetInputMethodSummary(language string) []string {
+	return installdesktop.IMESummary(language)
 }
 
 // GetSelectedLanguage returns the currently selected language code.

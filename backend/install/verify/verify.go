@@ -26,15 +26,19 @@ var btrfsOnlyPackages = append(append([]string{}, installbase.BtrfsOnlyBasePacka
 // expectedPackagesFor returns the package set this install must contain. The
 // GPU driver set is not in DesktopPackages — the desktop step chose it for the
 // detected hardware and recorded it on the context (installdesktop/drivers.go)
-// — so the recorded set is what this install must contain. A context that never
-// ran the desktop step (a standalone --verify-system) carries none and the
-// driver packages are not checked; the base and desktop sets still are.
+// — so the recorded set is what this install must contain. The input method
+// addons work the same way (installdesktop/inputmethods.go): chosen from the
+// language and recorded on the context; an empty recorded set is a decision,
+// not a gap. A context that never ran the desktop step (a standalone
+// --verify-system) carries neither and those packages are not checked; the
+// base and desktop sets still are.
 func expectedPackagesFor(ctx *shared.InstallContext) []string {
 	list := append([]string{}, expectedPackages...)
 	if ctx.FileSystem == shared.FileSystemBtrfs {
 		list = append(list, btrfsOnlyPackages...)
 	}
-	return append(list, ctx.DriverPackages...)
+	list = append(list, ctx.DriverPackages...)
+	return append(list, ctx.IMPackages...)
 }
 
 // Run verifies that the installed system (mounted at /mnt) is complete and

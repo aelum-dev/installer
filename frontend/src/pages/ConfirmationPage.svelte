@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { GetSelectedLanguage, GetSelectedRegion, GetLanguages, GetRegions } from '$lib/backend';
+	import { GetInputMethodSummary, GetSelectedLanguage, GetSelectedRegion, GetLanguages, GetRegions } from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 import { uiState } from '$lib/ui.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
@@ -37,6 +37,7 @@ import { uiState } from '$lib/ui.svelte';
 	let regions = $state<RegionOption[]>([]);
 	let selectedLanguageName = $state<string>('—');
 	let selectedRegionName = $state<string>('—');
+	let inputMethodValue = $state<string>('—');
 
 	// The summary names both choices separately: the language the system speaks and
 	// the country whose clock, keyboard and mirrors it gets. They are separate
@@ -47,9 +48,26 @@ import { uiState } from '$lib/ui.svelte';
 			const [languageCode, regionCode] = await Promise.all([GetSelectedLanguage(), GetSelectedRegion()]);
 			selectedLanguageName = languages.find((l) => l.code === languageCode)?.name || languageCode || '—';
 			selectedRegionName = regions.find((r) => r.code === regionCode)?.name || regionCode || '—';
+			// Fire-and-forget: the input method line fills itself in; the summary
+			// must not wait on it to render.
+			void loadInputMethod(languageCode);
 		} catch {
 			selectedLanguageName = '—';
 			selectedRegionName = '—';
+		}
+	}
+
+	// The input method line names what the install will ship: the fcitx5 core is
+	// installed on every system, and the language decides which engines are added
+	// on top (the backend's table is the only source). The engine names are proper
+	// nouns — the label is translated, the names are not.
+	async function loadInputMethod(languageCode: string): Promise<void> {
+		try {
+			const engines = await GetInputMethodSummary(languageCode);
+			inputMethodValue = engines?.length ? ['Fcitx5', ...engines].join(' · ') : 'Fcitx5';
+		} catch {
+			// The core ships regardless of what the summary call can say.
+			inputMethodValue = 'Fcitx5';
 		}
 	}
 
@@ -103,6 +121,11 @@ import { uiState } from '$lib/ui.svelte';
 		<div class="summary-section">
 			<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
 			<p class="section-value">{selectedLanguageName}</p>
+		</div>
+
+		<div class="summary-section">
+			<h3 class="section-title">{t('page.confirmation.sectionInputMethod')}</h3>
+			<p class="section-value">{inputMethodValue}</p>
 		</div>
 
 		<div class="summary-section">

@@ -17,6 +17,7 @@ import {
 	GetDiskPartitions as rawGetDiskPartitions,
 	GetDisks as rawGetDisks,
 	GetDryRun,
+	GetInputMethodSummary,
 	GetLanguages as rawGetLanguages,
 	GetManualLayout as rawGetManualLayout,
 	GetSelectedLanguage,
@@ -50,6 +51,7 @@ import type { DiskInfo, LanguageOption, ManualLayout, PartitionEntry, RegionOpti
 export {
 	ClearStartPage,
 	GetDryRun,
+	GetInputMethodSummary,
 	GetSelectedLanguage,
 	GetSelectedRegion,
 	RebootAndClose,

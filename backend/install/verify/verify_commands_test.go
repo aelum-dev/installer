@@ -247,6 +247,31 @@ func TestCheckPackages_NoDriverSetWithoutADesktopRun(t *testing.T) {
 			t.Errorf("%q was verified although no driver set was recorded", pkg)
 		}
 	}
+	for _, pkg := range []string{"fcitx5-mozc", "fcitx5-hangul", "fcitx5-chinese-addons"} {
+		if seen[pkg] {
+			t.Errorf("%q was verified although no input method set was recorded", pkg)
+		}
+	}
+}
+
+// TestCheckPackages_VerifiesTheChosenIMEAddons: the input method addons are
+// chosen from the language at install time and recorded on the context
+// (installdesktop/inputmethods.go), so the verify step checks exactly what the
+// desktop step installed — and the fcitx5 core is verified on every install,
+// being part of the unconditional desktop set.
+func TestCheckPackages_VerifiesTheChosenIMEAddons(t *testing.T) {
+	addons := []string{"fcitx5-chewing", "fcitx5-table-extra"}
+	seen := queriedPackages(t, &shared.InstallContext{IMPackages: addons})
+	for _, pkg := range addons {
+		if !seen[pkg] {
+			t.Errorf("the chosen input method set was not verified: %q missing", pkg)
+		}
+	}
+	for _, core := range []string{"fcitx5", "fcitx5-gtk", "fcitx5-qt", "fcitx5-configtool"} {
+		if !seen[core] {
+			t.Errorf("the fcitx5 core %q is not verified on every install", core)
+		}
+	}
 }
 
 // TestCheckPackages_SummaryCountsWhatItChecked pins the log line to the list the

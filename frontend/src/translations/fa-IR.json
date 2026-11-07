@@ -89,6 +89,7 @@
   "page.confirmation.password": "رمز عبور",
   "page.confirmation.sectionDisk": "دیسک هدف",
   "page.confirmation.sectionLanguage": "زبان",
+  "page.confirmation.sectionInputMethod": "روش ورودی",
   "page.confirmation.sectionRegion": "مکان",
   "page.confirmation.sectionUser": "حساب کاربری",
   "page.confirmation.subtitle": "تنظیمات نصب را قبل از ادامه بررسی کنید.",

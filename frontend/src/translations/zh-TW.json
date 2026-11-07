@@ -89,6 +89,7 @@
   "page.confirmation.password": "密碼",
   "page.confirmation.sectionDisk": "目標磁碟",
   "page.confirmation.sectionLanguage": "語言",
+  "page.confirmation.sectionInputMethod": "輸入法",
   "page.confirmation.sectionRegion": "位置",
   "page.confirmation.sectionUser": "使用者帳戶",
   "page.confirmation.subtitle": "在繼續之前檢查您的安裝設定。",

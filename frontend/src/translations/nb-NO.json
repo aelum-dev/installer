@@ -89,6 +89,7 @@
   "page.confirmation.password": "Passord",
   "page.confirmation.sectionDisk": "Måldisk",
   "page.confirmation.sectionLanguage": "Språk",
+  "page.confirmation.sectionInputMethod": "Skrivemåte",
   "page.confirmation.sectionRegion": "Plassering",
   "page.confirmation.sectionUser": "Brukerkonto",
   "page.confirmation.subtitle": "Gjennomgå installasjonsinnstillingene før du fortsetter.",

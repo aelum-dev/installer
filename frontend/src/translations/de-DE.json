@@ -89,6 +89,7 @@
   "page.confirmation.password": "Passwort",
   "page.confirmation.sectionDisk": "Zielfestplatte",
   "page.confirmation.sectionLanguage": "Sprache",
+  "page.confirmation.sectionInputMethod": "Eingabemethode",
   "page.confirmation.sectionRegion": "Standort",
   "page.confirmation.sectionUser": "Benutzerkonto",
   "page.confirmation.subtitle": "Überprüfen Sie Ihre Installationseinstellungen, bevor Sie fortfahren.",

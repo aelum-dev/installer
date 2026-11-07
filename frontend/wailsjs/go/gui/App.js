@@ -42,6 +42,10 @@ export function GetHostname() {
   return window['go']['gui']['App']['GetHostname']();
 }
 
+export function GetInputMethodSummary(arg1) {
+  return window['go']['gui']['App']['GetInputMethodSummary'](arg1);
+}
+
 export function GetInstallationRunning() {
   return window['go']['gui']['App']['GetInstallationRunning']();
 }

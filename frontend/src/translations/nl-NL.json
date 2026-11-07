@@ -89,6 +89,7 @@
   "page.confirmation.password": "Wachtwoord",
   "page.confirmation.sectionDisk": "Doelschijf",
   "page.confirmation.sectionLanguage": "Taal",
+  "page.confirmation.sectionInputMethod": "Invoermethode",
   "page.confirmation.sectionRegion": "Locatie",
   "page.confirmation.sectionUser": "Gebruikersaccount",
   "page.confirmation.subtitle": "Controleer uw installatie-instellingen voordat u verdergaat.",

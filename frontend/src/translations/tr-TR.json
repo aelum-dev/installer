@@ -89,6 +89,7 @@
   "page.confirmation.password": "Şifre",
   "page.confirmation.sectionDisk": "Hedef disk",
   "page.confirmation.sectionLanguage": "Dil",
+  "page.confirmation.sectionInputMethod": "Giriş yöntemi",
   "page.confirmation.sectionRegion": "Konum",
   "page.confirmation.sectionUser": "Kullanıcı hesabı",
   "page.confirmation.subtitle": "Devam etmeden önce kurulum ayarlarınızı gözden geçirin.",

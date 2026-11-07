@@ -89,6 +89,7 @@
   "page.confirmation.password": "Пароль",
   "page.confirmation.sectionDisk": "Целевой диск",
   "page.confirmation.sectionLanguage": "Язык",
+  "page.confirmation.sectionInputMethod": "Метод ввода",
   "page.confirmation.sectionRegion": "Местоположение",
   "page.confirmation.sectionUser": "Учётная запись",
   "page.confirmation.subtitle": "Проверьте настройки установки перед продолжением.",

@@ -89,6 +89,7 @@
   "page.confirmation.password": "Κωδικός",
   "page.confirmation.sectionDisk": "Στόχος δίσκου",
   "page.confirmation.sectionLanguage": "Γλώσσα",
+  "page.confirmation.sectionInputMethod": "Μέθοδος εισαγωγής",
   "page.confirmation.sectionRegion": "Τοποθεσία",
   "page.confirmation.sectionUser": "Λογαριασμός χρήστη",
   "page.confirmation.subtitle": "Ελέγξτε τις ρυθμίσεις εγκατάστασης πριν προχωρήσετε.",

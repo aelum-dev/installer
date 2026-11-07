@@ -38,6 +38,7 @@ type Installer struct {
 	dryRun         bool
 	esp            string // ESP mount point (default: /mnt/efi)
 	gpuDriver      string // --gpu-driver override for the desktop step
+	inputMethod    string // --input-method override for the desktop step
 
 	// manualMode enables manual partitioning. When set, the format step runs
 	// partition.Apply with manualLayout instead of the automatic format.Run.
@@ -96,6 +97,10 @@ type InstallerConfig struct {
 	// GPUDriver is the --gpu-driver override for the desktop step's GPU
 	// detection: "auto" (detect) or a fixed vendor set. Empty means "auto".
 	GPUDriver string
+	// InputMethod is the --input-method override for the desktop step's input
+	// method table: "auto" (follow the language) or "none" (no engine addons).
+	// Empty means "auto".
+	InputMethod string
 }
 
 // NewInstaller creates a new Installer instance from cfg.
@@ -114,6 +119,7 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		dryRun:         cfg.DryRun,
 		esp:            shared.ESPMountPoint,
 		gpuDriver:      cfg.GPUDriver,
+		inputMethod:    cfg.InputMethod,
 		Logger:         shared.NewConsoleLogger(),
 	}
 }
@@ -390,6 +396,7 @@ func (inst *Installer) context() *InstallContext {
 		LuksPassphrase: luksPassphrase,
 		Lvm:            inst.lvm,
 		GPUDriver:      inst.gpuDriver,
+		InputMethod:    inst.inputMethod,
 		Logger:         inst.Logger,
 		Cancel:         inst.cancel,
 	}

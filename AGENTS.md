@@ -33,7 +33,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
     cli/main_test.go            — CLI tests
     gui/
       app.go                    — Wails app struct, NewApp, StartUp (CheckRoot→dry-run fallback, GetUILocale), OnBeforeClose, CancelInstallation, WaitForCleanup, SetStartPage
-      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetRegions, GetFileSystem, GetUILocale, SetUILocale)
+      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetRegions, GetFileSystem, GetInputMethodSummary, GetUILocale, SetUILocale)
       installation.go           — StartInstallation (spawns CLI via sudo, reads JSON progress from stderr)
       navigation.go             — Page IDs, navigation state, GetUILocale/SetUILocale
       root_check.go             — Sudo verification
@@ -65,11 +65,13 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       installbase/
         install.go              — base pacstrap (basePackages + btrfsOnlyBasePackages on btrfs) with phase-banded progress (+ install_test.go)
       installdesktop/
-        install.go              — desktop pacstrap (desktopPackages + btrfsOnlyDesktopPackages on btrfs) with phase-banded progress (+ install_test.go)
+        install.go              — desktop pacstrap (desktopPackages + btrfsOnlyDesktopPackages, and the fcitx5 input method core on every install) with phase-banded progress (+ install_test.go)
+        drivers.go              — GPU driver set selection from the PCI bus (+ drivers_test.go)
+        inputmethods.go         — input method engine selection from the chosen language: the pure table (Pinyin/Zhuyin+Cangjie/Mozc/Hangul/Bamboo), IMCandidatePackages for the offline mirror, the --input-method override, and the set recorded on ctx.IMPackages for verify (+ inputmethods_test.go)
       users/
         users.go                — SetupUsers() (useradd, chpasswd, sudoers; runs the ISO copy via install/isocopy before useradd -m seeds the home) (+ users_test.go, users_run_test.go)
       isocopy/
-        isocopy.go              — the files the live ISO ships into the target, copied unchanged: Job (Optional/BtrfsOnly flags), Jobs list, For(ctx) per-filesystem view, Run (copy + best-effort dconf update). Carries the skel skeleton, greeter config, branding, dconf keyfiles and the btrfs-only snapshot-restore path (helper, polkit policy + rule, Quickshell dialog with its i18n/, prompt unit) — all of it live-iso/airootfs source at these same paths (+ isocopy_test.go)
+        isocopy.go              — the files the live ISO ships into the target, copied unchanged: Job (Optional/BtrfsOnly flags), Jobs list, For(ctx) per-filesystem view, Run (copy + best-effort dconf update). Carries the skel skeleton, greeter config, branding, dconf keyfiles, the input method session unit (aelum-fcitx5.service, every filesystem) and the btrfs-only snapshot-restore path (helper, polkit policy + rule, Quickshell dialog with its i18n/, prompt unit) — all of it live-iso/airootfs source at these same paths (+ isocopy_test.go)
       configure/
         configure.go            — Run() step orchestrator (GenerateFstab→system→initramfs→bootloader→greetd→plymouth→zram→services→snapper)
         fstab.go                — fstab generation + verification (ESP at /efi, per-install /boot bind; btrfs/ext4 variants, ext4+LVM /home)
@@ -197,7 +199,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), optional LUKS2 → LVM → mkfs stack, btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt` (activating the volume group first when LVM is on), the ESP to `/mnt/efi`, then bind this install's `aelum/<id>/` ESP directory at `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
-4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, etc. (desktop packages, `install/installdesktop/`)
+4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, the fcitx5 core, etc.; the GPU set is chosen from the hardware (drivers.go) and the input method engines from the chosen language (inputmethods.go) (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — copy what the live ISO ships (`install/isocopy/`: skel skeleton, greeter config, branding, dconf keyfiles, and on btrfs the whole snapshot-restore path), then useradd, chpasswd, sudoers (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → system config → initramfs → bootloader → greetd → plymouth → zram → services → snapper (configs + pacman hooks + snapshot boot entries + snapshot-boot state mounts, btrfs only, **last** so the "after installation" snapshot is the finished system and contains everything written here) (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
@@ -284,7 +286,10 @@ Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Kitty + Firefox
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player,
 aelum-package-installer, imv,
 gnome-text-editor, nautilus (+ the ffmpegthumbnailer/ffmpegthumbs video thumbnailers), and Noto fonts (CJK + Emoji)
-+ Terminus + JetBrains Mono Nerd. On btrfs installs
++ Terminus + JetBrains Mono Nerd. Every install also carries the **Fcitx5 input method core**
+(framework, GTK/Qt modules, config tool); the language table (`installdesktop/inputmethods.go`)
+decides which engines are added on top, and the session wiring (unit + seeded wants link +
+`hl.env` lines) is live-iso source. On btrfs installs
 only, the desktop set also carries `snapper` (base step) and `btrfs-assistant` (desktop step): the layout's
 snapshots and their GUI. All of these must also be resolvable by the ISO build, and they are:
 `docker/scripts/build-iso.sh` reads these lists through `backend/scripts/pkg-list.go` and bakes their union
@@ -310,6 +315,7 @@ Welcome (language list + location picker)
 - System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition). With LVM it rises to `shared.MinLvmSystemPartitionBytes` (16 GiB + 16 MiB metadata), plus `shared.LuksHeaderReserveBytes` when LUKS sits under it — use `shared.SystemPartitionFloorBytes(lvm, luks)`.
 - Root partition: rest of disk, ext4 or btrfs, label "aelum", type GUID `4F68BCE3...` (Linux LVM `E6D6D379...` when it becomes a PV without LUKS)
 - LVM: one PV per install (the System partition or its LUKS mapper). The VG is named after the install id — the PV's PARTUUID-derived `<8 hex>`, with no `aelum-` prefix and no hyphen, so device-mapper names carry a single separator (`1a2b3c4d-root`, never `aelum--1a2b3c4d-root`); LVs `root`, plus `home` for ext4 only (btrfs keeps `@home` on the single root LV). LUKS always sits below LVM; fstab/boot reference filesystem UUIDs only, never `/dev/mapper`. Teardown resolves the VG from the PV (`pvs`) and refuses a multi-PV group.
+- Input methods: the fcitx5 core (`fcitx5`, `fcitx5-gtk`, `fcitx5-qt`, `fcitx5-configtool`) is unconditional in `installdesktop.DesktopPackages` — every install can take an input method, adding an engine later is a plain package install. The engine addons come from the pure language table in `installdesktop/inputmethods.go` (zh_CN Pinyin, zh_TW Zhuyin+Cangjie, ja_JP Mozc, ko_KR Hangul, vi_VN Bamboo; nothing for the other 23 languages — keyboard layouts cover them), recorded on `InstallContext.IMPackages` for verify — an empty non-nil set is a recorded decision — and forced by `--input-method auto|none`. `IMCandidatePackages` joins the ISO list through `pkg-list.go`, the same invariant as `DriverCandidatePackages`. The session wiring is live-ISO source: `shared.Fcitx5UnitPath` (an isocopy job, gated on `/usr/bin/fcitx5` so the live session is inert), its skel wants link, and the `hl.env` IM-module lines in the seeded `hyprland.lua`; held against those paths by `configure/inputmethod_shipped_test.go` and by `verify-installed.sh`.
 - Btrfs subvolumes: `@` (zstd), `@home` (zstd), `@srv` (zstd), `@cache` (nodatacow), `@tmp` (nodatacow), `@log` (zstd). Swap is provided by zram, not a subvolume.
 - **The system is not `@`.** `format.root_snapshot` creates `@/.snapshots` (a subvolume), `@/.snapshots/1/snapshot` (a subvolume, with the info.xml that makes snapper recognise it) and the plain `.snapshots` mount point inside it, then sets the **default subvolume** to that snapshot; the installer mounts and installs into it (`shared.LiveSubvolumeName`). `@` is never mounted or booted — it is the container that keeps the history at one fixed path whatever the live root is. This is the layout `snapper rollback` requires (it names the system by the default subvolume and only accepts a numbered snapshot: `Btrfs::getDefault` → `idToNum`), and it is the sequence snapper's own `installation-helper` runs. `shared.BtrfsSubvolume.SnapshotRoot` marks the one subvolume with this treatment.
 - **Nothing pins `/` to a subvolume.** `primitives.BuildFstabMountOpts` writes no `subvol=` for the root mount, `configure.bootEntryOptions` adds no `rootflags=`, and the fstab mounts `@/.snapshots` at `/.snapshots` (`shared.BtrfsSnapshotsMountPoint`). `verify.checkFstab` and `verify.checkBootloader` reject the pinned forms. A rollback then changes what boots without fstab or the menu entry being rewritten — and a pinned `subvol=@` is what made `snapper rollback` inert on the old layout.

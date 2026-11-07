@@ -89,6 +89,7 @@
   "page.confirmation.password": "סיסמה",
   "page.confirmation.sectionDisk": "דיסק יעד",
   "page.confirmation.sectionLanguage": "שפה",
+  "page.confirmation.sectionInputMethod": "שיטת קלט",
   "page.confirmation.sectionRegion": "מיקום",
   "page.confirmation.sectionUser": "חשבון משתמש",
   "page.confirmation.subtitle": "סקור את הגדרות ההתקנה לפני ההמשך.",

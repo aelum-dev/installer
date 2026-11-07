@@ -61,6 +61,17 @@ var DesktopPackages = []string{
 	"fluent-icon-theme",
 	"breeze",
 
+	// Input method framework. The core is on every install, like the GPU set
+	// is never empty: the seeded Hyprland env lines and the aelum-fcitx5
+	// session unit (live-ISO source) always point at something, and "add an
+	// input method later" is a plain package install — a first-run fcitx5
+	// registers whatever engine appears. The per-language engines are chosen by
+	// inputmethods.go and are deliberately not here.
+	"fcitx5",
+	"fcitx5-gtk",
+	"fcitx5-qt",
+	"fcitx5-configtool",
+
 	// Dux Shell's other optional dependencies are deliberately not shipped:
 	//   cups-pk-helper  - no CUPS in this image, so there is no printer to manage
 	//   i2c-tools       - external-monitor brightness already goes through ddcutil
@@ -108,16 +119,20 @@ var BtrfsOnlyDesktopPackages = []string{
 // ships, the set is never empty, and every set provides both the vulkan-driver
 // and lib32-vulkan-driver virtuals — so an installed system never gets the
 // provider question. The chosen set is recorded on ctx.DriverPackages for the
-// verify step to check.
+// verify step to check. The input method addons are chosen the same way
+// (inputmethods.go): the language decides which engines ship, getting none is
+// a normal outcome, and the choice is recorded on ctx.IMPackages.
 func Run(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
 	}
 
 	drivers := ChooseDriverPackages(ctx)
+	imAddons := ChooseIMEAddons(ctx)
 	base := installbase.AppendBtrfsOnly(ctx, DesktopPackages, BtrfsOnlyDesktopPackages)
-	packages := make([]string, 0, len(base)+len(drivers))
+	packages := make([]string, 0, len(base)+len(drivers)+len(imAddons))
 	packages = append(packages, base...)
 	packages = append(packages, drivers...)
+	packages = append(packages, imAddons...)
 	return installbase.InstallPackages(ctx, packages, "desktop environment")
 }

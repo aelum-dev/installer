@@ -89,6 +89,7 @@
   "page.confirmation.password": "Password",
   "page.confirmation.sectionDisk": "Target Disk",
   "page.confirmation.sectionLanguage": "Language",
+  "page.confirmation.sectionInputMethod": "Input method",
   "page.confirmation.sectionRegion": "Location",
   "page.confirmation.sectionUser": "User Account",
   "page.confirmation.subtitle": "Review your installation settings before proceeding.",

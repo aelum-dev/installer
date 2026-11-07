@@ -89,6 +89,7 @@
   "page.confirmation.password": "Jelszó",
   "page.confirmation.sectionDisk": "Céllemez",
   "page.confirmation.sectionLanguage": "Nyelv",
+  "page.confirmation.sectionInputMethod": "Beviteli módszer",
   "page.confirmation.sectionRegion": "Hely",
   "page.confirmation.sectionUser": "Felhasználófiók",
   "page.confirmation.subtitle": "Tekintse át a telepítési beállításokat a folytatás előtt.",

@@ -89,6 +89,7 @@
   "page.confirmation.password": "密码",
   "page.confirmation.sectionDisk": "目标磁盘",
   "page.confirmation.sectionLanguage": "语言",
+  "page.confirmation.sectionInputMethod": "输入法",
   "page.confirmation.sectionRegion": "位置",
   "page.confirmation.sectionUser": "用户账户",
   "page.confirmation.subtitle": "在继续之前检查您的安装设置。",

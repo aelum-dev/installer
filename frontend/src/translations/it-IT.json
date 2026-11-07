@@ -89,6 +89,7 @@
   "page.confirmation.password": "Password",
   "page.confirmation.sectionDisk": "Disco di destinazione",
   "page.confirmation.sectionLanguage": "Lingua",
+  "page.confirmation.sectionInputMethod": "Metodo di inserimento",
   "page.confirmation.sectionRegion": "Località",
   "page.confirmation.sectionUser": "Account utente",
   "page.confirmation.subtitle": "Rivedi le impostazioni di installazione prima di procedere.",

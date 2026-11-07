@@ -89,6 +89,7 @@
   "page.confirmation.password": "Contrasenya",
   "page.confirmation.sectionDisk": "Disc de destí",
   "page.confirmation.sectionLanguage": "Idioma",
+  "page.confirmation.sectionInputMethod": "Mètode d'entrada",
   "page.confirmation.sectionRegion": "Ubicació",
   "page.confirmation.sectionUser": "Compte d'usuari",
   "page.confirmation.subtitle": "Reviseu la configuració d'instal·lació abans de continuar.",

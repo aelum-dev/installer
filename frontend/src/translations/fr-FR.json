@@ -89,6 +89,7 @@
   "page.confirmation.password": "Mot de passe",
   "page.confirmation.sectionDisk": "Disque cible",
   "page.confirmation.sectionLanguage": "Langue",
+  "page.confirmation.sectionInputMethod": "Méthode de saisie",
   "page.confirmation.sectionRegion": "Emplacement",
   "page.confirmation.sectionUser": "Compte utilisateur",
   "page.confirmation.subtitle": "Vérifiez vos paramètres d'installation avant de continuer.",

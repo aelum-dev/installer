@@ -83,6 +83,13 @@ var Jobs = []Job{
 	{Source: shared.SnapshotRestoreRulesPath, Dest: shared.MountRoot + shared.SnapshotRestoreRulesPath, Flags: []string{"-a"}, Optional: true, BtrfsOnly: true},
 	{Source: shared.SnapshotPromptConfigDir + "/.", Dest: shared.MountRoot + shared.SnapshotPromptConfigDir + "/", Flags: []string{"-a"}, Optional: true, BtrfsOnly: true},
 	{Source: shared.SnapshotPromptUnitDir + "/" + shared.SnapshotPromptUnitName, Dest: shared.MountRoot + shared.SnapshotPromptUnitDir + "/" + shared.SnapshotPromptUnitName, Flags: []string{"-a"}, Optional: true, BtrfsOnly: true},
+	// The input method framework's session unit. The core is installed on every
+	// install (installdesktop.DesktopPackages) and the seeded Hyprland env lines
+	// reach the target with /etc/skel; this unit is the other half of that
+	// wiring and, like every other file here, is live-ISO source at this exact
+	// path. Optional: an installer newer than the ISO it runs from must not
+	// fail an install over a file that ISO never shipped.
+	{Source: shared.Fcitx5UnitPath, Dest: shared.MountRoot + shared.Fcitx5UnitPath, Flags: []string{"-a"}, Optional: true},
 }
 
 // For is Jobs as this install should see it: everything, minus the files that only

@@ -89,6 +89,7 @@
   "page.confirmation.password": "Kata sandi",
   "page.confirmation.sectionDisk": "Disk tujuan",
   "page.confirmation.sectionLanguage": "Bahasa",
+  "page.confirmation.sectionInputMethod": "Metode input",
   "page.confirmation.sectionRegion": "Lokasi",
   "page.confirmation.sectionUser": "Akun pengguna",
   "page.confirmation.subtitle": "Tinjau pengaturan instalasi Anda sebelum melanjutkan.",

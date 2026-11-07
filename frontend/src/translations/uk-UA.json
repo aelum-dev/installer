@@ -89,6 +89,7 @@
   "page.confirmation.password": "Пароль",
   "page.confirmation.sectionDisk": "Цільовий диск",
   "page.confirmation.sectionLanguage": "Мова",
+  "page.confirmation.sectionInputMethod": "Метод введення",
   "page.confirmation.sectionRegion": "Місцезнаходження",
   "page.confirmation.sectionUser": "Обліковий запис",
   "page.confirmation.subtitle": "Перевірте налаштування встановлення перед продовженням.",

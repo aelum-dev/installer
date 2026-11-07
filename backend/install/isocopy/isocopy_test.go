@@ -120,6 +120,33 @@ func TestJobs_CarriesAelumKeyring(t *testing.T) {
 	}
 }
 
+// TestJobs_CarriesFcitx5Unit verifies the input method session unit is carried
+// for every filesystem — the fcitx5 core is installed on every install, so the
+// unit that starts it is not snapshot machinery — and that its source is the
+// path the live ISO ships it at. It is Optional like the snapshot group: an
+// installer newer than the ISO it runs from must not fail over a file that ISO
+// never shipped.
+func TestJobs_CarriesFcitx5Unit(t *testing.T) {
+	found := findJobFor(Jobs, shared.Fcitx5UnitPath)
+	if found == nil {
+		t.Fatalf("no copy job carries %s; the input method framework would never autostart", shared.Fcitx5UnitPath)
+	}
+	if found.Dest != shared.MountRoot+shared.Fcitx5UnitPath {
+		t.Errorf("the unit copies to %q, want %q", found.Dest, shared.MountRoot+shared.Fcitx5UnitPath)
+	}
+	if found.BtrfsOnly {
+		t.Error("the input method unit is marked btrfs-only; every desktop session starts it")
+	}
+	if !found.Optional {
+		t.Error("the input method unit is required; an installer newer than its ISO would fail the install over it")
+	}
+	for _, fsType := range []string{shared.FileSystemExt4, shared.FileSystemBtrfs} {
+		if findJobFor(For(&shared.InstallContext{Username: "aelum", FileSystem: fsType}), shared.Fcitx5UnitPath) == nil {
+			t.Errorf("a %s install would not receive the input method unit", fsType)
+		}
+	}
+}
+
 // TestFor_NoSnapshotFilesForExt4: an ext4 install gets no snapshots, so it gets none
 // of the files that only serve them. verify-installed.sh asserts the same absence on
 // the real disk.

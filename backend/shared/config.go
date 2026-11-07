@@ -424,6 +424,21 @@ const SnapshotPromptUnitName = "aelum-snapshot-prompt.service"
 // the unit belongs to the system and not to one account.
 const SnapshotPromptUnitDir = "/etc/systemd/user"
 
+// --- Input method (Fcitx5) ---------------------------------------------------
+
+// Fcitx5UnitName is the user unit that starts the input method framework in
+// every desktop session. Like the snapshot prompt it is not enabled
+// system-side: the wants link seeded into every home by /etc/skel pulls it
+// into the session. Its ConditionPathExists gate is what keeps the live
+// session out of it — the live image carries the unit (it is the source the
+// installer copies) but not fcitx5 itself.
+const Fcitx5UnitName = "aelum-fcitx5.service"
+
+// Fcitx5UnitPath is the full path of that unit. It is live-ISO source at
+// exactly this path (live-iso/airootfs/etc/systemd/user) and reaches the
+// target through an isocopy job, like the snapshot prompt's unit.
+const Fcitx5UnitPath = SnapshotPromptUnitDir + "/" + Fcitx5UnitName
+
 // --- Kernel / boot entry -----------------------------------------------------
 
 // KernelFilePrefix is the filename prefix for vmlinuz kernel files.

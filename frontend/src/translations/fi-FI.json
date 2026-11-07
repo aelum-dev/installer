@@ -89,6 +89,7 @@
   "page.confirmation.password": "Salasana",
   "page.confirmation.sectionDisk": "Kohdelevy",
   "page.confirmation.sectionLanguage": "Kieli",
+  "page.confirmation.sectionInputMethod": "Syöttötapa",
   "page.confirmation.sectionRegion": "Sijainti",
   "page.confirmation.sectionUser": "Käyttäjätili",
   "page.confirmation.subtitle": "Tarkista asennusasetuksesi ennen jatkamista.",

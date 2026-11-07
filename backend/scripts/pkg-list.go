@@ -15,10 +15,10 @@
 //
 // Btrfs-only extras are printed unconditionally: the image is built once and
 // installed onto both filesystems, so the mirror must carry both sets. The
-// same is true of the GPU driver candidates: the set is chosen per machine at
-// install time, so every name installdesktop's table can produce must be in
-// the mirror — a dynamically chosen name no list carries cannot be installed
-// offline.
+// same is true of the GPU driver candidates and the input method addons: both
+// sets are chosen per machine at install time (from the hardware and the
+// language), so every name either table can produce must be in the mirror — a
+// dynamically chosen name no list carries cannot be installed offline.
 
 package main
 
@@ -39,6 +39,7 @@ func main() {
 		installdesktop.DesktopPackages,
 		installdesktop.BtrfsOnlyDesktopPackages,
 		installdesktop.DriverCandidatePackages,
+		installdesktop.IMCandidatePackages,
 	} {
 		for _, name := range list {
 			if seen[name] {

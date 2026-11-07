@@ -54,6 +54,20 @@ type InstallContext struct {
 	// pacman's provider question from ever appearing on an installed system.
 	DriverPackages []string
 
+	// InputMethod is the --input-method override: "auto" (or empty — follow
+	// the language table) or "none" (no input method addons for any language).
+	// It is the escape hatch the QEMU matrix and manual testing use; the GUI
+	// never sets it.
+	InputMethod string
+
+	// IMPackages is the input method addon set chosen for this install:
+	// recorded by the desktop step (install/installdesktop/inputmethods.go)
+	// from the chosen language, and reused by the verify step. The Fcitx5 core
+	// stack is not here — it is part of DesktopPackages and installed on every
+	// install. An empty (non-nil) set is a real outcome: most languages are
+	// typed through keyboard layouts and need no engine addon.
+	IMPackages []string
+
 	// ProgressCallback reports intermediate progress during a step.
 	// Called by the installer's tick goroutine to animate long-running steps.
 	// nil when no progress reporting is needed (e.g. CLI without UI).
