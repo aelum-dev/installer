@@ -2,9 +2,11 @@ package verify
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
+	"aelum-installer/backend/install/installdesktop"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/install/primitives/primitivestest"
 	"aelum-installer/backend/shared"
@@ -16,6 +18,21 @@ func recorderMounted() *primitivestest.Recorder {
 	return primitivestest.NewRecorder().
 		OnOutput("findmnt", "/dev/vda2\n").
 		OnArgsOutput([]string{"find", shared.BootMountPoint}, "vmlinuz-linux-lts\n")
+}
+
+// withInputMethodFiles adds the two files the input method check reads: the
+// session's input method list, in the framework's own format, and the config that
+// carries its switch key.
+func withInputMethodFiles(fs *primitivestest.MemFS, items ...string) *primitivestest.MemFS {
+	var b strings.Builder
+	b.WriteString("[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=" + items[len(items)-1] + "\n")
+	for i, im := range items {
+		fmt.Fprintf(&b, "\n[Groups/0/Items/%d]\nName=%s\nLayout=\n", i, im)
+	}
+	b.WriteString("\n[GroupOrder]\n0=Default\n")
+	return fs.
+		WithFile(shared.MountRoot+shared.Fcitx5ProfilePath, b.String()).
+		WithFile(shared.MountRoot+shared.Fcitx5ConfigPath, "[Hotkey/TriggerKeys]\n0=Alt+Shift_L\n")
 }
 
 // --- Run end to end ----------------------------------------------------------
@@ -32,13 +49,17 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 	fstab := "UUID=ROOT-UUID / ext4 rw 0 1\n" +
 		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
 		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n"
+	entry := `menuentry "` + shared.RefindEntryTitle("/dev/vda2") + `" {` +
+		"\n    loader /" + shared.InstallBootFilePath(id, "vmlinuz-linux-lts") +
+		"\n    options root=UUID=ROOT-UUID\n}\n"
 	fs := primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", fstab).
 		WithFile(shared.MountRoot+"/etc/passwd", "root:x:0:0::/root:/bin/bash\nalice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
-		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), `menuentry "`+shared.RefindEntryTitle("/dev/vda2")+`" {`+"\n    loader /"+shared.InstallBootFilePath(id, "vmlinuz-linux-lts")+"\n    options root=UUID=ROOT-UUID\n}\n")
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry)
+	withInputMethodFiles(fs, "keyboard-us")
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
 	defer primitives.SetCommandRunner(rec)()
@@ -53,6 +74,8 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		DiskID:     "/dev/vda",
 		Username:   "alice",
 		Hostname:   "aelum",
+		Locale:     "ru_RU.UTF-8",
+		Region:     shared.GetRegion("ru"),
 		FileSystem: shared.FileSystemBtrfs,
 		Luks:       true,
 		Partitions: &shared.PartitionInfo{
@@ -71,14 +94,14 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		"UUID=ROOT-UUID /.snapshots btrfs subvol=@/.snapshots,compress=zstd 0 0\n" +
 		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
 		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n"
-	fs := primitivestest.NewMemFS().
+	fs := withInputMethodFiles(primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", fstab).
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt filesystems)\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
-		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry)
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry), "keyboard-us", "keyboard-ru")
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
 	defer primitives.SetCommandRunner(rec)()
@@ -319,6 +342,106 @@ func TestCheckBootloader(t *testing.T) {
 				t.Fatalf("issues = %v, want one containing %q", issues, tt.wantIssue)
 			}
 		})
+	}
+}
+
+// --- checkInputMethods -------------------------------------------------------
+
+// TestCheckInputMethods is the property the feature depends on, in both
+// directions: the list the sessions read names English first and every input
+// method this install has, and the config carrying the switch key is there to
+// switch with.
+func TestCheckInputMethods(t *testing.T) {
+	russian := func() *shared.InstallContext {
+		return &shared.InstallContext{Locale: "ru_RU.UTF-8", Region: shared.GetRegion("ru")}
+	}
+	chinese := func() *shared.InstallContext {
+		ctx := &shared.InstallContext{Locale: "zh_CN.UTF-8", Region: shared.GetRegion("cn")}
+		installdesktop.ChooseIMEAddons(ctx)
+		return ctx
+	}
+
+	cases := []struct {
+		name      string
+		ctx       *shared.InstallContext
+		fs        *primitivestest.MemFS
+		wantIssue string
+	}{
+		{
+			name: "a Russian install matches its own list",
+			ctx:  russian(),
+			fs:   withInputMethodFiles(primitivestest.NewMemFS(), "keyboard-us", "keyboard-ru"),
+		},
+		{
+			name: "an engine the language asked for is in the list",
+			ctx:  chinese(),
+			fs:   withInputMethodFiles(primitivestest.NewMemFS(), "keyboard-us", "pinyin"),
+		},
+		{
+			// The framework serves the first entry to a context with no input method
+			// active, so an inverted list means every window starts in the wrong language.
+			name:      "English has to be first",
+			ctx:       russian(),
+			fs:        withInputMethodFiles(primitivestest.NewMemFS(), "keyboard-ru", "keyboard-us"),
+			wantIssue: "does not list keyboard-us first",
+		},
+		{
+			name:      "the engine the install installed has to be in the list",
+			ctx:       chinese(),
+			fs:        withInputMethodFiles(primitivestest.NewMemFS(), "keyboard-us"),
+			wantIssue: "input method pinyin is not in",
+		},
+		{
+			name:      "no list at all",
+			ctx:       russian(),
+			fs:        primitivestest.NewMemFS(),
+			wantIssue: "failed to read " + shared.MountRoot + shared.Fcitx5ProfilePath,
+		},
+		{
+			name: "a list with no switch key",
+			ctx:  russian(),
+			fs: primitivestest.NewMemFS().WithFile(shared.MountRoot+shared.Fcitx5ProfilePath,
+				"[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n"+
+					"[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n"),
+			wantIssue: "carrying the switch key is missing",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer primitives.SetFileSystem(c.fs)()
+
+			var issues, info []string
+			checkInputMethods(c.ctx, &issues, &info)
+
+			if c.wantIssue == "" {
+				if len(issues) != 0 {
+					t.Fatalf("issues = %v, want none", issues)
+				}
+				if len(info) == 0 {
+					t.Error("no diagnostic about the list that was accepted")
+				}
+				return
+			}
+			if !strings.Contains(strings.Join(issues, "\n"), c.wantIssue) {
+				t.Errorf("issues = %v, want one containing %q", issues, c.wantIssue)
+			}
+		})
+	}
+}
+
+// TestCheckInputMethods_NoEngineExpectedWithoutTheDesktopStep: a context that
+// never ran the desktop step (a standalone --verify-system) does not demand an
+// engine it never chose — the same degradation expectedPackagesFor makes.
+func TestCheckInputMethods_NoEngineExpectedWithoutTheDesktopStep(t *testing.T) {
+	ctx := &shared.InstallContext{Locale: "zh_CN.UTF-8", Region: shared.GetRegion("cn")}
+	fs := withInputMethodFiles(primitivestest.NewMemFS(), "keyboard-us")
+	defer primitives.SetFileSystem(fs)()
+
+	var issues, info []string
+	checkInputMethods(ctx, &issues, &info)
+	if len(issues) != 0 {
+		t.Errorf("issues = %v, want none", issues)
 	}
 }
 

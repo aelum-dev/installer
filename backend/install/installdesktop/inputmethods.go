@@ -4,24 +4,26 @@ package installdesktop
 //
 // The Fcitx5 core stack ships on every install — it is part of DesktopPackages,
 // and the seeded Hyprland config and the aelum-fcitx5 session unit (live-ISO
-// source, copied by install/isocopy) point at it unconditionally. What the
-// language decides is the engine addons: the same shape as drivers.go picks the
-// GPU set from the PCI bus, this picks the input methods from the language the
-// person chose. Latin, Cyrillic, Greek, Arabic, Hebrew and Persian are typed
-// through keyboard layouts, which Hyprland already handles (input.kb_layout
-// plus grp:alt_shift_toggle); an engine is only needed where typing a word is
-// not typing keys — Pinyin and Zhuyin for Chinese, Mozc for Japanese, Hangul
-// for Korean, Telex-style Vietnamese.
+// source, copied by install/isocopy) point at it unconditionally. What the two
+// location inputs decide is what sits on top of that core: the same shape as
+// drivers.go picks the GPU set from the PCI bus, this picks input methods from
+// the language and the location the person chose. The language chooses an engine,
+// and only where typing a word is not typing keys — Pinyin and Zhuyin for
+// Chinese, Mozc for Japanese, Hangul for Korean, Telex-style Vietnamese. The
+// location chooses a keyboard layout, which is what Cyrillic, Greek, Arabic,
+// Hebrew, Thai and the rest need and what a US-layout machine does not.
+// SessionInputMethods composes the two into the list the session starts with.
 //
 // A core without addons is not dead weight: it is what makes "add an input
-// method later" a plain package install — the environment and the autostart are
-// already there, and a first-run fcitx5 registers whatever engine appears.
+// method later" a plain package install — the environment, the autostart and the
+// configuration are already there, and the framework registers whatever engine
+// appears.
 //
 // selectIMEAddons is the pure table, ChooseIMEAddons is what the desktop step
 // calls at its start, and the chosen set is recorded on ctx.IMPackages so the
 // verify step checks exactly what was installed. The language is read from
-// ctx.Locale — the locale is the language (see shared/types.go); the location
-// is a separate input and changes nothing here.
+// ctx.Locale — the locale is the language (see shared/types.go); the location is
+// ctx.Region, and its desktop layout comes from shared.XkbLayoutByISO.
 
 import (
 	"strings"
@@ -50,13 +52,23 @@ func ValidInputMethodOverride(s string) bool {
 }
 
 // imeSet is one row of the language table: the addon packages the language
-// needs, and the engine names the Confirmation page shows. The summary names
-// are proper nouns — the same words in every language — so they need no
-// translation, and they can never drift from the packages because both come
-// from this one row.
+// needs, the engine names the Confirmation page shows, and the same engines in
+// the framework's own names. The summary names are proper nouns — the same words
+// in every language — so they need no translation, and they can never drift from
+// the packages because both come from this one row.
 type imeSet struct {
 	packages []string
 	summary  []string
+
+	// inputMethods are those engines as the framework spells them: the unique
+	// name of the input method the package registers, which is the only thing a
+	// session's input method list can name. They are the basenames of the .conf
+	// files each addon ships under /usr/share/fcitx5/inputmethod — read out of
+	// the current Arch packages, not guessed. A row names one engine even where
+	// the package registers more tables than that: the list is the thing a person
+	// switches to, and the rest are reachable through the input method config
+	// tool.
+	inputMethods []string
 }
 
 // The language rows, keyed by the same codes shared.GetLanguages offers (which
@@ -64,32 +76,39 @@ type imeSet struct {
 //
 //   - zh_CN: chinese-addons carries the native Pinyin/Shuangpin/Wubi engines.
 //   - zh_TW: chewing is the Zhuyin engine most of that market types with;
-//     table-extra adds Cangjie (and the other Chinese tables). It depends on
-//     chinese-addons, which the mirror carries anyway for zh_CN.
+//     table-extra adds the other Chinese tables (its own AGENTS note called it
+//     Cangjie — measured against the packages, plain `cangjie` ships inside
+//     chinese-addons, which table-extra depends on, and table-extra itself has
+//     cangjie-large/-3/-5 and the rest).
 //   - ja_JP: mozc — the engine Japanese users expect. anthy still packages but
 //     is unmaintained, and kkc is a niche kana-conversion tool.
 //   - ko_KR: hangul (libhangul).
 //   - vi_VN: bamboo — the modern Vietnamese engine (unikey is the older one).
 var imeTable = map[string]imeSet{
 	"zh_CN": {
-		packages: []string{"fcitx5-chinese-addons"},
-		summary:  []string{"Pinyin"},
+		packages:     []string{"fcitx5-chinese-addons"},
+		summary:      []string{"Pinyin"},
+		inputMethods: []string{"pinyin"},
 	},
 	"zh_TW": {
-		packages: []string{"fcitx5-chewing", "fcitx5-table-extra"},
-		summary:  []string{"Zhuyin", "Cangjie"},
+		packages:     []string{"fcitx5-chewing", "fcitx5-table-extra"},
+		summary:      []string{"Zhuyin", "Cangjie"},
+		inputMethods: []string{"chewing"},
 	},
 	"ja_JP": {
-		packages: []string{"fcitx5-mozc"},
-		summary:  []string{"Mozc"},
+		packages:     []string{"fcitx5-mozc"},
+		summary:      []string{"Mozc"},
+		inputMethods: []string{"mozc"},
 	},
 	"ko_KR": {
-		packages: []string{"fcitx5-hangul"},
-		summary:  []string{"Hangul"},
+		packages:     []string{"fcitx5-hangul"},
+		summary:      []string{"Hangul"},
+		inputMethods: []string{"hangul"},
 	},
 	"vi_VN": {
-		packages: []string{"fcitx5-bamboo"},
-		summary:  []string{"Bamboo"},
+		packages:     []string{"fcitx5-bamboo"},
+		summary:      []string{"Bamboo"},
+		inputMethods: []string{"bamboo"},
 	},
 }
 
@@ -138,6 +157,50 @@ func IMESummary(language string) []string {
 		return nil
 	}
 	return append([]string{}, set.summary...)
+}
+
+// IMEngineNames returns the engines this install has, in the framework's own
+// names, for the session's input method list. It reads the package set the
+// desktop step recorded rather than re-asking the language, because the list must
+// never name an engine the install never installed: --input-method none records an
+// empty set, and an entry the framework cannot resolve is quietly dropped from the
+// group, which reads as a missing language rather than as a decision.
+func IMEngineNames(ctx *shared.InstallContext) []string {
+	if len(ctx.IMPackages) == 0 {
+		return nil
+	}
+	set, ok := imeTable[languageFromLocale(ctx.Locale)]
+	if !ok {
+		return nil
+	}
+	return append([]string{}, set.inputMethods...)
+}
+
+// SessionInputMethods is the input method list every account on this install
+// starts with, in the order the framework reads it:
+//
+//  1. English, first. The framework uses the first entry of the group as the
+//     state a session is in when the input method is switched off — for an
+//     inactive context it serves inputMethodList()[0] — so the language a person
+//     did not choose is always the plain keyboard, and password fields and a
+//     session without the framework behave the same way.
+//  2. The location's keyboard layout, when the keyboards sold there are not the US
+//     layout: Russian Cyrillic, Ukrainian, Thai, a Japanese 106-key board. A
+//     layout is an input method to this framework ("keyboard-<layout>", one entry
+//     per xkeyboard-config layout), which is what lets a single key switch a
+//     layout and an engine with the same press.
+//  3. The engine the language table chose, when it chose one.
+//
+// So the ordinary case is exactly two — English and the language of the place the
+// person said they are in — and a CJK install adds its engine beside the keyboard
+// its hardware actually carries. The last entry is the one the toggle switches to,
+// which is what the configure step writes as the group's default.
+func SessionInputMethods(ctx *shared.InstallContext) []string {
+	im := []string{shared.Fcitx5KeyboardIMPrefix + shared.DefaultXkbLayout}
+	if layout := shared.XkbLayoutForRegion(ctx.Region.Code); layout != shared.DefaultXkbLayout {
+		im = append(im, shared.Fcitx5KeyboardIMPrefix+layout)
+	}
+	return append(im, IMEngineNames(ctx)...)
 }
 
 // ChooseIMEAddons decides the addon set for this install, records it on

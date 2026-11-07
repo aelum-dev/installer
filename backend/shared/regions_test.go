@@ -172,6 +172,44 @@ func TestCuratedTablesCoverTheRegionTable(t *testing.T) {
 			t.Errorf("KeymapByISO has an entry for %q, which is not a region", code)
 		}
 	}
+	for code, layout := range XkbLayoutByISO {
+		if GetRegion(code).Code == "" {
+			t.Errorf("XkbLayoutByISO has an entry for %q (%s), which is not a region", code, layout)
+		}
+		if layout == "" || layout == DefaultXkbLayout {
+			t.Errorf("XkbLayoutByISO maps %q to %q; a US-layout country belongs in neither table", code, layout)
+		}
+	}
+}
+
+// TestXkbLayoutForRegion covers the desktop half of the keyboard: the answer is
+// always a layout name, the same location codes are accepted in any of the forms
+// callers hold, and a location with no entry of its own — including the worldwide
+// one — is the English layout, which is what tells the caller there is nothing
+// local to offer.
+func TestXkbLayoutForRegion(t *testing.T) {
+	cases := []struct {
+		code string
+		want string
+	}{
+		{"ru", "ru"},
+		{"RU", "ru"},
+		{"ru_RU.UTF-8", "ru"},
+		{"ua", "ua"},
+		{"gb", "gb"},    // the console table spells this one uk
+		{"ar", "latam"}, // Argentina, not Spain
+		{"es", "es"},
+		{"cn", DefaultXkbLayout}, // Chinese keyboards are US-layout; the engine does the work
+		{"us", DefaultXkbLayout},
+		{DefaultRegionCode, DefaultXkbLayout},
+		{"", DefaultXkbLayout},
+		{"zz", DefaultXkbLayout},
+	}
+	for _, c := range cases {
+		if got := XkbLayoutForRegion(c.code); got != c.want {
+			t.Errorf("XkbLayoutForRegion(%q) = %q, want %q", c.code, got, c.want)
+		}
+	}
 }
 
 // TestLocaleForLanguage covers the language half of the split: the locale comes

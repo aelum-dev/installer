@@ -211,3 +211,163 @@ func TestValidInputMethodOverride(t *testing.T) {
 		}
 	}
 }
+
+// --- the engine names a session may be told about -----------------------------
+
+// TestIMEInputMethods_AreWhatThePackagesRegister pins the names a session profile
+// can name to the input methods the addon packages actually register. Each is the
+// basename of a .conf under usr/share/fcitx5/inputmethod in the current Arch
+// package — read out of the packages rather than guessed: pinyin.conf in
+// fcitx5-chinese-addons, then chewing.conf, mozc.conf, hangul.conf and bamboo.conf.
+// An entry the framework cannot resolve is dropped from the group with a warning,
+// so a wrong name is a language that silently never appears in the list.
+func TestIMEInputMethods_AreWhatThePackagesRegister(t *testing.T) {
+	want := map[string][]string{
+		"zh_CN": {"pinyin"},
+		"zh_TW": {"chewing"},
+		"ja_JP": {"mozc"},
+		"ko_KR": {"hangul"},
+		"vi_VN": {"bamboo"},
+	}
+	for code, names := range want {
+		set, ok := imeTable[code]
+		if !ok {
+			t.Fatalf("language %q has no table row", code)
+		}
+		if !slices.Equal(set.inputMethods, names) {
+			t.Errorf("imeTable[%q].inputMethods = %v, want %v", code, set.inputMethods, names)
+		}
+	}
+	for code, set := range imeTable {
+		if len(set.inputMethods) == 0 {
+			t.Errorf("row %q installs %v but names no engine a session can switch to", code, set.packages)
+		}
+		for _, name := range set.inputMethods {
+			if strings.TrimSpace(name) == "" {
+				t.Errorf("row %q names a blank engine", code)
+			}
+			if strings.HasPrefix(name, shared.Fcitx5KeyboardIMPrefix) {
+				t.Errorf("row %q names %q: a keyboard layout comes from the location table, never from a language row", code, name)
+			}
+		}
+	}
+}
+
+// TestIMEngineNames_OnlyWhatWasInstalled: the session list reads the package set
+// the desktop step recorded rather than the language, so an engine this install
+// never got is never named — by --input-method none, and by a context that never
+// ran the desktop step at all (a standalone --verify-system).
+func TestIMEngineNames_OnlyWhatWasInstalled(t *testing.T) {
+	installed := &shared.InstallContext{Locale: "ja_JP.UTF-8"}
+	ChooseIMEAddons(installed)
+	if got := IMEngineNames(installed); !slices.Equal(got, []string{"mozc"}) {
+		t.Errorf("IMEngineNames(ja_JP) = %v, want [mozc]", got)
+	}
+
+	off := &shared.InstallContext{Locale: "ja_JP.UTF-8", InputMethod: InputMethodOverrideNone}
+	ChooseIMEAddons(off)
+	if got := IMEngineNames(off); got != nil {
+		t.Errorf("--input-method none still names engines: %v", got)
+	}
+
+	fresh := &shared.InstallContext{Locale: "ja_JP.UTF-8"}
+	if got := IMEngineNames(fresh); got != nil {
+		t.Errorf("a context that never chose anything names engines: %v", got)
+	}
+}
+
+// --- SessionInputMethods ------------------------------------------------------
+
+// TestSessionInputMethods is the feature as a person experiences it: English first
+// and their own language second, whatever the pair of wizard answers was. Note how
+// the two inputs split the work — the location decides which keyboard is offered,
+// the language decides which engine is, and a CJK install gets the engine beside
+// the keyboard its hardware actually has.
+func TestSessionInputMethods(t *testing.T) {
+	cases := []struct {
+		name   string
+		locale string
+		region string
+		want   []string
+	}{
+		{"an English install in the US", "en_US.UTF-8", "us", []string{"keyboard-us"}},
+		{"the worldwide location", "en_US.UTF-8", "worldwide", []string{"keyboard-us"}},
+		{"Russian language, Russian location", "ru_RU.UTF-8", "ru", []string{"keyboard-us", "keyboard-ru"}},
+		{"Ukrainian language, Ukrainian location", "uk_UA.UTF-8", "ua", []string{"keyboard-us", "keyboard-ua"}},
+		{"a layout the console table spells differently", "de_DE.UTF-8", "de", []string{"keyboard-us", "keyboard-de"}},
+		{"Latin American keyboards are not Spain's", "es_ES.UTF-8", "ar", []string{"keyboard-us", "keyboard-latam"}},
+		{"a keyboard the console table has no map for", "en_US.UTF-8", "th", []string{"keyboard-us", "keyboard-th"}},
+		{"an engine on a US keyboard", "zh_CN.UTF-8", "cn", []string{"keyboard-us", "pinyin"}},
+		{"an engine and the keyboard the hardware has", "ja_JP.UTF-8", "jp", []string{"keyboard-us", "keyboard-jp", "mozc"}},
+		{"the engine is the local input method", "vi_VN.UTF-8", "vn", []string{"keyboard-us", "bamboo"}},
+		{"the location decides the layout, not the language", "en_US.UTF-8", "ua", []string{"keyboard-us", "keyboard-ua"}},
+		{"the language decides the engine, not the location", "zh_CN.UTF-8", "us", []string{"keyboard-us", "pinyin"}},
+	}
+	for _, c := range cases {
+		ctx := &shared.InstallContext{Locale: c.locale, Region: shared.GetRegion(c.region)}
+		ChooseIMEAddons(ctx) // the desktop step's decision, which the list reads back
+		got := SessionInputMethods(ctx)
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: SessionInputMethods(%s, %s) = %v, want %v", c.name, c.locale, c.region, got, c.want)
+		}
+	}
+}
+
+// TestSessionInputMethods_Invariants holds the two properties every case must have,
+// over every language and location the installer offers: English is first, because
+// the framework serves that entry to a session with no input method active, and no
+// entry is listed twice — a duplicate would read as a language that takes two keys
+// to leave.
+func TestSessionInputMethods_Invariants(t *testing.T) {
+	english := shared.Fcitx5KeyboardIMPrefix + shared.DefaultXkbLayout
+	for _, lang := range shared.GetLanguages() {
+		for _, region := range shared.GetRegions() {
+			ctx := &shared.InstallContext{Locale: lang.Locale, Region: region}
+			ChooseIMEAddons(ctx)
+			got := SessionInputMethods(ctx)
+			if len(got) == 0 || got[0] != english {
+				t.Errorf("%s in %s: the list does not start with %s: %v", lang.Code, region.Code, english, got)
+			}
+			if len(got) > 3 {
+				t.Errorf("%s in %s: %d input methods is more than English, a keyboard and an engine: %v", lang.Code, region.Code, len(got), got)
+			}
+			for i, name := range got {
+				if slices.Contains(got[i+1:], name) {
+					t.Errorf("%s in %s: %s is listed twice: %v", lang.Code, region.Code, name, got)
+				}
+			}
+		}
+	}
+}
+
+// TestSessionInputMethods_NoneOverride: forcing no engines must not leave the
+// engine in the list. The location's keyboard is a different decision and stays.
+func TestSessionInputMethods_NoneOverride(t *testing.T) {
+	ctx := &shared.InstallContext{Locale: "ja_JP.UTF-8", Region: shared.GetRegion("jp"), InputMethod: InputMethodOverrideNone}
+	ChooseIMEAddons(ctx)
+	want := []string{"keyboard-us", "keyboard-jp"}
+	if got := SessionInputMethods(ctx); !slices.Equal(got, want) {
+		t.Errorf("SessionInputMethods with --input-method none = %v, want %v", got, want)
+	}
+}
+
+// TestSessionInputMethods_LastEntryIsTheNativeOne: the profile makes the last
+// entry the one the framework switches an active context to, so the order is what
+// makes Alt+Shift mean "my language" rather than "English again".
+func TestSessionInputMethods_LastEntryIsTheNativeOne(t *testing.T) {
+	for _, c := range []struct {
+		locale, region string
+	}{
+		{"ru_RU.UTF-8", "ru"},
+		{"ja_JP.UTF-8", "jp"},
+		{"zh_CN.UTF-8", "cn"},
+	} {
+		ctx := &shared.InstallContext{Locale: c.locale, Region: shared.GetRegion(c.region)}
+		ChooseIMEAddons(ctx)
+		got := SessionInputMethods(ctx)
+		last := got[len(got)-1]
+		if last == shared.Fcitx5KeyboardIMPrefix+shared.DefaultXkbLayout {
+			t.Errorf("%s in %s: the entry the switch key reaches is English: %v", c.locale, c.region, got)
+		}
+	}
+}

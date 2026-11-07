@@ -179,3 +179,81 @@ var KeymapByISO = map[string]string{
 	"tr": "trq",
 	"ua": "ua",
 }
+
+// XkbLayoutByISO maps a country to the keyboard layout its keyboards carry, in
+// xkeyboard-config's names — the names the framework's `keyboard-<layout>` input
+// methods take, and Hyprland's kb_layout. A country is absent when the keyboards
+// sold there are the US layout, which is most of the list: India, Indonesia, the
+// Gulf states, China and Vietnam all type on US keycaps.
+//
+// It is a separate table from KeymapByISO, not a translation of it, for three
+// reasons that are each a difference in fact rather than in spelling:
+//
+//   - `kbd` has no map for some real layouts at all (its own AGENTS note names
+//     `kr` and `th`), so the console table cannot say those keyboards differ;
+//   - the two name spaces disagree (`de-latin1` against `de`, `sr-cy` against
+//     `rs`, `bg_pho-utf8` against `bg`);
+//   - Spanish keyboards are not one layout: Spain sells `es`, and Argentina,
+//     Chile, Colombia, Ecuador and Mexico sell `latam`, which is where the
+//     right-hand keys and the @ sign live in different places.
+//
+// Moldova is the one entry that does not follow its console row: `kbd` has no
+// Moldovan map worth using, and the keyboards sold there carry the Romanian
+// layout.
+//
+// A language typed through an engine is not this table's business: the engine is
+// chosen in installdesktop/inputmethods.go, and Pinyin, Mozc, Hangul, Zhuyin and
+// Telex Vietnamese all take US keys, so `cn`, `tw` and `vn` are deliberately
+// absent while `jp` and `kr` — real keyboards with real keycaps — are present.
+//
+// Every name here is a layout in xkeyboard-config's own evdev.xml (`python3`
+// over /usr/share/X11/xkb/rules/evdev.xml lists them); a name that is not there
+// is an input method fcitx5 drops as invalid.
+var XkbLayoutByISO = map[string]string{
+	"ar": "latam",
+	"at": "at",
+	"be": "be",
+	"bg": "bg",
+	"br": "br",
+	"ca": "ca",
+	"ch": "ch",
+	"cl": "latam",
+	"co": "latam",
+	"cz": "cz",
+	"de": "de",
+	"dk": "dk",
+	"ec": "latam",
+	"ee": "ee",
+	"es": "es",
+	"fi": "fi",
+	"fr": "fr",
+	"gb": "gb",
+	"ge": "ge",
+	"gr": "gr",
+	"hu": "hu",
+	"il": "il",
+	"is": "is",
+	"it": "it",
+	"jp": "jp",
+	"kr": "kr",
+	"kz": "kz",
+	"lt": "lt",
+	"lv": "lv",
+	"md": "ro",
+	"mk": "mk",
+	"mx": "latam",
+	"nc": "fr",
+	"nl": "nl",
+	"no": "no",
+	"pl": "pl",
+	"pt": "pt",
+	"ro": "ro",
+	"rs": "rs",
+	"ru": "ru",
+	"se": "se",
+	"si": "si",
+	"sk": "sk",
+	"th": "th",
+	"tr": "tr",
+	"ua": "ua",
+}

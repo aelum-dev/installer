@@ -42,6 +42,29 @@ func TestShippedFcitx5Unit(t *testing.T) {
 	requireContains(t, unit, "WantedBy=hyprland-session.target", "the [Install] section the seeded wants link matches")
 }
 
+// TestShippedInputMethodSourcesExist is the strict half of the tests in this file:
+// the copy jobs for these paths are Optional, so an install cannot notice a source
+// the live ISO stopped shipping — a silently skipped copy is an input method
+// feature that never arrives. If the live-iso tree is here, the files have to be.
+func TestShippedInputMethodSourcesExist(t *testing.T) {
+	dir := os.Getenv(liveISODirEnv)
+	if dir == "" {
+		dir = liveISODir
+	}
+	root := filepath.Join(dir, "airootfs")
+	if _, err := os.Stat(root); err != nil {
+		t.Skipf("no live-iso tree at %s (%v)", root, err)
+	}
+	for _, rel := range []string{
+		strings.TrimPrefix(shared.Fcitx5UnitPath, "/"),
+		strings.TrimPrefix(shared.Fcitx5ConfigPath, "/"),
+	} {
+		if _, err := os.Stat(filepath.Join(root, rel)); err != nil {
+			t.Errorf("the live ISO does not ship %s: the install's copy job for it is Optional, so nothing else would say so (%v)", rel, err)
+		}
+	}
+}
+
 // TestShippedFcitx5WantsLink checks the seeded pull-in actually points at the
 // unit's system path — the same reason the snapshot prompt's link is asserted:
 // a link to anywhere else is a unit no session will ever start.
@@ -80,6 +103,55 @@ func TestShippedHyprlandIMEEnvironment(t *testing.T) {
 	if strings.Contains(config, `hl.env("GTK_IM_MODULE"`) {
 		t.Error(`the seeded session config sets GTK_IM_MODULE: a native Wayland client composes through the compositor's input-method protocol, and the framework warns about this variable on every first session`)
 	}
+}
+
+// TestShippedFcitx5Hotkeys holds the framework's own config as the live ISO ships
+// it: the switch key is Alt+Shift, on both Shift keys because the framework needs
+// the keysym rather than the modifier word (Key::Key in 5.1.23 only recognises
+// "Shift+" with a trailing plus, so a bare trailing "Shift" is dropped and the key
+// becomes Alt alone), and the key that reaches more than two input methods is kept
+// as well — a Japanese or Korean install lists its keyboard beside its engine, and
+// toggling only ever reaches English and the engine.
+func TestShippedFcitx5Hotkeys(t *testing.T) {
+	config := liveISOFile(t, strings.TrimPrefix(shared.Fcitx5ConfigPath, "/"))
+
+	for _, want := range []string{
+		"[Hotkey/TriggerKeys]",
+		"0=Alt+Shift_L",
+		"1=Alt+Shift_R",
+		"[Hotkey/EnumerateForwardKeys]",
+	} {
+		requireContains(t, config, want, "the input method switch key")
+	}
+	for _, line := range strings.Split(config, "\n") {
+		if strings.HasSuffix(strings.TrimSpace(line), "=Alt+Shift") {
+			t.Error(`a hotkey is written "Alt+Shift": the framework parses that as Alt alone, because its parser looks for "Shift+" with a trailing plus`)
+		}
+	}
+}
+
+// TestShippedSessionLeavesLayoutSwitchingToTheFramework: the seeded session config
+// must not carry an XKB layout toggle. The framework owns the key now, and a
+// keyboard layout is one of its input methods — with both in place, one press of
+// Alt+Shift would move the compositor's layout and the session's input method at
+// the same time, and the two would disagree about which one is active.
+func TestShippedSessionLeavesLayoutSwitchingToTheFramework(t *testing.T) {
+	config := liveISOFile(t, "etc/skel/.config/hypr/hyprland.lua")
+
+	for _, line := range strings.Split(config, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "--") {
+			continue // the comment explaining why the option is gone
+		}
+		if strings.Contains(trimmed, "kb_options") {
+			t.Error("the seeded session config still assigns an XKB option; Alt+Shift belongs to the input method framework now")
+			break
+		}
+	}
+	// The English baseline stays: it is what the greeter (which never starts the
+	// framework) and a session with the input method switched off type with, and it
+	// is the same layout the framework's own first entry uses.
+	requireContains(t, config, `kb_layout = "us"`, "the English baseline the profile's first entry matches")
 }
 
 // TestShippedFcitx5AutostartHidden holds the seeded override of the autostart

@@ -102,6 +102,14 @@ const DefaultRegionCode = "worldwide"
 // loadkeys does not have is a boot you cannot log into.
 const DefaultKeymap = "us"
 
+// DefaultXkbLayout is the desktop keyboard layout for a country with no entry in
+// XkbLayoutByISO — the keyboards sold there are US-layout. It is also the layout
+// every install lists first, so the language a person did not choose is always
+// the plain English one. The names are xkeyboard-config's, not kbd's:
+// DefaultKeymap and XkbLayoutByISO agree about which countries differ from us and
+// disagree about what the name for that is ("de-latin1" against "de").
+const DefaultXkbLayout = "us"
+
 // --- Btrfs subvolumes --------------------------------------------------------
 
 // DefaultBtrfsCompression is the compression algorithm for btrfs subvolumes.
@@ -438,6 +446,34 @@ const Fcitx5UnitName = "aelum-fcitx5.service"
 // exactly this path (live-iso/airootfs/etc/systemd/user) and reaches the
 // target through an isocopy job, like the snapshot prompt's unit.
 const Fcitx5UnitPath = SnapshotPromptUnitDir + "/" + Fcitx5UnitName
+
+// Fcitx5ConfigDir is the system-side input method configuration. fcitx5 reads its
+// `profile` and `config` from the PkgConfig path list, which is
+// ~/.config/fcitx5 followed by every $XDG_CONFIG_DIRS directory (/etc/xdg among
+// them) — verified against 5.1.23's StandardPathsPrivate, which builds exactly
+// that list. A file here is therefore the default every account starts with, and
+// the person's own copy wins from the moment they change anything (the framework
+// autosaves into the home). It is not seeded through /etc/skel because nothing in
+// it is per-user: an install has one language and one location.
+const Fcitx5ConfigDir = "/etc/xdg/fcitx5"
+
+// Fcitx5ProfilePath is the input method list: which input methods exist in a
+// session, in order, and which one the framework switches to. The configure step
+// writes it (configure/inputmethod.go) because its content is the answer to two
+// questions only the install knows — the location's keyboard layout and the
+// language's engine.
+const Fcitx5ProfilePath = Fcitx5ConfigDir + "/profile"
+
+// Fcitx5ConfigPath is the framework's own configuration: its hotkeys. It is the
+// same on every install, so it is live-ISO source at exactly this path and
+// reaches the target through an isocopy job, like the session unit above.
+const Fcitx5ConfigPath = Fcitx5ConfigDir + "/config"
+
+// Fcitx5KeyboardIMPrefix is the prefix of the framework's own layout input
+// methods. The keyboard addon names one entry per xkeyboard-config layout
+// ("keyboard-us", "keyboard-ru"), which is what makes a keyboard layout
+// switchable by the same key as an engine.
+const Fcitx5KeyboardIMPrefix = "keyboard-"
 
 // --- Kernel / boot entry -----------------------------------------------------
 

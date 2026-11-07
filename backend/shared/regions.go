@@ -110,6 +110,24 @@ func normalizeTag(code string) string {
 	return strings.ReplaceAll(code, "-", "_")
 }
 
+// XkbLayoutForRegion returns the desktop keyboard layout of a location, in
+// xkeyboard-config's names — the name the framework's keyboard-<layout> input
+// method takes. It is the desktop half of the keymap question: ConfigureSystemBase
+// writes the console keymap from Region.Keymap, and this is the layout the
+// graphical session offers beside English.
+//
+// The lookup goes through GetRegion so a caller may hand it anything it has —
+// "UA", "uk_UA", a whole locale — and the answer is always a layout name: a
+// location with no entry in XkbLayoutByISO, the worldwide one included, is
+// DefaultXkbLayout. Callers compare against that constant to decide whether there
+// is anything local to offer at all.
+func XkbLayoutForRegion(code string) string {
+	if layout, ok := XkbLayoutByISO[GetRegion(code).Code]; ok {
+		return layout
+	}
+	return DefaultXkbLayout
+}
+
 // LocaleForLanguage returns the system locale ("en_US.UTF-8") a language code
 // selects, or "" when the code is not one the installer offers.
 func LocaleForLanguage(code string) string {

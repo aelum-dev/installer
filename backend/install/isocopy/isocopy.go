@@ -90,6 +90,11 @@ var Jobs = []Job{
 	// path. Optional: an installer newer than the ISO it runs from must not
 	// fail an install over a file that ISO never shipped.
 	{Source: shared.Fcitx5UnitPath, Dest: shared.MountRoot + shared.Fcitx5UnitPath, Flags: []string{"-a"}, Optional: true},
+	// The framework's own config: the key that switches input methods. Same
+	// reasoning as the unit above — live-ISO source at this exact path, Optional
+	// so an older ISO cannot fail an install. The input method *list* is not here:
+	// it is the answer to two wizard answers, so configure/inputmethod.go writes it.
+	{Source: shared.Fcitx5ConfigPath, Dest: shared.MountRoot + shared.Fcitx5ConfigPath, Flags: []string{"-a"}, Optional: true},
 }
 
 // For is Jobs as this install should see it: everything, minus the files that only

@@ -13,19 +13,21 @@ import (
 //
 //  1. Generate fstab
 //  2. System configuration (hostname, timezone, locale, keymap, NTP, mirrors)
-//  3. Configure the initramfs HOOKS and regenerate the initramfs images
-//  4. Configure bootloader (must run after the initramfs exists, since the boot
+//  3. The input method list the sessions start with (the desktop half of the
+//     keymap the previous item wrote for the console)
+//  4. Configure the initramfs HOOKS and regenerate the initramfs images
+//  5. Configure bootloader (must run after the initramfs exists, since the boot
 //     entry references the kernel + initrd it produces)
-//  5. greetd + Dux Greeter setup
-//  6. Aelum LUKS unlock Plymouth theme (matches the live ISO)
-//  7. zram swap configuration
-//  8. Point /etc/resolv.conf at /run (before the services and before the
+//  6. greetd + Dux Greeter setup
+//  7. Aelum LUKS unlock Plymouth theme (matches the live ISO)
+//  8. zram swap configuration
+//  9. Point /etc/resolv.conf at /run (before the services and before the
 //     snapshot, so the factory snapshot already carries the link)
-//  9. Enable systemd services
-//  10. Enable the [aelum] package repository and trust its signing key (all
+//  10. Enable systemd services
+//  11. Enable the [aelum] package repository and trust its signing key (all
 //     filesystems): a fresh install installs the distro's own applications with
 //     no hand-editing
-//  11. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
+//  12. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
 //     hooks, the boot-menu entries for the snapshots, the state mounts a snapshot
 //     boot needs, and the "after installation" snapshot - last, because it is the
 //     finished system and because a snapshot only contains what was written before
@@ -35,6 +37,13 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 	if err := ConfigureSystemBase(ctx); err != nil {
+		return err
+	}
+	// The other half of the keyboard: ConfigureSystemBase wrote the console keymap
+	// for the location, this writes the input methods the graphical session offers
+	// for it. Before the snapshot, like everything else here - a snapshot runs the
+	// configuration it contains.
+	if err := ConfigureInputMethod(ctx); err != nil {
 		return err
 	}
 	// Configure the initramfs HOOKS: plymouth for the boot splash (always, since

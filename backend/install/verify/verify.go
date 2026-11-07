@@ -2,6 +2,7 @@ package verify
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -43,8 +44,8 @@ func expectedPackagesFor(ctx *shared.InstallContext) []string {
 
 // Run verifies that the installed system (mounted at /mnt) is complete and
 // bootable. The check is read-only and fast: it verifies fstab, kernel/initrd
-// images, required packages, the user account, and the hostname. It never
-// modifies the installed system.
+// images, required packages, the input method list the sessions start with, the
+// user account, and the hostname. It never modifies the installed system.
 //
 // On failure it returns an error listing every problem found, and logs the
 // collected diagnostics to help locate the root cause.
@@ -70,6 +71,7 @@ func Run(ctx *shared.InstallContext) error {
 	checkBootloader(ctx, &issues, &info)
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
+	checkInputMethods(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
 	checkHostname(ctx, &issues, &info)
 
@@ -468,6 +470,70 @@ func checkPackages(ctx *shared.InstallContext, issues, info *[]string) {
 	}
 
 	*info = append(*info, fmt.Sprintf("all %d packages installed and present ✓ (base + desktop)", len(expected)))
+}
+
+// checkInputMethods verifies the input method wiring the desktop and configure
+// steps wrote: the session's input method list names English first and every
+// input method this install has, and the framework's own config — the file that
+// carries the switch key — is present. The list is recomputed from the context the
+// same way expectedPackagesFor is, so a context that never ran the desktop step
+// (a standalone --verify-system) asks only about what it actually chose, and an
+// engine that was never installed is not demanded here either.
+//
+// English first is a real property and not a style choice: the framework serves an
+// inactive context the first entry of the group, so the entry order is what makes
+// "no input method" mean the plain keyboard.
+func checkInputMethods(ctx *shared.InstallContext, issues, info *[]string) {
+	path := shared.MountRoot + shared.Fcitx5ProfilePath
+	data, err := primitives.ReadFile(path)
+	if err != nil {
+		*issues = append(*issues, "failed to read "+path)
+		return
+	}
+
+	got := fcitx5ProfileItems(string(data))
+	if len(got) == 0 {
+		*issues = append(*issues, path+" lists no input method")
+		return
+	}
+	if got[0] != shared.Fcitx5KeyboardIMPrefix+shared.DefaultXkbLayout {
+		*issues = append(*issues, path+" does not list "+shared.Fcitx5KeyboardIMPrefix+
+			shared.DefaultXkbLayout+" first: the framework serves that entry to a session with no input method active")
+		return
+	}
+
+	for _, want := range installdesktop.SessionInputMethods(ctx) {
+		if !slices.Contains(got, want) {
+			*issues = append(*issues, "input method "+want+" is not in "+path)
+		}
+	}
+
+	if _, err := primitives.Stat(shared.MountRoot + shared.Fcitx5ConfigPath); err != nil {
+		*issues = append(*issues, "the input method configuration carrying the switch key is missing: "+shared.Fcitx5ConfigPath)
+		return
+	}
+
+	*info = append(*info, "input methods: "+strings.Join(got, " "))
+}
+
+// fcitx5ProfileItems returns the input method names an fcitx5 profile lists, in
+// the order its Items sections do. Only the Names inside an Items section count:
+// the group's own Name is its title, not an input method.
+func fcitx5ProfileItems(content string) []string {
+	var names []string
+	inItems := false
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "[Groups/0/Items/"):
+			inItems = true
+		case strings.HasPrefix(line, "["):
+			inItems = false
+		case inItems && strings.HasPrefix(line, "Name="):
+			names = append(names, strings.TrimPrefix(line, "Name="))
+		}
+	}
+	return names
 }
 
 // checkUserAccount verifies that the configured user account exists in the
