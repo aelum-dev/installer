@@ -55,14 +55,15 @@ func hasAccountLine(data []byte, name string) bool {
 	return false
 }
 
-// Run copies what the live ISO ships, then creates the user account and writes the
-// sudoers rule.
+// Run copies what the live ISO ships, sets the desktop's weather location from the
+// chosen location, then creates the user account and writes the sudoers rule.
 //
 // The copy comes first, and it is a separate package (install/isocopy) because most
 // of what it carries is not user setup - the seeded skeleton, the greeter config, the
 // branding files and the snapshot-restore path. It comes first because useradd -m
 // seeds the home from /etc/skel: the skeleton has to be in the target before the
-// first home is created out of it.
+// first home is created out of it, and that is equally true of the one value the
+// installer writes into the skeleton itself (weather.go).
 func Run(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
 		return err
@@ -85,6 +86,11 @@ func Run(ctx *shared.InstallContext) error {
 	if err := isocopy.Run(ctx); err != nil {
 		return err
 	}
+
+	// The weather location belongs to the skeleton, so it is written here: after
+	// the copy that puts the skeleton in the target and before the home is seeded
+	// out of it. See weather.go for why not the home, and not the configure step.
+	seedWeatherLocation(ctx)
 
 	var cmd *primitives.Command
 	var output []byte

@@ -1,6 +1,8 @@
 package verify
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -45,7 +47,8 @@ func expectedPackagesFor(ctx *shared.InstallContext) []string {
 // Run verifies that the installed system (mounted at /mnt) is complete and
 // bootable. The check is read-only and fast: it verifies fstab, kernel/initrd
 // images, required packages, the input method list the sessions start with, the
-// user account, and the hostname. It never modifies the installed system.
+// weather location the desktop is set to, the user account, and the hostname. It
+// never modifies the installed system.
 //
 // On failure it returns an error listing every problem found, and logs the
 // collected diagnostics to help locate the root cause.
@@ -72,6 +75,7 @@ func Run(ctx *shared.InstallContext) error {
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
 	checkInputMethods(ctx, &issues, &info)
+	checkWeatherLocation(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
 	checkHostname(ctx, &issues, &info)
 
@@ -534,6 +538,46 @@ func fcitx5ProfileItems(content string) []string {
 		}
 	}
 	return names
+}
+
+// checkWeatherLocation verifies the weather location the users step wrote into the
+// seeded skeleton: the capital of this install's location, under the two keys Dux
+// Shell's weather widget reads. It is recomputed from the context the same way the
+// expected package set is, so the check asks about the location the install was
+// actually run with.
+//
+// A location with no capital of its own — the worldwide one — is not a failure
+// here: writing no weather location is the decision, and the desktop's own default
+// is the right answer for a machine nobody placed on a map.
+func checkWeatherLocation(ctx *shared.InstallContext, issues, info *[]string) {
+	place, ok := shared.WeatherForRegion(ctx.Region.Code)
+	if !ok {
+		return
+	}
+
+	path := shared.MountRoot + shared.SkelDmsSessionPath
+	data, err := primitives.ReadFile(path)
+	if err != nil {
+		*issues = append(*issues, "failed to read "+path)
+		return
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	state := map[string]any{}
+	if err := dec.Decode(&state); err != nil {
+		*issues = append(*issues, path+" is not readable as JSON: "+err.Error())
+		return
+	}
+
+	city, _ := state[shared.DmsWeatherLocationKey].(string)
+	coords, _ := state[shared.DmsWeatherCoordinatesKey].(string)
+	if city != place.City || coords != place.Coordinates {
+		*issues = append(*issues, fmt.Sprintf("%s does not name the weather location of %s (%s, %s): got %q, %q",
+			path, ctx.Region.Name, place.City, place.Coordinates, city, coords))
+		return
+	}
+	*info = append(*info, "weather location: "+place.City)
 }
 
 // checkUserAccount verifies that the configured user account exists in the

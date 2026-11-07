@@ -100,7 +100,7 @@ func run(args []string) int {
 	cleanupFlag := fs.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
 	fileSystemFlag := fs.String("filesystem", shared.DefaultFileSystem, "Root filesystem type: ext4 or btrfs")
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
-	regionFlag := fs.String("region", "", "Location: ISO 3166-1 alpha-2 code (e.g. ua, de). Defaults to the country of --language.")
+	regionFlag := fs.String("region", "", "Location: ISO 3166-1 alpha-2 code (e.g. ua, de). Sets the timezone, keymap, mirrors and the desktop's weather location. Defaults to the country of --language.")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout (formats the selected Boot and System partitions)")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")

@@ -26,6 +26,17 @@ type Region struct {
 	Keymap   string `json:"keymap"`   // console keymap name, e.g. "ua"
 }
 
+// WeatherPlace is the one place a location's weather is reported for: the name the
+// desktop shows and the coordinates it asks the weather service with. "Place"
+// rather than "location" on purpose — in this package a location is a Region, and a
+// Region is a country, which is not a place the weather can be.
+type WeatherPlace struct {
+	City string `json:"city"` // display name, English, as the city spells it itself
+	// Coordinates is "latitude,longitude" in decimal degrees — the exact form Dux
+	// Shell stores and splits, so it is kept as a string rather than two numbers.
+	Coordinates string `json:"coordinates"`
+}
+
 // regionsByCode indexes the generated table. Package initialisation is enough:
 // the table is a literal, so there is no I/O and no ordering hazard.
 var regionsByCode = func() map[string]Region {
@@ -126,6 +137,28 @@ func XkbLayoutForRegion(code string) string {
 		return layout
 	}
 	return DefaultXkbLayout
+}
+
+// WeatherForRegion returns the place the installed desktop reports weather for:
+// the capital of the location, from the curated table in countries.go. Callers get
+// ok=false when the location has no capital to name — the worldwide entry, and any
+// code that is not a location at all — which is a decision, not a gap: the weather
+// widget keeps its own default and the person sets it in the control center.
+//
+// The capital is chosen over the largest city because it is the one place a country
+// names without a judgement call: the clock of a multi-zone country follows where
+// its people are (PreferredZone), but a weather widget asks for one point, and the
+// biggest city of a country is both a fact that goes out of date and still not
+// where this particular machine is.
+//
+// The lookup goes through GetRegion, so a caller may hand it any form it holds —
+// "UA", "uk_UA", a whole locale.
+func WeatherForRegion(code string) (WeatherPlace, bool) {
+	place, ok := WeatherByISO[GetRegion(code).Code]
+	if !ok || place.City == "" || place.Coordinates == "" {
+		return WeatherPlace{}, false
+	}
+	return place, true
 }
 
 // LocaleForLanguage returns the system locale ("en_US.UTF-8") a language code

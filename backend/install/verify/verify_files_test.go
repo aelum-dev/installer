@@ -94,14 +94,15 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		"UUID=ROOT-UUID /.snapshots btrfs subvol=@/.snapshots,compress=zstd 0 0\n" +
 		"UUID=EFI-UUID /efi vfat rw 0 2\n" +
 		"/efi/" + shared.InstallBootDir(id) + " /boot none bind 0 0\n"
-	fs := withInputMethodFiles(primitivestest.NewMemFS().
+	fs := withSeededWeather(withInputMethodFiles(primitivestest.NewMemFS().
 		WithFile(shared.MountRoot+"/etc/fstab", fstab).
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt filesystems)\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
-		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry), "keyboard-us", "keyboard-ru")
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry), "keyboard-us", "keyboard-ru"),
+		"Moscow", "55.7558,37.6173") // the capital of the region this ctx chose
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
 	defer primitives.SetCommandRunner(rec)()
@@ -445,8 +446,97 @@ func TestCheckInputMethods_NoEngineExpectedWithoutTheDesktopStep(t *testing.T) {
 	}
 }
 
-// --- checkUserAccount / checkHostname ----------------------------------------
+// --- checkWeatherLocation ----------------------------------------------------
 
+// withSeededWeather adds the weather location to the desktop session state the
+// skeleton carries, in the shape the users step writes it.
+func withSeededWeather(fs *primitivestest.MemFS, city, coords string) *primitivestest.MemFS {
+	return fs.WithFile(shared.MountRoot+shared.SkelDmsSessionPath,
+		"{\n  \""+shared.DmsWeatherCoordinatesKey+"\": \""+coords+"\",\n"+
+			"  \""+shared.DmsWeatherLocationKey+"\": \""+city+"\",\n"+
+			"  \"configVersion\": 7\n}\n")
+}
+
+// TestCheckWeatherLocation is the other half of the feature: the location chosen on
+// the Welcome page has to be the place the installed desktop reports the weather
+// for, in the file its weather widget actually reads.
+func TestCheckWeatherLocation(t *testing.T) {
+	const path = shared.MountRoot + shared.SkelDmsSessionPath
+
+	cases := []struct {
+		name      string
+		ctx       *shared.InstallContext
+		fs        *primitivestest.MemFS
+		wantIssue string
+	}{
+		{
+			name: "the capital of the chosen location",
+			ctx:  &shared.InstallContext{Region: shared.GetRegion("ua")},
+			fs:   withSeededWeather(primitivestest.NewMemFS(), "Kyiv", "50.4501,30.5234"),
+		},
+		{
+			// The file as the live ISO ships it: the copy reached the target, but
+			// nothing named this install's location, so the weather widget would
+			// report New York to a person in Kyiv.
+			name:      "the weather keys were never written",
+			ctx:       &shared.InstallContext{Region: shared.GetRegion("ua")},
+			fs:        primitivestest.NewMemFS().WithFile(path, "{\n  \"configVersion\": 7\n}\n"),
+			wantIssue: "does not name the weather location",
+		},
+		{
+			name:      "a city that is not this location's capital",
+			ctx:       &shared.InstallContext{Region: shared.GetRegion("ua")},
+			fs:        withSeededWeather(primitivestest.NewMemFS(), "Kraków", "50.0614,19.9372"),
+			wantIssue: "does not name the weather location",
+		},
+		{
+			name:      "no session state in the skeleton at all",
+			ctx:       &shared.InstallContext{Region: shared.GetRegion("ua")},
+			fs:        primitivestest.NewMemFS(),
+			wantIssue: "failed to read " + path,
+		},
+		{
+			name:      "session state that cannot be parsed",
+			ctx:       &shared.InstallContext{Region: shared.GetRegion("ua")},
+			fs:        primitivestest.NewMemFS().WithFile(path, "{not json"),
+			wantIssue: "is not readable as JSON",
+		},
+		{
+			// No country, so no capital, so nothing was written and nothing is
+			// demanded: the desktop's own default is the right answer.
+			name: "the worldwide location asks for nothing",
+			ctx:  &shared.InstallContext{Region: shared.GetRegion(shared.DefaultRegionCode)},
+			fs:   primitivestest.NewMemFS(),
+		},
+		{
+			name:      "a context with no location asks for nothing",
+			ctx:       &shared.InstallContext{},
+			fs:        primitivestest.NewMemFS(),
+			wantIssue: "",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer primitives.SetFileSystem(c.fs)()
+
+			var issues, info []string
+			checkWeatherLocation(c.ctx, &issues, &info)
+
+			if c.wantIssue == "" {
+				if len(issues) != 0 {
+					t.Fatalf("issues = %v, want none", issues)
+				}
+				return
+			}
+			if !strings.Contains(strings.Join(issues, "\n"), c.wantIssue) {
+				t.Errorf("issues = %v, want one containing %q", issues, c.wantIssue)
+			}
+		})
+	}
+}
+
+// --- checkUserAccount / checkHostname ----------------------------------------
 func TestCheckUserAccount(t *testing.T) {
 	const path = shared.MountRoot + "/etc/passwd"
 	ctx := &shared.InstallContext{Username: "alice"}

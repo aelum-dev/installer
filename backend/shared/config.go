@@ -475,6 +475,31 @@ const Fcitx5ConfigPath = Fcitx5ConfigDir + "/config"
 // switchable by the same key as an engine.
 const Fcitx5KeyboardIMPrefix = "keyboard-"
 
+// --- Desktop session state (Dux Shell) ---------------------------------------
+
+// SkelDir is the seeded home skeleton: every home is copied out of it — archiso
+// seeds the live session's homes at build time, `useradd -m` seeds an installed
+// one. It is where per-home desktop state belongs, because Dux Shell keeps that
+// state inside the home and has no system-side copy of it.
+const SkelDir = "/etc/skel"
+
+// SkelDmsSessionPath is Dux Shell's per-home session state inside the skeleton:
+// wallpaper, the launcher's hidden entries, and the weather location. Chroot-
+// relative like every other path constant here, so the installed system's copy is
+// MountRoot + SkelDmsSessionPath. The file itself is live-ISO source (the copied
+// skeleton); the installer only ever edits the two keys below in the target.
+const SkelDmsSessionPath = SkelDir + "/.local/state/dms/session.json"
+
+// DmsWeatherLocationKey and DmsWeatherCoordinatesKey are the pair Dux Shell's
+// weather widget reads: the name it prints and the point it asks the weather
+// service with. Both together mean "the person chose this place", which is why
+// the desktop skips geocoding when they are set; its own defaults are New York
+// ("New York, NY" / "40.7128,-74.0060"), which no install should ship.
+const (
+	DmsWeatherLocationKey    = "weatherLocation"
+	DmsWeatherCoordinatesKey = "weatherCoordinates"
+)
+
 // --- Kernel / boot entry -----------------------------------------------------
 
 // KernelFilePrefix is the filename prefix for vmlinuz kernel files.

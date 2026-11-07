@@ -22,6 +22,9 @@ It ships inside the live ISO and opens on its own when that ISO boots.
   installed system a mirror list for that region for future updates; the install itself never touches the
   network. Not every language is fully translated inside Dux Shell yet — the desktop language can be
   changed later in its settings.
+- **Your location.** The clock, the console and desktop keyboard, the mirrors your system updates from,
+  and the city the desktop's weather reports — your country's capital, which you can change in the
+  desktop's settings. It is pre-filled from your language, so one choice is usually enough.
 
 ## Automatic or manual disk mode
 

@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -159,8 +160,9 @@ func TestGetRegionsSortedByName(t *testing.T) {
 }
 
 // TestCuratedTablesCoverTheRegionTable keeps the curated half honest: every
-// PreferredZone and KeymapByISO entry must name a code that is actually in the
-// table, so a retired country cannot linger in a map nobody reads.
+// PreferredZone, KeymapByISO, XkbLayoutByISO and WeatherByISO entry must name a
+// code that is actually in the table, so a retired country cannot linger in a map
+// nobody reads.
 func TestCuratedTablesCoverTheRegionTable(t *testing.T) {
 	for code, zone := range PreferredZone {
 		if GetRegion(code).Code == "" {
@@ -180,6 +182,85 @@ func TestCuratedTablesCoverTheRegionTable(t *testing.T) {
 			t.Errorf("XkbLayoutByISO maps %q to %q; a US-layout country belongs in neither table", code, layout)
 		}
 	}
+	for code, place := range WeatherByISO {
+		if GetRegion(code).Code == "" {
+			t.Errorf("WeatherByISO has an entry for %q (%s), which is not a region", code, place.City)
+		}
+	}
+}
+
+// TestWeatherForRegion is the "every location the installer offers has a capital"
+// test: a person who picked a country on the Welcome page must not get a weather
+// widget pointing at a city on the other side of the world. The worldwide location
+// is the one entry with no capital, and it must answer "none" rather than guess.
+func TestWeatherForRegion(t *testing.T) {
+	for _, r := range regionTable {
+		place, ok := WeatherForRegion(r.Code)
+		if r.Code == DefaultRegionCode {
+			if ok {
+				t.Errorf("the worldwide location has a capital: %+v", place)
+			}
+			continue
+		}
+		if !ok {
+			t.Errorf("region %q (%s) has no weather location", r.Code, r.Name)
+			continue
+		}
+		if place.City == "" {
+			t.Errorf("region %q has an empty weather city", r.Code)
+		}
+		if !isCoordinates(place.Coordinates) {
+			t.Errorf("region %q has weather coordinates %q, want \"latitude,longitude\"", r.Code, place.Coordinates)
+		}
+	}
+
+	// The names are what the desktop prints, so the well-known spellings are the
+	// ones that must be in the table — and the coordinates must be the capital, not
+	// the largest city of that country.
+	for _, want := range []struct {
+		code, city, coords string
+	}{
+		{"ua", "Kyiv", "50.4501,30.5234"},
+		{"ru", "Moscow", "55.7558,37.6173"},
+		{"kz", "Astana", "51.1694,71.4491"}, // not Almaty, the largest city
+		{"us", "Washington, D.C.", "38.9072,-77.0369"},
+		{"au", "Canberra", "-35.2809,149.1300"}, // not Sydney
+		{"za", "Pretoria", "-25.7479,28.2293"},
+	} {
+		place, ok := WeatherForRegion(want.code)
+		if !ok || place.City != want.city || place.Coordinates != want.coords {
+			t.Errorf("WeatherForRegion(%q) = %+v, ok=%v; want %s (%s)",
+				want.code, place, ok, want.city, want.coords)
+		}
+	}
+
+	// The same spellings every other region lookup accepts.
+	for _, code := range []string{"UA", "uk_UA", "ru_RU.UTF-8"} {
+		if place, ok := WeatherForRegion(code); !ok || place.City == "" {
+			t.Errorf("WeatherForRegion(%q) found nothing", code)
+		}
+	}
+	for _, code := range []string{"", "zz", DefaultRegionCode} {
+		if place, ok := WeatherForRegion(code); ok {
+			t.Errorf("WeatherForRegion(%q) = %+v, want no weather location", code, place)
+		}
+	}
+}
+
+// isCoordinates reports whether s is "latitude,longitude" in decimal degrees, the
+// form Dux Shell splits on the comma: two numbers, the first within ±90 and the
+// second within ±180.
+func isCoordinates(s string) bool {
+	lat, lon, found := strings.Cut(s, ",")
+	if !found || strings.Contains(lon, ",") {
+		return false
+	}
+	latDeg, err := strconv.ParseFloat(lat, 64)
+	if err != nil || latDeg < -90 || latDeg > 90 {
+		return false
+	}
+	lonDeg, err := strconv.ParseFloat(lon, 64)
+	return err == nil && lonDeg >= -180 && lonDeg <= 180
 }
 
 // TestXkbLayoutForRegion covers the desktop half of the keyboard: the answer is
