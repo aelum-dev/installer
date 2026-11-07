@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "ユーザー名を入力",
   "page.welcome.loading": "読み込み中...",
   "page.welcome.region": "場所",
-  "page.welcome.regionHint": "システムの日時、コンソールキーボード、使用する Arch ミラーを設定します。",
   "page.welcome.subtitle": "このインストーラーがシステムのセットアップをガイドします。",
   "page.welcome.title": "Aelum へようこそ",
   "snapshot.prompt.body": "使用していたシステムは取り消し用のスナップショットとして保持され、復元された状態は再起動後に起動します。OK を押すまで何も変わりません。",

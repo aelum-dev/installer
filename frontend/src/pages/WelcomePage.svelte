@@ -108,7 +108,6 @@
 					</svg>
 				</span>
 			</button>
-			<div class="region-hint">{t('page.welcome.regionHint')}</div>
 		</div>
 	{/snippet}
 
@@ -142,8 +141,8 @@
 
 	/* The location block is the info rail's one control: the header speaks in the
 	   rail's quiet voice, and the button says plainly what it changes. Language is
-	   the list on the right; this is the only place that says the clock, keyboard
-	   and mirrors come from somewhere else. */
+	   the list on the right; this is the only place the clock, keyboard and mirrors
+	   are chosen. */
 	.region-block {
 		display: flex;
 		flex-direction: column;
@@ -192,12 +191,5 @@
 	.region-caret svg {
 		width: 1em;
 		height: 1em;
-	}
-
-	.region-hint {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-		line-height: 1.4;
-		text-align: left;
 	}
 </style>

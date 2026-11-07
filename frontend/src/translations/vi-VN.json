@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Nhập tên người dùng",
   "page.welcome.loading": "Đang tải...",
   "page.welcome.region": "Vị trí",
-  "page.welcome.regionHint": "Đặt đồng hồ, bàn phím console và gương Arch mà hệ thống sẽ dùng.",
   "page.welcome.subtitle": "Trình cài đặt này sẽ hướng dẫn bạn qua quá trình thiết lập hệ thống.",
   "page.welcome.title": "Chào mừng đến với Aelum",
   "snapshot.prompt.body": "Hệ thống bạn đang dùng được giữ lại dưới dạng ảnh chụp hoàn tác, và trạng thái được khôi phục sẽ khởi động sau khi khởi động lại. Không có gì thay đổi cho đến khi bạn bấm OK.",

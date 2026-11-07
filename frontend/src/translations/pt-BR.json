@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Digite o nome de usuário",
   "page.welcome.loading": "Carregando...",
   "page.welcome.region": "Local",
-  "page.welcome.regionHint": "Define o relógio, o teclado do console e os espelhos do Arch que o sistema usará.",
   "page.welcome.subtitle": "Este instalador irá guiá-lo pela configuração do seu sistema.",
   "page.welcome.title": "Bem-vindo ao Aelum",
   "snapshot.prompt.body": "O sistema que você estava usando é mantido como um snapshot de desfazimento, e o estado restaurado é iniciado depois de uma reinicialização. Nada muda até você pressionar OK.",

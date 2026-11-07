@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Enter username",
   "page.welcome.loading": "Loading...",
   "page.welcome.region": "Location",
-  "page.welcome.regionHint": "Sets the clock, the console keyboard and which Arch mirrors the system gets.",
   "page.welcome.subtitle": "This installer will guide you through setting up your system.",
   "page.welcome.title": "Welcome to Aelum",
   "snapshot.prompt.body": "The system you were using is kept as an undo snapshot, and the restored state boots after a reboot. Nothing changes until you press OK.",

@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "输入用户名",
   "page.welcome.loading": "加载中...",
   "page.welcome.region": "位置",
-  "page.welcome.regionHint": "决定系统的时钟、控制台键盘以及所使用的 Arch 镜像站。",
   "page.welcome.subtitle": "安装程序将引导您完成系统设置。",
   "page.welcome.title": "欢迎使用 Aelum",
   "snapshot.prompt.body": "您原先使用的系统会保留为一个撤销快照，恢复后的状态将在重启后启动。在您按下 OK 之前，不会有任何改变。",

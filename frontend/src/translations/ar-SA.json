@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "أدخل اسم المستخدم",
   "page.welcome.loading": "...جاري التحميل",
   "page.welcome.region": "الموقع",
-  "page.welcome.regionHint": "يحدّد الساعة ولوحة المفاتيح في وضع الطرفية ومرايا Arch التي سيستخدمها النظام.",
   "page.welcome.subtitle": "سيوجهك هذا المثبّت خلال إعداد نظامك.",
   "page.welcome.title": "مرحبًا بك في Aelum",
   "snapshot.prompt.body": "يُحفظ النظام الذي كنت تستخدمه كلقطة تراجع، وستبدأ الحالة المستعادة بعد إعادة التشغيل. لا يتغيّر أي شيء حتى تضغط على «موافق».",

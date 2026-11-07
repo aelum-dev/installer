@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "הזן שם משתמש",
   "page.welcome.loading": "...טוען",
   "page.welcome.region": "מיקום",
-  "page.welcome.regionHint": "קובע את השעון, מקלדת המסוף ואת מראות Arch של המערכת.",
   "page.welcome.subtitle": "מתקין זה ינחה אותך דרך הגדרת המערכת שלך.",
   "page.welcome.title": "ברוכים הבאים ל-Aelum",
   "snapshot.prompt.body": "המערכת שהשתמשת בה נשמרת כתמונת מצב לצורך ביטול, והמצב המשוחזר יעלה אחרי הפעלה מחדש. שום דבר לא ישתנה עד שתלחץ על אישור.",

@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Adja meg a felhasználónevet",
   "page.welcome.loading": "Betöltés...",
   "page.welcome.region": "Hely",
-  "page.welcome.regionHint": "Beállítja az órát, a konzol billentyűzetét és az Arch-tükreket, amelyeket a rendszer használ.",
   "page.welcome.subtitle": "Ez a telepítő végigvezeti a rendszer beállításán.",
   "page.welcome.title": "Üdvözöljük az Aelum-ban",
   "snapshot.prompt.body": "A rendszer, amelyet Ön használt, visszavonási pillanatképként megmarad, és a visszaállított állapot újraindítás után indul. Semmi nem változik, amíg meg nem nyomja az OK gombot.",

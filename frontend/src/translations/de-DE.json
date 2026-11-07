@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Benutzernamen eingeben",
   "page.welcome.loading": "Wird geladen...",
   "page.welcome.region": "Standort",
-  "page.welcome.regionHint": "Legt Uhrzeit, Konsolen-Tastatur und die Arch-Spiegel fest, die das System nutzt.",
   "page.welcome.subtitle": "Dieser Installer führt Sie durch die Einrichtung Ihres Systems.",
   "page.welcome.title": "Willkommen bei Aelum",
   "snapshot.prompt.body": "Das System, das du verwendet hast, bleibt als Undo-Snapshot erhalten, und der wiederhergestellte Zustand startet nach einem Neustart. Bis du auf OK klickst, ändert sich nichts.",

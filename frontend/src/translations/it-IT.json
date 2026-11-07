@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Inserisci il nome utente",
   "page.welcome.loading": "Caricamento...",
   "page.welcome.region": "Località",
-  "page.welcome.regionHint": "Imposta orologio, tastiera console e i mirror Arch che il sistema userà.",
   "page.welcome.subtitle": "Questo installatore ti guiderà attraverso la configurazione del sistema.",
   "page.welcome.title": "Benvenuto in Aelum",
   "snapshot.prompt.body": "Il sistema che stavi usando viene conservato come snapshot di annullamento, e lo stato ripristinato si avvia dopo un riavvio. Nulla cambia finché non premi OK.",

@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Syötä käyttäjänimi",
   "page.welcome.loading": "Ladataan...",
   "page.welcome.region": "Sijainti",
-  "page.welcome.regionHint": "Asettaa kellon, konsolin näppäimistön ja Arch-peilit, joita järjestelmä käyttää.",
   "page.welcome.subtitle": "Tämä asennusohjelma opastaa sinua järjestelmän asetuksissa.",
   "page.welcome.title": "Tervetuloa Aelum:iin",
   "snapshot.prompt.body": "Käyttämäsi järjestelmä tallennetaan snapshotiksi, johon voit palata, ja palautettu tila käynnistyy uudelleenkäynnistyksen jälkeen. Mikään ei muutu ennen kuin painat OK.",

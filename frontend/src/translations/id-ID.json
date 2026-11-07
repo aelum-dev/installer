@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Masukkan nama pengguna",
   "page.welcome.loading": "Memuat...",
   "page.welcome.region": "Lokasi",
-  "page.welcome.regionHint": "Menentukan jam, papan tombol konsol, dan mirror Arch yang dipakai sistem.",
   "page.welcome.subtitle": "Pemasang ini akan memandu Anda melalui pengaturan sistem Anda.",
   "page.welcome.title": "Selamat datang di Aelum",
   "snapshot.prompt.body": "Sistem yang Anda gunakan disimpan sebagai snapshot untuk membatalkan perubahan, dan kondisi yang dipulihkan akan boot setelah restart. Tidak ada yang berubah sampai Anda menekan OK.",

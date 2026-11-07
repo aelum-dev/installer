@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Entrez le nom d'utilisateur",
   "page.welcome.loading": "Chargement...",
   "page.welcome.region": "Emplacement",
-  "page.welcome.regionHint": "Définit l’horloge, le clavier de console et les miroirs Arch du système.",
   "page.welcome.subtitle": "Cet installateur vous guidera à travers la configuration de votre système.",
   "page.welcome.title": "Bienvenue sur Aelum",
   "snapshot.prompt.body": "Le système que vous utilisiez est conservé comme instantané d’annulation, et l’état restauré démarre après un redémarrage. Rien ne change tant que vous n’avez pas appuyé sur OK.",

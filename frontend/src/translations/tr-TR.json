@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Kullanıcı adını girin",
   "page.welcome.loading": "Yükleniyor...",
   "page.welcome.region": "Konum",
-  "page.welcome.regionHint": "Sistemin saatini, konsol klavyesini ve kullanacağı Arch aynalarını belirler.",
   "page.welcome.subtitle": "Bu yükleyici, sisteminizi kurmanız için size rehberlik edecektir.",
   "page.welcome.title": "Aelum'a Hoş Geldiniz",
   "snapshot.prompt.body": "Kullandığınız sistem bir geri alma anlık görüntüsü olarak korunur ve geri yüklenen durum yeniden başlattıktan sonra önyüklenir. OK düğmesine basana kadar hiçbir şey değişmez.",

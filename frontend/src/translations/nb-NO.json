@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Skriv inn brukernavn",
   "page.welcome.loading": "Laster...",
   "page.welcome.region": "Plassering",
-  "page.welcome.regionHint": "Bestemmer klokken, konsolletastaturet og Arch-speilene systemet bruker.",
   "page.welcome.subtitle": "Denne installasjonsprogrammet vil veilede deg gjennom oppsettet av systemet ditt.",
   "page.welcome.title": "Velkommen til Aelum",
   "snapshot.prompt.body": "Systemet du brukte, beholdes som et øyeblikksbilde du kan gå tilbake til, og den gjenopprettede tilstanden starter etter en omstart. Ingenting endres før du trykker OK.",

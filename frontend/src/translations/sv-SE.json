@@ -127,7 +127,6 @@
   "page.userAccount.usernamePlaceholder": "Ange användarnamn",
   "page.welcome.loading": "Laddar...",
   "page.welcome.region": "Plats",
-  "page.welcome.regionHint": "Ställer in klockan, konsolens tangentbord och Arch-speglarna systemet använder.",
   "page.welcome.subtitle": "Den här installationsguiden guidar dig genom att ställa in ditt system.",
   "page.welcome.title": "Välkommen till Aelum",
   "snapshot.prompt.body": "Systemet du använde sparas som en ögonblicksbild du kan gå tillbaka till, och det återställda tillståndet startar efter en omstart. Inget ändras förrän du trycker OK.",
