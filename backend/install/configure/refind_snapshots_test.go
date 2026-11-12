@@ -303,7 +303,6 @@ func TestSnapshotMenuScript(t *testing.T) {
 	for _, want := range []string{
 		"#!/bin/sh",
 		"set -u",
-		"MAX_SNAPSHOTS=",
 		`SNAPPER_CONFIG="root"`,
 		// The fragment it owns, spelled the way shared.RefindSnapshotEntryName
 		// spells it.

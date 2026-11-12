@@ -166,12 +166,6 @@ const snapshotMenuScript = `#!/bin/sh
 
 set -u
 
-# The submenu is a list the user asked for, so it can hold more than the main
-# menu should: still only a fraction of what snapper keeps, and the states worth
-# booting are the recent ones. The states someone had a reason to keep come first
-# (see the ranking below), so this cap never becomes a wall of timestamps.
-MAX_SNAPSHOTS=8
-
 # The config snapper.go writes for @. Only a root subvolume is bootable, so the
 # @home config is not this script's business.
 SNAPPER_CONFIG="root"
@@ -525,7 +519,6 @@ list=$(
         done
     fi \
         | sort -t'|' -k1,1n -k2,2rn \
-        | head -n "$MAX_SNAPSHOTS" \
         | cut -d'|' -f2- \
         | sort -t'|' -k1,1rn
 )
