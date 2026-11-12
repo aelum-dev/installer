@@ -240,6 +240,12 @@ const PacmanRepoSigLevel = "Required DatabaseRequired"
 // commented section is simply an invisible one.
 const PacmanMultilibRepoName = "multilib"
 
+// PacmanExtraRepoName is the official repository our [aelum] block must precede
+// in pacman.conf. Measured with pacman 7.1: with one package name in two enabled
+// repositories, the repository listed first wins regardless of version — so
+// ordering is what makes our patched refind the one an installed system gets.
+const PacmanExtraRepoName = "extra"
+
 // PacmanMirrorListPath is where every official repository's Server lines come
 // from. The file carries $repo, so the same list answers for core, extra and
 // multilib — which is why enabling multilib needs no Server line of its own.

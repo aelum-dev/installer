@@ -46,12 +46,23 @@ func ConfigurePacmanRepo(ctx *shared.InstallContext) error {
 	return trustAelumKey(ctx)
 }
 
-// enablePacmanRepo appends the repository block to the target's pacman.conf
-// and returns the file as it now reads. The file comes from the pacman package
-// via pacstrap; there is no drop-in directory to write instead (see the
-// constants' note), so the append is the normal Arch way — a modified
+// enablePacmanRepo puts the repository block in the target's pacman.conf and
+// returns the file as it now reads. The file comes from the pacman package via
+// pacstrap; there is no drop-in directory to write instead (see the
+// constants' note), so editing the file is the normal Arch way — a modified
 // pacman-owned file keeps its edits across updates, pacman only drops a
 // .pacnew to diff.
+//
+// The block goes before [extra], not at the end. Measured with pacman 7.1
+// against two throwaway repositories: when the same package name exists in two
+// enabled repositories, the repository listed FIRST in the config wins even
+// against a higher version elsewhere — order, not version, decides. refind is
+// the live case: extra carries 0.14.2-3 and [aelum] our patched 0.14.2-4, and
+// with [aelum] appended after [extra] pacman resolved refind from extra every
+// time (the ISO the installer shipped proved it). An installed system must get
+// the patched one, so [aelum] precedes [extra]. Nothing else in [aelum]
+// collides with an official repository, and [core] keeps precedence over us,
+// which is the right shape: Arch owns the base, we own what we ship.
 func enablePacmanRepo(ctx *shared.InstallContext) (string, error) {
 	hostPath := shared.MountRoot + shared.PacmanConfPath
 	data, err := primitives.ReadFile(hostPath)
@@ -67,19 +78,40 @@ func enablePacmanRepo(ctx *shared.InstallContext) (string, error) {
 		return string(data), nil
 	}
 
-	block := "\n# Aelum repository - applications shipped by the distro.\n" +
+	block := "# Aelum repository - applications shipped by the distro, listed ahead of\n" +
+		"# [extra] so our patched packages win by repository order (see above).\n" +
 		"# Signed with the Aelum release key (release@aelum.dev); the installer\n" +
 		"# trusts that key in pacman's keyring, so no further setup is needed.\n" +
 		fmt.Sprintf("[%s]\n", shared.PacmanRepoName) +
 		"SigLevel = " + shared.PacmanRepoSigLevel + "\n" +
 		"Server = " + shared.PacmanRepoServer + "\n"
-	if err := primitives.AppendFile(shared.PacmanConfPath, block); err != nil {
-		return "", err
+	updated, inserted := insertPacmanSectionBefore(string(data), shared.PacmanExtraRepoName, block)
+	if !inserted {
+		// No [extra] to precede — a hand-edited file. The old shape: append.
+		updated = string(data) + "\n" + block
+	}
+	if err := primitives.WriteFile(shared.PacmanConfPath, updated); err != nil {
+		return "", fmt.Errorf("failed to enable [%s] in pacman.conf: %w", shared.PacmanRepoName, err)
 	}
 	if ctx.Logger != nil {
 		ctx.Logger.Info("pacman repository [%s] enabled: %s", shared.PacmanRepoName, shared.PacmanRepoServer)
 	}
-	return string(data) + block, nil
+	return updated, nil
+}
+
+// insertPacmanSectionBefore inserts block on its own lines before the section
+// header [before], and reports whether it did. The block must already end in a
+// newline; it is separated from the preceding section by a blank line.
+func insertPacmanSectionBefore(content, before, block string) (string, bool) {
+	header := "[" + before + "]"
+	lines := strings.Split(content, "\n")
+	for i := range lines {
+		if strings.TrimSpace(lines[i]) == header {
+			lines = slices.Insert(lines, i, strings.TrimSuffix(block, "\n"), "")
+			return strings.Join(lines, "\n"), true
+		}
+	}
+	return content, false
 }
 
 // enableMultilibRepo turns the stock file's commented multilib section into a

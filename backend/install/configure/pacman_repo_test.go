@@ -124,7 +124,7 @@ func TestConfigurePacmanRepo_NoSyncDirectoryIsNotFatal(t *testing.T) {
 	}
 }
 
-func TestConfigurePacmanRepo_AppendsBlockAndTrustsKey(t *testing.T) {
+func TestConfigurePacmanRepo_InsertsBlockBeforeExtraAndTrustsKey(t *testing.T) {
 	rec := mountedRunner()
 	defer primitives.SetCommandRunner(rec)()
 	fs := pacmanRepoFS(withKeyring)
@@ -138,8 +138,8 @@ func TestConfigurePacmanRepo_AppendsBlockAndTrustsKey(t *testing.T) {
 	if !ok {
 		t.Fatal("pacman.conf was not written")
 	}
-	// The stock content is kept: this is an append to a pacman-owned file, not
-	// a rewrite of it.
+	// The stock content is kept: this is an insertion into a pacman-owned file,
+	// not a rewrite of it.
 	if !strings.Contains(content, "Include = /etc/pacman.d/mirrorlist") {
 		t.Errorf("the stock pacman.conf was not preserved:\n%s", content)
 	}
@@ -155,12 +155,44 @@ func TestConfigurePacmanRepo_AppendsBlockAndTrustsKey(t *testing.T) {
 	if strings.Count(content, "["+shared.PacmanRepoName+"]") != 1 {
 		t.Errorf("the repository section was not written exactly once:\n%s", content)
 	}
+	// Order is not cosmetic: measured with pacman 7.1, the repository listed
+	// first wins a same-named package even against a higher version later.
+	// [aelum] before [extra] is what makes an installed system resolve our
+	// patched refind; [core] staying first is Arch owning the base. The "\n"
+	// anchors matter: the block's own comment mentions [extra].
+	if strings.Index(content, "\n["+shared.PacmanRepoName+"]") > strings.Index(content, "\n[extra]") {
+		t.Errorf("[%s] is not before [extra] — pacman would resolve shared names from extra:\n%s",
+			shared.PacmanRepoName, content)
+	}
+	if strings.Index(content, "\n[core]") > strings.Index(content, "\n["+shared.PacmanRepoName+"]") {
+		t.Errorf("[core] must keep precedence over [%s]:\n%s", shared.PacmanRepoName, content)
+	}
 
 	if !hasCall(rec.CallsFor("arch-chroot"), "arch-chroot", shared.MountRoot, "pacman-key", "--add", shared.AelumKeyringPath) {
 		t.Errorf("the signing key was not added to the target keyring; calls = %v", rec.Calls())
 	}
 	if !hasCall(rec.CallsFor("arch-chroot"), "arch-chroot", shared.MountRoot, "pacman-key", "--lsign-key", shared.AelumSigningKeyFingerprint) {
 		t.Errorf("the signing key was not locally signed; calls = %v", rec.Calls())
+	}
+}
+
+// A hand-edited pacman.conf with no [extra] at all: there is no section to
+// precede, so the block falls back to the append — the repository still gets
+// enabled, which beats refusing to write anything.
+func TestConfigurePacmanRepo_NoExtraSectionFallsBackToAppend(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	handEdited := "[options]\nSigLevel = Required DatabaseOptional\nInclude = /etc/pacman.d/mirrorlist\n\n" +
+		"[core]\nInclude = /etc/pacman.d/mirrorlist\n"
+	fs := pacmanRepoFS(withKeyring, withPacmanConf(handEdited))
+	defer primitives.SetFileSystem(fs)()
+
+	if err := ConfigurePacmanRepo(&shared.InstallContext{}); err != nil {
+		t.Fatalf("ConfigurePacmanRepo() = %v, want nil", err)
+	}
+	content, _ := fs.Read(shared.MountRoot + "/etc/pacman.conf")
+	if !hasPacmanSection(content, shared.PacmanRepoName) {
+		t.Errorf("the repository was not enabled in a file without [extra]:\n%s", content)
 	}
 }
 
