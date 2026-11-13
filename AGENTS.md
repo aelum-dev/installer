@@ -201,7 +201,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
 1. **FormatDisk** (weight 3) — GPT partitioning (EFI 512MB + root), format (vfat/ext4/btrfs), optional LUKS2 → LVM → mkfs stack, btrfs subvolumes (`install/format/`)
 2. **MountFilesystem** (weight 2) — Mount root + subvolumes to `/mnt` (activating the volume group first when LVM is on), the ESP to `/mnt/efi`, then bind this install's `aelum/<id>/` ESP directory at `/mnt/boot` (`install/mount/`)
 3. **InstallBase** (weight 37) — `pacstrap /mnt base linux-lts linux-firmware ...` (base packages, phase-banded progress, `install/installbase/`)
-4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, the fcitx5 core, etc.; the GPU set is chosen from the hardware (drivers.go) and the input method engines from the chosen language (inputmethods.go); the configure step then writes the session's input method list from the language + location (configure/inputmethod.go) (desktop packages, `install/installdesktop/`)
+4. **InstallDesktop** (weight 50) — `pacstrap` Hyprland, Dux Greeter, foot, firefox, pipewire, the fcitx5 core, etc.; the GPU set is chosen from the hardware (drivers.go) and the input method engines from the chosen language (inputmethods.go); the configure step then writes the session's input method list from the language + location (configure/inputmethod.go) (desktop packages, `install/installdesktop/`)
 5. **SetupUsers** (weight 2) — copy what the live ISO ships (`install/isocopy/`: skel skeleton, greeter config, branding, dconf keyfiles, and on btrfs the whole snapshot-restore path), write the weather location of the chosen location into the copied skeleton (`users/weather.go`, before the home is seeded out of it), then useradd, chpasswd, sudoers (`install/users/`)
 6. **ConfigureSystem** (weight 4) — Merged step: fstab → system config → initramfs → bootloader → greetd → plymouth → zram → services → snapper (configs + pacman hooks + snapshot boot entries + snapshot-boot state mounts, btrfs only, **last** so the "after installation" snapshot is the finished system and contains everything written here) (`install/configure/`)
 7. **ClearCache** (weight 1) — Clears pacman package cache in installed system (`pacman -Scc`, `install/clearcache/`)
@@ -283,7 +283,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 - Installation log at `/var/log/aelum-install-<timestamp>.log` (mirrored to `/shared` when it exists) is not encrypted.
 
 ## Desktop Environment
-Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Kitty + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
+Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Foot + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player,
 aelum-package-installer, imv,

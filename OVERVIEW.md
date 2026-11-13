@@ -109,7 +109,7 @@ The `Installer.Install()` method runs 6 top-level steps sequentially. The last s
 | 1 | Format Disk | 3 | `FormatDisk` | Partitions (GPT: EFI 512MB + Root rest), formats (vfat/ext4/btrfs), btrfs subvolumes |
 | 2 | Mount Filesystem | 2 | `MountFilesystem` | Mounts root + btrfs subvolumes to `/mnt`, the ESP to `/mnt/efi`, and this install's `aelum/<id>/` ESP directory at `/mnt/boot` |
 | 3 | Install Base | 45 | `Install` | `pacstrap /mnt base linux-lts linux-firmware ...` |
-| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, Dux Greeter, kitty, firefox, pipewire, etc. |
+| 4 | Install Desktop | 35 | `InstallDesktop` | `pacstrap` Hyprland, Dux Greeter, foot, firefox, pipewire, etc. |
 | 5 | Setup Users | 2 | `SetupUsers` | Copies what the live ISO ships (`install/isocopy/`: skel skeleton, greeter config, branding, and on btrfs the whole snapshot-restore path), then creates user (wheel group), sets passwords, sudoers |
 | 6 | Configure System | 13 | `ConfigureSystem` | Merged: fstab → system config → initramfs → bootloader → greetd → Plymouth → zram → resolver link → services → snapper (configs, pacman hooks, snapshot boot entries, snapshot-boot state mounts) — snapper last, see 6.9 |
 
@@ -440,7 +440,7 @@ The installed system includes:
 - **Window Manager**: Hyprland (Wayland compositor)
 - **Shell**: Dux Shell (based on Quickshell, package `dux-shell`)
 - **Login Manager**: greetd + Dux Greeter
-- **Terminal**: Kitty
+- **Terminal**: Foot
 - **File Manager**: Nautilus (video thumbnails through ffmpegthumbnailer + ffmpegthumbs)
 - **Browser**: Firefox
 - **Audio**: PipeWire + WirePlumber

@@ -55,7 +55,7 @@ var Jobs = []Job{
 	{Source: "/etc/skel/.", Dest: "/mnt/etc/skel/", Flags: []string{"-a"}},
 	{Source: "/etc/dconf/profile/user", Dest: "/mnt/etc/dconf/profile/user", Flags: []string{"-a"}, Optional: true},
 	{Source: "/etc/dconf/db/local.d/01-icons", Dest: "/mnt/etc/dconf/db/local.d/01-icons", Flags: []string{"-a"}, Optional: true},
-	{Source: "/etc/dconf/db/local.d/02-nautilus-terminal", Dest: "/mnt/etc/dconf/db/local.d/02-nautilus-terminal", Flags: []string{"-a"}, Optional: true}, // nautilus-open-any-terminal: default terminal=kitty
+	{Source: "/etc/dconf/db/local.d/02-nautilus-terminal", Dest: "/mnt/etc/dconf/db/local.d/02-nautilus-terminal", Flags: []string{"-a"}, Optional: true}, // nautilus-open-any-terminal: default terminal=foot
 	// The mode the desktop starts in. Dux Shell writes gtk-theme and color-scheme
 	// per mode into the user database, but only once it has applied a theme; an app
 	// that starts before that (or in a session where the apply was skipped) would

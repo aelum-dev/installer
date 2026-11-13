@@ -54,7 +54,7 @@ var DesktopPackages = []string{
 	"gnome-text-editor",
 
 	// Terminal & UI
-	"kitty",
+	"foot",
 	"nautilus-open-any-terminal",
 	"adwaita-cursors",
 	"adw-gtk-theme",

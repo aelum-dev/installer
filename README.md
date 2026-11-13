@@ -11,7 +11,7 @@ It ships inside the live ISO and opens on its own when that ISO boots.
 
 ## What it writes
 
-- **A desktop, not a base system** — Hyprland with Dux Shell, the Dux Greeter login, Kitty, Firefox,
+- **A desktop, not a base system** — Hyprland with Dux Shell, the Dux Greeter login, Foot, Firefox,
   PipeWire audio, zram instead of a swap file, and a branded rEFInd menu and Plymouth splash.
 - **Whatever you chose on the disk screen** — ext4 or btrfs, LUKS2 encryption, LVM. Encryption always sits
   below LVM. A btrfs install gets snapper snapshots of `@` and `@home`, a pair around every `pacman`
