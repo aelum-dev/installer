@@ -1,12 +1,16 @@
 # gitleaks config for the Aelum installer (CI: .github/workflows/ci.yml → security).
 #
 # [extend] + useDefault keeps gitleaks' built-in rules — this file only allows
-# one value through, so a real secret still fails the build.
+# values through, so a real secret still fails the build.
+#
+# regexTarget = "line" because the second entry is a code pattern, not a secret:
+# the match itself (a bare keyboard-layout name) says nothing on its own.
 
 [extend]
 useDefault = true
 
 [allowlist]
+regexTarget = "line"
 description = """
 A PGP fingerprint is a public identifier, not a credential: the release key's is
 published on aelum.dev over WKD and quoted in repo/REPO.md, and pacman itself
@@ -15,7 +19,14 @@ prints it when it trusts the key. The installer holds it as one constant
 backend/scripts/gen-ts-constants.go copies into frontend/src/lib/constants.ts,
 so the same public value appears in two tracked files. Same value as that
 constant — if the signing key ever rotates, update it here too.
+
+Keymap: "…" rows are keyboard layout names from the generated location table
+(backend/shared/regions_table.go, written by regions_gen.go from Arch's mirror
+sections); generic-api-key reads the field name's "key" plus a high-entropy
+value (de_CH-latin1) as a credential. The line, not the layout name, is what
+makes it a keymap — a regenerated table moves these rows, so no fingerprint.
 """
 regexes = [
   '''728F5F59FB2F5A88C6EE28D4930A672A3A1B5B60''',
+  '''Keymap: "[A-Za-z0-9_.\-]+"''',
 ]
