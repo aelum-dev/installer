@@ -12,6 +12,12 @@ import { test, expect } from '@playwright/test';
 //
 // Run with: npm run e2e
 
+// Pin to the shipped window size: main.go fixes the app at 900x600
+// (MinWidth == MaxWidth), and the editor's column budget in
+// ManualPartitionPage.css is measured against it. The default 1280x900
+// viewport hides column collisions that every real user would see.
+test.use({ viewport: { width: 900, height: 600 } });
+
 const next = (page) => page.getByRole('button', { name: 'Next' });
 
 // Select the first fake disk (/dev/nvme0n1, 2 existing partitions).
@@ -189,5 +195,59 @@ test.describe('Manual partitioning', () => {
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'Preserve' }).click();
     await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('Preserve');
+  });
+
+  test('editor columns never collide on the densest fake disk', async ({ page }) => {
+    // /dev/nvme3n1 (Samsung 990 PRO 4TB) is the densest case in the fixture:
+    // a dozen rows whose paths reach the longest form a device path takes
+    // (/dev/nvme3n1p10). With table-layout: fixed, an over-narrow Name cell
+    // paints its text straight over the Size column — the regression this
+    // guards. Measured at the pinned 900x600 window (test.use above).
+    await selectDiskByModel(page, 'Samsung 990 PRO 4TB');
+    // The rail must also fit vertically in the fixed 600px window: its
+    // centered stack previously split the overflow into a step glyph clipped
+    // at the top and an options card sitting under the footer. Checked in both
+    // modes — the card is present (and the stack just as tall) in automatic.
+    const railFits = () =>
+      page.evaluate(() => {
+        const area = document.querySelector('.content-area')!.getBoundingClientRect();
+        const icon = document.querySelector('.page-info .page-icon')!.getBoundingClientRect();
+        const card = document.querySelector('.options-card')!.getBoundingClientRect();
+        return icon.top >= area.top && card.bottom <= area.bottom;
+      });
+    expect(await railFits(), 'rail overflows the content area in automatic mode').toBe(true);
+    await page.getByRole('button', { name: 'Manual' }).click();
+
+    const rows = page.locator('.editor-row');
+    // The layout arrives through a backend round-trip; wait for it to render
+    // before measuring (a bare locator.count() would race the load).
+    await expect(rows.first()).toBeVisible();
+    expect(await railFits(), 'rail overflows the content area in manual mode').toBe(true);
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(10);
+
+    for (let i = 0; i < count; i++) {
+      const overlaps = await rows.nth(i).evaluate((el) => {
+        const path = el.querySelector<HTMLElement>('.part-path');
+        const size = el.querySelector<HTMLElement>('.part-size');
+        if (!path || !size) return false;
+        return path.getBoundingClientRect().right > size.getBoundingClientRect().left + 0.5;
+      });
+      expect(overlaps, `row ${i + 1}: path text collides with the Size column`).toBe(false);
+    }
+
+    // The longest path is shown whole — the ellipsis safety net must not even
+    // engage at the shipped window size.
+    await expect(page.getByText('/dev/nvme3n1p10')).toBeVisible();
+    const clippedPaths = await page
+      .locator('.part-path')
+      .evaluateAll((els) => els.some((el) => el.scrollWidth > el.clientWidth + 1));
+    expect(clippedPaths).toBe(false);
+
+    // The role trigger keeps "Preserve" readable at its fixed column width.
+    const clippedRoles = await page
+      .locator('.role-trigger-label')
+      .evaluateAll((els) => els.some((el) => el.scrollWidth > el.clientWidth + 1));
+    expect(clippedRoles).toBe(false);
   });
 });

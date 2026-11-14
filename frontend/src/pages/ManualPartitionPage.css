@@ -62,12 +62,12 @@
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	color: var(--color-text-muted);
-	padding: var(--spacing-sm) var(--spacing-md);
+	padding: var(--spacing-sm);
 	border-bottom: 1px solid var(--color-border-light);
 }
 
 .editor-table td {
-	padding: var(--spacing-sm) var(--spacing-md);
+	padding: var(--spacing-sm);
 	border-bottom: 1px solid var(--color-border-subtle);
 	vertical-align: middle;
 }
@@ -82,15 +82,27 @@
 	border-bottom: none;
 }
 
-/* Name and Size keep fixed shares; the Type column takes the remaining width,
-   keeping the role selector close to the delete column while still fitting
-   localized role labels (e.g. "Завантаження", "Inicialização"). */
-.editor-table th:first-child {
-	width: 30%;
+/* Column budget for the fixed 900px window (main.go), border-box so the px
+   widths are the whole column and not each 24px wider than they read. The
+   Name column is the only auto one — it gets exactly the remainder — because
+   it carries the page's longest string: measured, /dev/nvme3n1p10 is 129px
+   at body size. Size is fixed at the widest cell the page can produce (a
+   grouped MB count with the FREE row's " MB", measured 98px); Type keeps a
+   fixed floor so the role selector fits short localized labels; the delete
+   column is the 28px button plus gutters. Manual mode widens this pane
+   through DiskSelectionPage.css → .disk-page--manual. At every width
+   .part-path ellipsizes rather than painting over the next column. */
+.editor-table th,
+.editor-table td {
+	box-sizing: border-box;
 }
 
 .editor-table th:nth-child(2) {
-	width: 34%;
+	width: 118px;
+}
+
+.editor-table th:nth-child(3) {
+	width: 140px;
 }
 
 .editor-table th:last-child {
@@ -152,6 +164,19 @@
 	text-align: left;
 }
 
+/* Safety net for the Name column: with table-layout: fixed the columns keep
+   their widths and over-long text spills across the cell border into the next
+   column (a /dev/… path painting over the size it sits beside). The column
+   budget above fits every real path at the shipped window size; this bounds
+   the worst case instead of trusting it. */
+.part-path {
+	display: block;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .part-new {
 	font-size: 0.72rem;
 	color: var(--color-progress);
@@ -171,6 +196,11 @@
 .part-size {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
+	/* One step below body size so the compact Size column fits even a grouped
+	   7-digit MB count (a 4 TB disk), and the number never wraps inside its
+	   cell. */
+	font-size: var(--font-size-md);
+	white-space: nowrap;
 	color: var(--color-text-muted);
 	text-align: left;
 }

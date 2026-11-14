@@ -296,7 +296,7 @@
 						<tr class={['editor-row', { designated: part.type === TYPE_ESP || part.type === TYPE_SYSTEM }]}>
 							<td class="part-name">
 								{#if part.path}
-									<span class="part-path">{part.path}</span>
+									<span class="part-path" title={part.path}>{part.path}</span>
 									{#if part.type === TYPE_ESP || part.type === TYPE_SYSTEM}
 										<span class="format-hint">{t('manual.formatHint')}</span>
 									{/if}

@@ -65,3 +65,39 @@
 	text-align: center;
 	font-variant-numeric: tabular-nums;
 }
+
+/* The disk page's rail is the only wizard rail that carries the options card,
+   and its stack (step icon, identity, space bar / hint, card) measured 463px
+   against the fixed 600px window's 440px content area. A centered rail splits
+   the overflow into a glyph clipped at the top and a card under the footer,
+   so the page's own rail rhythm gets tightened: a smaller page icon, a
+   tighter block gap, and the card's extra top margin dropped to the parent
+   gap's scale. Fits with ~20px margin at 900x600 — measured, e2e's pinned
+   viewport asserts both ends. */
+.disk-page .page-info .page-icon {
+	font-size: calc(var(--font-size-xl) * 1.5);
+}
+
+.page-layout.disk-page .page-info {
+	gap: var(--spacing-md);
+}
+
+.disk-page .options-card {
+	margin-top: var(--spacing-xs);
+}
+
+/* Manual mode rebalances the two columns. The partition table is the only
+   thing in the app that must fit a device path, a size, a role selector and a
+   delete button on one line — at the fixed 900px window (main.go) an even
+   split leaves it ~400px, which no honest column budget survives. The rail in
+   manual mode carries only the disk identity and the options card, both of
+   which read fine at the narrower share. The table's column widths in
+   ManualPartitionPage.css are budgeted against this split. */
+.page-layout.disk-page--manual {
+	gap: var(--gap-lg);
+}
+
+.disk-page--manual .page-content {
+	flex: 1.55 1 0;
+	min-width: 0;
+}

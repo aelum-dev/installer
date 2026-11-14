@@ -4,10 +4,11 @@
 .role-select {
 	position: relative;
 	display: inline-block;
-	/* The selector fills most of the Type column so localized role labels fit and
-	   the pill sits close to the delete column, while staying a constant size
-	   regardless of the selected role. */
-	width: 70%;
+	/* The selector fills the Type column so localized role labels fit in as
+	   little of the row as possible; the column's own width is fixed by
+	   ManualPartitionPage.css, so the pill stays the same size regardless of
+	   the selected role. */
+	width: 100%;
 }
 
 /* Trigger — matches the partition table's other pill controls. */

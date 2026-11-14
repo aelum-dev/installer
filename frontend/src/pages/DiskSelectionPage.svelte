@@ -154,7 +154,7 @@
 	});
 </script>
 
-<div class="page-layout">
+<div class={['page-layout', 'disk-page', { 'disk-page--manual': installState.manualMode }]}>
 	<PageInfo icon={railIcon} title={railTitle} subtitle={railSubtitle}>
 		{#snippet info()}
 			{#if manualDisk && spaceSummary.total > 0}
