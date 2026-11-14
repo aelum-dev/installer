@@ -100,6 +100,14 @@ func TestBindings_ManualMode(t *testing.T) {
 	if a.manualLayout.Disk != "/dev/vda" {
 		t.Errorf("stored layout = %+v", a.manualLayout)
 	}
+
+	// Walking back to Automatic must clear the flag: StartInstallation only
+	// passes --manual-layout while it is set, and a stale one installs a plan
+	// the person abandoned.
+	a.SetManualMode(false)
+	if a.GetManualMode() {
+		t.Error("SetManualMode(false) should clear manual mode")
+	}
 }
 
 func TestBindings_SaveManualLayoutStoresCryptoFlags(t *testing.T) {

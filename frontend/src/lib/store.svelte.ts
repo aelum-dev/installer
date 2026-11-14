@@ -2,7 +2,7 @@ import type { DiskInfo, FileSystem, ManualLayout } from '$lib/types';
 import { DefaultFileSystem } from '$lib/constants';
 import { t } from '$lib/i18n';
 import { uiState } from '$lib/ui.svelte';
-import { SetLuks, SetLuksPassphrase, SetLvm } from '$lib/backend';
+import { SetLuks, SetLuksPassphrase, SetLvm, SetManualMode } from '$lib/backend';
 
 // ── Installation State (shared across pages) ──
 
@@ -133,6 +133,11 @@ export async function syncStorageToBackend(): Promise<void> {
 	// LVM is independent of LUKS and carries no secret, so it is always pushed
 	// (false included) — a stale backend flag must never survive a toggle off.
 	await SetLvm(installState.lvmEnabled);
+	// Partitioning mode, same rule: the manual page's Next saved the layout and
+	// set the backend flag, but walking back to Automatic must clear it —
+	// otherwise StartInstallation spawns the CLI with an abandoned
+	// --manual-layout and installs a plan nobody chose.
+	await SetManualMode(installState.manualMode);
 }
 
 // setFileSystem selects the root filesystem.

@@ -118,6 +118,10 @@ export function SetLvm(arg1) {
   return window['go']['gui']['App']['SetLvm'](arg1);
 }
 
+export function SetManualMode(arg1) {
+  return window['go']['gui']['App']['SetManualMode'](arg1);
+}
+
 export function SetSelectedLanguage(arg1) {
   return window['go']['gui']['App']['SetSelectedLanguage'](arg1);
 }

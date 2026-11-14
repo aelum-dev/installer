@@ -84,6 +84,14 @@ func (a *App) GetManualMode() bool {
 	return a.manualMode
 }
 
+// SetManualMode makes the frontend's current mode authoritative. SaveManualLayout
+// turns the flag on and nothing else turns it off, so walking back to Automatic
+// and installing would otherwise spawn the CLI with an abandoned --manual-layout.
+// Wails binding.
+func (a *App) SetManualMode(enabled bool) {
+	a.manualMode = enabled
+}
+
 // GetManualLayout returns the manual partition layout for a disk, computed from
 // the disk's current partitions. Wails binding.
 func (a *App) GetManualLayout(diskID string) (shared.ManualLayout, error) {

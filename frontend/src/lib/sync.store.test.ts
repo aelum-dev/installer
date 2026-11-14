@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { installState, syncStorageToBackend } from './store.svelte';
-import { SetLuks, SetLuksPassphrase, SetLvm } from '@wails/go/gui/App.js';
+import { SetLuks, SetLuksPassphrase, SetLvm, SetManualMode } from '@wails/go/gui/App.js';
 
 vi.mock('@wails/go/gui/App.js', () => ({
 	SetLuks: vi.fn(() => Promise.resolve()),
 	SetLuksPassphrase: vi.fn(() => Promise.resolve()),
 	SetLvm: vi.fn(() => Promise.resolve()),
+	SetManualMode: vi.fn(() => Promise.resolve()),
 }));
 
 // syncStorageToBackend runs right before StartInstallation. The Wails runtime
@@ -19,12 +20,14 @@ describe('syncStorageToBackend', () => {
 		installState.luksEnabled = false;
 		installState.luksPassphrase = '';
 		installState.lvmEnabled = false;
+		installState.manualMode = false;
 	});
 
 	afterEach(() => {
 		installState.luksEnabled = false;
 		installState.luksPassphrase = '';
 		installState.lvmEnabled = false;
+		installState.manualMode = false;
 	});
 
 	it('sends the passphrase before flagging encryption on', async () => {
@@ -98,5 +101,23 @@ describe('syncStorageToBackend', () => {
 		await syncStorageToBackend();
 
 		expect(SetLvm).toHaveBeenCalledWith(false);
+	});
+
+	it('pushes the manual mode to the backend', async () => {
+		installState.manualMode = true;
+
+		await syncStorageToBackend();
+
+		expect(SetManualMode).toHaveBeenCalledWith(true);
+	});
+
+	it('clears a manual plan abandoned for automatic mode', async () => {
+		// SaveManualLayout set the backend flag; walking back to Automatic must
+		// clear it, or the CLI is spawned with an abandoned --manual-layout.
+		installState.manualMode = false;
+
+		await syncStorageToBackend();
+
+		expect(SetManualMode).toHaveBeenCalledWith(false);
 	});
 });

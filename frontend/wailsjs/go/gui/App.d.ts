@@ -62,6 +62,8 @@ export function SetLuksPassphrase(arg1:string):Promise<void>;
 
 export function SetLvm(arg1:boolean):Promise<void>;
 
+export function SetManualMode(arg1:boolean):Promise<void>;
+
 export function SetSelectedLanguage(arg1:string):Promise<void>;
 
 export function SetSelectedRegion(arg1:string):Promise<void>;
