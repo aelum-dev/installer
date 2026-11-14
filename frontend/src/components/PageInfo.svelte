@@ -36,10 +36,15 @@
 
 <style>
 	.page-info {
+		/* The icon/title/subtitle stack is one block of writing, so it is spaced at
+		   the rhythm of a paragraph. Anything a page adds below it (a location card,
+		   a hint list) opens its own margin from here rather than widening this gap.
+		   The rail is centred in the row: it is the page's reading matter, and it
+		   sits at the height of the window rather than at the top of the column. */
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: var(--spacing-2xl);
+		gap: var(--spacing-lg);
 		flex: 1;
 		transition: opacity 0.2s ease, max-width 0.2s ease;
 	}

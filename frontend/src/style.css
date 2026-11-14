@@ -82,6 +82,11 @@
     --color-primary-shadow: color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent);
     --color-progress: var(--md-sys-color-primary);
 
+    /* A selected row is a state, not an action, so it does not wear the fill of a
+       primary button: container tint plus a mark (M3's secondary-container). */
+    --color-selection: var(--md-sys-color-secondary-container);
+    --color-on-selection: var(--md-sys-color-on-secondary-container);
+
     --color-secondary: var(--md-sys-color-secondary);
     --color-secondary-hover: color-mix(in srgb, var(--md-sys-color-secondary) 86%, var(--md-sys-color-shadow));
     --color-tertiary: var(--md-sys-color-tertiary);
@@ -265,6 +270,12 @@
     --color-primary-shadow: color-mix(in srgb, var(--md-sys-color-primary) 25%, transparent);
     --color-progress: var(--md-sys-color-primary);
 
+    /* A selected row is a state, not an action, so it does not wear the fill of a
+       primary button: container tint plus a mark. Same roles as the light block —
+       the dark scheme's container is a muted plum. */
+    --color-selection: var(--md-sys-color-secondary-container);
+    --color-on-selection: var(--md-sys-color-on-secondary-container);
+
     --color-secondary: var(--md-sys-color-secondary);
     --color-secondary-hover: color-mix(in srgb, var(--md-sys-color-secondary) 86%, var(--md-sys-color-shadow));
     --color-tertiary: var(--md-sys-color-tertiary);
@@ -367,7 +378,8 @@ body {
     vertical-align: -0.12em;
 }
 
-/* Step icon in the wizard's left column (page-info). */
+/* Step icon in the wizard's left column (page-info): the page's identity mark,
+   deliberately in the heading's weight class rather than beside it as a footnote. */
 .page-icon {
     color: var(--color-primary);
     margin-bottom: 0;
@@ -380,8 +392,17 @@ body {
     margin: 0;
 }
 
+/* The subtitle is quiet so the heading is the only loud thing in the rail, and
+   the measure keeps it a block of text instead of a band across the column. */
 .page-info-subtitle {
     margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-md-lg);
+    /* The measure keeps it a block of writing, and the block belongs under the
+       heading — a max-width on a stretched flex child otherwise parks it at the
+       rail's leading edge, which reads as a stray column of text. */
+    max-width: 30ch;
+    margin-inline: auto;
 }
 
 /* ═══ Shared form input ═══

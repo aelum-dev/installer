@@ -28,7 +28,7 @@ test.describe('Installer wizard', () => {
     await expect(page.getByRole('heading', { name: 'Welcome to Aelum' })).toBeVisible();
 
     // A language is auto-selected on load (required to proceed).
-    await expect(page.locator('.lang-item--selected')).toBeVisible();
+    await expect(page.locator('.option-item--selected')).toBeVisible();
 
     // Next is enabled because a language is selected.
     await expect(next(page)).toBeEnabled();

@@ -31,6 +31,11 @@
 				onclick={() => onSelect(item.code)}
 			>
 				{item.name}
+				<span class="option-check" aria-hidden="true">
+					<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</span>
 			</button>
 		</li>
 	{/each}
@@ -72,8 +77,28 @@
 		background-color: var(--color-primary-light);
 	}
 
+	/* Selection is a container tint plus a mark, never the primary fill: solid
+	   primary belongs to the control that advances the wizard, and a row wearing it
+	   reads as the page's main action. The mark sits at the trailing edge so it
+	   stays on the reading side in RTL. */
 	.option-item--selected {
-		background-color: var(--color-primary);
-		color: var(--color-on-primary);
+		background-color: var(--color-selection);
+		color: var(--color-on-selection);
+	}
+
+	.option-check {
+		display: none;
+		flex-shrink: 0;
+		margin-inline-start: auto;
+		color: var(--color-primary);
+	}
+
+	.option-item--selected .option-check {
+		display: inline-flex;
+	}
+
+	.option-check svg {
+		width: 1.1em;
+		height: 1.1em;
 	}
 </style>
