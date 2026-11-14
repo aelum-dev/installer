@@ -51,14 +51,12 @@ func ValidInputMethodOverride(s string) bool {
 	return false
 }
 
-// imeSet is one row of the language table: the addon packages the language
-// needs, the engine names the Confirmation page shows, and the same engines in
-// the framework's own names. The summary names are proper nouns — the same words
-// in every language — so they need no translation, and they can never drift from
-// the packages because both come from this one row.
+// imeSet is one row of the language table: the addon packages the language needs
+// and the engine names those packages register, which is the same fact stated
+// twice — an engine the session list names and an engine the row installs must be
+// the same engine — and spelled for a person in imeDisplayNames.
 type imeSet struct {
 	packages []string
-	summary  []string
 
 	// inputMethods are those engines as the framework spells them: the unique
 	// name of the input method the package registers, which is the only thing a
@@ -87,29 +85,127 @@ type imeSet struct {
 var imeTable = map[string]imeSet{
 	"zh_CN": {
 		packages:     []string{"fcitx5-chinese-addons"},
-		summary:      []string{"Pinyin"},
 		inputMethods: []string{"pinyin"},
 	},
 	"zh_TW": {
 		packages:     []string{"fcitx5-chewing", "fcitx5-table-extra"},
-		summary:      []string{"Zhuyin", "Cangjie"},
 		inputMethods: []string{"chewing"},
 	},
 	"ja_JP": {
 		packages:     []string{"fcitx5-mozc"},
-		summary:      []string{"Mozc"},
 		inputMethods: []string{"mozc"},
 	},
 	"ko_KR": {
 		packages:     []string{"fcitx5-hangul"},
-		summary:      []string{"Hangul"},
 		inputMethods: []string{"hangul"},
 	},
 	"vi_VN": {
 		packages:     []string{"fcitx5-bamboo"},
-		summary:      []string{"Bamboo"},
 		inputMethods: []string{"bamboo"},
 	},
+}
+
+// imeDisplayNames spells an engine's framework name in the words a person reads
+// for it. They are proper nouns — the same words in every language — which is why
+// the Confirmation page can show them untranslated.
+var imeDisplayNames = map[string]string{
+	"pinyin":  "Pinyin",
+	"chewing": "Zhuyin",
+	"mozc":    "Mozc",
+	"hangul":  "Hangul",
+	"bamboo":  "Bamboo",
+}
+
+// xkbLayoutNames spells a layout code from shared.XkbLayoutByISO in the words a
+// person reads for it. Each value is xkeyboard-config's own <description> for that
+// layout — the same words fcitx5's switcher shows for the same entry — read out of
+// /usr/share/X11/xkb/rules/evdev.xml rather than written from memory;
+// TestXkbLayoutNames_AreEvdevDescriptions holds the table against that file
+// wherever xkeyboard-config is installed.
+//
+// English, like the location names the same page already shows: a keyboard layout
+// is a thing in the world (the keycaps on the box), not a piece of UI.
+var xkbLayoutNames = map[string]string{
+	"us":    "English (US)",
+	"latam": "Spanish (Latin American)",
+	"at":    "German (Austria)",
+	"be":    "Belgian",
+	"bg":    "Bulgarian",
+	"br":    "Portuguese (Brazil)",
+	"ca":    "French (Canada)",
+	"ch":    "German (Switzerland)",
+	"cz":    "Czech",
+	"de":    "German",
+	"dk":    "Danish",
+	"ee":    "Estonian",
+	"es":    "Spanish",
+	"fi":    "Finnish",
+	"fr":    "French",
+	"gb":    "English (UK)",
+	"ge":    "Georgian",
+	"gr":    "Greek",
+	"hu":    "Hungarian",
+	"il":    "Hebrew",
+	"is":    "Icelandic",
+	"it":    "Italian",
+	"jp":    "Japanese",
+	"kr":    "Korean",
+	"kz":    "Kazakh",
+	"lt":    "Lithuanian",
+	"lv":    "Latvian",
+	"mk":    "Macedonian",
+	"nl":    "Dutch",
+	"no":    "Norwegian",
+	"pl":    "Polish",
+	"pt":    "Portuguese",
+	"ro":    "Romanian",
+	"rs":    "Serbian",
+	"ru":    "Russian",
+	"se":    "Swedish",
+	"si":    "Slovenian",
+	"sk":    "Slovak",
+	"th":    "Thai",
+	"tr":    "Turkish",
+	"ua":    "Ukrainian",
+}
+
+// xkbLayoutName and imeDisplayName name one input method for a person to read. An
+// entry the tables do not carry falls back to the code it was asked about: a gap
+// in a table should read as an odd label, never as an input method that is
+// missing from the answer.
+func xkbLayoutName(layout string) string {
+	if name, ok := xkbLayoutNames[layout]; ok {
+		return name
+	}
+	return layout
+}
+
+func imeDisplayName(method string) string {
+	if name, ok := imeDisplayNames[method]; ok {
+		return name
+	}
+	return method
+}
+
+// SessionInputMethodNames is the Confirmation page's answer: the input methods the
+// session for this language and location will offer, named in words a person
+// recognises, in the order the session gets them — "English (US)" and
+// "Ukrainian" for a machine in Ukraine, "Japanese" and "Mozc" for one in Japan.
+//
+// It reads the two tables directly rather than a recorded package set, because at
+// confirmation time nothing is recorded yet: the desktop step has not run, and
+// `--input-method none` has not been decided against a context. It is a preview of
+// the same decision, and TestSessionInputMethodNames_MatchesTheSessionList holds
+// it entry for entry against what SessionInputMethods actually writes.
+func SessionInputMethodNames(language, regionCode string) []string {
+	im := []string{xkbLayoutName(shared.DefaultXkbLayout)}
+	if layout := shared.XkbLayoutForRegion(regionCode); layout != shared.DefaultXkbLayout {
+		im = append(im, xkbLayoutName(layout))
+	}
+	for _, method := range imeTable[language].inputMethods {
+		im = append(im, imeDisplayName(method))
+	}
+	return im
 }
 
 // IMCandidatePackages is the union of everything the table can produce.
@@ -145,18 +241,6 @@ func selectIMEAddons(language string) []string {
 		return nil
 	}
 	return append([]string{}, set.packages...)
-}
-
-// IMESummary returns the engine names this language's install gets, for the
-// Confirmation page: proper nouns, shown after the framework name. Empty for a
-// language that needs no engine — the page still names the core, which every
-// install gets.
-func IMESummary(language string) []string {
-	set, ok := imeTable[language]
-	if !ok {
-		return nil
-	}
-	return append([]string{}, set.summary...)
 }
 
 // IMEngineNames returns the engines this install has, in the framework's own

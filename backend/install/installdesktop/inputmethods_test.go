@@ -1,6 +1,8 @@
 package installdesktop
 
 import (
+	"encoding/xml"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -129,22 +131,158 @@ func TestSelectIMEAddons(t *testing.T) {
 	}
 }
 
-// TestIMESummary_MatchesTheRows checks what the Confirmation page shows: one
-// name per engine the row installs, proper nouns, nothing for a language the
-// keyboard covers.
-func TestIMESummary_MatchesTheRows(t *testing.T) {
-	if got := IMESummary("en_US"); got != nil {
-		t.Errorf("a Latin language got engine names: %v", got)
+// --- what the Confirmation page can say ---------------------------------------
+
+// labelOf spells one entry of a session's input method list the way the page
+// would: a keyboard by its layout name, an engine by its display name.
+func labelOf(im string) string {
+	if strings.HasPrefix(im, shared.Fcitx5KeyboardIMPrefix) {
+		return xkbLayoutName(strings.TrimPrefix(im, shared.Fcitx5KeyboardIMPrefix))
 	}
-	for code, set := range imeTable {
-		got := IMESummary(code)
-		if len(got) == 0 {
-			t.Errorf("IME summary for %q is empty although its row installs %v", code, set.packages)
+	return imeDisplayName(im)
+}
+
+// TestSessionInputMethodNames_MatchesTheSessionList is the invariant that keeps a
+// preview from becoming a story: every name the page shows must be what
+// SessionInputMethods actually writes for the same language and location, in the
+// same order. A page that names an input method the session never gets is worse
+// than one that says nothing.
+func TestSessionInputMethodNames_MatchesTheSessionList(t *testing.T) {
+	cases := []struct{ language, region string }{
+		{"en_US", "us"},
+		{"uk_UA", "ua"},
+		{"ru_RU", "ru"},
+		{"de_DE", "de"},
+		{"es_ES", "mx"},
+		{"ja_JP", "jp"},
+		{"ko_KR", "kr"},
+		{"zh_CN", "cn"},
+		{"zh_TW", "tw"},
+		{"vi_VN", "vn"},
+		{"en_US", "world"},
+		{"uk_UA", "de"}, // the language is not the keyboard: the location is
+	}
+	for _, c := range cases {
+		ctx := &shared.InstallContext{Locale: c.language + ".UTF-8", Region: shared.Region{Code: c.region}}
+		ChooseIMEAddons(ctx)
+		list := SessionInputMethods(ctx)
+		want := make([]string, 0, len(list))
+		for _, im := range list {
+			want = append(want, labelOf(im))
 		}
-		for _, name := range got {
-			if strings.TrimSpace(name) == "" {
-				t.Errorf("IME summary for %q contains a blank name", code)
+		if got := SessionInputMethodNames(c.language, c.region); !slices.Equal(got, want) {
+			t.Errorf("SessionInputMethodNames(%s, %s) = %v, want %v (the session list is %v)",
+				c.language, c.region, got, want, list)
+		}
+	}
+}
+
+// TestSessionInputMethodNames reads as the answer to "which keyboards will I
+// have?" — the plain case is the machine's own language next to English, and a
+// machine anywhere else never gets a second keyboard at all.
+func TestSessionInputMethodNames(t *testing.T) {
+	cases := []struct {
+		region   string
+		language string
+		want     []string
+	}{
+		{region: "ua", language: "uk_UA", want: []string{"English (US)", "Ukrainian"}},
+		{region: "ru", language: "ru_RU", want: []string{"English (US)", "Russian"}},
+		{region: "jp", language: "ja_JP", want: []string{"English (US)", "Japanese", "Mozc"}},
+		{region: "us", language: "en_US", want: []string{"English (US)"}},
+		{region: "world", language: "en_US", want: []string{"English (US)"}},
+		// Latin American keyboards are one layout, not one per country, and the
+		// engine for Vietnamese takes US keys: no keyboard of its own.
+		{region: "mx", language: "es_ES", want: []string{"English (US)", "Spanish (Latin American)"}},
+		{region: "vn", language: "vi_VN", want: []string{"English (US)", "Bamboo"}},
+	}
+	for _, c := range cases {
+		if got := SessionInputMethodNames(c.language, c.region); !slices.Equal(got, c.want) {
+			t.Errorf("SessionInputMethodNames(%s, %s) = %v, want %v", c.language, c.region, got, c.want)
+		}
+	}
+}
+
+// TestXkbLayoutNames_CoversEveryOfferedLocation: a location the installer can be
+// pointed at must have a name to show for it, or the summary silently answers with
+// a layout code.
+func TestXkbLayoutNames_CoversEveryOfferedLocation(t *testing.T) {
+	offered := map[string]bool{shared.DefaultXkbLayout: true}
+	for _, layout := range shared.XkbLayoutByISO {
+		offered[layout] = true
+	}
+	for layout := range offered {
+		if strings.TrimSpace(xkbLayoutNames[layout]) == "" {
+			t.Errorf("no display name for the keyboard layout %q, which a location offers", layout)
+		}
+	}
+	for layout := range xkbLayoutNames {
+		if strings.HasPrefix(layout, shared.Fcitx5KeyboardIMPrefix) {
+			t.Errorf("xkbLayoutNames keys are layout codes, not framework names: %q", layout)
+		}
+	}
+}
+
+// TestIMEEngineNames_AreAllNamed: every engine a row puts in the session's list
+// must have a name to show, and the display table must not keep names for engines
+// no row installs (a dead entry reads as an engine that could come back).
+func TestIMEEngineNames_AreAllNamed(t *testing.T) {
+	installed := map[string]bool{}
+	for code, set := range imeTable {
+		for _, method := range set.inputMethods {
+			if strings.TrimSpace(imeDisplayNames[method]) == "" {
+				t.Errorf("no display name for the engine %q that %s installs", method, code)
 			}
+			installed[method] = true
+		}
+	}
+	for method := range imeDisplayNames {
+		if !installed[method] {
+			t.Errorf("imeDisplayNames names the engine %q, which no table row installs", method)
+		}
+	}
+}
+
+// evdevLayouts / evdevDescription read xkeyboard-config's own list of layouts.
+type evdevLayouts struct {
+	LayoutList struct {
+		Layouts []struct {
+			ConfigItem struct {
+				Name        string `xml:"name"`
+				Description string `xml:"description"`
+			} `xml:"configItem"`
+		} `xml:"layout"`
+	} `xml:"layoutList"`
+}
+
+// TestXkbLayoutNames_AreEvdevDescriptions holds the table against xkeyboard-config
+// itself: every name must be the description upstream gives that layout, which is
+// the word the person will read in the input method switcher after the install.
+// Skipped where xkeyboard-config is not installed (the build container), since the
+// package is what defines these names and there is nothing to check against.
+func TestXkbLayoutNames_AreEvdevDescriptions(t *testing.T) {
+	const evdevPath = "/usr/share/X11/xkb/rules/evdev.xml"
+
+	data, err := os.ReadFile(evdevPath)
+	if err != nil {
+		t.Skipf("%s is not installed here: the layout names cannot be checked against their source", evdevPath)
+	}
+	var doc evdevLayouts
+	if err := xml.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("cannot parse %s: %v", evdevPath, err)
+	}
+	descriptions := map[string]string{}
+	for _, l := range doc.LayoutList.Layouts {
+		descriptions[l.ConfigItem.Name] = l.ConfigItem.Description
+	}
+	for layout, name := range xkbLayoutNames {
+		upstream, ok := descriptions[layout]
+		if !ok {
+			t.Errorf("xkbLayoutNames names %q, which xkeyboard-config has no layout for", layout)
+			continue
+		}
+		if upstream != name {
+			t.Errorf("xkbLayoutNames[%q] = %q, but xkeyboard-config describes it as %q", layout, name, upstream)
 		}
 	}
 }

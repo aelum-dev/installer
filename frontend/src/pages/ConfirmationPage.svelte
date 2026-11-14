@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { GetInputMethodSummary, GetSelectedLanguage, GetSelectedRegion, GetLanguages, GetRegions } from '$lib/backend';
+	import { GetSelectedLanguage, GetSelectedRegion, GetSessionInputMethods, GetLanguages, GetRegions } from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 import { uiState } from '$lib/ui.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
@@ -50,24 +50,26 @@ import { uiState } from '$lib/ui.svelte';
 			selectedRegionName = regions.find((r) => r.code === regionCode)?.name || regionCode || '—';
 			// Fire-and-forget: the input method line fills itself in; the summary
 			// must not wait on it to render.
-			void loadInputMethod(languageCode);
+			void loadInputMethods(languageCode, regionCode);
 		} catch {
 			selectedLanguageName = '—';
 			selectedRegionName = '—';
 		}
 	}
 
-	// The input method line names what the install will ship: the fcitx5 core is
-	// installed on every system, and the language decides which engines are added
-	// on top (the backend's table is the only source). The engine names are proper
-	// nouns — the label is translated, the names are not.
-	async function loadInputMethod(languageCode: string): Promise<void> {
+	// The input method line answers "which keyboards will I have?" — the list the
+	// session starts with, in the session's own order: English, then the location's
+	// keyboard when the keyboards sold there are not the US layout, then the engine
+	// for a language that needs one. Both tables are the backend's; this page renders
+	// their answer and owns no rule of its own.
+	async function loadInputMethods(languageCode: string, regionCode: string): Promise<void> {
 		try {
-			const engines = await GetInputMethodSummary(languageCode);
-			inputMethodValue = engines?.length ? ['Fcitx5', ...engines].join(' · ') : 'Fcitx5';
+			const names = await GetSessionInputMethods(languageCode, regionCode);
+			inputMethodValue = names?.length ? names.join(' · ') : '—';
 		} catch {
-			// The core ships regardless of what the summary call can say.
-			inputMethodValue = 'Fcitx5';
+			// Say nothing rather than guess: naming the framework would be true of
+			// every install and informative on none of them.
+			inputMethodValue = '—';
 		}
 	}
 

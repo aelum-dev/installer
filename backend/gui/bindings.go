@@ -32,13 +32,14 @@ func (a *App) GetRegions() []shared.Region {
 	return shared.GetRegions()
 }
 
-// GetInputMethodSummary returns the input method engine names the install for
-// this language gets — Pinyin, Zhuyin, Mozc, … — proper nouns shown after the
-// framework name on the Confirmation page. Empty for a language typed through
-// keyboard layouts; the fcitx5 core ships on every install and the page names
-// it regardless. Wails binding.
-func (a *App) GetInputMethodSummary(language string) []string {
-	return installdesktop.IMESummary(language)
+// GetSessionInputMethods returns the input methods the session for this language
+// and location will offer, named in words — "English (US)", "Ukrainian", "Mozc" —
+// in the order the session gets them. The Confirmation page shows that instead of
+// a framework name: the fcitx5 core ships on every install, so naming it answers
+// nothing, while naming the keyboards says what the person will actually have and
+// what the switch key moves between. Wails binding.
+func (a *App) GetSessionInputMethods(language string, region string) []string {
+	return installdesktop.SessionInputMethodNames(language, region)
 }
 
 // GetSelectedLanguage returns the currently selected language code.

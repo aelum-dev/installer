@@ -33,7 +33,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
     cli/main_test.go            — CLI tests
     gui/
       app.go                    — Wails app struct, NewApp, StartUp (CheckRoot→dry-run fallback, GetUILocale), OnBeforeClose, CancelInstallation, WaitForCleanup, SetStartPage
-      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetRegions, GetFileSystem, GetInputMethodSummary, GetUILocale, SetUILocale)
+      bindings.go               — Wails API bindings (GetDisks, GetLanguages, GetRegions, GetFileSystem, GetSessionInputMethods, GetUILocale, SetUILocale)
       installation.go           — StartInstallation (spawns CLI via sudo, reads JSON progress from stderr)
       navigation.go             — Page IDs, navigation state, GetUILocale/SetUILocale
       root_check.go             — Sudo verification

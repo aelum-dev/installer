@@ -24,8 +24,6 @@ export function GetFileSystem():Promise<string>;
 
 export function GetHostname():Promise<string>;
 
-export function GetInputMethodSummary(arg1:string):Promise<Array<string>>;
-
 export function GetInstallationRunning():Promise<boolean>;
 
 export function GetLanguages():Promise<Array<shared.Language>>;
@@ -39,6 +37,8 @@ export function GetRegions():Promise<Array<shared.Region>>;
 export function GetSelectedLanguage():Promise<string>;
 
 export function GetSelectedRegion():Promise<string>;
+
+export function GetSessionInputMethods(arg1:string,arg2:string):Promise<Array<string>>;
 
 export function GetStartPage():Promise<number>;
 
