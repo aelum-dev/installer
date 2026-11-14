@@ -5,12 +5,14 @@ import { fileURLToPath, URL } from 'url';
 // (GetDisks, GetLanguages, ...) through the Wails runtime, so tests must run
 // against `wails dev` (app + backend served together), NOT plain `vite dev`.
 //
-// `wails dev` is auto-started here via the webServer option, using synthetic
-// data (FAKE_DISKS) so the wizard has disks to select, and dry-run mode so the
-// install steps finish quickly instead of pacstrapping a real system.
+// The normal entry point is `npm run e2e` -> scripts/e2e.sh: it keeps a warm
+// `wails dev` on :34115 across runs (the cold build is ~4 min; the suite is
+// well under 1), and with `reuseExistingServer` this config simply attaches to
+// it. The webServer block below is the fallback for running
+// `npx playwright test` directly (or on CI).
 //
 // Run from the frontend/ directory:
-//   npm run e2e            # headless
+//   npm run e2e            # headless (server stays warm; npm run e2e:stop ends it)
 //   npm run e2e:headed     # visible browser
 //   npm run e2e:report     # open the HTML report
 
@@ -20,6 +22,12 @@ const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
+  // One worker: the wails backend is a single app session (a.diskSelection,
+  // a.manualMode, installationRunning), and every browser page drives that same
+  // session. With several workers, a manual-mode test can flip a.manualMode
+  // while the install spec's StartInstallation is serializing its layout —
+  // the CLI then gets a foreign/empty --manual-layout and dies at exit 1.
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI
     ? [['list'], ['github']]

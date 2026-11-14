@@ -7,9 +7,15 @@ Playwright. Because the pages call Go backend bindings (`GetDisks`,
 
 ## How it works
 
-- `playwright.config.ts` auto-starts `wails dev` via Playwright's `webServer`
-  option, with `FAKE_DISKS=1` (synthetic disks to select) and
-  `AELUM_DRY_RUN=1` (steps simulate quickly, no real disk touched, no sudo).
+- `npm run e2e` runs `scripts/e2e.sh`: it keeps a **warm `wails dev`** on
+  port `34115` across runs. The first run starts it with `FAKE_DISKS=1`
+  (synthetic disks to select) and `AELUM_DRY_RUN=1` (steps simulate quickly, no
+  real disk touched, no sudo) and pays the cold build (~4 min); every later run
+  attaches to the running server and the suite itself takes well under a
+  minute. `npm run e2e:stop` stops it. On CI the script skips the management
+  and lets Playwright start its own `webServer`.
+- `playwright.config.ts` keeps a `webServer` fallback so a bare
+  `npx playwright test` still works (`reuseExistingServer` outside CI).
 - The fixed dev port `34115` is set in `wails.json` (`frontend:dev:serverUrl`)
   so the config's `baseURL` is stable.
 - Tests live in `e2e/*.spec.ts`.
@@ -34,10 +40,16 @@ xvfb-run -a npm run e2e
 
 ```bash
 cd frontend
-npm run e2e            # headless
+npm run e2e            # headless; the dev server stays warm for the next run
+npm run e2e:stop       # stop the warm dev server
 npm run e2e:headed     # visible browser, handy for debugging
 npm run e2e:report     # open the HTML report (after a run)
 ```
+
+Note: a warm server left by the script runs with `FAKE_DISKS=1` + dry-run. If
+you want to click through the app by hand, that's the same environment the
+tests use — stop it with `npm run e2e:stop` first and start a normal
+`wails dev` if you need a non-dry one.
 
 ## If Playwright appears to hang at startup
 
@@ -53,14 +65,14 @@ Check for leftovers and stop them before retrying:
 pgrep -af "wails dev|node_modules/.bin/vite|aelum-installer-dev"
 ```
 
-You can also start the dev server yourself and let Playwright reuse it:
+(`scripts/e2e.sh` starts the server in its own process group, so
+`npm run e2e:stop` reaps the whole tree including Vite.)
 
-```bash
-cd ..   # installer/
-env AELUM_DRY_RUN=1 FAKE_DISKS=1 wails dev -tags webkit2_41
-# then, in another terminal:
-cd frontend && npx playwright test
-```
+Note: if you change Go bindings while a warm server runs, wails regenerates
+`wailsjs/` but Vite can keep serving the **stale** generated module — every test
+then fails on a blank page (`... does not provide an export named ...`).
+`npm run e2e:stop && npm run e2e` fixes it; the rebuild is only a few seconds
+with warm Go caches.
 
 ## What's covered
 

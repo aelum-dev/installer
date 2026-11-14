@@ -18,6 +18,10 @@ async function fillUserAccount(page: import('@playwright/test').Page): Promise<v
 }
 
 test('full wizard flow reaches the finish screen', async ({ page }) => {
+  // The dry-run install itself runs ~10s; the global 30s timeout is enough,
+  // but leave the terminal-state expect room to report the real cause
+  // instead of the generic test-timeout message.
+  test.setTimeout(60_000);
   await page.goto('/');
 
   // Welcome -> User account
@@ -42,15 +46,11 @@ test('full wizard flow reaches the finish screen', async ({ page }) => {
   await page.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByRole('heading', { name: 'Installing Aelum' })).toBeVisible();
 
-  // The install runs (dry-run) and settles. In a healthy dev build it
-  // completes and advances to the Finish screen; if the CLI binary is absent
-  // (or the dry-run layout validation fails, as it does for the synthetic
-  // disks) the page shows an error hint instead. Either way the install path
-  // was exercised, so assert we reached one of those terminal states.
-  const finished = page.getByText('Aelum has been installed successfully.');
-  const errored = page.locator('.error-hint');
-  await Promise.race([
-    expect(finished).toBeVisible({ timeout: 60_000 }),
-    expect(errored).toBeVisible({ timeout: 60_000 }),
-  ]);
+  // The install runs (dry-run) and settles: it completes and advances to the
+  // Finish screen. A failed start instead surfaces as error text in the
+  // .step-label (InstallationPage sets errorMessage -> currentLabel), so a
+  // failure shows its real cause right in the failure snapshot.
+  await expect(page.getByText('Aelum has been installed successfully.')).toBeVisible({
+    timeout: 60_000,
+  });
 });
