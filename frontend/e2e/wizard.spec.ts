@@ -107,9 +107,12 @@ test.describe('Installer wizard', () => {
     await next(page).click(); // -> Confirmation
 
     await expect(page.getByRole('heading', { name: 'Installation Summary' })).toBeVisible();
-    await expect(page.getByText('Language')).toBeVisible();
-    await expect(page.getByText('User Account')).toBeVisible();
-    await expect(page.getByText('Target Disk')).toBeVisible();
+    // Assert the summary's exact section headings, not loose text: the page
+    // transition keeps the previous page mounted briefly, and substring text
+    // (e.g. "User Account" ⊂ "Create user account") races the exiting page.
+    await expect(page.getByRole('heading', { name: 'Language', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'User Account', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Target Disk', exact: true })).toBeVisible();
     await expect(page.locator('.disk-path code')).toHaveText(/dev/);
   });
 

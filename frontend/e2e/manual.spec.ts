@@ -36,7 +36,8 @@ async function gotoDiskSelection(page: import('@playwright/test').Page): Promise
   await page.goto('/');
   // Pin the UI language: the backend may remember a different selection from
   // the native dev window, and the rest of the flow assumes English labels.
-  await page.getByRole('button', { name: 'English (United States)' }).click();
+  // (Language names carry no country since bba8044 — match the bare name.)
+  await page.getByRole('button', { name: 'English', exact: true }).click();
   await next(page).click(); // Welcome -> User account
   await page.getByLabel('Username').fill('alice');
   await page.getByLabel('Password', { exact: true }).fill('secret1');
@@ -85,9 +86,10 @@ test.describe('Manual partitioning', () => {
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'System' }).click();
 
-    // The chosen roles are reflected on the row triggers.
-    await expect(rows.first().locator('.role-trigger')).toHaveText('Boot');
-    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
+    // The chosen roles are reflected on the row triggers. (Assert the label
+    // span: the trigger's own text ends with whitespace next to the chevron.)
+    await expect(rows.first().locator('.role-trigger-label')).toHaveText('Boot');
+    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('System');
   });
 
   test('keeps designated roles when switching between automatic and manual', async ({ page }) => {
@@ -99,16 +101,16 @@ test.describe('Manual partitioning', () => {
     await page.getByRole('option', { name: 'Boot' }).click();
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'System' }).click();
-    await expect(rows.first().locator('.role-trigger')).toHaveText('Boot');
-    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
+    await expect(rows.first().locator('.role-trigger-label')).toHaveText('Boot');
+    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('System');
 
     // Leave manual mode and come back: the plan must be re-used, not rescanned
     // into a fresh all-Preserve layout.
     await page.getByRole('button', { name: 'Automatic' }).click();
     await page.getByRole('button', { name: 'Manual' }).click();
     await expect(page.locator('.editor-row')).toHaveCount(2);
-    await expect(page.locator('.editor-row').first().locator('.role-trigger')).toHaveText('Boot');
-    await expect(page.locator('.editor-row').nth(1).locator('.role-trigger')).toHaveText('System');
+    await expect(page.locator('.editor-row').first().locator('.role-trigger-label')).toHaveText('Boot');
+    await expect(page.locator('.editor-row').nth(1).locator('.role-trigger-label')).toHaveText('System');
   });
 
   test('adding a partition then deleting it changes the row count', async ({ page }) => {
@@ -179,13 +181,13 @@ test.describe('Manual partitioning', () => {
     await page.getByRole('option', { name: 'Boot' }).click();
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'System' }).click();
-    await expect(rows.first().locator('.role-trigger')).toHaveText('Boot');
-    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('System');
+    await expect(rows.first().locator('.role-trigger-label')).toHaveText('Boot');
+    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('System');
 
     // Selecting the active "System" role again in the menu clears it back to
     // Preserve (the trigger only toggles the menu; the option does the clearing).
     await rows.nth(1).locator('.role-trigger').click();
     await page.getByRole('option', { name: 'Preserve' }).click();
-    await expect(rows.nth(1).locator('.role-trigger')).toHaveText('Preserve');
+    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('Preserve');
   });
 });
