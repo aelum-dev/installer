@@ -222,12 +222,15 @@ The GUI spawns the CLI via `sudo` for all privileged operations.
 
 ```bash
 cd frontend && npm run e2e:install   # one-time: downloads Playwright's Chromium
-cd frontend && npm run e2e           # headless suite
+cd frontend && npm run e2e           # headless suite (dev server stays warm for the next run)
+cd frontend && npm run e2e:stop      # stop the warm dev server
 cd frontend && npm run e2e:headed    # visible browser, for debugging
 cd frontend && npm run e2e:report    # the HTML report after a run
 ```
 
-`playwright.config.ts` starts `wails dev` itself, so the suite runs Go backend + Svelte UI together: the
+`scripts/e2e.sh` keeps a warm `wails dev` on :34115 between runs — the cold build is ~4 min while the
+suite itself is well under 1, so the first run pays the build and later runs attach to it (a bare
+`npx playwright test` still works via the config's `webServer` fallback). The suite runs Go backend + Svelte UI together: the
 wizard, manual partitioning and the full install flow in dry-run mode against synthetic disks
 (`AELUM_DRY_RUN` / `FAKE_DISKS`), so no real disk is touched. On a headless CI runner wrap it in
 `xvfb-run` and install the browser system deps (`npx playwright install-deps chromium`). Details in
