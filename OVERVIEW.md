@@ -141,7 +141,7 @@ The two pacstrap steps (base + desktop) together account for ~80% of total insta
 ```
 Welcome (language select)
     → User Account (username + password)
-        → Disk Selection (disk cards + filesystem pills)
+        → Disk Selection (disk list + options in the info rail)
             → Confirmation (summary + root check + confirm dialog)
                 → Installation (progress bar + live events)
                     → Finish (success)

@@ -41,8 +41,8 @@ the passphrase is the user's choice; a hint about length is shown but not enforc
 
 ### Data flow (frontend → install)
 ```
-DiskTopBar toggle ──click(off)──▶ LuksPassphraseDialog ──valid──▶ store.commitLuksPassphrase
-DiskTopBar toggle ──click(on)──▶ ConfirmDialog(disable) ──yes──▶ store.disableLuks
+StorageOptionsCard switch ──click(off)──▶ LuksPassphraseDialog ──valid──▶ store.commitLuksPassphrase
+StorageOptionsCard switch ──click(on)──▶ ConfirmDialog(disable) ──yes──▶ store.disableLuks
 …
 ConfirmationPage reads installState.luksEnabled  → shows "Encrypted (LUKS2)"
 …
@@ -67,6 +67,10 @@ Live inline validation: error state when fields diverge or empty. Submit calls
 Localized via `t('…')`.
 
 ### 2.2 `frontend/src/components/DiskTopBar.svelte`
+
+> History: `DiskTopBar` was later dissolved — the Encrypt switch now lives in
+> `StorageOptionsCard.svelte` (the options card in the page's info rail). The
+> switch behavior described here is unchanged.
 Add a compact **Encrypt (LUKS2)** toggle switch to the right of the FS pills (the
 `fs-bar`), per the "next to fs pills" requirement. Props added:
 `luksEnabled`, `onEnableLuks`, `onDisableLuks` (all with safe defaults so other

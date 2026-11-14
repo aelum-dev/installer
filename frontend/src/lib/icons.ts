@@ -8,6 +8,16 @@ export function glyph(hex: string): string {
 	return String.fromCodePoint(parseInt(hex, 16));
 }
 
+// The disk-type glyph, from the same fields the disk list and the manual-mode
+// rail show: removable media, spinning disk, or flash. One helper so a row and
+// its rail identity never draw different icons for the same disk.
+export function diskGlyph(disk: { isRemovable: boolean; rotational: boolean }): string {
+	if (disk.isRemovable) {
+		return glyph('f129e'); // USB/SD/MMC flash drive (md-usb_flash_drive)
+	}
+	return disk.rotational ? glyph('ede9') /* HDD: spinning disc */ : glyph('f061a'); /* SSD: flash chip */
+}
+
 // Step icons for the wizard's left column (page-info). Kept in one place so the
 // GUI icons stay in sync with the website's installSteps. Installation (05) and
 // Finish (06) intentionally have no icon — they use their own centered layout.

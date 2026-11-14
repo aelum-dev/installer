@@ -1,23 +1,27 @@
 <script lang="ts">
-	import type { DiskInfo, PartitionEntry } from '$lib/types';
+	import type { DiskInfo } from '$lib/types';
 	import { MinDiskSizeBytes } from '$lib/constants';
 	import { t } from '$lib/i18n';
-	import { glyph } from '$lib/icons';
+	import { diskGlyph } from '$lib/icons';
 	import './DiskCard.css';
 
 	let {
 		disk,
 		selected,
-		partitions,
-		partitionsLoading,
 		onSelect
 	}: {
 		disk: DiskInfo;
 		selected: boolean;
-		partitions: PartitionEntry[];
-		partitionsLoading: boolean;
 		onSelect: (disk: DiskInfo) => void;
 	} = $props();
+
+	// The type line at the trailing edge: bus (when the device reports one) and
+	// the media word, or "removable" for USB/SD/MMC.
+	const typeText = $derived(
+		disk.isRemovable
+			? t('disk.removable')
+			: (disk.trans ? disk.trans.toUpperCase() + ' ' : '') + t(disk.rotational ? 'disk.hdd' : 'disk.ssd')
+	);
 </script>
 
 <button
@@ -26,34 +30,18 @@
 	onclick={() => onSelect(disk)}
 	disabled={disk.size < MinDiskSizeBytes}
 >
-	<div class="card-header">
-		<div class="disk-icon" aria-hidden="true">
-			{#if disk.isRemovable}
-				<span class="disk-icon-glyph removable-glyph">{glyph('f129e')}</span> <!-- removable: USB/SD/MMC flash drive (md-usb_flash_drive) -->
-			{:else}
-				{#if disk.rotational}
-					<span class="disk-icon-glyph">{glyph('ede9')}</span> <!-- HDD: spinning disc -->
-				{:else}
-					<span class="disk-icon-glyph">{glyph('f061a')}</span> <!-- SSD: flash chip -->
-				{/if}
-			{/if}
-		</div>
-		<div class="card-title">
-			<div class="disk-name">{disk.model || disk.name}</div>
-			<div class="disk-specs">
-				{disk.sizeFormatted}
-				<span class="specs-sep">·</span>
-				{t(disk.rotational ? 'disk.hdd' : 'disk.ssd')}
-				{#if disk.trans}
-					<span class="specs-sep">·</span>
-					{disk.trans.toUpperCase()}
-				{/if}
-			</div>
-		</div>
-		<div class="card-radio">
-			<div class={['radio', { checked: selected }]}></div>
-		</div>
-	</div>
-
-
+	<span class="disk-glyph nf-icon" aria-hidden="true">{diskGlyph(disk)}</span>
+	<span class="disk-main">
+		<span class="disk-name">{disk.model || disk.name}</span>
+		<span class="disk-path">{disk.path}</span>
+	</span>
+	<span class="disk-specs">
+		<span class="disk-size">{disk.sizeFormatted}</span>
+		<span class="disk-type">{typeText}</span>
+	</span>
+	<span class="disk-check" aria-hidden="true">
+		<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+		</svg>
+	</span>
 </button>

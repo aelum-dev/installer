@@ -16,15 +16,52 @@
 	gap: var(--spacing-md);
 }
 
-/* Manual mode hides the sidebar, so the between-column gap would otherwise
-	show as empty space on the left. Drop it there; the content spans full width. */
-.page-layout--manual {
-	gap: 0;
-}
-
 .manual-select-hint {
 	flex: 1;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+}
+
+/* The minimum-size note under the options card (was the sidebar's hint). */
+.page-hint {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+}
+
+/* Free-space bar in the manual-mode rail head. One bar, one number: "used X of
+	 Y, free Z" restated the total the identity line already carries. */
+.rail-space {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+	width: 100%;
+	max-width: 30ch;
+	margin-inline: auto;
+}
+
+.rail-space-bar {
+	width: 100%;
+	height: 10px;
+	border-radius: var(--radius-pill);
+	background: var(--color-bg-hover);
+	border: 1px solid var(--color-border-light);
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+.rail-space-used {
+	height: 100%;
+	width: var(--pct, 0%);
+	background: var(--color-primary);
+	border-radius: var(--radius-pill);
+	transition: width 0.2s ease;
+}
+
+.rail-space-label {
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+	text-align: center;
+	font-variant-numeric: tabular-nums;
 }

@@ -10,20 +10,17 @@
 		icon,
 		title,
 		subtitle,
-		hidden = false,
 		info,
 	}: {
 		icon?: string;
 		title: string;
 		subtitle?: string;
-		/** Collapse the rail (used when disk selection switches to manual mode). */
-		hidden?: boolean;
 		/** Extra content under the subtitle (e.g. requirement hints). */
 		info?: Snippet;
 	} = $props();
 </script>
 
-<div class={['page-info', { 'page-info--hidden': hidden }]}>
+<div class="page-info">
 	{#if icon}
 		<span class="nf-icon page-icon" aria-hidden="true">{icon}</span>
 	{/if}
@@ -46,14 +43,5 @@
 		justify-content: center;
 		gap: var(--spacing-lg);
 		flex: 1;
-		transition: opacity 0.2s ease, max-width 0.2s ease;
-	}
-
-	.page-info--hidden {
-		opacity: 0;
-		max-width: 0;
-		overflow: hidden;
-		padding: 0;
-		margin: 0;
 	}
 </style>

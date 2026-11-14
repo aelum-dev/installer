@@ -171,7 +171,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       pages/
         WelcomePage.svelte      — Language selection (list) + location picker (info-rail block → RegionPicker dialog)
         UserAccountPage.svelte  — Username + password (interactive validation hints)
-        DiskSelectionPage.svelte — Disk cards + filesystem pills
+        DiskSelectionPage.svelte — Device rows (OptionList look) + storage-options card in the info rail; manual mode swaps the rail head to the disk identity
         ManualPartitionPage.svelte — Manual partition editor
         ConfirmationPage.svelte — Summary + root check + confirm dialog
         InstallationPage.svelte — Progress bar + live events
@@ -305,7 +305,7 @@ that cannot be installed.
 ```
 Welcome (language list + location picker)
   → User Account (username + password)
-    → Disk Selection (disk cards + filesystem pills)
+    → Disk Selection (disk list + options in the info rail)
       → Confirmation (summary + root check + confirm dialog)
         → Installation (progress bar + live events)
           → Finish (success)

@@ -6,3 +6,13 @@
 	height: 100%;
 	min-height: 0;
 }
+
+/* Small uppercase label above a control — the same label the language list and
+	 the region card use, so the device list reads as the wizard's list it is. */
+.list-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-600);
+	color: var(--color-text-muted);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}

@@ -1,0 +1,134 @@
+/* The card's own look is the Welcome page's region-card: the rail already puts
+	 one consequential control block in exactly this shape (background, border,
+	 radius, shadow, padding), so the storage options join it rather than
+	 inventing a third surface. */
+.options-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+	background-color: var(--color-bg-white);
+	border: 1px solid var(--color-border-light);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-md);
+	padding: var(--spacing-md) var(--spacing-lg);
+	text-align: start;
+	margin-top: var(--spacing-lg);
+}
+
+/* Card header — the same kind of small uppercase label the region-card and the
+	 language list carry. */
+.options-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-600);
+	color: var(--color-text-muted);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+/* One option per row: label at the reading edge, control at the trailing edge.
+	 Hairlines between rows only — the card border already closes the block, and
+	 the row order is fixed in both modes, so nothing jumps when a mode changes. */
+.option-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--spacing-md);
+	padding: var(--spacing-xs) 0;
+}
+
+.option-row + .option-row {
+	border-top: 1px solid var(--color-border-subtle);
+}
+
+.option-label {
+	font-size: var(--font-size-md-lg);
+	color: var(--color-text);
+}
+
+/* The mode row owns the tooltip's anchor. */
+.mode-row {
+	position: relative;
+}
+
+/* Filesystem and mode pills — the wizard's existing pill look, unchanged. */
+.fs-pills,
+.mode-pills {
+	display: flex;
+	gap: var(--spacing-xs);
+	position: relative;
+}
+
+.fs-pill,
+.mode-pill {
+	padding: 6px 18px;
+	border: 1.5px solid var(--color-border-light);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: var(--font-size-md);
+	font-weight: 600;
+	color: var(--color-text);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.fs-pill:hover,
+.mode-pill:hover {
+	border-color: var(--color-primary);
+	background: var(--color-bg-hover);
+	color: var(--color-text);
+}
+
+.fs-pill.selected,
+.mode-pill.selected {
+	border-color: var(--color-primary);
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}
+
+.mode-pill:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+/* Tooltip: "Select a disk first". DiskTopBar referenced a `tooltipFade` keyframe
+	 that was never defined (the browser silently ignored the animation); naming it
+	 here makes the intended fade-in real. */
+@keyframes tooltipFade {
+	from {
+		opacity: 0;
+		translate: 0 4px;
+	}
+	to {
+		opacity: 1;
+		translate: 0 0;
+	}
+}
+
+.disk-hint-tooltip {
+	position: absolute;
+	bottom: calc(100% + 6px);
+	right: 0;
+	z-index: 100;
+	animation: tooltipFade 150ms ease;
+}
+
+.disk-hint-tooltip-text {
+	display: block;
+	padding: 6px 12px;
+	background: var(--color-bg-white);
+	border: 1.5px solid var(--color-border);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+	white-space: nowrap;
+}
+
+.disk-hint-tooltip-text::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	right: 12px;
+	border: 5px solid transparent;
+	border-top-color: var(--color-bg-white);
+}

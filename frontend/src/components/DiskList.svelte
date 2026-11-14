@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { DiskInfo, PartitionEntry } from '$lib/types';
+	import type { DiskInfo } from '$lib/types';
+	import { t } from '$lib/i18n';
 	import Button from '$components/Button.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import DiskCard from '$components/DiskCard.svelte';
 	import StateMessage from '$components/StateMessage.svelte';
-	import { t } from '$lib/i18n';
 	import './DiskList.css';
 
 	let {
@@ -12,8 +12,6 @@
 		error,
 		disks,
 		diskId,
-		partitions,
-		partitionsLoading,
 		persistKey,
 		onSelectDisk,
 		onRetry
@@ -22,8 +20,6 @@
 		error: string | null;
 		disks: DiskInfo[];
 		diskId: string;
-		partitions: PartitionEntry[];
-		partitionsLoading: boolean;
 		persistKey?: string | number;
 		onSelectDisk: (disk: DiskInfo) => void;
 		onRetry: () => void;
@@ -45,14 +41,14 @@
 	</StateMessage>
 {:else}
 	<div class="right-content">
+		<!-- The same kind of list label the language list carries. -->
+		<div class="list-label">{t('page.diskSelection.devices')}</div>
 		<ScrollBox {persistKey}>
 			<div class="disk-list">
 				{#each disks as disk (disk.path)}
 					<DiskCard
 						{disk}
 						selected={diskId === disk.path}
-						partitions={partitions}
-						partitionsLoading={partitionsLoading}
 						onSelect={onSelectDisk}
 					/>
 				{/each}

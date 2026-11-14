@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { GetDisks, GetDiskPartitions } from '$lib/backend';
-	import DiskInfoSidebar from '$components/DiskInfoSidebar.svelte';
-	import DiskTopBar from '$components/DiskTopBar.svelte';
+	import PageInfo from '$components/PageInfo.svelte';
+	import StorageOptionsCard from '$components/StorageOptionsCard.svelte';
 	import DiskList from '$components/DiskList.svelte';
 	import StateMessage from '$components/StateMessage.svelte';
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
@@ -11,11 +11,11 @@
 	import { uiState } from '$lib/ui.svelte';
 	import { computeUsedMB, computeFreeMB } from '$lib/manual-layout';
 	import { inferDiskFileSystem } from '$lib/disks';
-	import { formatBytes } from '$lib/format';
-	import { type DiskInfo, type InstallMode, type PartitionEntry, PAGE_IDS } from '$lib/types';
+	import { formatBytes, mbToGB } from '$lib/format';
+	import { type DiskInfo, type InstallMode, PAGE_IDS } from '$lib/types';
 	import { DefaultFileSystem, MinDiskSizeBytes } from '$lib/constants';
 	import { t } from '$lib/i18n';
-	import { glyph, STEP_ICONS } from '$lib/icons';
+	import { glyph, STEP_ICONS, diskGlyph } from '$lib/icons';
 	import './DiskSelectionPage.css';
 
 	function setMode(mode: InstallMode): void {
@@ -28,7 +28,7 @@
 
 	const pageIcon = glyph(STEP_ICONS.diskSelection);
 
-	// Allocated / free space summary for the manual-mode title bar. Derived from the
+	// Allocated / free space summary for the manual-mode rail. Derived from the
 	// shared manual layout, which ManualPartitionPage keeps in sync.
 	const spaceSummary = $derived.by(() => {
 		const layout = installState.manualLayout;
@@ -43,11 +43,22 @@
 		return { used: usedPreview, total, free: freePreview, pct: total > 0 ? Math.min(100, Math.round((usedPreview / total) * 100)) : 0 };
 	});
 
+	// The info rail's head is mode-aware: automatic mode shows the page's
+	// identity, manual mode shows the selected disk's — the disk IS the page's
+	// subject once its partitions are being edited. The options card below never
+	// moves, so toggling modes changes only the head and the content column.
+	const manualDisk = $derived(installState.manualMode ? installState.disk : null);
+	const railIcon = $derived(manualDisk ? diskGlyph(manualDisk) : pageIcon);
+	const railTitle = $derived(manualDisk ? manualDisk.model || manualDisk.name || '—' : t('page.diskSelection.title'));
+	const railSubtitle = $derived(
+		manualDisk
+			? `${manualDisk.path} · ${manualDisk.sizeFormatted}`
+			: t('page.diskSelection.subtitle')
+	);
+
 	const minDiskSizeFormatted = $derived(formatBytes(MinDiskSizeBytes));
 
 	let disks = $state<DiskInfo[]>([]);
-	let partitions = $state<PartitionEntry[]>([]);
-	let partitionsLoading = $state(false);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
@@ -80,6 +91,8 @@
 
 	// adoptDisk loads a disk into the wizard state and fetches its partitions.
 	// It never toggles: restoring a selection on remount must keep the disk.
+	// The partitions themselves are only read here (inferDiskFileSystem) — the
+	// row list never renders them.
 	async function adoptDisk(disk: DiskInfo): Promise<void> {
 		// A saved manual plan belongs to one disk. Keep it when restoring the
 		// same disk; discard it when the user picks a different one.
@@ -91,24 +104,19 @@
 		installState.disk = disk;
 
 		const request = ++partitionsRequest;
-		partitionsLoading = true;
-		partitions = [];
 		try {
-			const parts = await GetDiskPartitions(disk.path);
+			const parts = (await GetDiskPartitions(disk.path)) ?? [];
 			// A newer selection (or a deselect) happened while this request was
 			// in flight — drop the stale result instead of clobbering current state.
 			if (request !== partitionsRequest) return;
-			partitions = parts ?? [];
 
-			const existingFstype = inferDiskFileSystem(disk, partitions);
+			const existingFstype = inferDiskFileSystem(disk, parts);
 			if (existingFstype && existingFstype !== disk.fstype) {
 				disk.fstype = existingFstype;
 				installState.disk = disk;
 			}
 		} catch (err) {
 			console.error(`[DiskSelectionPage] Failed to load partitions: ${err}`);
-		} finally {
-			if (request === partitionsRequest) partitionsLoading = false;
 		}
 	}
 
@@ -129,17 +137,15 @@
 		installState.manualLayout = null;
 		uiState.pendingAddMB = 0;
 		installState.manualMode = false;
-		partitions = [];
-		partitionsLoading = false;
 	}
 
 	loadDisks();
 
 	// Never get stuck in manual mode with no disk selected. Manual mode is only
-	// reachable with a disk (the manual pill is disabled otherwise), so a diskless
-	// manual state is stale — e.g. after deselecting the disk, or navigating back
-	// to the user page and forward again. Fall back to automatic mode so the disk
-	// list shows instead of the dead-end "select a disk" hint.
+	// reachable with a disk (the Manual segment is disabled otherwise), so a
+	// diskless manual state is stale — e.g. after deselecting the disk, or
+	// navigating back to the user page and forward again. Fall back to automatic
+	// mode so the disk list shows instead of the dead-end "select a disk" hint.
 	$effect(() => {
 		if (installState.manualMode && !installState.disk) {
 			installState.manualMode = false;
@@ -148,31 +154,48 @@
 	});
 </script>
 
-<div class={['page-layout', { 'page-layout--manual': installState.manualMode }]}>
-	<DiskInfoSidebar
-		pageIcon={pageIcon}
-		minDiskSizeFormatted={minDiskSizeFormatted}
-		hidden={installState.manualMode}
-	/>
-	<div class="page-content">
-		<DiskTopBar
-			pageIcon={pageIcon}
-			disk={installState.disk}
-			fileSystem={installState.fileSystem}
-			manualMode={installState.manualMode}
-			spaceUsedMB={spaceSummary.used}
-			spaceTotalMB={spaceSummary.total}
-			spaceFreeMB={spaceSummary.free}
-			spaceUsedPct={spaceSummary.pct}
-			onSelectFileSystem={(fs) => { setFileSystem(fs); }}
-			onToggleMode={setMode}
-			luksEnabled={installState.luksEnabled}
-			onEnableLuks={requestEnableLuks}
-			onDisableLuks={() => { showDisableConfirm = true; }}
-			lvmEnabled={installState.lvmEnabled}
-			onToggleLvm={toggleLvm}
-		/>
+<div class="page-layout">
+	<PageInfo icon={railIcon} title={railTitle} subtitle={railSubtitle}>
+		{#snippet info()}
+			{#if manualDisk && spaceSummary.total > 0}
+				<!-- One honest number: the free space. The total is already in the
+					 identity line above, so it is not repeated here. -->
+				<div class="rail-space">
+					<div
+						class="rail-space-bar"
+						role="progressbar"
+						aria-valuenow={spaceSummary.pct}
+						aria-valuemin={0}
+						aria-valuemax={100}
+					>
+						<div class="rail-space-used" style="--pct: {spaceSummary.pct}%"></div>
+					</div>
+					<div class="rail-space-label">
+						{t('manual.free')} {mbToGB(spaceSummary.free)} {t('unit.gb')}
+					</div>
+				</div>
+			{/if}
 
+			<StorageOptionsCard
+				disk={installState.disk}
+				fileSystem={installState.fileSystem}
+				manualMode={installState.manualMode}
+				luksEnabled={installState.luksEnabled}
+				onEnableLuks={requestEnableLuks}
+				onDisableLuks={() => { showDisableConfirm = true; }}
+				lvmEnabled={installState.lvmEnabled}
+				onToggleLvm={toggleLvm}
+				onSelectFileSystem={(fs) => { setFileSystem(fs); }}
+				onToggleMode={setMode}
+			/>
+
+			{#if !installState.manualMode}
+				<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
+			{/if}
+		{/snippet}
+	</PageInfo>
+
+	<div class="page-content">
 		{#if installState.manualMode}
 			<!-- Manual mode: full-width partition editor -->
 			{#if installState.disk}
@@ -185,15 +208,13 @@
 				</div>
 			{/if}
 		{:else}
-			<!-- Automatic mode: disk selection UI -->
+			<!-- Automatic mode: the disk list, and nothing else. -->
 			<DiskList
 				loading={loading}
 				{error}
 				{disks}
 				diskId={installState.diskId}
 				persistKey={PAGE_IDS.DISK_SELECTION}
-				partitions={partitions}
-				partitionsLoading={partitionsLoading}
 				onSelectDisk={selectDisk}
 				onRetry={loadDisks}
 			/>
