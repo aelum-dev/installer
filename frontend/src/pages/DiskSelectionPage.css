@@ -104,3 +104,15 @@
 
 /* Manual mode rebalances nothing further: the rail and the gap above are the
    same in both modes, and only the content column changes contents. */
+
+/* Arabic and Persian fallback fonts draw line boxes ~1.75x the size of Latin
+   at the same font size, and every one of them repeats through the rail's
+   sixteen text lines — enough to push the destination card past the fixed
+   window (measured: ar -36px, fa -52px). Pinning the rail's line-height makes
+   the script never dictate the budget; it also trims every Latin locale a
+   few pixels, which is the slack de/ja were missing. */
+.disk-page .page-info,
+.disk-page .options-card,
+.disk-page .dest-card {
+	line-height: 1.3;
+}

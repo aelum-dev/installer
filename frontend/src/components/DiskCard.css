@@ -124,6 +124,8 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	/* Always-Latin path: keep it readable in RTL locales (see .part-path). */
+	unicode-bidi: plaintext;
 }
 
 .disk-card.selected .disk-path {

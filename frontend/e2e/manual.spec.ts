@@ -75,7 +75,7 @@ test.describe('Manual partitioning', () => {
     // Switch to manual mode. The rail keeps its frame — the same head style
     // with the partitioning wording, and the destination card below it.
     await page.getByRole('button', { name: 'Manual' }).click();
-    await expect(page.getByRole('heading', { name: 'Select Desired Partitions' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Select Partitions' })).toBeVisible();
     await expect(page.locator('.disk-page .dest-card')).toBeVisible();
     await expect(page.locator('.disk-page .dest-card .rail-space-bar')).toBeVisible();
 

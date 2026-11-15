@@ -124,7 +124,7 @@
   "page.diskSelection.fileSystem": "檔案系統",
   "page.diskSelection.fsSub": "btrfs 增加快照回滾",
   "page.diskSelection.loading": "掃描磁碟中...",
-  "page.diskSelection.manualSub": "選擇開機和系統分割區。",
+  "page.diskSelection.manualSub": "需要開機和系統分割區",
   "page.diskSelection.manualTitle": "選擇所需分割區",
   "page.diskSelection.minDiskSize": "最小磁碟容量：{minSize}",
   "page.diskSelection.mode": "模式",

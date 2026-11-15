@@ -63,13 +63,15 @@
 	color: var(--color-text-muted);
 }
 
-/* The rail of the fixed 900x600 window (main.go) is 240px wide and 440px
-	 tall; at that measure the two switch rows already say everything the
-	 sub-line repeats ("LUKS2", "LVM" — the toggles are the whole control, and
-	 each carries its fuller hint in the title), while the two rows that shape
-	 the layout still earn their lines. A window with room shows them too. */
+/* The rail of the fixed 900x600 window (main.go) is 268px wide and 440px
+	 tall, and at that measure the rail must fit the tallest locale's head —
+	 four wrapped lines in Ukrainian, not the two English gets. So at the
+	 shipped height every sub-line steps out: the fs row's repeats what the
+	 destination card's chain already draws ("btrfs root"), the mode row's is
+	 commentary, and the switch rows' repeats their toggle. A taller window
+	 shows them all again. */
 @media (max-height: 719px) {
-	.wraps .option-sub {
+	.option-sub {
 		display: none;
 	}
 }

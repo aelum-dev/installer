@@ -52,8 +52,9 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* The rows: wizard cards, not spreadsheet cells — each one carries its name,
-   what is on it, its size, its role and its delete button in a single line.
+/* The rows: wizard cards, not spreadsheet cells — two lines, always, in every
+   language: the role words are twelve letters in Ukrainian, and a single flex
+   line let the pills crush the device path to "/dev/n..".
    Scrolls on its own; the map and the add control keep their place. */
 .part-list {
 	display: flex;
@@ -66,13 +67,42 @@
 }
 
 .part-row {
-	display: flex;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	column-gap: var(--spacing-sm);
+	row-gap: 4px;
 	align-items: center;
-	gap: var(--spacing-sm);
 	padding: 8px 8px 8px 16px;
 	border-radius: var(--radius-lg);
 	background: var(--color-bg-white);
 	border: 1px solid var(--color-border-subtle);
+}
+
+/* Line assignments: the lead spine spans both lines at the reading edge; the
+   path column (path over filesystem) spans both, centered; the size sits at
+   the first line's trailing edge; the pills and the delete button share the
+   second. The trailing column is as wide as the wider of size and pills —
+   which is exactly why the path gets the real remainder instead of an
+   ellipsis of a device path a click cannot identify. */
+.part-lead {
+	grid-row: 1 / span 2;
+}
+
+.part-id {
+	grid-row: 1 / span 2;
+}
+
+.part-size {
+	grid-row: 1;
+	justify-self: end;
+}
+
+.part-actions {
+	grid-row: 2;
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-xs);
+	justify-self: end;
 }
 
 /* A designated row wears the plan's color on its frame — the fact the map
@@ -94,8 +124,9 @@
 .part-id {
 	display: flex;
 	flex-direction: column;
+	justify-content: center;
+	gap: 1px;
 	min-width: 0;
-	flex: 1;
 }
 
 .part-path {
@@ -104,6 +135,9 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	/* Device paths are always Latin — in an RTL paragraph the neutral leading
+	   slash otherwise floats to the end ("dev/nvme3n1p1/"). */
+	unicode-bidi: plaintext;
 }
 
 .part-fs {

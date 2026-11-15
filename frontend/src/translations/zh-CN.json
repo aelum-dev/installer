@@ -124,7 +124,7 @@
   "page.diskSelection.fileSystem": "文件系统",
   "page.diskSelection.fsSub": "btrfs 增加快照回滚",
   "page.diskSelection.loading": "正在扫描磁盘...",
-  "page.diskSelection.manualSub": "选择启动分区和系统分区。",
+  "page.diskSelection.manualSub": "需要启动和系统分区",
   "page.diskSelection.manualTitle": "选择所需分区",
   "page.diskSelection.minDiskSize": "最小磁盘大小：{minSize}",
   "page.diskSelection.mode": "模式",

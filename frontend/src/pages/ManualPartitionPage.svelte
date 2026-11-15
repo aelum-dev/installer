@@ -321,31 +321,33 @@
 						{/if}
 					</span>
 					<span class="part-size">{groupDigits(part.sizeMB)} {t('unit.mb')}</span>
-					<span class="role-pills">
+					<span class="part-actions">
+						<span class="role-pills">
+							<button
+								type="button"
+								class={['role-pill', { selected: part.type === '' }]}
+								onclick={() => setType(part, '')}
+							>{t('manual.type.preserve')}</button>
+							<button
+								type="button"
+								class={['role-pill', { selected: part.type === TYPE_ESP }]}
+								onclick={() => setType(part, TYPE_ESP)}
+							>{t('manual.type.esp')}</button>
+							<button
+								type="button"
+								class={['role-pill', { selected: part.type === TYPE_SYSTEM }]}
+								onclick={() => setType(part, TYPE_SYSTEM)}
+							>{t('manual.type.system')}</button>
+						</span>
 						<button
 							type="button"
-							class={['role-pill', { selected: part.type === '' }]}
-							onclick={() => setType(part, '')}
-						>{t('manual.type.preserve')}</button>
-						<button
-							type="button"
-							class={['role-pill', { selected: part.type === TYPE_ESP }]}
-							onclick={() => setType(part, TYPE_ESP)}
-						>{t('manual.type.esp')}</button>
-						<button
-							type="button"
-							class={['role-pill', { selected: part.type === TYPE_SYSTEM }]}
-							onclick={() => setType(part, TYPE_SYSTEM)}
-						>{t('manual.type.system')}</button>
+							class="delete-btn"
+							onclick={() => requestDelete(part.index)}
+							aria-label={t('manual.delete')}
+						>
+							{glyph('ea81')}
+						</button>
 					</span>
-					<button
-						type="button"
-						class="delete-btn"
-						onclick={() => requestDelete(part.index)}
-						aria-label={t('manual.delete')}
-					>
-						{glyph('ea81')}
-					</button>
 				</div>
 			{/each}
 			{#if unallocatedMB > 0}
