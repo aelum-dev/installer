@@ -67,7 +67,12 @@ function rows(root: HTMLElement): HTMLElement[] {
 }
 
 function rowLabel(row: Element): string | undefined {
-	return row.querySelector<HTMLElement>('.option-label')?.textContent?.trim();
+	const label = row.querySelector<HTMLElement>('.option-label');
+	if (!label) return undefined;
+	// The label's second line (.option-sub) is explanation, not the row's name.
+	const clone = label.cloneNode(true) as HTMLElement;
+	clone.querySelector('.option-sub')?.remove();
+	return clone.textContent?.trim();
 }
 
 function click(el: Element): void {
@@ -116,7 +121,7 @@ describe('StorageOptionsCard rows', () => {
 		expect(rows(root)).toHaveLength(2);
 	});
 
-	it('keeps the row order fixed in both modes: Partitioning is always last', () => {
+	it('keeps the row order fixed in both modes: shapers first, wrappers last', () => {
 		for (const manualMode of [false, true]) {
 			const root = render({
 				manualMode,
@@ -124,7 +129,12 @@ describe('StorageOptionsCard rows', () => {
 				onToggleLvm: vi.fn()
 			});
 			const labels = rows(root).map(rowLabel);
-			expect(labels).toEqual(['Filesystem', 'Encrypt', 'LVM', 'Partitioning']);
+			// The two rows that shape the layout come first; the two wrapping
+			// switches share one band under them — the order never moves.
+			expect(labels).toEqual(['Filesystem', 'Partitioning', 'Encrypt', 'LVM']);
+			const wraps = root.querySelector('.wraps')!;
+			expect(wraps).not.toBeNull();
+			expect(wraps.querySelectorAll('.option-row')).toHaveLength(2);
 		}
 	});
 

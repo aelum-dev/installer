@@ -2,20 +2,22 @@
 	import { GetDisks, GetDiskPartitions } from '$lib/backend';
 	import PageInfo from '$components/PageInfo.svelte';
 	import StorageOptionsCard from '$components/StorageOptionsCard.svelte';
+	import DestinationCard from '$components/DestinationCard.svelte';
 	import DiskList from '$components/DiskList.svelte';
 	import StateMessage from '$components/StateMessage.svelte';
 	import ManualPartitionPage from '$pages/ManualPartitionPage.svelte';
 	import LuksPassphraseDialog from '$components/LuksPassphraseDialog.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
+	import type { PlanChoice } from '$lib/disk-layout';
 	import { installState, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
 	import { computeUsedMB, computeFreeMB } from '$lib/manual-layout';
 	import { inferDiskFileSystem } from '$lib/disks';
-	import { formatBytes, mbToGB } from '$lib/format';
-	import { type DiskInfo, type InstallMode, PAGE_IDS } from '$lib/types';
-	import { DefaultFileSystem, MinDiskSizeBytes } from '$lib/constants';
+	import { mbToGB } from '$lib/format';
+	import { type DiskInfo, type InstallMode, type PartitionEntry, PAGE_IDS } from '$lib/types';
+	import { DefaultFileSystem } from '$lib/constants';
 	import { t } from '$lib/i18n';
-	import { glyph, STEP_ICONS, diskGlyph } from '$lib/icons';
+	import { glyph, STEP_ICONS } from '$lib/icons';
 	import './DiskSelectionPage.css';
 
 	function setMode(mode: InstallMode): void {
@@ -43,57 +45,93 @@
 		return { used: usedPreview, total, free: freePreview, pct: total > 0 ? Math.min(100, Math.round((usedPreview / total) * 100)) : 0 };
 	});
 
-	// The info rail's head is mode-aware: automatic mode shows the page's
-	// identity, manual mode shows the selected disk's — the disk IS the page's
-	// subject once its partitions are being edited. The options card below never
-	// moves, so toggling modes changes only the head and the content column.
-	const manualDisk = $derived(installState.manualMode ? installState.disk : null);
-	const railIcon = $derived(manualDisk ? diskGlyph(manualDisk) : pageIcon);
-	const railTitle = $derived(manualDisk ? manualDisk.model || manualDisk.name || '—' : t('page.diskSelection.title'));
+	// The info rail's head is the page's identity in both modes — only the
+	// words change. The rail is the wizard's fixed frame: the same head style,
+	// the same options card, the same destination card below it, in both modes;
+	// the content column is what Partitioning actually changes. The chosen
+	// disk's identity lives in the destination card, which is where its layout
+	// is previewed.
+	const railTitle = $derived(
+		installState.manualMode ? t('page.diskSelection.manualTitle') : t('page.diskSelection.title')
+	);
 	const railSubtitle = $derived(
-		manualDisk
-			? `${manualDisk.path} · ${manualDisk.sizeFormatted}`
-			: t('page.diskSelection.subtitle')
+		installState.manualMode ? t('page.diskSelection.manualSub') : t('page.diskSelection.subtitle')
 	);
 
-	const minDiskSizeFormatted = $derived(formatBytes(MinDiskSizeBytes));
+	// The live storage choices, in the shape every disk picture (row strips, the
+	// destination card) draws its "what will be" from. Empty filesystem means
+	// "not chosen yet", which is the default.
+	const plan = $derived<PlanChoice>({
+		fileSystem: installState.fileSystem || DefaultFileSystem,
+		luks: installState.luksEnabled,
+		lvm: installState.lvmEnabled,
+	});
 
 	let disks = $state<DiskInfo[]>([]);
+	let partitionsByPath = $state<Record<string, PartitionEntry[]>>({});
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
-	// Identifies the latest partition request. A slower response for a disk the
-	// user has already navigated away from must not overwrite the current one.
-	let partitionsRequest = 0;
+	// Identifies the latest load. A slower response than a retry that followed it
+	// must not overwrite the current list.
+	let loadRequest = 0;
 
 	// Disabling encryption discards the passphrase, so confirm first.
 	let showDisableConfirm = $state(false);
 
+	// Every disk's partitions arrive with the disk list: the rows draw them as
+	// strips, and a selection then needs no second round-trip.
 	async function loadDisks(): Promise<void> {
 		loading = true;
 		error = null;
+		const request = ++loadRequest;
 		try {
-			disks = (await GetDisks()) ?? [];
-		} catch (err) {
-			error = `Failed to load disks: ${err instanceof Error ? err.message : String(err)}`;
-		} finally {
-			loading = false;
+			const list = (await GetDisks()) ?? [];
+			const results = await Promise.all(
+				list.map(async (d): Promise<[string, PartitionEntry[]]> => {
+					try {
+						return [d.path, (await GetDiskPartitions(d.path)) ?? []];
+					} catch (err) {
+						console.error(`[DiskSelectionPage] Failed to load partitions for ${d.path}: ${err}`);
+						return [d.path, []];
+					}
+				})
+			);
+			// A newer load (a retry) is already in flight — drop this response.
+			if (request !== loadRequest) return;
+
+			const byPath: Record<string, PartitionEntry[]> = {};
+			for (const [path, parts] of results) byPath[path] = parts;
+
+			// A whole-disk filesystem lsblk reports only on the partitions gets
+			// folded onto the disk so the row's strip and summary see it.
+			for (const d of list) {
+				const existingFstype = inferDiskFileSystem(d, byPath[d.path] ?? []);
+				if (existingFstype && existingFstype !== d.fstype) d.fstype = existingFstype;
+			}
+
+			disks = list;
+			partitionsByPath = byPath;
 
 			// If a disk was already selected (navigated back from a later page),
 			// restore it. Use adoptDisk, not selectDisk: selectDisk toggles the
 			// current disk off, which would clear the selection we're restoring.
-			if (installState.diskId && disks.length > 0) {
-				const selected = disks.find((d) => d.path === installState.diskId);
-				if (selected) await adoptDisk(selected);
+			if (installState.diskId) {
+				const selected = list.find((d) => d.path === installState.diskId);
+				if (selected) adoptDisk(selected);
 			}
+		} catch (err) {
+			if (request !== loadRequest) return;
+			error = `Failed to load disks: ${err instanceof Error ? err.message : String(err)}`;
+		} finally {
+			if (request === loadRequest) loading = false;
 		}
 	}
 
-	// adoptDisk loads a disk into the wizard state and fetches its partitions.
-	// It never toggles: restoring a selection on remount must keep the disk.
-	// The partitions themselves are only read here (inferDiskFileSystem) — the
-	// row list never renders them.
-	async function adoptDisk(disk: DiskInfo): Promise<void> {
+	// adoptDisk loads a disk into the wizard state. It never toggles: restoring a
+	// selection on remount must keep the disk. The partitions the row previews
+	// were already fetched with the disk list.
+	function adoptDisk(disk: DiskInfo): void {
 		// A saved manual plan belongs to one disk. Keep it when restoring the
 		// same disk; discard it when the user picks a different one.
 		if (installState.manualLayout && installState.manualLayout.disk !== disk.path) {
@@ -102,35 +140,18 @@
 		}
 		installState.diskId = disk.path;
 		installState.disk = disk;
-
-		const request = ++partitionsRequest;
-		try {
-			const parts = (await GetDiskPartitions(disk.path)) ?? [];
-			// A newer selection (or a deselect) happened while this request was
-			// in flight — drop the stale result instead of clobbering current state.
-			if (request !== partitionsRequest) return;
-
-			const existingFstype = inferDiskFileSystem(disk, parts);
-			if (existingFstype && existingFstype !== disk.fstype) {
-				disk.fstype = existingFstype;
-				installState.disk = disk;
-			}
-		} catch (err) {
-			console.error(`[DiskSelectionPage] Failed to load partitions: ${err}`);
-		}
 	}
 
-	async function selectDisk(disk: DiskInfo): Promise<void> {
+	function selectDisk(disk: DiskInfo): void {
 		// Toggle: clicking the already-selected disk deselects it again.
 		if (installState.diskId === disk.path) {
 			deselectDisk();
 			return;
 		}
-		await adoptDisk(disk);
+		adoptDisk(disk);
 	}
 
 	function deselectDisk(): void {
-		partitionsRequest++;
 		installState.diskId = "";
 		installState.disk = null;
 		installState.fileSystem = DefaultFileSystem;
@@ -155,27 +176,8 @@
 </script>
 
 <div class={['page-layout', 'disk-page', { 'disk-page--manual': installState.manualMode }]}>
-	<PageInfo icon={railIcon} title={railTitle} subtitle={railSubtitle}>
+	<PageInfo compact icon={pageIcon} title={railTitle} subtitle={railSubtitle}>
 		{#snippet info()}
-			{#if manualDisk && spaceSummary.total > 0}
-				<!-- One honest number: the free space. The total is already in the
-					 identity line above, so it is not repeated here. -->
-				<div class="rail-space">
-					<div
-						class="rail-space-bar"
-						role="progressbar"
-						aria-valuenow={spaceSummary.pct}
-						aria-valuemin={0}
-						aria-valuemax={100}
-					>
-						<div class="rail-space-used" style="--pct: {spaceSummary.pct}%"></div>
-					</div>
-					<div class="rail-space-label">
-						{t('manual.free')} {mbToGB(spaceSummary.free)} {t('unit.gb')}
-					</div>
-				</div>
-			{/if}
-
 			<StorageOptionsCard
 				disk={installState.disk}
 				fileSystem={installState.fileSystem}
@@ -189,9 +191,38 @@
 				onToggleMode={setMode}
 			/>
 
-			{#if !installState.manualMode}
-				<p class="page-hint">{t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}</p>
-			{/if}
+			<!-- The same card in the same place in both modes: the automatic
+				 destination layout, or the manual plan itself — the identical
+				 picture the content column draws. Manual mode adds the free-space
+				 bar inside the card (never between the cards), so the card's top
+				 edge never moves. -->
+			<DestinationCard
+				disk={installState.disk}
+				{plan}
+				manual={installState.manualMode}
+				layout={installState.manualLayout}
+			>
+				{#snippet extra()}
+					{#if installState.manualMode && installState.manualLayout && spaceSummary.total > 0}
+						<!-- One honest number: the free space. The total is already in
+							 the card's identity row above, so it is not repeated here. -->
+						<div class="rail-space">
+							<div
+								class="rail-space-bar"
+								role="progressbar"
+								aria-valuenow={spaceSummary.pct}
+								aria-valuemin={0}
+								aria-valuemax={100}
+							>
+								<div class="rail-space-used" style="--pct: {spaceSummary.pct}%"></div>
+							</div>
+							<div class="rail-space-label">
+								{t('manual.free')} {mbToGB(spaceSummary.free)} {t('unit.gb')}
+							</div>
+						</div>
+					{/if}
+				{/snippet}
+			</DestinationCard>
 		{/snippet}
 	</PageInfo>
 
@@ -214,6 +245,8 @@
 				{error}
 				{disks}
 				diskId={installState.diskId}
+				{partitionsByPath}
+				{plan}
 				persistKey={PAGE_IDS.DISK_SELECTION}
 				onSelectDisk={selectDisk}
 				onRetry={loadDisks}

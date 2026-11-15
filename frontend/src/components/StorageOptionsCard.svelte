@@ -10,11 +10,12 @@
 	 * DiskTopBar: filesystem, encryption, LVM, and the automatic/manual mode
 	 * now live beside the page's identity instead of above the disk list.
 	 *
-	 * The row order is FIXED — Filesystem, Encrypt, LVM, Partitioning last —
-	 * in both modes: a control that persists across modes never moves, so
-	 * toggling changes only its own selected state. The first three rows are
-	 * properties of the install plan; the last row chooses how the plan is
-	 * edited, so it sits after and apart from them.
+	 * The four controls sit in two honest tiers, in both modes — a control
+	 * that persists across modes never moves, so toggling changes only its own
+	 * selected state. The two that CHANGE THE SHAPE of the result (Filesystem,
+	 * Partitioning) are pill rows; the two that only WRAP it (Encrypt, LVM —
+	 * their whole visible effect is the hatch and one extra word in the
+	 * destination preview) share a switches band under the pills.
 	 */
 	let {
 		disk,
@@ -43,6 +44,7 @@
 
 	const showLuks = $derived(Boolean(onEnableLuks || onDisableLuks));
 	const showLvm = $derived(Boolean(onToggleLvm));
+	const showWraps = $derived(showLuks || showLvm);
 
 	// Info popup when the user reaches for manual mode without a disk selected.
 	let showDiskHint = $state(false);
@@ -58,8 +60,11 @@
 	<div class="options-label">{t('page.diskSelection.options')}</div>
 
 	<!-- Filesystem -->
-	<div class="option-row">
-		<span class="option-label">{t('page.diskSelection.fileSystem')}</span>
+	<div class="option-row fs-row">
+		<span class="option-label">
+			{t('page.diskSelection.fileSystem')}
+			<span class="option-sub">{t('page.diskSelection.fsSub')}</span>
+		</span>
 		<div class="fs-pills">
 			{#each FILESYSTEMS as fs (fs)}
 				<button
@@ -73,44 +78,16 @@
 		</div>
 	</div>
 
-	<!-- Encryption (LUKS2) on its own row. LUKS always sits below LVM, so
-		enabling both encrypts the single physical volume. -->
-	{#if showLuks}
-		<div class="option-row">
-			<span class="option-label">{t('disk.encryptLabel')}</span>
-			<ToggleSwitch
-				checked={luksEnabled}
-				label={t('disk.encryptLabel')}
-				title={t('disk.encryptHint')}
-				onToggle={() => {
-					if (luksEnabled) {
-						onDisableLuks?.();
-					} else {
-						onEnableLuks?.();
-					}
-				}}
-			/>
-		</div>
-	{/if}
-
-	<!-- LVM is independent of encryption. In manual mode the designated
-		System partition becomes the physical volume. -->
-	{#if showLvm}
-		<div class="option-row">
-			<span class="option-label">{t('disk.lvmLabel')}</span>
-			<ToggleSwitch
-				checked={lvmEnabled}
-				label={t('disk.lvmLabel')}
-				title={t('disk.lvmHint')}
-				onToggle={() => onToggleLvm?.()}
-			/>
-		</div>
-	{/if}
-
 	<!-- Installation mode: a two-state choice, not a feature toggle — so a
-		segmented control, and always the card's last row. -->
+		segmented control. It changes the shape of the layout as much as the
+		filesystem does, so it belongs beside the pills, not under the switches. -->
 	<div class="option-row mode-row">
-		<span class="option-label">{t('page.diskSelection.partitioning')}</span>
+		<span class="option-label">
+			{t('page.diskSelection.partitioning')}
+			<span class="option-sub">
+				{manualMode ? t('page.diskSelection.modeSubManual') : t('page.diskSelection.modeSubAutomatic')}
+			</span>
+		</span>
 		<div class="mode-pills">
 			<button
 				type="button"
@@ -137,4 +114,47 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- The wrapping band: Encrypt and LVM only wrap the layout the two rows
+		above chose. LUKS always sits below LVM, so enabling both encrypts the
+		single physical volume; in manual mode the designated System partition
+		becomes the physical volume. -->
+	{#if showWraps}
+		<div class="wraps">
+			{#if showLuks}
+				<div class="option-row">
+					<span class="option-label">
+						{t('disk.encryptLabel')}
+						<span class="option-sub">{t('disk.encryptSub')}</span>
+					</span>
+					<ToggleSwitch
+						checked={luksEnabled}
+						label={t('disk.encryptLabel')}
+						title={t('disk.encryptHint')}
+						onToggle={() => {
+							if (luksEnabled) {
+								onDisableLuks?.();
+							} else {
+								onEnableLuks?.();
+							}
+						}}
+					/>
+				</div>
+			{/if}
+			{#if showLvm}
+				<div class="option-row">
+					<span class="option-label">
+						{t('disk.lvmLabel')}
+						<span class="option-sub">{t('disk.lvmSub')}</span>
+					</span>
+					<ToggleSwitch
+						checked={lvmEnabled}
+						label={t('disk.lvmLabel')}
+						title={t('disk.lvmHint')}
+						onToggle={() => onToggleLvm?.()}
+					/>
+				</div>
+			{/if}
+		</div>
+	{/if}
 </div>

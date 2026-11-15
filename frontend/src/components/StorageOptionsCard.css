@@ -5,14 +5,16 @@
 .options-card {
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-sm);
+	gap: 3px;
 	background-color: var(--color-bg-white);
 	border: 1px solid var(--color-border-light);
 	border-radius: var(--radius-lg);
 	box-shadow: var(--shadow-md);
-	padding: var(--spacing-md) var(--spacing-lg);
+	/* Tighter than the region-card's measure: the shipped window is fixed at
+	   900x600 (main.go) and this card shares the rail's 440px with the page
+	   head and the destination card — see the railFits checks in e2e/manual.spec.ts. */
+	padding: 6px var(--spacing-md);
 	text-align: start;
-	margin-top: var(--spacing-lg);
 }
 
 /* Card header — the same kind of small uppercase label the region-card and the
@@ -25,18 +27,24 @@
 	text-transform: uppercase;
 }
 
-/* One option per row: label at the reading edge, control at the trailing edge.
-	 Hairlines between rows only — the card border already closes the block, and
-	 the row order is fixed in both modes, so nothing jumps when a mode changes. */
+/* One option per row: a two-line block (name + what it does) at the reading
+	 edge, the control at the trailing edge. Hairlines between rows only — the
+	 card border already closes the block, and the row order is fixed in both
+	 modes, so nothing jumps when a mode changes. */
 .option-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--spacing-md);
-	padding: var(--spacing-xs) 0;
+	/* Column gap only: on the wrapped rows the line gap comes from the
+	   control's own margin-top, and a row-gap would double it. */
+	gap: 0 var(--spacing-md);
+	padding: 2px 0;
 }
 
-.option-row + .option-row {
+/* The wraps band continues the rhythm: its first row sits under a hairline of
+	 the band's own, and the rows inside it separate like the pill rows above. */
+.option-row + .option-row,
+.wraps {
 	border-top: 1px solid var(--color-border-subtle);
 }
 
@@ -45,9 +53,61 @@
 	color: var(--color-text);
 }
 
+/* What the option actually does, in one quiet line under its name — the fact
+	 the old tooltips hid. */
+.option-sub {
+	display: block;
+	margin-top: 2px;
+	font-size: var(--font-size-xs);
+	line-height: 1.25;
+	color: var(--color-text-muted);
+}
+
+/* The rail of the fixed 900x600 window (main.go) is 240px wide and 440px
+	 tall; at that measure the two switch rows already say everything the
+	 sub-line repeats ("LUKS2", "LVM" — the toggles are the whole control, and
+	 each carries its fuller hint in the title), while the two rows that shape
+	 the layout still earn their lines. A window with room shows them too. */
+@media (max-height: 719px) {
+	.wraps .option-sub {
+		display: none;
+	}
+}
+
 /* The mode row owns the tooltip's anchor. */
 .mode-row {
 	position: relative;
+}
+
+/* At the rail's 214px content width these controls can never sit beside
+	 their labels ("Automatic" and the fs pills are unbreakable — the Manual
+	 pill clipped out of the card). So both rows put the control under the
+	 label, spanning the card: two matching segmented rows, and each label's
+	 sub-line gets the full width instead of wrapping into the pills. */
+.fs-row,
+.mode-row {
+	flex-wrap: wrap;
+}
+
+.fs-row .fs-pills,
+.mode-row .mode-pills {
+	width: 100%;
+	margin-top: var(--spacing-xs);
+}
+
+.fs-row .fs-pill,
+.mode-row .mode-pill {
+	flex: 1;
+	text-align: center;
+	padding-inline: var(--spacing-sm);
+}
+
+/* The two wrapping switches share one band under the rows that shape the
+	 layout — their whole visible effect is the hatch and one extra word in the
+	 destination preview, so they read as modifiers, not as peers. */
+.wraps {
+	display: flex;
+	flex-direction: column;
 }
 
 /* Filesystem and mode pills — the wizard's existing pill look, unchanged. */
@@ -60,7 +120,8 @@
 
 .fs-pill,
 .mode-pill {
-	padding: 6px 18px;
+	padding: 3px var(--spacing-sm);
+	line-height: 1.25;
 	border: 1.5px solid var(--color-border-light);
 	border-radius: var(--radius-pill);
 	background: transparent;

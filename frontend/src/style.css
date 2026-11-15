@@ -122,6 +122,17 @@
     --color-white-glow: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
     --color-white-glow-strong: color-mix(in srgb, var(--md-sys-color-on-primary) 45%, transparent);
 
+    /* ── Disk-content strip palette — MONOCHROME by product decision: every
+       partition segment wears the primary color regardless of filesystem; the
+       type is carried by the tooltip text, never by hue. Free space is the
+       bare track, LUKS adds a hatch texture, and hairline edges between
+       segments keep a multi-partition bar readable as segments, not a fill. ── */
+    --strip-part: var(--md-sys-color-primary);
+    --strip-free: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent);
+    --strip-edge: var(--color-bg);
+    --strip-hatch: color-mix(in srgb, var(--md-sys-color-on-primary) 55%, transparent);
+    --strip-label: var(--md-sys-color-on-primary);
+
     /* ═══ Typography ═══ */
 
 
@@ -310,6 +321,14 @@
     --color-overlay-shadow: rgba(0, 0, 0, 0.40);
     --color-white-glow: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
     --color-white-glow-strong: color-mix(in srgb, var(--md-sys-color-on-primary) 55%, transparent);
+
+    /* Monochrome in dark too — every partition is the primary; only free space
+       (bare track), LUKS (hatch) and segment edges carry structure. */
+    --strip-part: var(--md-sys-color-primary);
+    --strip-free: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+    --strip-edge: var(--color-bg);
+    --strip-hatch: color-mix(in srgb, var(--md-sys-color-on-primary) 55%, transparent);
+    --strip-label: var(--md-sys-color-on-primary);
 
     /* ═══ Shadows ═══ */
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.30);

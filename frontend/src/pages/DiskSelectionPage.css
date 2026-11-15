@@ -30,15 +30,16 @@
 	color: var(--color-text-muted);
 }
 
-/* Free-space bar in the manual-mode rail head. One bar, one number: "used X of
-	 Y, free Z" restated the total the identity line already carries. */
+/* Free-space bar inside the destination card in manual mode. One bar, one
+   number: "used X of Y, free Z" restated the total the identity line already
+   carries. It lives inside the card — never between the cards — so the
+   destination card starts at the same rail height in both modes. */
 .rail-space {
 	display: flex;
 	flex-direction: column;
 	gap: var(--spacing-xs);
 	width: 100%;
-	max-width: 30ch;
-	margin-inline: auto;
+	text-align: start;
 }
 
 .rail-space-bar {
@@ -62,42 +63,35 @@
 .rail-space-label {
 	font-size: var(--font-size-sm);
 	color: var(--color-text-muted);
-	text-align: center;
 	font-variant-numeric: tabular-nums;
 }
 
-/* The disk page's rail is the only wizard rail that carries the options card,
-   and its stack (step icon, identity, space bar / hint, card) measured 463px
-   against the fixed 600px window's 440px content area. A centered rail splits
-   the overflow into a glyph clipped at the top and a card under the footer,
-   so the page's own rail rhythm gets tightened: a smaller page icon, a
-   tighter block gap, and the card's extra top margin dropped to the parent
-   gap's scale. Fits with ~20px margin at 900x600 — measured, e2e's pinned
-   viewport asserts both ends. */
-.disk-page .page-info .page-icon {
-	font-size: calc(var(--font-size-xl) * 1.5);
-}
-
+/* The disk page's rail is the only wizard rail that carries cards below its
+   identity, so it uses PageInfo's compact head — one horizontal block instead
+   of the centered stack, sized by its own .head-glyph tile. What is left to
+   tune here is only the gap rhythm between head and cards. */
+/* The gap is the whole rail's vertical budget: at the fixed 900x600 window
+   the head, the options card and the destination card share 440px, and the
+   railFits checks in e2e/manual.spec.ts pin that they really fit.
+   The rail has one width in both modes, and the modes one gap — a fixed
+   300px the partition table cannot push and the disk list cannot squeeze, so
+   switching Partitioning changes the content column's content, never the
+   panel the choices live in. (Left bare, the two flex:1 columns let the disk
+   list's wide min-content win and squeeze the rail to ~240px — under the
+   options card's measure. 300px lets the filesystem sub-line read on one
+   line and the destination model keep more of itself; the device rows
+   ellipsize their names and the table's column budget (see
+   ManualPartitionPage.css) survives the remaining 488px. The scoped
+   .page-info style in PageInfo.svelte is (0,2,0), so this selector must stay
+   at least (0,3,0).) */
 .page-layout.disk-page .page-info {
-	gap: var(--spacing-md);
+	gap: var(--spacing-sm);
+	flex: 0 0 300px;
 }
 
-.disk-page .options-card {
-	margin-top: var(--spacing-xs);
-}
-
-/* Manual mode rebalances the two columns. The partition table is the only
-   thing in the app that must fit a device path, a size, a role selector and a
-   delete button on one line — at the fixed 900px window (main.go) an even
-   split leaves it ~400px, which no honest column budget survives. The rail in
-   manual mode carries only the disk identity and the options card, both of
-   which read fine at the narrower share. The table's column widths in
-   ManualPartitionPage.css are budgeted against this split. */
-.page-layout.disk-page--manual {
+.disk-page {
 	gap: var(--gap-lg);
 }
 
-.disk-page--manual .page-content {
-	flex: 1.55 1 0;
-	min-width: 0;
-}
+/* Manual mode rebalances nothing further: the rail and the gap above are the
+   same in both modes, and only the content column changes contents. */

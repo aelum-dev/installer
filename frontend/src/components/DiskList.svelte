@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { DiskInfo } from '$lib/types';
+	import type { DiskInfo, PartitionEntry } from '$lib/types';
+	import type { PlanChoice } from '$lib/disk-layout';
 	import { t } from '$lib/i18n';
 	import Button from '$components/Button.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
@@ -12,6 +13,8 @@
 		error,
 		disks,
 		diskId,
+		partitionsByPath,
+		plan,
 		persistKey,
 		onSelectDisk,
 		onRetry
@@ -20,6 +23,10 @@
 		error: string | null;
 		disks: DiskInfo[];
 		diskId: string;
+		/** Each disk's partitions, fetched with the disk list — rows draw them. */
+		partitionsByPath: Record<string, PartitionEntry[]>;
+		/** The live storage choices, so a selected row previews its destination. */
+		plan: PlanChoice;
 		persistKey?: string | number;
 		onSelectDisk: (disk: DiskInfo) => void;
 		onRetry: () => void;
@@ -48,6 +55,8 @@
 				{#each disks as disk (disk.path)}
 					<DiskCard
 						{disk}
+						partitions={partitionsByPath[disk.path] ?? []}
+						{plan}
 						selected={diskId === disk.path}
 						onSelect={onSelectDisk}
 					/>

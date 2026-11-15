@@ -5,6 +5,7 @@
 	width: 100%;
 	min-height: 0;
 	flex: 1;
+	text-align: start;
 }
 
 .state-message {
@@ -35,210 +36,184 @@
 	to { transform: rotate(360deg); }
 }
 
-/* Partition editor table */
-.partition-editor {
-	background: var(--color-bg-white);
-	border: 1.5px solid var(--color-border-light);
-	border-radius: var(--radius-lg);
-	overflow: hidden;
-	flex: 1;
+/* The disk map above the rows: one tall strip in the device-list's language,
+   plus the one-line promise the whole pane lives under. */
+.manual-map {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.map-caption {
+	display: flex;
+	gap: var(--spacing-md);
+	font-size: var(--font-size-xs);
+	color: var(--color-text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+/* The rows: wizard cards, not spreadsheet cells — each one carries its name,
+   what is on it, its size, its role and its delete button in a single line.
+   Scrolls on its own; the map and the add control keep their place. */
+.part-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
 	overflow-y: auto;
+	scrollbar-width: thin;
 	min-height: 0;
+	flex: 1;
 }
 
-.editor-table {
-	width: 100%;
-	border-collapse: collapse;
+.part-row {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: 8px 8px 8px 16px;
+	border-radius: var(--radius-lg);
+	background: var(--color-bg-white);
+	border: 1px solid var(--color-border-subtle);
 }
 
-.editor-table {
-	table-layout: fixed;
+/* A designated row wears the plan's color on its frame — the fact the map
+   outlines and the fs line spells out, repeated where the choice is made. */
+.part-row--role {
+	border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
-.editor-table th {
-	text-align: start;
-	font-size: 0.68rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: var(--color-text-muted);
-	padding: var(--spacing-sm);
-	border-bottom: 1px solid var(--color-border-light);
+/* The lead chip: the strip's segment color, drawn as the row's own spine.
+   Monochrome like every other disk picture in the wizard. */
+.part-lead {
+	width: 8px;
+	align-self: stretch;
+	border-radius: 4px;
+	background: var(--strip-part);
+	flex: none;
 }
 
-.editor-table td {
-	padding: var(--spacing-sm);
-	border-bottom: 1px solid var(--color-border-subtle);
-	vertical-align: middle;
-}
-
-/* Type cell: left-align the inline-block role selector. Cells inherit the
-   document's center text-align (style.css), which would otherwise centre it. */
-.editor-table td.part-type {
-	text-align: start;
-}
-
-.editor-table tr:last-child td {
-	border-bottom: none;
-}
-
-/* Column budget for the fixed 900px window (main.go), border-box so the px
-   widths are the whole column and not each 24px wider than they read. The
-   Name column is the only auto one — it gets exactly the remainder — because
-   it carries the page's longest string: measured, /dev/nvme3n1p10 is 129px
-   at body size. Size is fixed at the widest cell the page can produce (a
-   grouped MB count with the FREE row's " MB", measured 98px); Type keeps a
-   fixed floor so the role selector fits short localized labels; the delete
-   column is the 28px button plus gutters. Manual mode widens this pane
-   through DiskSelectionPage.css → .disk-page--manual. At every width
-   .part-path ellipsizes rather than painting over the next column. */
-.editor-table th,
-.editor-table td {
-	box-sizing: border-box;
-}
-
-.editor-table th:nth-child(2) {
-	width: 118px;
-}
-
-.editor-table th:nth-child(3) {
-	width: 140px;
-}
-
-.editor-table th:last-child {
-	width: 44px;
-}
-
-.editor-row.designated {
-	background: var(--color-primary-lighter);
-}
-
-/* Unallocated-space row: clickable, toggles the add control. */
-.unallocated-row {
-	cursor: pointer;
-	background: var(--color-bg-light);
-	transition: background 0.15s ease;
-}
-
-.unallocated-row:hover {
-	background: var(--color-primary-lightest);
-}
-
-.unallocated-row.is-active {
-	background: var(--color-primary-lighter);
-}
-
-.unallocated-row .part-name {
-	color: var(--color-text-muted);
-	font-weight: 600;
-}
-
-.unallocated-label {
-	font-size: 0.72rem;
-	letter-spacing: 0.02em;
-	text-transform: uppercase;
-}
-
-.unallocated-row .part-size {
-	color: var(--color-text);
-	font-weight: 600;
-}
-
-/* Chevron indicator: down when collapsed (click to expand), up when active.
-   Sizing, font-family and layout come from the shared .chevron component; only
-   colour (and its fade) is set here, since the component inherits colour from
-   the caller. Both transitions are declared so the colour fade survives even
-   though .chevron sets a transform transition of its own. */
-.unallocated-indicator {
-	color: var(--color-text-muted);
-	transition: color 0.2s ease, transform 0.15s ease;
-}
-
-.unallocated-row.is-active .unallocated-indicator {
-	color: var(--color-primary);
-}
-
-.part-name {
-	font-weight: 600;
-	color: var(--color-text);
-	text-align: left;
-}
-
-/* Safety net for the Name column: with table-layout: fixed the columns keep
-   their widths and over-long text spills across the cell border into the next
-   column (a /dev/… path painting over the size it sits beside). The column
-   budget above fits every real path at the shipped window size; this bounds
-   the worst case instead of trusting it. */
-.part-path {
-	display: block;
+.part-id {
+	display: flex;
+	flex-direction: column;
 	min-width: 0;
+	flex: 1;
+}
+
+.part-path {
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 
-.part-new {
-	font-size: 0.72rem;
-	color: var(--color-progress);
-	font-weight: 600;
-}
-
-/* Designated partition hint: Boot and System are always formatted. */
-.format-hint {
-	display: block;
-	margin-top: 2px;
-	font-size: 0.68rem;
-	font-weight: 500;
-	line-height: 1.3;
+.part-fs {
+	font-size: var(--font-size-xs);
 	color: var(--color-text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* The fact the old design hid in a tooltip, said out loud on designated rows. */
+.part-formats {
+	color: var(--color-danger);
+	font-weight: 600;
 }
 
 .part-size {
-	font-family: var(--font-mono);
-	font-variant-numeric: tabular-nums;
-	/* One step below body size so the compact Size column fits even a grouped
-	   7-digit MB count (a 4 TB disk), and the number never wraps inside its
-	   cell. */
 	font-size: var(--font-size-md);
+	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
+}
+
+/* Role: a joined three-segment pill row — the choice is visible at a glance
+   and one click (re)designates. Re-clicking the active role clears it. */
+.role-pills {
+	display: flex;
+	gap: 3px;
+	flex-shrink: 0;
+}
+
+.role-pill {
+	border: 1px solid var(--color-border-light);
+	background: transparent;
 	color: var(--color-text-muted);
-	text-align: left;
+	font-family: inherit;
+	font-size: 0.68rem;
+	font-weight: 700;
+	padding: 4px 9px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.role-pill:first-child {
+	border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+}
+
+.role-pill:last-child {
+	border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+}
+
+.role-pill:hover:not(.selected) {
+	border-color: var(--color-primary);
+	color: var(--color-text);
+}
+
+.role-pill.selected {
+	background: var(--color-primary);
+	border-color: var(--color-primary);
+	color: var(--color-on-primary);
 }
 
 .delete-btn {
-	width: 28px;
-	height: 28px;
-	border-radius: var(--radius-xl);
-	border: 1.5px solid var(--color-border-light);
-	background: var(--color-bg-white);
-	color: var(--color-primary);
-	font-family: "NerdFontsSymbols Nerd Font";
-	font-size: 1.1rem;
-	line-height: 1;
-	padding: 0;
+	border: none;
+	background: transparent;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	color: var(--color-text-muted);
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	font-size: 15px;
+	font-family: "NerdFontsSymbols Nerd Font";
+	transition: all 0.15s ease;
 }
 
-.delete-btn:hover:not(.disabled) {
-	border-color: var(--color-border);
-	background: var(--color-bg-light);
-	transform: translateY(-1px);
-	box-shadow: var(--shadow-sm);
+.delete-btn:hover {
+	background: var(--color-danger-bg);
+	color: var(--color-danger);
 }
 
-.delete-btn:active:not(.disabled) {
-	transform: translateY(0) scale(0.98);
+/* The unallocated space: the one row that invites action, dashed like the
+   promise it is. Click toggles the add control below the list. */
+.free-row {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: 9px 16px;
+	border-radius: var(--radius-lg);
+	border: 1.5px dashed var(--color-border-light);
+	background: transparent;
+	color: var(--color-text-muted);
+	font-family: inherit;
+	font-size: var(--font-size-md);
+	text-align: start;
+	cursor: pointer;
+	transition: all 0.15s ease;
 }
 
-.delete-btn.disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
-	transform: none !important;
-	box-shadow: none !important;
+.free-row:hover,
+.free-row.is-active {
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+.free-row .plus {
+	font-size: 1.1em;
+	font-weight: 700;
 }
 
 /* Add control */

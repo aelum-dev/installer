@@ -52,6 +52,9 @@ async function gotoDiskSelection(page: import('@playwright/test').Page): Promise
   await expect(page.getByRole('heading', { name: 'Select Installation Disk' })).toBeVisible();
 }
 
+// The row's chosen role: the selected pill inside its role group.
+const activeRole = (row) => row.locator('.role-pill.selected');
+
 test.describe('Manual partitioning', () => {
   test('manual mode is disabled until a disk is selected', async ({ page }) => {
     await gotoDiskSelection(page);
@@ -69,54 +72,56 @@ test.describe('Manual partitioning', () => {
   test('shows existing partitions as Preserve', async ({ page }) => {
     await selectFirstDisk(page);
 
-    // Switch to manual mode.
+    // Switch to manual mode. The rail keeps its frame — the same head style
+    // with the partitioning wording, and the destination card below it.
     await page.getByRole('button', { name: 'Manual' }).click();
+    await expect(page.getByRole('heading', { name: 'Select Desired Partitions' })).toBeVisible();
+    await expect(page.locator('.disk-page .dest-card')).toBeVisible();
+    await expect(page.locator('.disk-page .dest-card .rail-space-bar')).toBeVisible();
 
     // /dev/nvme0n1 has 2 existing partitions, shown by their device path.
     await expect(page.getByText('/dev/nvme0n1p1')).toBeVisible();
     await expect(page.getByText('/dev/nvme0n1p2')).toBeVisible();
 
-    // Each row exposes a role selector (Preserve by default) → 2 controls.
-    await expect(page.locator('.role-trigger')).toHaveCount(2);
-    await expect(page.locator('.role-trigger').filter({ hasText: 'Preserve' })).toHaveCount(2);
+    // Each row exposes a role pill group (Preserve by default) → 2 selected.
+    await expect(page.locator('.role-pills')).toHaveCount(2);
+    await expect(activeRole(page.locator('.part-row').first())).toHaveText('Preserve');
+    await expect(activeRole(page.locator('.part-row').nth(1))).toHaveText('Preserve');
   });
 
   test('designating Boot + System is reflected on the rows', async ({ page }) => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
-    const rows = page.locator('.editor-row');
-    // First partition → Boot, second → Root (System), via the role menus.
-    await rows.first().locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'Boot' }).click();
-    await rows.nth(1).locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'System' }).click();
+    const rows = page.locator('.part-row');
+    // First partition → Boot, second → Root (System), via the row pills.
+    await rows.first().getByRole('button', { name: 'Boot' }).click();
+    await rows.nth(1).getByRole('button', { name: 'System' }).click();
 
-    // The chosen roles are reflected on the row triggers. (Assert the label
-    // span: the trigger's own text ends with whitespace next to the chevron.)
-    await expect(rows.first().locator('.role-trigger-label')).toHaveText('Boot');
-    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('System');
+    // The chosen roles are marked on the pills and framed on the rows.
+    await expect(activeRole(rows.first())).toHaveText('Boot');
+    await expect(activeRole(rows.nth(1))).toHaveText('System');
+    await expect(rows.first()).toHaveClass(/part-row--role/);
+    await expect(rows.nth(1)).toHaveClass(/part-row--role/);
   });
 
   test('keeps designated roles when switching between automatic and manual', async ({ page }) => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
-    const rows = page.locator('.editor-row');
-    await rows.first().locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'Boot' }).click();
-    await rows.nth(1).locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'System' }).click();
-    await expect(rows.first().locator('.role-trigger-label')).toHaveText('Boot');
-    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('System');
+    const rows = page.locator('.part-row');
+    await rows.first().getByRole('button', { name: 'Boot' }).click();
+    await rows.nth(1).getByRole('button', { name: 'System' }).click();
+    await expect(activeRole(rows.first())).toHaveText('Boot');
+    await expect(activeRole(rows.nth(1))).toHaveText('System');
 
     // Leave manual mode and come back: the plan must be re-used, not rescanned
     // into a fresh all-Preserve layout.
     await page.getByRole('button', { name: 'Automatic' }).click();
     await page.getByRole('button', { name: 'Manual' }).click();
-    await expect(page.locator('.editor-row')).toHaveCount(2);
-    await expect(page.locator('.editor-row').first().locator('.role-trigger-label')).toHaveText('Boot');
-    await expect(page.locator('.editor-row').nth(1).locator('.role-trigger-label')).toHaveText('System');
+    await expect(page.locator('.part-row')).toHaveCount(2);
+    await expect(activeRole(page.locator('.part-row').first())).toHaveText('Boot');
+    await expect(activeRole(page.locator('.part-row').nth(1))).toHaveText('System');
   });
 
   test('adding a partition then deleting it changes the row count', async ({ page }) => {
@@ -124,22 +129,22 @@ test.describe('Manual partitioning', () => {
     await selectDiskByModel(page, 'Toshiba X300 8TB');
     await page.getByRole('button', { name: 'Manual' }).click();
 
-    const rows = page.locator('.editor-row');
+    const rows = page.locator('.part-row');
     await expect(rows).toHaveCount(2);
 
     // Reveal the add control by clicking the unallocated-space row, then add a
     // new 1000 MB partition.
-    await page.locator('.unallocated-row').click();
+    await page.locator('.free-row').click();
     await page.locator('.number-stepper-input').fill('1000');
     await page.locator('.add-btn').click();
 
     // A new blank row appears, labelled "New partition".
     await expect(page.getByText('New partition', { exact: true })).toBeVisible();
-    await expect(page.locator('.editor-row')).toHaveCount(3);
+    await expect(page.locator('.part-row')).toHaveCount(3);
 
     // Delete the new (last) row via the confirmation dialog.
     await page
-      .locator('.editor-row')
+      .locator('.part-row')
       .last()
       .getByRole('button', { name: 'Delete partition' })
       .click();
@@ -148,7 +153,7 @@ test.describe('Manual partitioning', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
 
     await expect(page.getByRole('dialog')).not.toBeVisible();
-    await expect(page.locator('.editor-row')).toHaveCount(2);
+    await expect(page.locator('.part-row')).toHaveCount(2);
   });
 
   test('adding is blocked when the disk has no free space', async ({ page }) => {
@@ -157,7 +162,7 @@ test.describe('Manual partitioning', () => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
-    await expect(page.locator('.unallocated-row')).toHaveCount(0);
+    await expect(page.locator('.free-row')).toHaveCount(0);
     await expect(page.locator('.add-btn')).toHaveCount(0);
   });
 
@@ -166,7 +171,7 @@ test.describe('Manual partitioning', () => {
     await page.getByRole('button', { name: 'Manual' }).click();
 
     await page
-      .locator('.editor-row')
+      .locator('.part-row')
       .first()
       .getByRole('button', { name: 'Delete partition' })
       .click();
@@ -175,53 +180,86 @@ test.describe('Manual partitioning', () => {
     // Cancel → dialog closes, partition remains.
     await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
-    await expect(page.locator('.editor-row')).toHaveCount(2);
+    await expect(page.locator('.part-row')).toHaveCount(2);
   });
 
   test('clearing a required role reverts the row to Preserve', async ({ page }) => {
     await selectFirstDisk(page);
     await page.getByRole('button', { name: 'Manual' }).click();
 
-    const rows = page.locator('.editor-row');
-    await rows.first().locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'Boot' }).click();
-    await rows.nth(1).locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'System' }).click();
-    await expect(rows.first().locator('.role-trigger-label')).toHaveText('Boot');
-    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('System');
+    const rows = page.locator('.part-row');
+    await rows.first().getByRole('button', { name: 'Boot' }).click();
+    await rows.nth(1).getByRole('button', { name: 'System' }).click();
+    await expect(activeRole(rows.first())).toHaveText('Boot');
+    await expect(activeRole(rows.nth(1))).toHaveText('System');
 
-    // Selecting the active "System" role again in the menu clears it back to
-    // Preserve (the trigger only toggles the menu; the option does the clearing).
-    await rows.nth(1).locator('.role-trigger').click();
-    await page.getByRole('option', { name: 'Preserve' }).click();
-    await expect(rows.nth(1).locator('.role-trigger-label')).toHaveText('Preserve');
+    // Re-clicking the active "System" pill clears it back to Preserve.
+    await rows.nth(1).getByRole('button', { name: 'System' }).click();
+    await expect(activeRole(rows.nth(1))).toHaveText('Preserve');
   });
 
-  test('editor columns never collide on the densest fake disk', async ({ page }) => {
+  test('the disk map previews the plan and the designated rows', async ({ page }) => {
+    await selectFirstDisk(page);
+    await page.getByRole('button', { name: 'Manual' }).click();
+
+    const rows = page.locator('.part-row');
+    await rows.first().getByRole('button', { name: 'Boot' }).click();
+    await rows.nth(1).getByRole('button', { name: 'System' }).click();
+
+    // The map labels the designated segments and outlines them — the same
+    // roles the pills just chose, drawn on the disk's shape. Labels are the
+    // DOM text (CSS uppercases them for display), and a segment under 5% of
+    // the disk is too thin to label — its tooltip carries the name instead.
+    await expect(page.locator('.map-seg--role')).toHaveCount(2);
+    const labels = await page.locator('.map-seg').evaluateAll((els) =>
+      els.map((el) => el.textContent?.trim() ?? ''),
+    );
+    expect(labels).toContain('Root');
+    // The 512 MB Boot segment is under the 5% label floor — the tooltip
+    // carries its name there, so only the System row is labeled.
+    expect(labels[0]).toBe('');
+
+    // The caption names the plan once, in the destination chain's words
+    // (the wizard's default filesystem is btrfs).
+    await expect(page.locator('.map-caption')).toContainText('btrfs root');
+  });
+
+  test('editor rows never collide on the densest fake disk', async ({ page }) => {
     // /dev/nvme3n1 (Samsung 990 PRO 4TB) is the densest case in the fixture:
     // a dozen rows whose paths reach the longest form a device path takes
-    // (/dev/nvme3n1p10). With table-layout: fixed, an over-narrow Name cell
-    // paints its text straight over the Size column — the regression this
-    // guards. Measured at the pinned 900x600 window (test.use above).
+    // (/dev/nvme3n1p10). A row card that cannot grow shrinks its id column —
+    // the path either fits or ellipsizes, never painting over the size.
+    // Measured at the pinned 900x600 window (test.use above).
     await selectDiskByModel(page, 'Samsung 990 PRO 4TB');
     // The rail must also fit vertically in the fixed 600px window: its
-    // centered stack previously split the overflow into a step glyph clipped
-    // at the top and an options card sitting under the footer. Checked in both
-    // modes — the card is present (and the stack just as tall) in automatic.
+    // compact head keeps every card inside the content area in both modes.
+    // Scoped to .disk-page and run only after navigation transitions settle
+    // — an outgoing page mid-fade also mounts a .page-info, and a bare
+    // querySelector would measure that ghost instead of this page's rail.
     const railFits = () =>
       page.evaluate(() => {
         const area = document.querySelector('.content-area')!.getBoundingClientRect();
-        const icon = document.querySelector('.page-info .page-icon')!.getBoundingClientRect();
-        const card = document.querySelector('.options-card')!.getBoundingClientRect();
-        return icon.top >= area.top && card.bottom <= area.bottom;
+        const icon = document.querySelector('.disk-page .page-info .page-icon')!.getBoundingClientRect();
+        const card = document.querySelector('.disk-page .options-card')!.getBoundingClientRect();
+        // The destination card sits under the options card in both modes and
+        // must stay fully inside too — the manual variant carries the plan
+        // strip and the free-space bar and grows past its automatic twin.
+        const dest = document.querySelector('.disk-page .dest-card')!.getBoundingClientRect();
+        return icon.top >= area.top && dest.bottom <= area.bottom && dest.top >= card.bottom;
       });
+    const settled = () => expect(page.locator('.content-area > .page[data-exiting]')).toHaveCount(0);
+    await settled();
     expect(await railFits(), 'rail overflows the content area in automatic mode').toBe(true);
     await page.getByRole('button', { name: 'Manual' }).click();
+    await settled();
 
-    const rows = page.locator('.editor-row');
+    const rows = page.locator('.part-row');
     // The layout arrives through a backend round-trip; wait for it to render
     // before measuring (a bare locator.count() would race the load).
     await expect(rows.first()).toBeVisible();
+    // The manual plan strip renders once the layout lands; the rail card then
+    // carries strip + free-space bar + note and is at its tallest.
+    await expect(page.locator('.disk-page .dest-card .strip .seg').first()).toBeVisible();
     expect(await railFits(), 'rail overflows the content area in manual mode').toBe(true);
     const count = await rows.count();
     expect(count).toBeGreaterThanOrEqual(10);
@@ -244,9 +282,9 @@ test.describe('Manual partitioning', () => {
       .evaluateAll((els) => els.some((el) => el.scrollWidth > el.clientWidth + 1));
     expect(clippedPaths).toBe(false);
 
-    // The role trigger keeps "Preserve" readable at its fixed column width.
+    // The role pills keep their localized labels readable at the shipped width.
     const clippedRoles = await page
-      .locator('.role-trigger-label')
+      .locator('.role-pill')
       .evaluateAll((els) => els.some((el) => el.scrollWidth > el.clientWidth + 1));
     expect(clippedRoles).toBe(false);
   });

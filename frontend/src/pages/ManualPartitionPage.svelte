@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { DiskInfo, ManualPartition, PartitionType } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
-	import { PartitionTableGPT } from '$lib/constants';
+	import { PartitionTableGPT, DefaultFileSystem } from '$lib/constants';
 	import { GetManualLayout, SaveManualLayout } from '$lib/backend';
+	import type { PlanChoice } from '$lib/disk-layout';
+	import { fsLabel, manualMapSegments, manualPlanLabel } from '$lib/disk-layout';
 	import { installState } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
 	import {
@@ -15,10 +17,9 @@
 	} from '$lib/manual-layout';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
-	import Chevron from '$components/Chevron.svelte';
-	import { groupDigits } from '$lib/format';
+	import LayoutStrip from '$components/LayoutStrip.svelte';
+	import { groupDigits, mbToGB } from '$lib/format';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
-	import RoleSelect from '$components/RoleSelect.svelte';
 	import NumberStepper from '$components/NumberStepper.svelte';
 	import './ManualPartitionPage.css';
 
@@ -32,6 +33,17 @@
 	let saving = $state(false);
 	let saveQueued = $state(false);
 
+	// The live storage choices. In manual mode they decide what the designated
+	// partitions are wrapped in, so the disk map names the plan the rows will
+	// produce — the same language as the automatic mode's destination chain.
+	const plan = $derived<PlanChoice>({
+		fileSystem: installState.fileSystem || DefaultFileSystem,
+		luks: installState.luksEnabled,
+		lvm: installState.lvmEnabled,
+	});
+	const mapSegments = $derived(layout ? manualMapSegments(layout) : []);
+	const planLabel = $derived(manualPlanLabel(plan));
+
 	// Delete confirmation target (partition index), or null when closed.
 	let deleteTargetIndex = $state<number | null>(null);
 
@@ -39,7 +51,7 @@
 	let showDeleteDialog = $state(false);
 
 	// "Add new partition" controls. New partitions start blank (Preserve) and are
-	// designated Boot/Root from the row pills afterwards.
+	// designated Boot/System from the row pills afterwards.
 	let addSizeMB = $state<number>(1);
 	let addUseRemaining = $state(false);
 
@@ -164,9 +176,12 @@
 	function setType(part: ManualPartition, type: PartitionType): void {
 		if (!layout) return;
 		// Clicking the already-active type clears it back to Preserve, so a role can
-		// be undone. An invalid layout (no ESP or no System) simply keeps "Next"
-		// disabled until a valid combination is chosen again.
+		// be undone. (Clicking Preserve while it is already active is the one
+		// no-op: there is nothing below Preserve to go back to.) An invalid
+		// layout (no ESP or no System) simply keeps "Next" disabled until a valid
+		// combination is chosen again.
 		const next = part.type === type ? '' : type;
+		if (next === part.type) return;
 		installState.manualLayout = withPartitionType(layout, part.index, next);
 		void persist();
 	}
@@ -211,7 +226,7 @@
 		if (layout === null || deleteTargetIndex === null) return;
 		// Move the row into deletedPartitions (keeping its path/number) rather than
 		// dropping it, so Apply can delete it from the disk at install time. The row
-		// disappears from the table immediately, and its space is freed for new
+		// disappears from the list immediately, and its space is freed for new
 		// partitions.
 		installState.manualLayout = removePartition(layout, deleteTargetIndex);
 		void persist();
@@ -250,7 +265,7 @@
 		}
 	});
 
-	// Live-preview the pending "add partition" in the top-bar space bar. Drags on
+	// Live-preview the pending "add partition" in the rail's space bar. Drags on
 	// the slider update this before the partition is committed, so used/free
 	// reflect what the next Add will produce. Clamped to available free space.
 	$effect(() => {
@@ -280,71 +295,69 @@
 			<p>{t('manual.noPartitions')}</p>
 		</div>
 	{:else}
-		<!-- Partition table -->
-		<div class="partition-editor" bind:this={editorEl}>
-			<table class="editor-table">
-				<thead>
-					<tr>
-						<th>{t('disk.name')}</th>
-						<th>{t('disk.sizeMB')}</th>
-						<th>{t('manual.typeCol')}</th>
-						<th class="text-right"></th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each layout.partitions as part (part.index)}
-						<tr class={['editor-row', { designated: part.type === TYPE_ESP || part.type === TYPE_SYSTEM }]}>
-							<td class="part-name">
-								{#if part.path}
-									<span class="part-path" title={part.path}>{part.path}</span>
-									{#if part.type === TYPE_ESP || part.type === TYPE_SYSTEM}
-										<span class="format-hint">{t('manual.formatHint')}</span>
-									{/if}
-								{:else}
-									<span class="part-new">{t('manual.newPart')}</span>
-								{/if}
-							</td>
-							<td class="part-size">{groupDigits(part.sizeMB)}</td>
-							<td class="part-type">
-							<RoleSelect value={part.type} onChange={(v: PartitionType) => setType(part, v)} />
-							</td>
-							<td class="text-right">
-								<button
-									type="button"
-									class="delete-btn"
-												onclick={() => requestDelete(part.index)}
-									aria-label={t('manual.delete')}
-								>
-									{glyph('ea81')}
-								</button>
-							</td>
-						</tr>
-					{/each}
-				{#if unallocatedMB > 0}
-					<tr
-						class={['unallocated-row', { 'is-active': showAddControl }]}
-						onclick={() => (showAddControl = !showAddControl)}
-						role="button"
-						tabindex="0"
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								showAddControl = !showAddControl;
-							}
-						}}
+		<!-- The disk map: the same strip language as the device rows, drawn as
+			 the plan. Designated rows wear the BOOT/ROOT label and the outline
+			 here; the caption promises once what every row repeats. -->
+		<div class="manual-map">
+			<LayoutStrip tall segments={mapSegments} />
+			<div class="map-caption">
+				<span>{t('manual.mapCaption', { plan: planLabel })}</span>
+			</div>
+		</div>
+
+		<!-- Partition rows: name · filesystem · size · role · delete. -->
+		<div class="part-list" bind:this={editorEl}>
+			{#each layout.partitions as part (part.index)}
+				{@const isRole = part.type === TYPE_ESP || part.type === TYPE_SYSTEM}
+				{@const fsName = part.path ? fsLabel(part.existingFstype) : ''}
+				<div class={['part-row', { 'part-row--role': isRole }]}>
+					<span class="part-lead" aria-hidden="true"></span>
+					<span class="part-id">
+						<span class="part-path" title={part.path || undefined}>{part.path || t('manual.newPart')}</span>
+						{#if fsName || isRole}
+							<span class="part-fs">
+								{fsName}{#if fsName && isRole} · {/if}{#if isRole}<span class="part-formats">{t('manual.formatsNow')}</span>{/if}
+							</span>
+						{/if}
+					</span>
+					<span class="part-size">{groupDigits(part.sizeMB)} {t('unit.mb')}</span>
+					<span class="role-pills">
+						<button
+							type="button"
+							class={['role-pill', { selected: part.type === '' }]}
+							onclick={() => setType(part, '')}
+						>{t('manual.type.preserve')}</button>
+						<button
+							type="button"
+							class={['role-pill', { selected: part.type === TYPE_ESP }]}
+							onclick={() => setType(part, TYPE_ESP)}
+						>{t('manual.type.esp')}</button>
+						<button
+							type="button"
+							class={['role-pill', { selected: part.type === TYPE_SYSTEM }]}
+							onclick={() => setType(part, TYPE_SYSTEM)}
+						>{t('manual.type.system')}</button>
+					</span>
+					<button
+						type="button"
+						class="delete-btn"
+						onclick={() => requestDelete(part.index)}
+						aria-label={t('manual.delete')}
 					>
-						<td class="part-name">
-							<span class="unallocated-label">{t('manual.free')}</span>
-						</td>
-						<td class="part-size">{groupDigits(unallocatedMB)} {t('unit.mb')}</td>
-						<td></td>
-						<td class="text-right">
-							<Chevron class="unallocated-indicator" direction={showAddControl ? 'up' : 'down'} />
-						</td>
-					</tr>
-				{/if}
-			</tbody>
-		</table>
+						{glyph('ea81')}
+					</button>
+				</div>
+			{/each}
+			{#if unallocatedMB > 0}
+				<button
+					type="button"
+					class={['free-row', { 'is-active': showAddControl }]}
+					onclick={() => (showAddControl = !showAddControl)}
+				>
+					<span class="plus" aria-hidden="true">+</span>
+					<span>{t('manual.unallocated')} — {groupDigits(unallocatedMB)} {t('unit.mb')} · {mbToGB(unallocatedMB)} {t('unit.gb')} · {t('manual.addPartition')}</span>
+				</button>
+			{/if}
 		</div>
 
 		<!-- Add new partition control: shown only after the user clicks the FREE
