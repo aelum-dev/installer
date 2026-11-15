@@ -208,6 +208,34 @@ describe('StorageOptionsCard partitioning segments', () => {
 		}
 	});
 
+	it('hangs the hint from the pointer a mouse brings, from the element a key brings', () => {
+		const root = render({ disk: null });
+		const [, manual] = modePills(root);
+
+		vi.useFakeTimers();
+		try {
+			manual.dispatchEvent(new MouseEvent('mouseenter', { clientX: 120, clientY: 340 }));
+			vi.advanceTimersByTime(TOOLTIP_SHOW_DELAY_MS);
+			flushSync();
+			expect(tooltipState.cursor).toEqual({ x: 120, y: 340 });
+
+			// A focus of its own carries no pointer — and must not inherit the
+			// position the mouse left behind on the way out.
+			manual.dispatchEvent(new MouseEvent('mouseleave'));
+			manual.dispatchEvent(new FocusEvent('focus'));
+			vi.advanceTimersByTime(TOOLTIP_SHOW_DELAY_MS);
+			flushSync();
+			expect(tooltipState.anchor).toBe(manual);
+			expect(tooltipState.cursor).toBeNull();
+
+			manual.dispatchEvent(new FocusEvent('blur'));
+			expect(tooltipState.cursor).toBeNull();
+			expect(tooltipState.anchor).toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('never shows a tooltip for a hover the person did not wait out', () => {
 		const root = render({ disk: null });
 		const [, manual] = modePills(root);

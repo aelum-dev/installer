@@ -1,43 +1,52 @@
 <script lang="ts">
 	/**
-	 * The app's single tooltip bubble: fixed to the viewport under the hover-
-	 * or focus-anchored element (right-aligned to it, flipped above when the
-	 * anchor sits near the window's bottom edge, clamped inside the viewport),
-	 * with the arrow tracking the anchor. One instance, mounted by App; every
-	 * `use:tooltip` host drives it through tooltipState.
+	 * The app's single tooltip bubble: fixed to the viewport and hung from the
+	 * cursor — centred under the pointer where a pointer opened it, from the
+	 * anchor's own bottom edge where keyboard focus did — flipped above when
+	 * there is no room below, clamped inside the viewport, with the arrow
+	 * pointing back at the spot it hangs from. One instance, mounted by App;
+	 * every `use:tooltip` host drives it through tooltipState.
 	 */
 	import { tooltipState } from '$lib/tooltip.svelte';
 
 	let bubble = $state<HTMLElement | null>(null);
 	let arrow = $state<HTMLElement | null>(null);
-	// Flipped placement: the bubble sits above the anchor when there is no
-	// room below, and the arrow turns to point down at it.
+	// Flipped placement: the bubble sits above the point it hangs from when
+	// there is no room below, and the arrow turns to point down at it.
 	let above = $state(false);
 
 	// Placed imperatively in the effect: the bubble measures itself the same
 	// frame it mounts (offsetWidth is a sync layout), so it never paints at a
 	// default corner and jumps.
 	$effect(() => {
-		const { text, anchor } = tooltipState;
+		const { text, anchor, cursor } = tooltipState;
 		if (!text || !anchor || !bubble || !arrow) return;
 		const r = anchor.getBoundingClientRect();
 		const bw = bubble.offsetWidth;
 		const bh = bubble.offsetHeight;
 		const margin = 8;
-		const gap = 6;
-		let top = r.bottom + gap;
+		/* 14 rather than a bare 6: the arrow's tip stands 10px above the box,
+		   so this is the measure that puts the tip just under the cursor. */
+		const gap = 14;
+		// The point the bubble hangs from: the cursor when a pointer asked for
+		// the hint; the anchor's bottom centre when focus did, there being no
+		// pointer to hang from.
+		const aim = cursor ? cursor.x : r.left + r.width / 2;
+		const edge = cursor ? cursor.y : r.bottom;
+		let top = edge + gap;
 		if (top + bh > window.innerHeight - margin) {
-			top = Math.max(margin, r.top - gap - bh);
+			top = Math.max(margin, edge - gap - bh);
 		}
-		above = top < r.top;
+		above = top < edge;
 		bubble.style.top = `${top}px`;
-		let left = r.right - bw;
+		let left = aim - bw / 2;
 		left = Math.min(Math.max(margin, left), window.innerWidth - bw - margin);
 		bubble.style.left = `${left}px`;
-		// The arrow aims at the anchor (wide anchors: its leading side, near
-		// where the cursor rests), staying inside the bubble's rounded ends.
-		const aim = Math.min(Math.max(r.left + Math.min(r.width, 64) / 2, left + 14), left + bw - 14);
-		arrow.style.left = `${aim - left}px`;
+		// The arrow points back at that spot — staying inside the bubble's
+		// rounded ends once the bubble itself was pushed in from a viewport
+		// edge, where the spot it aims at lies outside the bubble.
+		const tip = Math.min(Math.max(aim, left + 14), left + bw - 14);
+		arrow.style.left = `${tip - left}px`;
 	});
 </script>
 
