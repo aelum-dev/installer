@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { mount, unmount, flushSync } from 'svelte';
 import StorageOptionsCard from './StorageOptionsCard.svelte';
-import { tooltipState } from '$lib/tooltip.svelte';
+import { tooltipState, TOOLTIP_SHOW_DELAY_MS } from '$lib/tooltip.svelte';
 import type { DiskInfo, FileSystem } from '$lib/types';
 
 const disk: DiskInfo = {
@@ -184,13 +184,48 @@ describe('StorageOptionsCard partitioning segments', () => {
 		const root = render({ disk: null });
 		const [, manual] = modePills(root);
 
-		hover(manual, 'mouseenter');
-		expect(tooltipState.text).toContain('Select a disk before switching to manual mode.');
-		expect(tooltipState.anchor).toBe(manual);
+		// Timers only after the mount: the component is built with real ones.
+		vi.useFakeTimers();
+		try {
+			// The wait is the feature: the bubble appears only once the pointer
+			// has actually rested on the control.
+			hover(manual, 'mouseenter');
+			vi.advanceTimersByTime(TOOLTIP_SHOW_DELAY_MS - 1);
+			flushSync();
+			expect(tooltipState.text).toBe('');
+			expect(tooltipState.anchor).toBeNull();
 
-		hover(manual, 'mouseleave');
-		expect(tooltipState.text).toBe('');
-		expect(tooltipState.anchor).toBeNull();
+			vi.advanceTimersByTime(1);
+			flushSync();
+			expect(tooltipState.text).toContain('Select a disk before switching to manual mode.');
+			expect(tooltipState.anchor).toBe(manual);
+
+			hover(manual, 'mouseleave');
+			expect(tooltipState.text).toBe('');
+			expect(tooltipState.anchor).toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('never shows a tooltip for a hover the person did not wait out', () => {
+		const root = render({ disk: null });
+		const [, manual] = modePills(root);
+
+		vi.useFakeTimers();
+		try {
+			// Crossing a control on the way to something else must not open a
+			// bubble afterwards, so leaving cancels the pending show.
+			hover(manual, 'mouseenter');
+			vi.advanceTimersByTime(TOOLTIP_SHOW_DELAY_MS - 1);
+			hover(manual, 'mouseleave');
+			vi.advanceTimersByTime(TOOLTIP_SHOW_DELAY_MS);
+			flushSync();
+			expect(tooltipState.text).toBe('');
+			expect(tooltipState.anchor).toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it('enables the Manual segment once a disk is selected and switches modes', () => {

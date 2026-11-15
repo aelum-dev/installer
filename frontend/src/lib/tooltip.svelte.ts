@@ -15,6 +15,15 @@ export const tooltipState = $state({
 });
 
 /**
+ * How long the pointer must rest on a node (or a control keep focus) before
+ * its hint appears. An instant tooltip fires on the way past: the disk rows,
+ * the strip's segments and the editor's paths are crossed in milliseconds and
+ * each crossing would flash a bubble. 1s is the native `title` measure, so the
+ * app behaves the way the widget the person expects does.
+ */
+export const TOOLTIP_SHOW_DELAY_MS = 1000;
+
+/**
  * Svelte 5 action: shows the shared tooltip while the node is hovered or
  * focused, like a native title — but themed, wrapped, and unclippable.
  * An empty text (e.g. the Manual pill once a disk IS selected) means no
@@ -22,14 +31,32 @@ export const tooltipState = $state({
  */
 export function tooltip(node: HTMLElement, text: string | null | undefined) {
 	let current = text ?? '';
+	let timer: ReturnType<typeof setTimeout> | null = null;
 
-	function show(): void {
-		if (!current) return;
+	function open(): void {
 		tooltipState.text = current;
 		tooltipState.anchor = node;
 	}
 
+	function show(): void {
+		// One pending timer per node; an already-open tooltip keeps its text
+		// instead of restarting the wait.
+		if (!current || timer !== null || tooltipState.anchor === node) return;
+		timer = setTimeout(() => {
+			timer = null;
+			// current is only ever emptied through hide(), which cancels this —
+			// the guard is the cheap guarantee, not the mechanism.
+			if (current) open();
+		}, TOOLTIP_SHOW_DELAY_MS);
+	}
+
 	function hide(): void {
+		// Leaving before the wait is over cancels it: the pointer moved on, so
+		// the hint the person never waited for must not appear behind them.
+		if (timer !== null) {
+			clearTimeout(timer);
+			timer = null;
+		}
 		if (tooltipState.anchor === node) {
 			tooltipState.text = '';
 			tooltipState.anchor = null;
