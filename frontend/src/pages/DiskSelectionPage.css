@@ -94,7 +94,7 @@
    .page-info style in PageInfo.svelte is (0,2,0), so this selector must stay
    at least (0,3,0).) */
 .page-layout.disk-page .page-info {
-	gap: var(--spacing-sm);
+	gap: var(--spacing-md);
 	flex: 0 0 300px;
 }
 
