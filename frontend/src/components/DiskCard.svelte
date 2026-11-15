@@ -72,5 +72,10 @@
 		<span class="disk-path">{disk.path}</span>
 		<span class="disk-content">{content}</span>
 	</span>
-	<LayoutStrip {segments} tag={t('disk.layoutTag')} caption={chain} />
+	<!-- The row itself already carries one tooltip (its identity and device
+		 path), so the strip inside it stays quiet: a segment hint would
+		 replace the row's own hint under the same cursor. The sizes this
+		 drops are still one hover away — in the destination preview beside
+		 the list, and in the disk map once the row is in manual mode. -->
+	<LayoutStrip {segments} tips={false} tag={t('disk.layoutTag')} caption={chain} />
 </button>
