@@ -91,7 +91,6 @@
 				<span class="dest-sub">
 					{t('destination.emptyHint')} {t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}
 				</span>
-				<span class="dest-ghost" aria-hidden="true"></span>
 			</div>
 		{/if}
 	</div>
@@ -213,16 +212,5 @@
 		font-size: var(--font-size-xs);
 		color: var(--color-text-light);
 		max-width: 32ch;
-	}
-
-	/* The empty track: the strip's shape, promised but not yet computable. */
-	.dest-ghost {
-		display: block;
-		width: 100%;
-		height: 7px;
-		margin-top: var(--spacing-xs);
-		border-radius: var(--radius-pill);
-		background: var(--strip-free);
-		box-shadow: inset 0 0 0 1px var(--strip-edge);
 	}
 </style>
