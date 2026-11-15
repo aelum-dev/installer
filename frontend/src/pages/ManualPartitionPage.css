@@ -79,11 +79,13 @@
 }
 
 /* Line assignments: the lead spine spans both lines at the reading edge; the
-   path column (path over filesystem) spans both, centered; the size sits at
-   the first line's trailing edge; the pills and the delete button share the
-   second. The trailing column is as wide as the wider of size and pills —
-   which is exactly why the path gets the real remainder instead of an
-   ellipsis of a device path a click cannot identify. */
+   path column (path over filesystem) spans both, centered; the pills and the
+   delete button sit at the first line's trailing edge; the second line
+   carries the size — and on designated rows the formats warning beside it,
+   under the pills. A warning line of the trailing column's own width is why
+   the longer locales' phrase fits instead of ellipsizing, and the path still
+   gets the real remainder instead of an ellipsis of a device path a click
+   cannot identify. */
 .part-lead {
 	grid-row: 1 / span 2;
 }
@@ -92,17 +94,23 @@
 	grid-row: 1 / span 2;
 }
 
-.part-size {
-	grid-row: 1;
-	justify-self: end;
-}
-
 .part-actions {
-	grid-row: 2;
+	grid-row: 1;
 	display: flex;
 	align-items: center;
 	gap: var(--spacing-xs);
 	justify-self: end;
+	min-width: 0;
+}
+
+/* The size under the pills, with the designated row's warning before it. */
+.part-meta {
+	grid-row: 2;
+	display: flex;
+	align-items: center;
+	justify-self: end;
+	gap: var(--spacing-sm);
+	min-width: 0;
 }
 
 /* A designated row wears the plan's color on its frame — the fact the map
@@ -148,10 +156,19 @@
 	text-overflow: ellipsis;
 }
 
-/* The fact the old design hid in a tooltip, said out loud on designated rows. */
+/* The fact the old design hid in a tooltip, said out loud on designated
+   rows, beside the size under the pills — the full trailing-column width, so
+   the longer locales' phrase never gets cut off. It carries the fs line's
+   quiet xs size itself now: outside .part-fs nothing else would, and a base
+   size warning both dwarfs the note and squeezes the path column. */
 .part-formats {
 	color: var(--color-danger);
 	font-weight: 600;
+	font-size: var(--font-size-xs);
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .part-size {

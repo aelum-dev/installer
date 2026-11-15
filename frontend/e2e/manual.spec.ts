@@ -229,7 +229,7 @@ test.describe('Manual partitioning', () => {
     // /dev/nvme3n1 (Samsung 990 PRO 4TB) is the densest case in the fixture:
     // a dozen rows whose paths reach the longest form a device path takes
     // (/dev/nvme3n1p10). A row card that cannot grow shrinks its id column —
-    // the path either fits or ellipsizes, never painting over the size.
+    // the path either fits or ellipsizes, never painting over the role pills.
     // Measured at the pinned 900x600 window (test.use above).
     await selectDiskByModel(page, 'Samsung 990 PRO 4TB');
     // The rail must also fit vertically in the fixed 600px window: its
@@ -244,7 +244,7 @@ test.describe('Manual partitioning', () => {
         const card = document.querySelector('.disk-page .options-card')!.getBoundingClientRect();
         // The destination card sits under the options card in both modes and
         // must stay fully inside too — the manual variant carries the plan
-        // strip and the free-space bar and grows past its automatic twin.
+        // strip and its note and grows past its automatic twin.
         const dest = document.querySelector('.disk-page .dest-card')!.getBoundingClientRect();
         return icon.top >= area.top && dest.bottom <= area.bottom && dest.top >= card.bottom;
       });
@@ -268,11 +268,11 @@ test.describe('Manual partitioning', () => {
     for (let i = 0; i < count; i++) {
       const overlaps = await rows.nth(i).evaluate((el) => {
         const path = el.querySelector<HTMLElement>('.part-path');
-        const size = el.querySelector<HTMLElement>('.part-size');
-        if (!path || !size) return false;
-        return path.getBoundingClientRect().right > size.getBoundingClientRect().left + 0.5;
+        const actions = el.querySelector<HTMLElement>('.part-actions');
+        if (!path || !actions) return false;
+        return path.getBoundingClientRect().right > actions.getBoundingClientRect().left + 0.5;
       });
-      expect(overlaps, `row ${i + 1}: path text collides with the Size column`).toBe(false);
+      expect(overlaps, `row ${i + 1}: path text collides with the role pills`).toBe(false);
     }
 
     // The longest path is shown whole — the ellipsis safety net must not even

@@ -305,7 +305,8 @@
 			</div>
 		</div>
 
-		<!-- Partition rows: name · filesystem · size · role · delete. -->
+		<!-- Partition rows: name over filesystem, the role pills beside the
+			 name, and beneath them the formats warning with the size. -->
 		<div class="part-list" bind:this={editorEl}>
 			{#each layout.partitions as part (part.index)}
 				{@const isRole = part.type === TYPE_ESP || part.type === TYPE_SYSTEM}
@@ -314,13 +315,10 @@
 					<span class="part-lead" aria-hidden="true"></span>
 					<span class="part-id">
 						<span class="part-path" title={part.path || undefined}>{part.path || t('manual.newPart')}</span>
-						{#if fsName || isRole}
-							<span class="part-fs">
-								{fsName}{#if fsName && isRole} · {/if}{#if isRole}<span class="part-formats">{t('manual.formatsNow')}</span>{/if}
-							</span>
+						{#if fsName}
+							<span class="part-fs">{fsName}</span>
 						{/if}
 					</span>
-					<span class="part-size">{groupDigits(part.sizeMB)} {t('unit.mb')}</span>
 					<span class="part-actions">
 						<span class="role-pills">
 							<button
@@ -347,6 +345,15 @@
 						>
 							{glyph('ea81')}
 						</button>
+					</span>
+					<span class="part-meta">
+						{#if isRole}
+							<!-- The fact the old design hid in a tooltip, said out loud
+							     beside the size, under the pills: the longer locales'
+							     warning never fits on the filesystem's line. -->
+							<span class="part-formats">{t('manual.formatsNow')}</span>
+						{/if}
+						<span class="part-size">{groupDigits(part.sizeMB)} {t('unit.mb')}</span>
 					</span>
 				</div>
 			{/each}
