@@ -110,14 +110,16 @@
 		display: flex;
 		flex-direction: column;
 		flex-grow: 1;
-		gap: 3px;
+		gap: 7px;
 		background-color: var(--color-bg-white);
 		border: 1px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-md);
-		/* Tighter measures than the options card: this card shares the rail's
-		   fixed-window budget with it (see e2e/manual.spec.ts railFits). */
-		padding: 6px var(--spacing-md);
+		/* The same spacing measure as the options card above it — same gap
+		   between the label and its content, same inset — so the two cards of
+		   one rail read as one rhythm. The rail's fixed-window budget is tight
+		   at the shipped 900x600; e2e/manual.spec.ts railFits pins it. */
+		padding: 10px var(--spacing-md);
 		text-align: start;
 	}
 
@@ -136,7 +138,7 @@
 	.dest-body {
 		display: flex;
 		flex-direction: column;
-		gap: 3px;
+		gap: 7px;
 		flex-grow: 1;
 		justify-content: center;
 	}
