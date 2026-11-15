@@ -87,7 +87,6 @@
   "manual.free": "空閒",
   "manual.hint": "將一個分割區指定為 Boot，另一個指定為 Root (系統)。將其餘分割區保留為保留狀態以保護您的其他作業系統和資料。新分割區從空白開始——新增一個，然後在下面設定其類型。",
   "manual.mapCaption": "僅重新劃分該磁碟 — {plan}",
-  "manual.mapRoot": "根",
   "manual.modeAutomatic": "自動",
   "manual.modeManual": "手動",
   "manual.newPart": "新分割區",

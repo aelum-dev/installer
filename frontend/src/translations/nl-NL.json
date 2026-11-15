@@ -87,7 +87,6 @@
   "manual.free": "Vrij",
   "manual.hint": "Wijs één partitie toe als Boot en één als Root (Systeem). Laat de rest als Behouden om je andere OS en gegevens veilig te houden. Nieuwe partities beginnen leeg — voeg er één toe en stel het type hieronder in.",
   "manual.mapCaption": "Alleen deze schijf wordt opnieuw gepartitioneerd — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Automatisch",
   "manual.modeManual": "Handmatig",
   "manual.newPart": "Nieuwe partitie",

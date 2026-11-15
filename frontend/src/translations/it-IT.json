@@ -87,7 +87,6 @@
   "manual.free": "Libero",
   "manual.hint": "Indica una partizione come Boot e una come Root (Sistema). Lascia le altre come Mantieni per proteggere il tuo altro OS e i tuoi dati. Le nuove partizioni partono vuote — aggiungine una, poi imposta il suo tipo qui sotto.",
   "manual.mapCaption": "Solo questo disco viene ripartizionato — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Automatica",
   "manual.modeManual": "Manuale",
   "manual.newPart": "Nuova partizione",

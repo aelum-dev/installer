@@ -87,7 +87,6 @@
   "manual.free": "Libre",
   "manual.hint": "Désignez une partition comme Boot et une comme Root (Système). Laissez le reste en Conserver pour garder votre autre OS et vos données en sécurité. Les nouvelles partitions commencent vides — ajoutez-en une, puis définissez son type ci-dessous.",
   "manual.mapCaption": "Seul ce disque est repartitionné — {plan}",
-  "manual.mapRoot": "Racine",
   "manual.modeAutomatic": "Automatique",
   "manual.modeManual": "Manuel",
   "manual.newPart": "Nouvelle partition",

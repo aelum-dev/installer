@@ -87,7 +87,6 @@
   "manual.free": "متاح",
   "manual.hint": "حدد تقسيمًا واحدًا كـ Boot وتقسيمًا واحدًا كـ Root (System). اترك الباقي كـ Preserve للحفاظ على نظام التشغيل والبيانات الأخرى. تبدأ التقسيمات الجديدة فارغة — أضف واحدة، ثم حدد نوعها أدناه.",
   "manual.mapCaption": "سيتم إعادة تقسيم هذا القرص فقط — {plan}",
-  "manual.mapRoot": "جذر",
   "manual.modeAutomatic": "تلقائي",
   "manual.modeManual": "يدوي",
   "manual.newPart": "تقسيم جديد",

@@ -87,7 +87,6 @@
   "manual.free": "사용 가능",
   "manual.hint": "하나의 파티션을 부트로, 하나의 파티션을 루트(시스템)로 지정하세요. 다른 OS와 데이터를 안전하게 유지하려면 나머지를 보존으로 두세요. 새 파티션은 비어 있는 상태로 시작됩니다 — 추가한 후 아래에서 유형을 설정하세요.",
   "manual.mapCaption": "이 디스크만 재파티션됩니다 — {plan}",
-  "manual.mapRoot": "루트",
   "manual.modeAutomatic": "자동",
   "manual.modeManual": "수동",
   "manual.newPart": "새 파티션",

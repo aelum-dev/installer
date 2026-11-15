@@ -87,7 +87,6 @@
   "manual.free": "Free",
   "manual.hint": "Designate one partition as Boot and one as Root (System). Leave the rest as Preserve to keep your other OS and data safe. New partitions start blank — add one, then set its type below.",
   "manual.mapCaption": "Only this disk is repartitioned — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Automatic",
   "manual.modeManual": "Manual",
   "manual.newPart": "New partition",

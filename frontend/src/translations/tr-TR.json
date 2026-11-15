@@ -87,7 +87,6 @@
   "manual.free": "Boş",
   "manual.hint": "Bir bölümü Boot olarak ve birini Root (Sistem) olarak belirtin. Diğer işletim sisteminizi ve verilerinizi güvende tutmak için kalanları Korun olarak bırakın. Yeni bölümler boş başlar — bir tane ekleyin, ardından türünü aşağıda ayarlayın.",
   "manual.mapCaption": "Yalnızca bu disk yeniden bölümlenir — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Otomatik",
   "manual.modeManual": "Manuel",
   "manual.newPart": "Yeni bölüm",

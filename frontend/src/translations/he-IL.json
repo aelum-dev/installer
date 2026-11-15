@@ -87,7 +87,6 @@
   "manual.free": "פנוי",
   "manual.hint": "ציין מחיצה אחת כ-Boot ואחת כ-Root (מערכת). השאר את השאר כשמור כדי לשמור על מערכת ההפעלה והנתונים האחרים שלך. מחיצות חדשות מתחילות ריקות — הוסף אחת, ואז הגדר את הסוג שלה למטה.",
   "manual.mapCaption": "רק דיסק זה יחולק מחדש — {plan}",
-  "manual.mapRoot": "שורש",
   "manual.modeAutomatic": "אוטומטי",
   "manual.modeManual": "ידני",
   "manual.newPart": "מחיצה חדשה",

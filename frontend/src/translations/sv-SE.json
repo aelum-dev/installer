@@ -87,7 +87,6 @@
   "manual.free": "Ledig",
   "manual.hint": "Markera en partition som Boot och en som Root (System). Lämna de övriga som Behåll för att hålla ditt andra OS och data säkra. Nya partitioner börjar tomma — lägg till en och ställ sedan in dess typ nedan.",
   "manual.mapCaption": "Endast denna disk ompartitioneras — {plan}",
-  "manual.mapRoot": "Rot",
   "manual.modeAutomatic": "Automatisk",
   "manual.modeManual": "Manuell",
   "manual.newPart": "Ny partition",

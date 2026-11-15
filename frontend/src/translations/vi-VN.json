@@ -87,7 +87,6 @@
   "manual.free": "Trống",
   "manual.hint": "Chỉ định một phân vùng làm Boot và một làm Root (Hệ thống). Để phần còn lại ở chế độ Giữ nguyên để giữ an toàn cho hệ điều hành và dữ liệu khác của bạn. Phân vùng mới bắt đầu trống — thêm một rồi đặt loại của nó bên dưới.",
   "manual.mapCaption": "Chỉ đĩa này được phân vùng lại — {plan}",
-  "manual.mapRoot": "Gốc",
   "manual.modeAutomatic": "Tự động",
   "manual.modeManual": "Thủ công",
   "manual.newPart": "Phân vùng mới",

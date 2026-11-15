@@ -210,7 +210,7 @@ describe('manual map', () => {
 				{ index: 2, path: '/dev/nvme0n1p2', sizeMB: 300000, sizeBytes: 300000 * 1024 * 1024, type: 'system', existingFstype: 'btrfs' },
 			],
 		});
-		expect(segs.map((s) => s.label)).toEqual(['Boot', 'Root', 'Free']);
+		expect(segs.map((s) => s.label)).toEqual(['Boot', 'System', 'Free']);
 		expect(segs.map((s) => s.role)).toEqual([true, true, false]);
 		expect(segs[2].free).toBe(true);
 	});

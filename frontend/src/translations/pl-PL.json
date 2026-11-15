@@ -87,7 +87,6 @@
   "manual.free": "Dostępne",
   "manual.hint": "Wyznacz jedną partycję jako Boot i jedną jako Root (System). Pozostaw resztę jako Zachowaj, aby zachować bezpieczeństwo innego systemu operacyjnego i danych. Nowe partycje zaczynają się puste — dodaj jedną, a następnie ustaw jej typ poniżej.",
   "manual.mapCaption": "Tylko ten dysk jest partycjonowany ponownie — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Automatyczny",
   "manual.modeManual": "Ręczny",
   "manual.newPart": "Nowa partycja",

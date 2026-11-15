@@ -87,7 +87,6 @@
   "manual.free": "Ledig",
   "manual.hint": "Angi én partisjon som Boot og én som Root (System). La de andre være Behold for å holde ditt andre OS og data trygge. Nye partisjoner starter tomme — legg til én, og sett deretter typen nedenfor.",
   "manual.mapCaption": "Kun denne disken partisjoneres på nytt — {plan}",
-  "manual.mapRoot": "Rot",
   "manual.modeAutomatic": "Automatisk",
   "manual.modeManual": "Manuell",
   "manual.newPart": "Ny partisjon",

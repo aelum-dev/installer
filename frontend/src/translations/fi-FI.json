@@ -87,7 +87,6 @@
   "manual.free": "Vapaa",
   "manual.hint": "Määritä yksi osio Bootiksi ja toinen Rootiksi (Järjestelmä). Jätä muut Säilytä-tilaan pitääksesi muut OS:si ja tietosi turvassa. Uudet osiot alkavat tyhjinä — lisää yksi ja aseta sen tyyppi alla.",
   "manual.mapCaption": "Vain tämä levy osioidaan uudelleen — {plan}",
-  "manual.mapRoot": "Juuri",
   "manual.modeAutomatic": "Automaattinen",
   "manual.modeManual": "Manuaalinen",
   "manual.newPart": "Uusi osio",

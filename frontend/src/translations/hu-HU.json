@@ -87,7 +87,6 @@
   "manual.free": "Szabad",
   "manual.hint": "Jelöljön ki egy partíciót Boot és egyet Root (Rendszer) célra. Hagyja a többit Megőrzés módban a másik operációs rendszer és adatok biztonságának megőrzéséhez. Az új partíciók üresen indulnak — adjon hozzá egyet, majd állítsa be a típusát alább.",
   "manual.mapCaption": "Csak ez a lemez lesz újrapartícionálva — {plan}",
-  "manual.mapRoot": "Gyökér",
   "manual.modeAutomatic": "Automatikus",
   "manual.modeManual": "Kézi",
   "manual.newPart": "Új partíció",

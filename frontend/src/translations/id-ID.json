@@ -87,7 +87,6 @@
   "manual.free": "Kosong",
   "manual.hint": "Tentukan satu partisi sebagai Boot dan satu sebagai Root (Sistem). Biarkan sisanya sebagai Pertahankan untuk menjaga OS dan data Anda lainnya. Partisi baru dimulai kosong — tambahkan satu, lalu atur tipenya di bawah.",
   "manual.mapCaption": "Hanya disk ini yang dipartisi ulang — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Otomatis",
   "manual.modeManual": "Manual",
   "manual.newPart": "Partisi baru",

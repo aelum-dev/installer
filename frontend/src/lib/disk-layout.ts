@@ -284,7 +284,9 @@ export function manualMapSegments(layout: ManualLayout): StripSegment[] {
 				? claimBytes
 				: p.sizeMB * BYTES_PER_MB;
 		const role = p.type === TYPE_ESP || p.type === TYPE_SYSTEM;
-		const roleLabel = p.type === TYPE_ESP ? t('manual.type.esp') : p.type === TYPE_SYSTEM ? t('manual.mapRoot') : '';
+		// The same words the row's role pills carry — the map and the choice
+		// never name the same partition differently ("Root" vs "System").
+		const roleLabel = p.type === TYPE_ESP ? t('manual.type.esp') : p.type === TYPE_SYSTEM ? t('manual.type.system') : '';
 		const name = p.path || t('manual.newPart');
 		const fs = p.path ? fsLabel(p.existingFstype) : '';
 		const tooltip = `${name} — ${fs ? `${fs} ` : ''}${formatBytes(bytes)}${role ? ` · ${t('manual.formatsNow')}` : ''}`;

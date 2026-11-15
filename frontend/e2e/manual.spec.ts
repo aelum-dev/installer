@@ -215,7 +215,7 @@ test.describe('Manual partitioning', () => {
     const labels = await page.locator('.map-seg').evaluateAll((els) =>
       els.map((el) => el.textContent?.trim() ?? ''),
     );
-    expect(labels).toContain('Root');
+    expect(labels).toContain('System');
     // The 512 MB Boot segment is under the 5% label floor — the tooltip
     // carries its name there, so only the System row is labeled.
     expect(labels[0]).toBe('');

@@ -87,7 +87,6 @@
   "manual.free": "Lliure",
   "manual.hint": "Designa una partició com a Boot i una com a Root (Sistema). Deixa la resta com a Conserva per mantenir segur el teu altre SO i dades. Les noves particions comencen buides — afegeix-ne una, després estableix el seu tipus a continuació.",
   "manual.mapCaption": "Només aquest disc es reparticiona — {plan}",
-  "manual.mapRoot": "Arrel",
   "manual.modeAutomatic": "Automàtic",
   "manual.modeManual": "Manual",
   "manual.newPart": "Nova partició",

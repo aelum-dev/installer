@@ -87,7 +87,6 @@
   "manual.free": "Libera",
   "manual.hint": "Deklaru unu particion kiel Boot kaj unu kiel Root (Sistemo). Lasu la ceteron kiel Konservi por gardi vian alian OS kaj datumojn sekurajn. Novaj particioj komenciĝas malplenaj — aldonu unu, tiam agordu ĝian tipon malsupre.",
   "manual.mapCaption": "Nur ĉi tiu disko reparticiiiĝas — {plan}",
-  "manual.mapRoot": "Radiko",
   "manual.modeAutomatic": "Aŭtomata",
   "manual.modeManual": "Manea",
   "manual.newPart": "Nova particio",

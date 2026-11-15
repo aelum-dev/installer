@@ -87,7 +87,6 @@
   "manual.free": "Frei",
   "manual.hint": "Weisen Sie eine Partition als Boot und eine als Root (System) zu. Lassen Sie den Rest als Beibehalten, um Ihr anderes Betriebssystem und Ihre Daten zu schützen. Neue Partitionen beginnen leer — fügen Sie eine hinzu und legen Sie unten ihren Typ fest.",
   "manual.mapCaption": "Nur diese Festplatte wird neu partitioniert — {plan}",
-  "manual.mapRoot": "Root",
   "manual.modeAutomatic": "Automatisch",
   "manual.modeManual": "Manuell",
   "manual.newPart": "Neue Partition",
