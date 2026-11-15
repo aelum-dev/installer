@@ -29,6 +29,15 @@
 
 	const valid = $derived(passphrase !== '' && confirm === passphrase);
 
+	// The field counts as left only when focus moves to the other input.
+	// A blur toward a button is the press of Cancel or of an eye — and
+	// mousedown already blurs the field before the button's click resets, so
+	// marking touched there paints the "required" error in the very moment
+	// the person dismisses the dialog.
+	function handlePassBlur(e: FocusEvent): void {
+		if (e.relatedTarget instanceof HTMLInputElement) passphraseTouched = true;
+	}
+
 	function handleCancel(): void {
 		reset();
 		show = false;
@@ -66,7 +75,7 @@
 				placeholder={t('luks.dialog.passphrasePlaceholder')}
 				autocomplete="off"
 				spellcheck="false"
-				onblur={() => (passphraseTouched = true)}
+				onblur={handlePassBlur}
 				onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); } }}
 			/>
 			<button
