@@ -1,6 +1,9 @@
 package shared
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -187,6 +190,115 @@ func TestCuratedTablesCoverTheRegionTable(t *testing.T) {
 			t.Errorf("WeatherByISO has an entry for %q (%s), which is not a region", code, place.City)
 		}
 	}
+}
+
+// TestRegionTableMatchesTheCuratedTables keeps the generated table from drifting
+// away from the curated maps it was built from: nothing else notices, because a
+// missing regeneration is invisible in the table itself — Iran kept the default
+// keymap for a release after KeymapByISO started naming its own.
+func TestRegionTableMatchesTheCuratedTables(t *testing.T) {
+	const regenerate = "regenerate with go run ./backend/shared/regions_gen.go"
+
+	for _, r := range regionTable {
+		if zone, curated := PreferredZone[r.Code]; curated && r.Timezone != zone {
+			t.Errorf("region %q shows %s but PreferredZone picks %s: %s", r.Name, r.Timezone, zone, regenerate)
+		}
+
+		keymap, ok := KeymapByISO[r.Code]
+		if !ok {
+			keymap = DefaultKeymap
+		}
+		if r.Keymap != keymap {
+			t.Errorf("region %q has keymap %q but KeymapByISO says %q: %s", r.Name, r.Keymap, keymap, regenerate)
+		}
+	}
+}
+
+// TestRegionTimezonesNameTheirOwnCountry holds every location's clock to its own
+// country. tzdata names a row after the most populous city among the countries
+// that share it and lists that country first, so a country that is not first has
+// no name of its own in the file: Iceland's only row is Africa/Abidjan's and
+// Denmark's is Europe/Berlin's, although tzdata ships Atlantic/Reykjavik and
+// Europe/Copenhagen as the same bytes. So a name taken straight from a row must
+// be from a row that names the country, and any other name must be the curated
+// pick beside it. Every name must also be a zone this tzdata really has, and for a
+// country with one row it must be that row's clock under a local spelling.
+// Skipped where tzdata's zone table is not installed (the build container), since
+// the package is what defines these names and there is nothing to check against.
+func TestRegionTimezonesNameTheirOwnCountry(t *testing.T) {
+	data, err := os.ReadFile(ZoneTablePath)
+	if err != nil {
+		t.Skipf("%s is not installed here: the zone names cannot be checked against their source", ZoneTablePath)
+	}
+	zoneDir := filepath.Dir(ZoneTablePath)
+
+	rows := map[string][]string{} // country -> the zones tzdata lists it in
+	named := map[string]bool{}    // country -> tzdata has a row named after a city in it
+	for _, line := range strings.Split(string(data), "\n") {
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if len(fields) < 3 {
+			continue
+		}
+		codes := strings.Split(fields[0], ",")
+		for _, code := range codes {
+			code = strings.ToLower(strings.TrimSpace(code))
+			if len(code) != 2 {
+				continue
+			}
+			rows[code] = append(rows[code], fields[2])
+			if code == strings.ToLower(strings.TrimSpace(codes[0])) {
+				named[code] = true
+			}
+		}
+	}
+
+	for _, r := range regionTable {
+		if r.Code == DefaultRegionCode {
+			continue // Etc/UTC is a clock with no city to be named after
+		}
+
+		chosen := filepath.Join(zoneDir, r.Timezone)
+		if _, err := os.Stat(chosen); err != nil {
+			t.Errorf("region %q names zone %q, which this tzdata does not have: %v", r.Name, r.Timezone, err)
+			continue
+		}
+
+		if _, curated := PreferredZone[r.Code]; !curated && !named[r.Code] {
+			t.Errorf("region %q shows %q, a zone named after another country's city; "+
+				"put the name read there in PreferredZone and regenerate", r.Name, r.Timezone)
+		}
+
+		// One row means tzdata has one clock for this country, so a curated name can
+		// only be that clock spelled the way people there spell it.
+		if len(rows[r.Code]) == 1 {
+			home := filepath.Join(zoneDir, rows[r.Code][0])
+			if !sameFileContents(home, chosen) {
+				t.Errorf("region %q shows %q, which is not tzdata's zone for it (%q)",
+					r.Name, r.Timezone, rows[r.Code][0])
+			}
+		}
+	}
+}
+
+// sameFileContents reports two files with identical bytes. It is the test's
+// stand-in for "the same clock": tzdata spells one zone's name several ways and
+// ships each spelling as the same data.
+func sameFileContents(a, b string) bool {
+	if a == b {
+		return true
+	}
+	first, err := os.ReadFile(a)
+	if err != nil {
+		return false
+	}
+	second, err := os.ReadFile(b)
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(first, second)
 }
 
 // TestWeatherForRegion is the "every location the installer offers has a capital"

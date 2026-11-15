@@ -96,14 +96,24 @@ var ArchCountryISO = map[string]string{
 	"Vietnam":              "vn",
 }
 
-// PreferredZone picks the zone for a country whose tzdata rows cover several.
-// The rule is the city most people in that country live near — the capital where
-// there is one — because that is the clock a fresh install should show. tzdata
-// orders its rows by coordinates, not by population, so taking the first row for
-// these countries is wrong: Australia's first row is Lord Howe Island and
+// PreferredZone is every timezone tzdata cannot name for a location, for either
+// of two reasons.
+//
+// Several rows: the rule is the city most people in that country live near — the
+// capital where there is one — because that is the clock a fresh install should
+// show. tzdata orders its rows by coordinates, not by population, so taking the
+// first row for these countries is wrong: Australia's is Lord Howe Island and
 // Ukraine's is Simferopol.
 //
-// Countries with exactly one row need no entry here; the generator takes that row.
+// One row, but named after somebody else's city: tzdata names a row after the
+// most populous city among the countries that share it and lists that country
+// first, so a small country beside a large one has no name of its own in the
+// file. Denmark's only row is Europe/Berlin's and Iceland's is Africa/Abidjan's,
+// although tzdata ships Europe/Copenhagen and Atlantic/Reykjavik as the same
+// bytes. The name a person reads beside their own country goes here, and the
+// generator refuses to fall back on a row the country is not named in.
+//
+// Countries whose one row names them first need no entry here.
 var PreferredZone = map[string]string{
 	"ar": "America/Argentina/Buenos_Aires",
 	"au": "Australia/Sydney",
@@ -112,15 +122,25 @@ var PreferredZone = map[string]string{
 	"cl": "America/Santiago",
 	"cn": "Asia/Shanghai",
 	"de": "Europe/Berlin", // Europe/Zurich covers Büsingen only
+	"dk": "Europe/Copenhagen",
 	"ec": "America/Guayaquil",
 	"es": "Europe/Madrid",
 	"id": "Asia/Jakarta",
+	"is": "Atlantic/Reykjavik",
+	"kh": "Asia/Phnom_Penh",
 	"kz": "Asia/Almaty",
-	"my": "Asia/Singapore", // peninsular Malaysia, where Kuala Lumpur is
+	"lu": "Europe/Luxembourg",
+	"my": "Asia/Kuala_Lumpur", // peninsular Malaysia, not Kuching
 	"mx": "America/Mexico_City",
+	"nl": "Europe/Amsterdam",
 	"nz": "Pacific/Auckland",
+	"mk": "Europe/Skopje",
+	"no": "Europe/Oslo",
 	"pt": "Europe/Lisbon",
 	"ru": "Europe/Moscow",
+	"se": "Europe/Stockholm",
+	"si": "Europe/Ljubljana",
+	"sk": "Europe/Bratislava",
 	"ua": "Europe/Kyiv", // Europe/Simferopol covers Crimea only
 	"us": "America/New_York",
 	"uz": "Asia/Tashkent",

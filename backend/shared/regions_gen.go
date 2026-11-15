@@ -115,8 +115,10 @@ func orUnknown(s string) string {
 // exists, otherwise the only row tzdata has for it. A country with several rows
 // and no curated pick is an error rather than a guess — tzdata orders its rows by
 // coordinates, so "the first one" is Lord Howe Island for Australia and
-// Simferopol for Ukraine.
-func pickZone(code string, zones map[string][]string) (string, error) {
+// Simferopol for Ukraine. A country with one row it is not named in is an error
+// too: that row carries a neighbour's city, and a location must not be offered
+// with a clock reading "Africa/Abidjan" under "Iceland".
+func pickZone(code string, zones map[string][]zoneRow) (string, error) {
 	if zone, ok := shared.PreferredZone[code]; ok {
 		return zone, nil
 	}
@@ -127,19 +129,31 @@ func pickZone(code string, zones map[string][]string) (string, error) {
 	if len(rows) > 1 {
 		return "", fmt.Errorf("%q spans %d zones and has no entry in PreferredZone", code, len(rows))
 	}
-	return rows[0], nil
+	if !rows[0].namesIt {
+		return "", fmt.Errorf("%q's only zone is %s, which tzdata names after another country's city — put the name read there in PreferredZone", code, rows[0].zone)
+	}
+	return rows[0].zone, nil
+}
+
+// zoneRow is one row of the tzdata table a country appears in, and whether tzdata
+// lists that country first — the flag that says the row's city is inside it.
+type zoneRow struct {
+	zone    string
+	namesIt bool
 }
 
 // readZoneTable reads tzdata's zone1970.tab: columns are a comma-separated list
-// of ISO 3166 codes, coordinates, the zone name, and a comment.
-func readZoneTable(path string) (map[string][]string, error) {
+// of ISO 3166 codes, coordinates, the zone name, and a comment. tzdata puts the
+// country of the row's most populous city first, so the first code is the one the
+// zone is named after.
+func readZoneTable(path string) (map[string][]zoneRow, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = f.Close() }()
 
-	zones := make(map[string][]string)
+	zones := make(map[string][]zoneRow)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -150,12 +164,16 @@ func readZoneTable(path string) (map[string][]string, error) {
 		if len(fields) < 3 {
 			continue
 		}
-		for _, code := range strings.Split(fields[0], ",") {
+		codes := strings.Split(fields[0], ",")
+		for _, code := range codes {
 			code = strings.ToLower(strings.TrimSpace(code))
 			if len(code) != 2 {
 				continue
 			}
-			zones[code] = append(zones[code], fields[2])
+			zones[code] = append(zones[code], zoneRow{
+				zone:    fields[2],
+				namesIt: code == strings.ToLower(strings.TrimSpace(codes[0])),
+			})
 		}
 	}
 	return zones, scanner.Err()
