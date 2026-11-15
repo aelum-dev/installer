@@ -1,4 +1,9 @@
-.page-layout {
+/* The wizard pages share the .page-layout/.page-content classes rendered by
+   PageLayout.svelte, and this file is global — an unscoped selector here
+   would restyle every page's layout from this import onward (it once did).
+   Everything in this file must stay scoped to the disk page: .page-layout and
+   .disk-page ride the same element, so the layout rule compounds them. */
+.disk-page.page-layout {
 	display: flex;
 	flex-direction: row;
 	height: 100%;
@@ -8,12 +13,16 @@
 	gap: var(--gap-xl);
 }
 
-.page-content {
+.disk-page .page-content {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
 	min-height: 0;
 	gap: var(--spacing-md);
+	/* Not flex-basis:0 but flex-grow:1 on an auto basis: without min-width the
+	   column's automatic minimum (its widest row's min-content) could push the
+	   column past the window edge, clipping the row tint on the right. */
+	min-width: 0;
 }
 
 .manual-select-hint {

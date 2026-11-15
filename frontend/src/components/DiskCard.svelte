@@ -66,11 +66,6 @@
 		{/if}
 		<span class="disk-size">{disk.sizeFormatted}</span>
 		<span class="disk-type">{typeText}</span>
-		<span class="disk-check" aria-hidden="true">
-			<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-				<path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-		</span>
 	</span>
 	<span class="disk-row disk-meta">
 		<span class="disk-path">{disk.path}</span>

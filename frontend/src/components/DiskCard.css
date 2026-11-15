@@ -1,6 +1,7 @@
 /* The disk list follows the wizard's list look (OptionList): one column of
-	 borderless rows, selection as a container tint plus a mark — never the
-	 primary fill, never a per-row card border, radio, or icon chip.
+	 borderless rows, selection as a container tint plus the strip redrawing
+	 as the destination — never the primary fill, never a per-row card border,
+	 radio, or icon chip.
 
 	 A device row is three lines of truth, not one:
 	 1  what it is       — model + size + bus/media
@@ -15,6 +16,10 @@
 
 .disk-card {
 	width: 100%;
+	/* As a column flex item its automatic minimum is its min-content — a row
+	   whose nowrap chips and sizes reach that width pushes the whole tint past
+	   the column edge. The ellipses are there to shrink; let them. */
+	min-width: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -35,8 +40,9 @@
 	background-color: var(--color-primary-light);
 }
 
-/* Selection is a state, not an action: container tint plus the mark, the same
-	 rule the language list and the location picker use. */
+/* Selection is a state, not an action: the container tint, the strip redrawn
+	 as the destination and the chain caption under it carry it — the same
+	 tint rule the language list and the location picker use. */
 .disk-card.selected {
 	background-color: var(--color-selection);
 	color: var(--color-on-selection);
@@ -91,28 +97,17 @@
 	font-size: var(--font-size-xs);
 	color: var(--color-text-muted);
 	white-space: nowrap;
+	/* The least loadful word on the line — ellipsizable so the ellipsis, not
+	   the tint, absorbs a large font or a narrow column. */
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .disk-card.selected .disk-size,
 .disk-card.selected .disk-type {
 	color: var(--color-on-selection);
 	opacity: 0.8;
-}
-
-.disk-check {
-	display: none;
-	color: var(--color-primary);
-	flex-shrink: 0;
-	align-self: center;
-}
-
-.disk-card.selected .disk-check {
-	display: inline-flex;
-}
-
-.disk-check svg {
-	width: 1.1em;
-	height: 1.1em;
 }
 
 /* Second line: the device path is the one fact that separates two identical

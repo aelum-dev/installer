@@ -59,6 +59,7 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
+		gap: var(--spacing-md);
 	}
 
 	.page-content--form {
@@ -78,5 +79,10 @@
 
 	.page-content--list {
 		overflow: visible;
+		/* Without min-width the column's automatic minimum (its widest row's
+		   min-content: ellipsized text excluded, but nowrap chips, sizes and
+		   marks counted) could push the column past the window edge, clipping
+		   the row tint on the right — worse when selection added the mark. */
+		min-width: 0;
 	}
 </style>
