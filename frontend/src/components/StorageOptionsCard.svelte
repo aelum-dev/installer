@@ -2,6 +2,7 @@
 	import type { DiskInfo, FileSystem, InstallMode } from '$lib/types';
 	import { FILESYSTEMS } from '$lib/types';
 	import { t } from '$lib/i18n';
+	import { tooltip } from '$lib/tooltip.svelte';
 	import ToggleSwitch from '$components/ToggleSwitch.svelte';
 	import './StorageOptionsCard.css';
 
@@ -46,14 +47,10 @@
 	const showLvm = $derived(Boolean(onToggleLvm));
 	const showWraps = $derived(showLuks || showLvm);
 
-	// Info popup when the user reaches for manual mode without a disk selected.
-	let showDiskHint = $state(false);
-
-	function handleModeHover(isManual: boolean, entering: boolean): void {
-		if (isManual && !disk) {
-			showDiskHint = entering;
-		}
-	}
+	// Reaching for manual mode without a disk gets the app tooltip's answer,
+	// not a click: empty text means the shared tooltip stays closed the
+	// moment a disk is selected.
+	const manualHint = $derived(disk ? '' : t('page.diskSelection.selectDiskFirst'));
 </script>
 
 <div class="options-card">
@@ -100,19 +97,12 @@
 				type="button"
 				class={['mode-pill', { selected: manualMode }]}
 				disabled={!disk}
-				onmouseenter={() => handleModeHover(true, true)}
-				onmouseleave={() => handleModeHover(true, false)}
+				use:tooltip={manualHint}
 				onclick={() => onToggleMode('manual')}
 			>
 				{t('manual.modeManual')}
 			</button>
 		</div>
-		<!-- Tooltip: "Select a disk first" -->
-		{#if showDiskHint}
-			<div class="disk-hint-tooltip">
-				<span class="disk-hint-tooltip-text">{t('page.diskSelection.selectDiskFirst')}</span>
-			</div>
-		{/if}
 	</div>
 
 	<!-- The wrapping band: Encrypt and LVM only wrap the layout the two rows

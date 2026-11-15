@@ -17,6 +17,7 @@
 	} from '$lib/manual-layout';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
+	import { tooltip } from '$lib/tooltip.svelte';
 	import LayoutStrip from '$components/LayoutStrip.svelte';
 	import { groupDigits, mbToGB } from '$lib/format';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
@@ -314,7 +315,7 @@
 				<div class={['part-row', { 'part-row--role': isRole }]}>
 					<span class="part-lead" aria-hidden="true"></span>
 					<span class="part-id">
-						<span class="part-path" title={part.path || undefined}>{part.path || t('manual.newPart')}</span>
+						<span class="part-path" use:tooltip={part.path}>{part.path || t('manual.newPart')}</span>
 						{#if fsName}
 							<span class="part-fs">{fsName}</span>
 						{/if}

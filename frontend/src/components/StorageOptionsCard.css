@@ -79,11 +79,6 @@
 	}
 }
 
-/* The mode row owns the tooltip's anchor. */
-.mode-row {
-	position: relative;
-}
-
 /* At the rail's 214px content width these controls can never sit beside
 	 their labels ("Automatic" and the fs pills are unbreakable — the Manual
 	 pill clipped out of the card). So both rows put the control under the
@@ -157,44 +152,3 @@
 	cursor: not-allowed;
 }
 
-/* Tooltip: "Select a disk first". DiskTopBar referenced a `tooltipFade` keyframe
-	 that was never defined (the browser silently ignored the animation); naming it
-	 here makes the intended fade-in real. */
-@keyframes tooltipFade {
-	from {
-		opacity: 0;
-		translate: 0 4px;
-	}
-	to {
-		opacity: 1;
-		translate: 0 0;
-	}
-}
-
-.disk-hint-tooltip {
-	position: absolute;
-	bottom: calc(100% + 6px);
-	right: 0;
-	z-index: 100;
-	animation: tooltipFade 150ms ease;
-}
-
-.disk-hint-tooltip-text {
-	display: block;
-	padding: 6px 12px;
-	background: var(--color-bg-white);
-	border: 1.5px solid var(--color-border);
-	border-radius: var(--radius-md);
-	font-size: var(--font-size-sm);
-	color: var(--color-text-muted);
-	white-space: nowrap;
-}
-
-.disk-hint-tooltip-text::after {
-	content: '';
-	position: absolute;
-	top: 100%;
-	right: 12px;
-	border: 5px solid transparent;
-	border-top-color: var(--color-bg-white);
-}

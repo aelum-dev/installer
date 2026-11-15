@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { mount, unmount, flushSync } from 'svelte';
 import StorageOptionsCard from './StorageOptionsCard.svelte';
+import { tooltipState } from '$lib/tooltip.svelte';
 import type { DiskInfo, FileSystem } from '$lib/types';
 
 const disk: DiskInfo = {
@@ -184,12 +185,12 @@ describe('StorageOptionsCard partitioning segments', () => {
 		const [, manual] = modePills(root);
 
 		hover(manual, 'mouseenter');
-		expect(root.querySelector('.disk-hint-tooltip')?.textContent).toContain(
-			'Select a disk before switching to manual mode.'
-		);
+		expect(tooltipState.text).toContain('Select a disk before switching to manual mode.');
+		expect(tooltipState.anchor).toBe(manual);
 
 		hover(manual, 'mouseleave');
-		expect(root.querySelector('.disk-hint-tooltip')).toBeNull();
+		expect(tooltipState.text).toBe('');
+		expect(tooltipState.anchor).toBeNull();
 	});
 
 	it('enables the Manual segment once a disk is selected and switches modes', () => {

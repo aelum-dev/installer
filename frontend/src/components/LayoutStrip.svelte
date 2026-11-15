@@ -7,6 +7,7 @@
 	 * hatch, segment edges — lives exactly once.
 	 */
 	import type { StripSegment } from '$lib/disk-layout';
+	import { tooltip } from '$lib/tooltip.svelte';
 	import './LayoutStrip.css';
 
 	let {
@@ -46,13 +47,13 @@
 					{ 'map-seg--role': seg.role, 'map-seg--free': seg.free, 'seg--luks': seg.hatch },
 				]}
 				style:width={widthOf(seg)}
-				title={seg.tooltip}
+				use:tooltip={seg.tooltip}
 			>{seg.pct >= LABEL_MIN_PCT ? seg.label : ''}</span>
 		{:else}
 			<span
 				class={['seg', { 'seg--free': seg.free, 'seg--luks': seg.hatch }]}
 				style:width={widthOf(seg)}
-				title={seg.tooltip}
+				use:tooltip={seg.tooltip}
 			></span>
 		{/if}
 	{/each}

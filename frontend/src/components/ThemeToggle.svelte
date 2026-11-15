@@ -2,10 +2,11 @@
 	import { getTheme, setTheme, type Theme } from '$lib/theme.svelte';
 	import { t } from '$lib/i18n';
 	import { glyph } from '$lib/icons';
+	import { tooltip } from '$lib/tooltip.svelte';
 	import { SetWallpaper } from '$lib/backend';
 
 	// Reflect the active scheme on the control. The visible icon names the current
-	// theme; the aria-label / title name the action the next click performs.
+	// theme; the aria-label / tooltip name the action the next click performs.
 	let isDark = $derived(getTheme() === 'dark');
 
 	const label = $derived(isDark ? t('app.themeToLight') : t('app.themeToDark'));
@@ -26,7 +27,7 @@
 	class="theme-toggle"
 	aria-pressed={isDark}
 	aria-label={label}
-	title={label}
+	use:tooltip={label}
 	onclick={onToggle}
 >
 	{#if isDark}

@@ -2,7 +2,11 @@
 	/**
 	 * Compact on/off switch (LUKS). Styled to match the manual-mode
 	 * "Use remaining" toggle. Accessible as an ARIA switch.
+	 * The `title` prop is the hint shown while the switch is hovered —
+	 * the app's own tooltip, not the browser's.
 	 */
+	import { tooltip } from '$lib/tooltip.svelte';
+
 	let {
 		checked,
 		label,
@@ -22,7 +26,7 @@
 	role="switch"
 	aria-checked={checked}
 	aria-label={label}
-	title={title}
+	use:tooltip={title}
 	onclick={onToggle}
 >
 	<span class="toggle-slider"></span>

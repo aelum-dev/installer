@@ -11,6 +11,7 @@
 	} from '$lib/disk-layout';
 	import { t } from '$lib/i18n';
 	import { diskGlyph } from '$lib/icons';
+	import { tooltip } from '$lib/tooltip.svelte';
 	import LayoutStrip from '$components/LayoutStrip.svelte';
 	import './DiskCard.css';
 
@@ -56,7 +57,7 @@
 	onclick={() => onSelect(disk)}
 	disabled={reason !== null}
 	aria-pressed={selected}
-	title={`${disk.model || disk.name} — ${disk.path}`}
+	use:tooltip={`${disk.model || disk.name} — ${disk.path}`}
 >
 	<span class="disk-row">
 		<span class="disk-glyph nf-icon" aria-hidden="true">{diskGlyph(disk)}</span>

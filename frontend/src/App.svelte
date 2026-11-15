@@ -4,6 +4,7 @@
 	import AppHeader from '$components/AppHeader.svelte';
 	import AppFooter from '$components/AppFooter.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
+	import TooltipLayer from '$components/TooltipLayer.svelte';
 
 	import WelcomePage from '$pages/WelcomePage.svelte';
 	import UserAccountPage from '$pages/UserAccountPage.svelte';
@@ -174,6 +175,11 @@
 		onBack={handleBack}
 		onFinish={handleFinish}
 	/>
+
+	<!-- The app's single tooltip bubble (use:tooltip hosts feed it). A sibling
+	     of the animated page so its fixed position never inherits a transition's
+	     transform, and below dialog overlays by z-index. -->
+	<TooltipLayer />
 
 	<!-- Validation error modal -->
 	<!--
