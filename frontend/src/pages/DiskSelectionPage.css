@@ -39,42 +39,6 @@
 	color: var(--color-text-muted);
 }
 
-/* Free-space bar inside the destination card in manual mode. One bar, one
-   number: "used X of Y, free Z" restated the total the identity line already
-   carries. It lives inside the card — never between the cards — so the
-   destination card starts at the same rail height in both modes. */
-.rail-space {
-	display: flex;
-	flex-direction: column;
-	gap: var(--spacing-xs);
-	width: 100%;
-	text-align: start;
-}
-
-.rail-space-bar {
-	width: 100%;
-	height: 10px;
-	border-radius: var(--radius-pill);
-	background: var(--color-bg-hover);
-	border: 1px solid var(--color-border-light);
-	box-sizing: border-box;
-	overflow: hidden;
-}
-
-.rail-space-used {
-	height: 100%;
-	width: var(--pct, 0%);
-	background: var(--color-primary);
-	border-radius: var(--radius-pill);
-	transition: width 0.2s ease;
-}
-
-.rail-space-label {
-	font-size: var(--font-size-sm);
-	color: var(--color-text-muted);
-	font-variant-numeric: tabular-nums;
-}
-
 /* The disk page's rail is the only wizard rail that carries cards below its
    identity, so it uses PageInfo's compact head — one horizontal block instead
    of the centered stack, sized by its own .head-glyph tile. What is left to

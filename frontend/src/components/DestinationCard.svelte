@@ -9,7 +9,6 @@
 	 * person's own plan — the identical picture the disk map above the editor
 	 * shows — and states the same repartition scope the map caption states.
 	 */
-	import type { Snippet } from 'svelte';
 	import type { DiskInfo, ManualLayout } from '$lib/types';
 	import type { PlanChoice } from '$lib/disk-layout';
 	import { destinationSegments, manualMapSegments, manualPlanLabel } from '$lib/disk-layout';
@@ -24,7 +23,6 @@
 		plan,
 		manual = false,
 		layout = null,
-		extra,
 	}: {
 		/** The selected disk, or null — the empty state then asks for one. */
 		disk: DiskInfo | null;
@@ -33,8 +31,6 @@
 		manual?: boolean;
 		/** The manual plan being edited; null while it loads. */
 		layout?: ManualLayout | null;
-		/** Page-side extras rendered under the strip (manual mode's free-space bar). */
-		extra?: Snippet;
 	} = $props();
 
 	// In manual mode the plan is the truth: before it loads, nothing is drawn
@@ -63,44 +59,57 @@
 <div class="dest-card">
 	<div class="card-label">{t('destination.title')}</div>
 
-	{#if disk}
-		<div class="dest-id">
-			<span class="nf-icon dest-glyph" aria-hidden="true">{diskGlyph(disk)}</span>
-			<span class="dest-model">{disk.model || disk.name}</span>
-			<span class="dest-size">{disk.sizeFormatted}</span>
-		</div>
-		<!-- No device-path line and no chain caption: the selected row beside the
-			 rail shows both (its meta row carries the path, its caption the chain),
-			 and the rail's 440px at the fixed 900x600 window cannot repeat them
-			 and still keep the note visible. Both still live in the strip's own
-			 tooltips. -->
-		<LayoutStrip {segments} />
-		{@render extra?.()}
-		{#if note}
-			<p class={['dest-note', { 'dest-note--danger': !manual }]}>
-				{#if !manual}
-					<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.3 15 13.8H1L8 1.3Zm0 3.2L3.3 12h9.4L8 4.5Zm-.7 2.3v3h1.4v-3H7.3Zm0 4v1.4h1.4v-1.4H7.3Z"/></svg>
-				{/if}
-				{note}
-			</p>
+	<!-- The card grows into the rail's leftover height; the label stays at the
+		 card's reading edge like the options card's, and everything the card
+		 actually says — identity, strip, note, or the empty ask — centers in
+		 what is left, so the growing height is always the equal margin above
+		 and below the information, never a band of emptiness under it. -->
+	<div class="dest-body">
+		{#if disk}
+			<div class="dest-id">
+				<span class="nf-icon dest-glyph" aria-hidden="true">{diskGlyph(disk)}</span>
+				<span class="dest-model">{disk.model || disk.name}</span>
+				<span class="dest-size">{disk.sizeFormatted}</span>
+			</div>
+			<!-- No device-path line and no chain caption: the selected row beside the
+				 rail shows both (its meta row carries the path, its caption the chain),
+				 and the rail's 440px at the fixed 900x600 window cannot repeat them
+				 and still keep the note visible. Both still live in the strip's own
+				 tooltips. -->
+			<LayoutStrip {segments} />
+			{#if note}
+				<p class={['dest-note', { 'dest-note--danger': !manual }]}>
+					{#if !manual}
+						<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.3 15 13.8H1L8 1.3Zm0 3.2L3.3 12h9.4L8 4.5Zm-.7 2.3v3h1.4v-3H7.3Zm0 4v1.4h1.4v-1.4H7.3Z"/></svg>
+					{/if}
+					{note}
+				</p>
+			{/if}
+		{:else}
+			<div class="dest-empty">
+				<span class="dest-msg">{t('destination.emptyTitle')}</span>
+				<span class="dest-sub">
+					{t('destination.emptyHint')} {t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}
+				</span>
+				<span class="dest-ghost" aria-hidden="true"></span>
+			</div>
 		{/if}
-	{:else}
-		<div class="dest-empty">
-			<span class="dest-msg">{t('destination.emptyTitle')}</span>
-			<span class="dest-sub">
-				{t('destination.emptyHint')} {t('page.diskSelection.minDiskSize', { minSize: minDiskSizeFormatted })}
-			</span>
-			<span class="dest-ghost" aria-hidden="true"></span>
-		</div>
-	{/if}
+	</div>
 </div>
 
 <style>
 	/* The rail's card surface — the same recipe the storage-options card and the
-	   Welcome page's region card use, so the rail is one material. */
+	   Welcome page's region card use, so the rail is one material.
+	   The rail's bottom block: it grows into whatever rail height the options
+	   card above it leaves, so its height belongs to the rail, not to its
+	   content — selecting or deselecting a disk never moves its edges. (The
+	   tallest content — the manual plan's note — still fits the rail's
+	   fixed-window budget; see e2e/manual.spec.ts railFits. min-height:auto,
+	   the flex default, keeps the content whole if a window ever shrinks it.) */
 	.dest-card {
 		display: flex;
 		flex-direction: column;
+		flex-grow: 1;
 		gap: 3px;
 		background-color: var(--color-bg-white);
 		border: 1px solid var(--color-border-light);
@@ -118,6 +127,18 @@
 		color: var(--color-text-muted);
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
+	}
+
+	/* The centered block under the label — see the markup comment. min-height
+	   stays auto (the flex default): if content ever outgrows the leftover
+	   space the card keeps it whole and the rail scrolls, rather than the
+	   centered block being squeezed and clipped at both ends. */
+	.dest-body {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		flex-grow: 1;
+		justify-content: center;
 	}
 
 	.dest-id {

@@ -11,9 +11,7 @@
 	import type { PlanChoice } from '$lib/disk-layout';
 	import { installState, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
-	import { computeUsedMB, computeFreeMB } from '$lib/manual-layout';
 	import { inferDiskFileSystem } from '$lib/disks';
-	import { mbToGB } from '$lib/format';
 	import { type DiskInfo, type InstallMode, type PartitionEntry, PAGE_IDS } from '$lib/types';
 	import { DefaultFileSystem } from '$lib/constants';
 	import { t } from '$lib/i18n';
@@ -29,21 +27,6 @@
 	}
 
 	const pageIcon = glyph(STEP_ICONS.diskSelection);
-
-	// Allocated / free space summary for the manual-mode rail. Derived from the
-	// shared manual layout, which ManualPartitionPage keeps in sync.
-	const spaceSummary = $derived.by(() => {
-		const layout = installState.manualLayout;
-		if (!layout) return { used: 0, total: 0, free: 0, pct: 0 };
-		const used = computeUsedMB(layout);
-		const total = layout.diskSizeMB;
-		// Fold in the pending "add partition" (from the manual page's size slider)
-		// so the bar previews the change before the partition is committed.
-		const pending = Math.max(0, Math.min(uiState.pendingAddMB, computeFreeMB(layout)));
-		const usedPreview = used + pending;
-		const freePreview = Math.max(computeFreeMB(layout) - pending, 0);
-		return { used: usedPreview, total, free: freePreview, pct: total > 0 ? Math.min(100, Math.round((usedPreview / total) * 100)) : 0 };
-	});
 
 	// The info rail's head is the page's identity in both modes — only the
 	// words change. The rail is the wizard's fixed frame: the same head style,
@@ -193,36 +176,13 @@
 
 			<!-- The same card in the same place in both modes: the automatic
 				 destination layout, or the manual plan itself — the identical
-				 picture the content column draws. Manual mode adds the free-space
-				 bar inside the card (never between the cards), so the card's top
-				 edge never moves. -->
+				 picture the content column draws. -->
 			<DestinationCard
 				disk={installState.disk}
 				{plan}
 				manual={installState.manualMode}
 				layout={installState.manualLayout}
-			>
-				{#snippet extra()}
-					{#if installState.manualMode && installState.manualLayout && spaceSummary.total > 0}
-						<!-- One honest number: the free space. The total is already in
-							 the card's identity row above, so it is not repeated here. -->
-						<div class="rail-space">
-							<div
-								class="rail-space-bar"
-								role="progressbar"
-								aria-valuenow={spaceSummary.pct}
-								aria-valuemin={0}
-								aria-valuemax={100}
-							>
-								<div class="rail-space-used" style="--pct: {spaceSummary.pct}%"></div>
-							</div>
-							<div class="rail-space-label">
-								{t('manual.free')} {mbToGB(spaceSummary.free)} {t('unit.gb')}
-							</div>
-						</div>
-					{/if}
-				{/snippet}
-			</DestinationCard>
+			/>
 		{/snippet}
 	</PageInfo>
 

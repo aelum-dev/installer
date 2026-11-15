@@ -77,7 +77,8 @@ test.describe('Manual partitioning', () => {
     await page.getByRole('button', { name: 'Manual' }).click();
     await expect(page.getByRole('heading', { name: 'Select Partitions' })).toBeVisible();
     await expect(page.locator('.disk-page .dest-card')).toBeVisible();
-    await expect(page.locator('.disk-page .dest-card .rail-space-bar')).toBeVisible();
+    // The card draws the plan strip once the layout arrives (sync point).
+    await expect(page.locator('.disk-page .dest-card .strip .seg').first()).toBeVisible();
 
     // /dev/nvme0n1 has 2 existing partitions, shown by their device path.
     await expect(page.getByText('/dev/nvme0n1p1')).toBeVisible();
