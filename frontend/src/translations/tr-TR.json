@@ -163,7 +163,6 @@
   "page.welcome.noMatch": "Eşleşen dil yok.",
   "page.welcome.region": "Konum",
   "page.welcome.regionChange": "Değiştir",
-  "page.welcome.regionHint": "Dile göre ayarlandı — doğru değilse değiştirin.",
   "page.welcome.subtitle": "Bu yükleyici, sisteminizi kurmanız için size rehberlik edecektir.",
   "page.welcome.title": "Aelum'a Hoş Geldiniz",
   "snapshot.prompt.body": "Kullandığınız sistem bir geri alma anlık görüntüsü olarak korunur ve geri yüklenen durum yeniden başlattıktan sonra önyüklenir. OK düğmesine basana kadar hiçbir şey değişmez.",

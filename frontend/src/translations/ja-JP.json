@@ -163,7 +163,6 @@
   "page.welcome.noMatch": "一致する言語はありません。",
   "page.welcome.region": "場所",
   "page.welcome.regionChange": "変更",
-  "page.welcome.regionHint": "言語に基づいて設定されています。異なる場合は変更してください。",
   "page.welcome.subtitle": "このインストーラーがシステムのセットアップをガイドします。",
   "page.welcome.title": "Aelum へようこそ",
   "snapshot.prompt.body": "使用していたシステムは取り消し用のスナップショットとして保持され、復元された状態は再起動後に起動します。OK を押すまで何も変わりません。",

@@ -163,7 +163,6 @@
   "page.welcome.noMatch": "Ningún idioma coincide.",
   "page.welcome.region": "Ubicación",
   "page.welcome.regionChange": "Cambiar",
-  "page.welcome.regionHint": "Establecido según su idioma; cámbielo si no es correcto.",
   "page.welcome.subtitle": "Este instalador le guiará a través de la configuración de su sistema.",
   "page.welcome.title": "Bienvenido a Aelum",
   "snapshot.prompt.body": "El sistema que estabas usando se conserva como una instantánea de deshacer, y el estado restaurado arranca tras un reinicio. Nada cambia hasta que pulses OK.",

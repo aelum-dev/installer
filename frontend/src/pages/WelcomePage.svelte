@@ -140,12 +140,6 @@
 					</svg>
 				</button>
 			</div>
-			<!-- The pre-fill is the part a person can't see happening: picking a
-			     language quietly rewrites this. Say so — and stop saying it once they
-			     have chosen a location themselves, when it is no longer true. -->
-			{#if !installState.regionChosen}
-				<p class="region-note">{t('page.welcome.regionHint')}</p>
-			{/if}
 		</div>
 	{/snippet}
 
@@ -286,12 +280,6 @@
 	.region-change svg {
 		width: 1em;
 		height: 1em;
-	}
-
-	.region-note {
-		margin: var(--spacing-xs) 0 0;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-light);
 	}
 
 	.list-label {

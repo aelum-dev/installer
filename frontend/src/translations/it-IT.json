@@ -163,7 +163,6 @@
   "page.welcome.noMatch": "Nessuna lingua corrispondente.",
   "page.welcome.region": "Località",
   "page.welcome.regionChange": "Cambia",
-  "page.welcome.regionHint": "Impostato in base alla tua lingua; modificalo se non è corretto.",
   "page.welcome.subtitle": "Questo installatore ti guiderà attraverso la configurazione del sistema.",
   "page.welcome.title": "Benvenuto in Aelum",
   "snapshot.prompt.body": "Il sistema che stavi usando viene conservato come snapshot di annullamento, e lo stato ripristinato si avvia dopo un riavvio. Nulla cambia finché non premi OK.",

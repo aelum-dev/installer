@@ -163,7 +163,6 @@
   "page.welcome.noMatch": "Tidak ada bahasa yang cocok.",
   "page.welcome.region": "Lokasi",
   "page.welcome.regionChange": "Ubah",
-  "page.welcome.regionHint": "Diatur berdasarkan bahasa Anda; ubah jika tidak tepat.",
   "page.welcome.subtitle": "Pemasang ini akan memandu Anda melalui pengaturan sistem Anda.",
   "page.welcome.title": "Selamat datang di Aelum",
   "snapshot.prompt.body": "Sistem yang Anda gunakan disimpan sebagai snapshot untuk membatalkan perubahan, dan kondisi yang dipulihkan akan boot setelah restart. Tidak ada yang berubah sampai Anda menekan OK.",
