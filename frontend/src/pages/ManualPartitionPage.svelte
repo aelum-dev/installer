@@ -376,37 +376,41 @@
 			button stays disabled when none is left. -->
 		{#if showAddControl}
 		<div class="add-control">
-			<input
-				type="range"
-				class="add-slider"
-				min="1"
-				max={Math.max(availableAddMB, addSizeMB || 0)}
-				bind:this={sliderEl}
-				step="1"
-				bind:value={addSizeMB}
-				disabled={addUseRemaining}
-			/>
-			<NumberStepper
-				bind:value={addSizeMB}
-				min={1}
-				max={availableAddMB}
-				disabled={addUseRemaining}
-				placeholder={t('manual.sizeMB')}
-			/>
-			<span class="add-unit">{t('unit.mb')}</span>
-			<label class="add-check">
-				<input type="checkbox" bind:checked={addUseRemaining} />
-				<span class="add-switch" aria-hidden="true"><span class="add-switch-knob"></span></span>
-				<span>{t('manual.useRemaining')}</span>
-			</label>
-			<button
-				type="button"
-				class="add-btn"
-				disabled={!canAdd}
-				onclick={addPartition}
-			>
-				+ {t('manual.add')}
-			</button>
+			<div class="add-size">
+				<input
+					type="range"
+					class="add-slider"
+					min="1"
+					max={Math.max(availableAddMB, addSizeMB || 0)}
+					bind:this={sliderEl}
+					step="1"
+					bind:value={addSizeMB}
+					disabled={addUseRemaining}
+				/>
+				<NumberStepper
+					bind:value={addSizeMB}
+					min={1}
+					max={availableAddMB}
+					disabled={addUseRemaining}
+					placeholder={t('manual.sizeMB')}
+				/>
+				<span class="add-unit">{t('unit.mb')}</span>
+			</div>
+			<div class="add-actions">
+				<button
+					type="button"
+					class="add-btn"
+					disabled={!canAdd}
+					onclick={addPartition}
+				>
+					+ {t('manual.add')}
+				</button>
+				<label class="add-check">
+					<input type="checkbox" bind:checked={addUseRemaining} />
+					<span class="add-switch" aria-hidden="true"><span class="add-switch-knob"></span></span>
+					<span>{t('manual.useRemaining')}</span>
+				</label>
+			</div>
 		</div>
 		{/if}
 	{/if}
