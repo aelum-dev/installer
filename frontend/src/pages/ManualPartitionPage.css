@@ -81,21 +81,28 @@
 /* Line assignments: the lead spine spans both lines at the reading edge; the
    path column (path over filesystem) spans both, centered; the pills and the
    delete button sit at the first line's trailing edge; the second line
-   carries the size — and on designated rows the formats warning beside it,
-   under the pills. A warning line of the trailing column's own width is why
-   the longer locales' phrase fits instead of ellipsizing, and the path still
-   gets the real remainder instead of an ellipsis of a device path a click
-   cannot identify. */
+   carries the size — and on designated rows the formats warning, centered
+   across the line to the size's left. The warning centers on the row, not on
+   the size beside it: the phrase is a third longer in some locales than in
+   English, and riding the size's edge made it start on a different pixel in
+   every row.
+   Every item names its column and row explicitly. Measured: with the warning
+   fixed under the path column, the path's AUTO column skipped it into an
+   implicit fourth column and the pills after it into a fifth — three declared
+   columns rendered as five, and the line read as jumbled text. */
 .part-lead {
 	grid-row: 1 / span 2;
+	grid-column: 1 / 2;
 }
 
 .part-id {
 	grid-row: 1 / span 2;
+	grid-column: 2 / 3;
 }
 
 .part-actions {
 	grid-row: 1;
+	grid-column: 3 / 4;
 	display: flex;
 	align-items: center;
 	gap: var(--spacing-xs);
@@ -103,14 +110,11 @@
 	min-width: 0;
 }
 
-/* The size under the pills, with the designated row's warning before it. */
+/* The warning and the size are the second line. display: contents hands both
+   children to the row's grid directly, so the warning can center on the whole
+   line while the size keeps its place at the trailing edge. */
 .part-meta {
-	grid-row: 2;
-	display: flex;
-	align-items: center;
-	justify-self: end;
-	gap: var(--spacing-sm);
-	min-width: 0;
+	display: contents;
 }
 
 /* A designated row wears the plan's color on its frame — the fact the map
@@ -157,11 +161,21 @@
 }
 
 /* The fact the old design hid in a tooltip, said out loud on designated
-   rows, beside the size under the pills — the full trailing-column width, so
-   the longer locales' phrase never gets cut off. It carries the fs line's
-   quiet xs size itself now: outside .part-fs nothing else would, and a base
-   size warning both dwarfs the note and squeezes the path column. */
+   rows, centered across the whole second line: a fixed center is the one
+   position that never drifts with the size's length or the locale's word
+   count. The size paints over the line's trailing edge, so the centered
+   text only meets it on locales far longer than any shipped one; the
+   ellipsis caps those. It carries the fs line's quiet xs size itself now:
+   outside .part-fs nothing else would, and a base size warning both
+   dwarfs the note and squeezes the path column. */
 .part-formats {
+	grid-row: 2;
+	/* Positive lines on purpose: -1/-2 as the size's and the warning's column
+	   edges made Chromium grow the grid with two extra implicit tracks (the
+	   size landed in its own 48px column, mid-row) instead of using the
+	   declared three. */
+	grid-column: 2 / 4;
+	text-align: center;
 	color: var(--color-danger);
 	font-weight: 600;
 	font-size: var(--font-size-xs);
@@ -172,6 +186,9 @@
 }
 
 .part-size {
+	grid-row: 2;
+	grid-column: 3 / 4;
+	justify-self: end;
 	font-size: var(--font-size-md);
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
