@@ -186,7 +186,8 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
     darwin/                     — macOS build output
     windows/                    — Windows build output
     appicon.png                 — Application icon
-    README.md                   — Build directory documentation
+  docs/                         — OVERVIEW, EXECUTION_FLOW, TROUBLESHOOTING, CONTRIBUTING,
+                                  SECURITY, CODE_OF_CONDUCT, build-directory (build/ layout)
   .agents/                      — Agent skills directory
   wails.json                    — Wails configuration
   go.mod / go.sum               — Go module files

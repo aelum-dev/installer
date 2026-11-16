@@ -57,7 +57,7 @@ Passwords come from stdin only, never from a flag. `--dry-run` walks the steps w
 ./build.sh        # → build/bin/aelum-installer and build/bin/aelum-installer-cli
 ```
 
-Toolchain, tests and code conventions are in [CONTRIBUTING.md](./CONTRIBUTING.md). You don't build it to
+Toolchain, tests and code conventions are in [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md). You don't build it to
 use it: [aelum/docker](https://github.com/aelum-dev/docker) builds the installer as part of building the
 ISO.
 
@@ -66,10 +66,10 @@ ISO.
 | File | What's in it |
 |---|---|
 | [AGENTS.md](./AGENTS.md) | architecture map, install steps, key patterns, rules |
-| [OVERVIEW.md](./OVERVIEW.md) · [EXECUTION_FLOW.md](./EXECUTION_FLOW.md) | feature overview · step-by-step execution flow |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | building, tests, style, commit messages |
-| [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | install and boot failures, dual boot, the boot menu |
-| [SECURITY.md](./SECURITY.md) | how to report a vulnerability |
+| [docs/OVERVIEW.md](./docs/OVERVIEW.md) · [docs/EXECUTION_FLOW.md](./docs/EXECUTION_FLOW.md) | feature overview · step-by-step execution flow |
+| [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) | building, tests, style, commit messages |
+| [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) | install and boot failures, dual boot, the boot menu |
+| [docs/SECURITY.md](./docs/SECURITY.md) | how to report a vulnerability |
 
 ## License
 

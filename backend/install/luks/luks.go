@@ -15,8 +15,8 @@ import (
 )
 
 // cryptoArgs returns the shared cryptsetup flags pinned to current best
-// practices (see luks.md §11): LUKS2, aes-xts-plain64, 512-bit key (AES-256
-// under XTS), argon2id KDF, sha256 workfactor hash, 2000ms iter time.
+// practices (the shared.Luks* constants): LUKS2, aes-xts-plain64, 512-bit key
+// (AES-256 under XTS), argon2id KDF, sha256 workfactor hash, 2000ms iter time.
 func cryptoArgs() []string {
 	return []string{
 		"--batch-mode",

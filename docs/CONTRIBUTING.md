@@ -18,7 +18,7 @@ Thanks for your interest in contributing! This guide covers the basics.
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.26+ (the module pins `go 1.26.0`; the ISO build container pins `GOTOOLCHAIN=go1.26.0`)
 - Node.js 22+
 - [Wails CLI](https://wails.io/docs/gettingstarted/installation)
 - `webkit2gtk-4.1` (Linux) or `WebView2` (Windows)
@@ -49,35 +49,36 @@ backend/
 ├── cli/                 # CLI installer (password read from stdin)
 ├── gui/                 # Wails GUI layer
 │   ├── app.go           # Wails app struct, StartUp, OnBeforeClose, cancel/cleanup
-│   ├── bindings.go      # Wails API bindings (GetDisks, GetLanguages, GetFileSystem)
+│   ├── bindings.go      # Wails API bindings (GetDisks, GetLanguages, GetRegions, …)
 │   ├── installation.go  # StartInstallation (spawns CLI via sudo, reads JSON from stderr)
-│   ├── navigation.go    # Page IDs, navigation state
+│   ├── navigation.go    # Page IDs, navigation state, UI locale
 │   ├── root_check.go    # Sudo verification
 │   └── validation.go    # Validate + Save methods
 ├── install/             # Installation orchestrator + steps
-│   ├── installer.go     # Installer orchestrator (Install()/Rollback())
-│   ├── step.go          # Step interface + stepWeights() (order + progress weights)
+│   ├── installer.go     # Installer orchestrator (Install()/RunStep()/Rollback())
+│   ├── step.go          # Steps() + stepWeights() (order + progress weights)
 │   ├── context.go       # InstallContext (shared state, Cancel channel, Logger)
 │   ├── errors.go        # Error types
 │   ├── cleanup.go       # Rollback + lazy recursive mount cleanup
-│   ├── format/          # Partitioning + formatting (+ btrfs subvolumes)
-│   ├── mount/           # Mount filesystem + verification
-│   ├── installbase/     # Base pacstrap
-│   ├── installdesktop/  # Desktop pacstrap
-│   ├── users/           # User account setup
-│   ├── configure/       # Merged: fstab→bootloader→system→greetd→plymouth→zram→services
+│   ├── primitives/      # Run/RunChroot/WriteFile/… seams (+ primitivestest/ fakes)
+│   ├── format/ lvm/     # Partitioning/formatting (LUKS→LVM→mkfs), volume group
+│   ├── mount/ partition/# Mounts + verification, manual layout math
+│   ├── installbase/ installdesktop/  # pacstrap steps (+ GPU drivers, IM engines)
+│   ├── users/ isocopy/  # accounts + weather location; live-ISO files copied unchanged
+│   ├── configure/       # Merged step: fstab→system→IM→initramfs→bootloader→greetd→
+│   │                    # plymouth→zram→network→services→pacman repo→snapper
+│   ├── verify/          # Read-only post-install verification
 │   ├── clearcache/      # Clear pacman cache in chroot
 │   ├── greetd/          # greetd config (config, sync, memory)
-│   ├── primitives/      # Low-level primitives (Run/RunChroot/WriteFile/AppendFile/CleanupMounts)
 │   ├── progress/        # Pacstrap progress tracker
 │   └── *_test.go        # Unit + integration tests
 ├── validation/          # Centralized validation
-└── shared/              # Types, validators, disk detection, regions, mirrorlists
+└── shared/              # Types, config.go (all constants), disk detection, regions, mirrorlists
 
 frontend/src/
-├── pages/               # 6 wizard pages
+├── pages/               # Wizard pages
 ├── components/          # Reusable UI components
-├── lib/                 # State, navigation, validation, i18n
+├── lib/                 # State (store.svelte.ts), navigation, validation, i18n
 └── translations/        # i18n locale JSON files
 ```
 
@@ -95,8 +96,10 @@ frontend/src/
 - **Svelte/TypeScript**: Follow [Svelte docs](https://svelte.dev/docs) conventions. Run `npm run check` for type checking.
 - **No magic numbers**: Extract constants into named `const` variables. All constants live in `backend/shared/config.go`.
 - **Single responsibility**: Each function does one thing. Validation functions validate only — they don't mutate state.
-- **Live ISO vs installed system**: Never confuse the two. See `RULES.md` for the full distinction.
-- **Executor pattern**: Use the `Executor` interface for command execution in testable code. Direct `Run()` / `runChroot()` calls are fine for simple cases.
+- **Live ISO vs installed system**: Never confuse the two. See `AGENTS.md` for the full distinction.
+- **Primitives seams**: Install steps execute commands and touch the target only through
+  `install/primitives/` (`Run`/`RunChroot` behind `CommandRunner`, file I/O behind `FileSystem`).
+  Tests inject the fakes in `install/primitives/primitivestest/` instead of running as root.
 
 ## Commit Messages
 

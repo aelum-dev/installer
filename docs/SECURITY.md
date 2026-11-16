@@ -10,8 +10,8 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 **Do not open a public issue.** Instead, choose one of these channels:
 
-1. **Email**: Send a description to the project maintainer's email (see [README](README.md))
-2. **GitHub**: Report through [GitHub's private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability), or email the maintainer directly.
+1. **GitHub**: Report through [GitHub's private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability) on the affected repository.
+2. **Email**: If GitHub is not an option, use the contact published on [aelum.dev](https://aelum.dev).
 
 ### What to Include
 
@@ -30,7 +30,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 The installer uses a **CLI-spawn pattern** to limit root access:
 
-- The GUI runs as root and spawns `aelum-installer-cli` via `sudo`
+- The GUI runs as a **normal user** and spawns `aelum-installer-cli` via `sudo`
 - The CLI binary handles all privileged operations directly via `exec.Command` and `arch-chroot`
 - No separate helper binary is needed — the CLI is the privileged component
 - Passwords are read from stdin (never CLI flags) to avoid `/proc`, `ps`, and shell history exposure
@@ -53,10 +53,11 @@ security implications worth stating explicitly.
 
 ### Build-time package trust
 
-- The ISO is assembled by `docker/build.sh` inside a privileged `archlinux`
-  container. Official packages are downloaded with `pacman -Syw` into an embedded
-  offline mirror (`airootfs/var/cache/aelum/offline-mirror/`), and AUR packages
-  are compiled from source via `makepkg`.
+- The ISO is assembled inside a privileged `archlinux` container by the `docker/` build
+  (`make local-build` / `make build`, which run `scripts/build-iso.sh`). Official packages
+  are downloaded with `pacman -Syw` into an embedded offline mirror
+  (`airootfs/var/cache/aelum/offline-mirror/`), and AUR packages are compiled from source
+  via `makepkg`.
 - During the offline build, `SigLevel` is set to `Never` in
   `live-iso/pacman-offline.conf`. This is intentional: the mirror is a fixed,
   snapshot bundle, and enforcing signature verification against the live Arch
@@ -82,16 +83,17 @@ from the website. Each release ships:
 - `SHA-256` and `SHA-512` checksum files
 - a detached ASCII-armored GPG signature (`.asc`)
 
-Use `docker/make-release.sh` to generate these artifacts locally before upload.
-Users can verify a download with:
+`make release` in `docker/` signs these artifacts (`scripts/sign-iso.sh`) and uploads
+them to R2. Users can verify a download with:
 
 ```sh
 sha256sum -c aelum-*-x86_64.iso.sha256
 gpg --verify aelum-*-x86_64.iso.asc aelum-*-x86_64.iso
 ```
 
-The maintainer's public signing key is published alongside releases; pin and
-verify it before trusting a signature.
+The maintainer's public signing key is published via WKD at
+`https://aelum.dev/.well-known/openpgpkey/` — fetch it from there rather than from a
+hosted key file, and verify the fingerprint before trusting a signature.
 
 ## Known Security Considerations
 

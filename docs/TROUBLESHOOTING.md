@@ -65,14 +65,18 @@ sudo umount -R /mnt 2>/dev/null
 sudo ./aelum-installer-cli --rollback /dev/sda
 ```
 
-### "pacstrap failed" / "no mirror list available"
+### "pacstrap failed" / "package not found"
 
-**Cause**: Mirrorlist is missing or corrupted for the selected region.
+The install never touches the network: pacstrap resolves **only** against the offline
+mirror embedded in the ISO. A "package or group not found" failure therefore means the
+installer's package lists and the mirror baked into *this* ISO have drifted apart — a
+package was added to `installbase`/`installdesktop` without rebuilding the ISO, or the
+mirror was built from older lists.
 
-**Fix**:
-1. Verify the mirrorlist exists: `ls /etc/pacman.d/mirrorlist-*`
-2. Rebuild mirrorlists: `go run ./backend/shared/mirrorlist_gen.go`
-3. Rebuild the installer: `./build.sh`
+**Fix**: rebuild the ISO from current sources — `docker/scripts/build-iso.sh` unions the
+installer lists (through `go run ./backend/scripts/pkg-list.go`) with `live-iso/packages.x86_64`
+and regenerates the mirror from the current resolution every build. The mirrorlist the
+installer writes to the target is only for later online updates and cannot cause this failure.
 
 ### "bootloader verification failed" (rEFInd)
 

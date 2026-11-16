@@ -12,8 +12,8 @@ import (
 )
 
 // TestCryptoArgs verifies the pinned LUKS2 parameters match current best
-// practices (luks.md §11): LUKS2, aes-xts-plain64, 512-bit key (AES-256 under
-// XTS), argon2id KDF, sha256 hash, 2000ms iter time.
+// practices (the shared.Luks* constants): LUKS2, aes-xts-plain64, 512-bit key
+// (AES-256 under XTS), argon2id KDF, sha256 hash, 2000ms iter time.
 func TestCryptoArgs(t *testing.T) {
 	want := []string{
 		"--batch-mode",

@@ -775,9 +775,12 @@ const LuksMapperName = "aelum"
 // LuksMapperPath is the full device path of the decrypted root mapper.
 const LuksMapperPath = "/dev/mapper/" + LuksMapperName
 
-// LUKS crypto parameters pinned to current (2026) best practices. See
-// luks.md §11 for the verified rationale. These match cryptsetup 2.4.0+
-// defaults and the systemd-based initramfs expectations.
+// LUKS crypto parameters pinned to current (2026) best practices. These match
+// cryptsetup 2.4.0+ defaults and the systemd-based initramfs expectations:
+// argon2id is the memory-hard default KDF, and the 512-bit key is AES-256
+// under XTS (the cipher splits it into two AES keys). The hash is sha256
+// because decryption happens in the initramfs (sd-encrypt), not in the
+// bootloader, so GRUB's sha512 slowness is not a concern here.
 const (
 	// LuksType selects the LUKS version (luks2 is the current default).
 	LuksType = "luks2"
