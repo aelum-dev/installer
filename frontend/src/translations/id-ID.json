@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Sudah Ada",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Tata letak",
+  "disk.layoutTag": "Tata letak otomatis",
   "disk.lvmSub": "volume logis untuk root dan home",
   "disk.manyPartitions": "{count} partisi",
   "disk.mount": "Titik pasang",

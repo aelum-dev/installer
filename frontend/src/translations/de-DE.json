@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Vorhanden",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Layout",
+  "disk.layoutTag": "Auto-Layout",
   "disk.lvmSub": "logische Datenträger für root und home",
   "disk.manyPartitions": "{count} Partitionen",
   "disk.mount": "Einhängpunkt",

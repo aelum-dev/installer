@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Mevcut",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Yerleşim",
+  "disk.layoutTag": "Otomatik yerleşim",
   "disk.lvmSub": "root ve home için mantıksal birimler",
   "disk.manyPartitions": "{count} bölüm",
   "disk.mount": "Bağlama noktası",

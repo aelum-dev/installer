@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Meglévő",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Elrendezés",
+  "disk.layoutTag": "Automatikus elrendezés",
   "disk.lvmSub": "logikai kötetek a root és home részére",
   "disk.manyPartitions": "{count} partíció",
   "disk.mount": "Csatolási pont",

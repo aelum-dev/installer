@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Olemassa oleva",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Asetelma",
+  "disk.layoutTag": "Automaattinen asetelma",
   "disk.lvmSub": "loogiset volumen rootille ja kotihakemistolle",
   "disk.manyPartitions": "{count} osiota",
   "disk.mount": "Liitoskohta",

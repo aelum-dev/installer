@@ -24,7 +24,7 @@
 		segments: StripSegment[];
 		/** The manual-mode map, thick enough to label its segments. */
 		tall?: boolean;
-		/** Uppercase tag before the caption text (e.g. "Layout"). */
+		/** Uppercase tag before the caption text (e.g. "Auto layout"). */
 		tag?: string;
 		/** The plain-words chain under the strip; the strip alone renders without it. */
 		caption?: string;

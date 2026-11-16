@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "既存",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "レイアウト",
+  "disk.layoutTag": "自動レイアウト",
   "disk.lvmSub": "root と home の論理ボリューム",
   "disk.manyPartitions": "{count} パーティション",
   "disk.mount": "マウントポイント",

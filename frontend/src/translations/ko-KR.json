@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "기존",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "레이아웃",
+  "disk.layoutTag": "자동 레이아웃",
   "disk.lvmSub": "root와 home을 위한 논리 볼륨",
   "disk.manyPartitions": "{count}개 파티션",
   "disk.mount": "마운트 지점",

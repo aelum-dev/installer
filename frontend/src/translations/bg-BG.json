@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Съществуващ",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Разметка",
+  "disk.layoutTag": "Авто разметка",
   "disk.lvmSub": "логически обеми за root и home",
   "disk.manyPartitions": "{count} дяла",
   "disk.mount": "Точка на монтиране",

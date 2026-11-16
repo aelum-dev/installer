@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Bestaand",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Indeling",
+  "disk.layoutTag": "Automatische indeling",
   "disk.lvmSub": "logische volumes voor root en home",
   "disk.manyPartitions": "{count} partities",
   "disk.mount": "Aanhechtingspunt",

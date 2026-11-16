@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Existerande",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Layout",
+  "disk.layoutTag": "Automatisk layout",
   "disk.lvmSub": "logiska volymer för root och home",
   "disk.manyPartitions": "{count} partitioner",
   "disk.mount": "Monteringspunkt",

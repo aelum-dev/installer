@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Існуючий",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Розмітка",
+  "disk.layoutTag": "Авто розмітка",
   "disk.lvmSub": "логічні томи для root і home",
   "disk.manyPartitions": "{count} розділів",
   "disk.mount": "Точка монтування",

@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Đã tồn tại",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Bố cục",
+  "disk.layoutTag": "Bố cục tự động",
   "disk.lvmSub": "lượng lôgic cho root và home",
   "disk.manyPartitions": "{count} phân vùng",
   "disk.mount": "Điểm gắn kết",

@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Eksisterende",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Oppsett",
+  "disk.layoutTag": "Automatisk oppsett",
   "disk.lvmSub": "logiske volumer for root og home",
   "disk.manyPartitions": "{count} partisjoner",
   "disk.mount": "Monteringspunkt",

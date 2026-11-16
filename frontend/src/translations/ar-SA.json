@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "موجود",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "التخطيط",
+  "disk.layoutTag": "التخطيط التلقائي",
   "disk.lvmSub": "أحجام منطقية لـ root و home",
   "disk.manyPartitions": "{count} تقسيمات",
   "disk.mount": "نقطة التثبيت",

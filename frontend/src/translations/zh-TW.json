@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "已存在",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "版面配置",
+  "disk.layoutTag": "自動版面配置",
   "disk.lvmSub": "root 與 home 的邏輯卷",
   "disk.manyPartitions": "{count} 個分割區",
   "disk.mount": "掛載點",

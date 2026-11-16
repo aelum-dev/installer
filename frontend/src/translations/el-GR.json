@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "Υπάρχων",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "Διάταξη",
+  "disk.layoutTag": "Αυτόματη διάταξη",
   "disk.lvmSub": "λογικοί όγκοι για root και home",
   "disk.manyPartitions": "{count} διαμερίσματα",
   "disk.mount": "Σημείο σύνδεσης",

@@ -35,7 +35,7 @@
   "disk.lvmLabel": "LVM",
   "disk.existing": "موجود",
   "disk.hdd": "HDD",
-  "disk.layoutTag": "چیدمان",
+  "disk.layoutTag": "چیدمان خودکار",
   "disk.lvmSub": "حجم‌های منطقی برای root و home",
   "disk.manyPartitions": "{count} پارتیشن",
   "disk.mount": "نقطه اتصال",
