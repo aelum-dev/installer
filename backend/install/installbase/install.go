@@ -50,6 +50,16 @@ var BasePackages = []string{
 	// backend/scripts/pkg-list.go — so the live session needs no compiler.
 	"base-devel",
 
+	// Things every Arch console is expected to answer with. `git` is how a
+	// PKGBUILD tree, a VCS AUR build and a dotfiles repo arrive: without it the
+	// base-devel above can build what is handed to it but fetch nothing, and an
+	// offline install cannot get it afterwards any more than it can get
+	// base-devel. Manual pages: the `base` group ships no `man` and no pages,
+	// so without these the installed system's only documentation is a browser.
+	"git",
+	"man-db",
+	"man-pages",
+
 	// Bootloader (installed onto the ESP by the configure step; efibootmgr is
 	// pulled in as its dependency)
 	"refind",

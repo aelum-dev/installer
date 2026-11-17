@@ -21,13 +21,15 @@ import (
 //  6. greetd + Dux Greeter setup
 //  7. Aelum LUKS unlock Plymouth theme (matches the live ISO)
 //  8. zram swap configuration
-//  9. Point /etc/resolv.conf at /run (before the services and before the
+//  9. Persistent journal storage, so the log of a broken boot survives long
+//     enough to read - including from the snapshot one rolls back to
+//  10. Point /etc/resolv.conf at /run (before the services and before the
 //     snapshot, so the factory snapshot already carries the link)
-//  10. Enable systemd services
-//  11. Enable the [aelum] package repository and trust its signing key (all
+//  11. Enable systemd services
+//  12. Enable the [aelum] package repository and trust its signing key (all
 //     filesystems): a fresh install installs the distro's own applications with
 //     no hand-editing
-//  12. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
+//  13. Snapper for the btrfs layout (btrfs only): configs, pacman transaction
 //     hooks, the boot-menu entries for the snapshots, the state mounts a snapshot
 //     boot needs, and the "after installation" snapshot - last, because it is the
 //     finished system and because a snapshot only contains what was written before
@@ -65,6 +67,9 @@ func Run(ctx *shared.InstallContext) error {
 		return err
 	}
 	if err := ConfigureZram(ctx); err != nil {
+		return err
+	}
+	if err := ConfigureJournald(ctx); err != nil {
 		return err
 	}
 	// Before the services are enabled and before the snapshot is taken: the point

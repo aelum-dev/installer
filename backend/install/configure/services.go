@@ -64,6 +64,36 @@ func calculateZramSizeMiB() int {
 }
 
 // ============================================================================
+// Journal storage
+// ============================================================================
+
+// ConfigureJournald switches the installed system's journal to persistent
+// storage. Arch ships Storage=auto, which keeps the log only in the volatile
+// runtime journal unless /var/log/journal already exists — and on a fresh
+// install it does not, so the log of the boot that broke something dies with
+// that boot. This distro ships rollback as its answer to a broken update, and
+// the person who rolls back is precisely the person who wants to read what the
+// broken state did; on the btrfs layout that reading survives, because
+// /var/log is the @log subvolume, outside the @ history snapper snapshots.
+// The drop-in is the systemd-supported way to request persistence, and
+// journald creates /var/log/journal itself when it sees Storage=persistent.
+func ConfigureJournald(ctx *shared.InstallContext) error {
+	if err := primitives.ValidateMountedSystem(); err != nil {
+		return err
+	}
+	journalConf := `[Journal]
+Storage=persistent
+`
+	if ctx.Logger != nil {
+		ctx.Logger.Info("Configuring persistent journal storage")
+	}
+	if err := primitives.WriteFile("/etc/systemd/journald.conf.d/aelum.conf", journalConf); err != nil {
+		return fmt.Errorf("failed to write journald config: %w", err)
+	}
+	return nil
+}
+
+// ============================================================================
 // Service management
 // ============================================================================
 

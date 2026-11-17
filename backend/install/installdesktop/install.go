@@ -85,6 +85,38 @@ var DesktopPackages = []string{
 	"brightnessctl",
 	"ddcutil",
 
+	// Archives. file-roller is the Nautilus "Open With"/"Compress…" backend —
+	// without it those menu entries silently do nothing — and these are the
+	// tools its own optdeps name for the formats its dialogs offer: ZIP
+	// (zip/unzip), RAR (unrar) and 7z (7zip). tar/gzip/xz arrive with base.
+	"file-roller",
+	"zip",
+	"unzip",
+	"unrar",
+	"7zip",
+
+	// gvfs backends. The core `gvfs` ships as a nautilus dependency and knows
+	// only local files; these are the backends that put the machine's
+	// surroundings into the file manager: Windows/Samba shares and the
+	// discovery that lists the machines holding them (gvfs-smb, gvfs-wsdd),
+	// NFS servers, DNS-SD/WebDAV (gvfs-dnssd), Android phones (gvfs-mtp), PTP
+	// cameras (gvfs-gphoto2) and iPhones (gvfs-afc). The cloud backends
+	// (gvfs-goa, gvfs-onedrive) are deliberately absent: they would offer an
+	// account login for an account UI this desktop does not ship.
+	"gvfs-afc",
+	"gvfs-dnssd",
+	"gvfs-gphoto2",
+	"gvfs-mtp",
+	"gvfs-nfs",
+	"gvfs-smb",
+	"gvfs-wsdd",
+
+	// Fingerprint readers. Dux Shell's lock screen and the greeter enable
+	// fingerprint unlock as soon as fprintd is installed — this package is the
+	// whole wiring on the Aelum side; enrollment (`fprintd-enroll`) stays the
+	// person's choice, and a machine without a reader loses nothing.
+	"fprintd",
+
 	// Fonts
 	"noto-fonts",
 	"noto-fonts-cjk",

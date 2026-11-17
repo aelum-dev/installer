@@ -82,7 +82,10 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
         pacman_repo.go          — the installed system's pacman.conf: appends the [aelum] block, trusts the release key in the target's keyring, uncomments the stock [multilib] section (the only source of steam and its lib32-* dependencies; the mirrorlist carries $repo so no Server line is needed), and drops sync DBs of repositories the target does not name (+ pacman_repo_test.go)
         greetd.go               — greetd + Dux Greeter executor (greetdExecutor)
         plymouth.go             — Aelum LUKS unlock Plymouth theme + aelum-boot-progress.service (finishes the splash bar)
-        services.go             — zram swap config + systemd service enablement
+        services.go             — zram swap config + persistent journal drop-in
+                                  (/etc/systemd/journald.conf.d/aelum.conf, Storage=persistent —
+                                  /var/log is the @log subvolume, so the log survives a rollback)
+                                  + systemd service enablement
         snapper.go              — snapper configs for @ and @home (quotas, timeline units), the @home .snapshots subvolume, the "after installation" snapshot and the pacman pre/post transaction snapshot hooks; btrfs only
         refind_snapshots.go     — the installed system's snapshot boot entries: aelum-refind-snapshots generator, its systemd unit, and the snapper plugin that runs it; btrfs only
         snapshot_state.go       — the systemd generator that gives a snapshot boot writable state directories (aelum-snapshot-state → tmpfs .mount units) and announces the boot in /run/aelum-snapshot-boot, so a snapshot comes up at the greeter and the prompt knows its number; btrfs only
@@ -291,8 +294,13 @@ Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Foot + Firefox 
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player,
 aelum-package-installer, imv,
-gnome-text-editor, nautilus (+ the ffmpegthumbnailer/ffmpegthumbs video thumbnailers), and Noto fonts (CJK + Emoji)
-+ Terminus + JetBrains Mono Nerd. Every install also carries the **Fcitx5 input method core**
+gnome-text-editor, nautilus (+ the ffmpegthumbnailer/ffmpegthumbs video thumbnailers), file-roller with the
+archive tools its own optdeps name (zip, unzip, unrar, 7zip), the gvfs network/device backends
+(gvfs-smb/-wsdd/-nfs/-dnssd/-mtp/-gphoto2/-afc — deliberately not the cloud ones, which need an account UI
+this desktop does not ship), and fprintd (the Dux Shell lock screen and the greeter enable fingerprint unlock
+as soon as it is installed; enrollment stays the person's choice), and Noto fonts (CJK + Emoji)
++ Terminus + JetBrains Mono Nerd. The base step additionally carries `git`, `man-db` and `man-pages` — none
+ships in `base`, and an offline install could not fetch them afterwards either. Every install also carries the **Fcitx5 input method core**
 (framework, GTK/Qt modules, config tool); the language table (`installdesktop/inputmethods.go`)
 decides which engines are added on top, the configure step writes the session's input method list
 (English first, then the location's keyboard layout, then the engine — `configure/inputmethod.go`),
