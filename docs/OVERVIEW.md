@@ -199,7 +199,7 @@ docs/                          # this file, EXECUTION_FLOW, TROUBLESHOOTING, CON
 ## Desktop Installed
 
 Hyprland + Dux Shell + Dux Greeter + Foot + Firefox + PipeWire + zram + branded Plymouth.
-Ships: Nautilus (+video thumbnailers), gnome-text-editor, mpv, imv, btop, fastfetch,
+Ships: Nautilus (+video thumbnailers), gnome-text-editor, mpv, amberol, papers, loupe, btop, fastfetch,
 brightnessctl, ddcutil, cava, matugen, `aelum-video-player`, `aelum-package-installer`,
 the Fcitx5 input method core (engines chosen per language), Noto CJK/Emoji + Terminus +
 JetBrains Mono Nerd fonts. Btrfs installs additionally carry snapper (base) and

@@ -50,7 +50,18 @@ var DesktopPackages = []string{
 	// needs no network.
 	"aelum-video-player",
 	"aelum-package-installer",
-	"imv",
+	// Music. Amberol is the audio half of the media story: GTK4/libadwaita
+	// like the rest of the stack, and MPRIS-aware, so the Dux Shell music
+	// widget and the media keys drive it. Audio files still default to the
+	// video player — the player owns media (live-iso AGENTS.md) — and Amberol
+	// answers "Open with"; its gstreamer deps play MP3/FLAC/OGG out of the box.
+	"amberol",
+	// Images and documents. Loupe is GNOME's current GTK4/libadwaita image
+	// viewer and takes the image defaults in the seeded mimeapps.list from imv;
+	// Papers (also GTK4/libadwaita, poppler-backed) is the document half, with
+	// application/pdf defaulted to it there.
+	"loupe",
+	"papers",
 	"gnome-text-editor",
 
 	// Terminal & UI

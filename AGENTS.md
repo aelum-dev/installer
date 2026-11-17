@@ -293,7 +293,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 Hyprland + Dux Shell (Quickshell-based) + Dux Greeter (greetd) + Foot + Firefox + PipeWire. Boot splash: Aelum LUKS unlock Plymouth theme (branded logo + passphrase splash for encrypted boot), configured in `install/configure/` to match the live ISO.
 
 Installed packages include: btop, fastfetch, brightnessctl, ddcutil, cava, matugen, mpv, aelum-video-player,
-aelum-package-installer, imv,
+aelum-package-installer, amberol, papers, loupe,
 gnome-text-editor, nautilus (+ the ffmpegthumbnailer/ffmpegthumbs video thumbnailers), file-roller with the
 archive tools its own optdeps name (zip, unzip, unrar, 7zip), the gvfs network/device backends
 (gvfs-smb/-wsdd/-nfs/-dnssd/-mtp/-gphoto2/-afc — deliberately not the cloud ones, which need an account UI
