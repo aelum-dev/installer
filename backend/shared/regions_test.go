@@ -1,12 +1,13 @@
 package shared
 
 import (
-	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestGetRegionCanonicalizes covers the spellings callers actually use: the table
@@ -218,11 +219,12 @@ func TestRegionTableMatchesTheCuratedTables(t *testing.T) {
 // country. tzdata names a row after the most populous city among the countries
 // that share it and lists that country first, so a country that is not first has
 // no name of its own in the file: Iceland's only row is Africa/Abidjan's and
-// Denmark's is Europe/Berlin's, although tzdata ships Atlantic/Reykjavik and
-// Europe/Copenhagen as the same bytes. So a name taken straight from a row must
-// be from a row that names the country, and any other name must be the curated
-// pick beside it. Every name must also be a zone this tzdata really has, and for a
-// country with one row it must be that row's clock under a local spelling.
+// Denmark's is Europe/Berlin's, although tzdata also ships Atlantic/Reykjavik and
+// Europe/Copenhagen as the same clock under a local spelling. So a name taken
+// straight from a row must be from a row that names the country, and any other
+// name must be the curated pick beside it. Every name must also be a zone this
+// tzdata really has, and for a country with one row it must be that row's clock
+// under a local spelling.
 // Skipped where tzdata's zone table is not installed (the build container), since
 // the package is what defines these names and there is nothing to check against.
 func TestRegionTimezonesNameTheirOwnCountry(t *testing.T) {
@@ -274,31 +276,59 @@ func TestRegionTimezonesNameTheirOwnCountry(t *testing.T) {
 		// One row means tzdata has one clock for this country, so a curated name can
 		// only be that clock spelled the way people there spell it.
 		if len(rows[r.Code]) == 1 {
-			home := filepath.Join(zoneDir, rows[r.Code][0])
-			if !sameFileContents(home, chosen) {
-				t.Errorf("region %q shows %q, which is not tzdata's zone for it (%q)",
-					r.Name, r.Timezone, rows[r.Code][0])
+			home := rows[r.Code][0]
+			if err := sameClock(zoneDir, home, r.Timezone); err != nil {
+				t.Errorf("region %q shows %q, which is not tzdata's zone for it (%q): %v",
+					r.Name, r.Timezone, home, err)
 			}
 		}
 	}
 }
 
-// sameFileContents reports two files with identical bytes. It is the test's
-// stand-in for "the same clock": tzdata spells one zone's name several ways and
-// ships each spelling as the same data.
-func sameFileContents(a, b string) bool {
-	if a == b {
-		return true
+// sameClock reports whether two names in one tzdata directory are the same civil
+// time from 1970 on — exactly what a zone1970.tab row promises of the countries it
+// lists, and the only thing that can be compared across distributions. Byte
+// equality cannot be: Arch ships a name shared with a neighbour as a link to the
+// row's own file, while Debian compiles each name separately from its own pre-1970
+// history, so on a Debian runner Europe/Copenhagen and Europe/Berlin are the same
+// clock in different bytes (2137 against 2298) and a byte comparison fails a choice
+// that is right. Only the offsets are compared: what a zone calls its clock is not
+// where the clock stands.
+func sameClock(zoneDir, want, got string) error {
+	if want == got {
+		return nil
 	}
-	first, err := os.ReadFile(a)
+	wanted, err := loadZone(zoneDir, want)
 	if err != nil {
-		return false
+		return err
 	}
-	second, err := os.ReadFile(b)
+	gotten, err := loadZone(zoneDir, got)
 	if err != nil {
-		return false
+		return err
 	}
-	return bytes.Equal(first, second)
+
+	first := time.Date(1970, 1, 1, 12, 0, 0, 0, time.UTC)
+	last := first.AddDate(130, 0, 0)
+	for day := first; day.Before(last); day = day.AddDate(0, 0, 1) {
+		_, home := day.In(wanted).Zone()
+		_, shown := day.In(gotten).Zone()
+		if home != shown {
+			return fmt.Errorf("%s is %v there on %s, %s is %v",
+				want, time.Duration(home)*time.Second, day.Format("2006-01-02"),
+				got, time.Duration(shown)*time.Second)
+		}
+	}
+	return nil
+}
+
+// loadZone reads one zone out of a tzdata directory the way the installed system
+// would, so the comparison is of two clocks and not of two files.
+func loadZone(zoneDir, name string) (*time.Location, error) {
+	data, err := os.ReadFile(filepath.Join(zoneDir, name))
+	if err != nil {
+		return nil, err
+	}
+	return time.LoadLocationFromTZData(name, data)
 }
 
 // TestWeatherForRegion is the "every location the installer offers has a capital"

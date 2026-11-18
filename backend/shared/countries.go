@@ -110,8 +110,9 @@ var ArchCountryISO = map[string]string{
 // first, so a small country beside a large one has no name of its own in the
 // file. Denmark's only row is Europe/Berlin's and Iceland's is Africa/Abidjan's,
 // although tzdata ships Europe/Copenhagen and Atlantic/Reykjavik as the same
-// bytes. The name a person reads beside their own country goes here, and the
-// generator refuses to fall back on a row the country is not named in.
+// clock under a local name. The name a person reads beside their own country goes
+// here, and the generator refuses to fall back on a row the country is not named
+// in.
 //
 // Countries whose one row names them first need no entry here.
 var PreferredZone = map[string]string{
