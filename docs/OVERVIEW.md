@@ -218,5 +218,8 @@ Ships: Nautilus (+video thumbnailers), gnome-text-editor, mpv, amberol, papers, 
 brightnessctl, ddcutil, cava, matugen, `aelum-video-player`, `aelum-package-installer`,
 the Fcitx5 input method core (engines chosen per language), the firewall and its
 configuration window (`firewalld` + `firewall-config`, "Firewall" in the launcher),
+the VPN plugins the shell's toggle drives (`networkmanager-vpn-plugin-openvpn` and
+`-openconnect`, plus `wireguard-tools`; WireGuard itself is built into
+NetworkManager and the kernel),
 Noto CJK/Emoji + Terminus + JetBrains Mono Nerd fonts. Btrfs installs additionally
 carry snapper (base) and btrfs-assistant (desktop).

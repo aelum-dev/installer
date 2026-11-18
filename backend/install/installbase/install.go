@@ -39,6 +39,33 @@ var BasePackages = []string{
 	"sudo",
 	"networkmanager",
 	"iwd",
+
+	// VPN. Dux Shell carries a VPN toggle — the bar widget, the control-center
+	// tile and the Settings → Network → VPN page are all one client of
+	// NetworkManager: the shell (dux-gop) shows profiles, connects and answers
+	// auth prompts for exactly the connection types whose plugins NM can
+	// register, so an install with no plugin carries a VPN panel with nothing
+	// to switch. Remote workers are the first users, and the tunnel has to be
+	// there the way the firewall is. These three are the protocols the shell
+	// integrates end to end, measured on the dux-shell 2.x tree: the toggle
+	// appears only when the backend is NetworkManager (which every install
+	// enables); the core execs `nmcli` and `openconnect`; the VPN page imports
+	// `.ovpn` and WireGuard `.conf` files; the auth dialogs — OpenVPN username,
+	// OpenConnect password, GlobalProtect/Fortinet SAML — are the shell's own,
+	// which is why the *plugin* packages ship rather than their GTK
+	// editor/auth-dialog parents: the plugin half is what NM activates.
+	//   networkmanager-vpn-plugin-openvpn      OpenVPN (+ the openvpn daemon)
+	//   networkmanager-vpn-plugin-openconnect  AnyConnect / GlobalProtect /
+	//     Fortinet (+ the openconnect binary the shell execs for password auth)
+	// WireGuard needs no plugin — it is built into NetworkManager and into the
+	// kernel — but its tools do: `wg`/`wg-quick` are what a provider's setup
+	// doc names, and `wg show` is what a remote worker reads when the tunnel
+	// stays silent. IKEv2/L2TP stay a package install away (the shell lists
+	// whatever plugin a transaction puts in place); so does `tailscaled`, the
+	// one daemon the shell's Tailscale tab drives but no install starts.
+	"networkmanager-vpn-plugin-openvpn",
+	"networkmanager-vpn-plugin-openconnect",
+	"wireguard-tools",
 	"bluez",
 	"power-profiles-daemon",
 	"zram-generator",
