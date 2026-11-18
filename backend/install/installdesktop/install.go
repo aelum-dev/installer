@@ -105,6 +105,18 @@ var DesktopPackages = []string{
 	"fastfetch",
 	"brightnessctl",
 	"ddcutil",
+	// The desktop's update count. The seeded Dux Shell bar carries the
+	// systemUpdate widget in its center, and that widget's number comes from
+	// checkupdates (measured on dux-shell 2.1.2, which execs it) — a file only
+	// pacman-contrib owns, and one dux-shell neither depends on nor names as an
+	// optdep. Without it the widget falls back to `pacman -Qu` against the sync
+	// databases this install leaves behind, and those are the image's own
+	// snapshot, so every install reports no updates forever and says nothing:
+	// the count is 0 and hideWhenIdle then hides the widget outright.
+	// checkupdates runs unprivileged and syncs a temporary database of its own,
+	// so it never takes /var/lib/pacman's lock from under a package-installer
+	// transaction.
+	"pacman-contrib",
 
 	// Archives. file-roller is the Nautilus "Open With"/"Compress…" backend —
 	// without it those menu entries silently do nothing — and these are the

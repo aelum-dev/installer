@@ -303,7 +303,13 @@ as soon as it is installed; enrollment stays the person's choice), and Noto font
 daemon and its GTK backend arrive on their own because `gtk4` hard-depends on `xdg-desktop-portal-gtk`,
 but that backend has no wlr-screencopy, so without the Hyprland one every ScreenCast client (Firefox,
 Meet, Zoom, OBS) gets no stream — and neither the live profile nor `pkg-list.go` would have carried the
-name into the offline mirror. The base step additionally carries `git`, `man-db` and `man-pages` — none
+name into the offline mirror. The bar's update count rides on **`pacman-contrib`** for the same kind of
+reason: the seeded `dms/settings.json` enables Dux Shell's `systemUpdate` widget in the bar center, that
+widget reads `checkupdates` (measured: `dux-shell` 2.1.2 execs it), and `dux-shell` neither depends on it
+nor names it as an optdep — so an install without the package falls back to `pacman -Qu` against the
+image's own sync-DB snapshot and reports no updates forever. `package-installer` needs nothing from it:
+it refreshes its own databases at startup (`cache::check_is_owed`). The base step additionally carries
+`git`, `man-db` and `man-pages` — none
 ships in `base`, and an offline install could not fetch them afterwards either. Every install also carries the **Fcitx5 input method core**
 (framework, GTK/Qt modules, config tool); the language table (`installdesktop/inputmethods.go`)
 decides which engines are added on top, the configure step writes the session's input method list
