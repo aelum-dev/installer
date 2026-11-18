@@ -99,7 +99,14 @@ Storage=persistent
 
 // requiredServices must be enabled for a usable installed system: without
 // NetworkManager there is no network, and without greetd there is no login.
-var requiredServices = []string{"NetworkManager", "greetd"}
+//
+// firewalld is here for the opposite reason — it is the service whose absence
+// nobody notices. Its job is to make things not answer, so a machine that was
+// supposed to get a firewall and got none behaves exactly like a machine that has
+// one, right up to the moment someone on the same network tries the ports. An
+// install that could not enable it must say so, which is what a required service
+// does: the step fails, the log says which unit, and verify refuses the system.
+var requiredServices = []string{"NetworkManager", "greetd", "firewalld"}
 
 // optionalServices add functionality but must not abort an otherwise complete
 // install when their unit is missing or their enable fails.

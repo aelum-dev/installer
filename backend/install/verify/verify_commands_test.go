@@ -292,3 +292,103 @@ func TestCheckPackages_SummaryCountsWhatItChecked(t *testing.T) {
 		t.Errorf("info = %v, want a summary counting %d packages", info, len(expectedPackages)+len(btrfsOnlyPackages))
 	}
 }
+
+// --- checkFirewall -----------------------------------------------------------
+
+// firewallEnabled answers `systemctl is-enabled firewalld` the way a finished
+// install does.
+func firewallEnabled() *primitivestest.Recorder {
+	return primitivestest.NewRecorder().
+		OnArgsOutput([]string{"arch-chroot", shared.MountRoot, "systemctl", "is-enabled", shared.FirewalldServiceName}, "enabled\n")
+}
+
+// TestCheckFirewall walks the two ways a day-one firewall goes missing: the unit
+// was never enabled, and the zone every new network lands in is the one that
+// accepts everything. Both are invisible from the desktop — the machine answers
+// either way — which is why they fail an install instead of logging a warning.
+func TestCheckFirewall(t *testing.T) {
+	cases := []struct {
+		name      string
+		rec       *primitivestest.Recorder
+		fs        *primitivestest.MemFS
+		wantIssue string
+	}{
+		{
+			name: "the packaged zone, enabled",
+			rec:  firewallEnabled(),
+			fs: primitivestest.NewMemFS().
+				WithFile(shared.MountRoot+shared.FirewalldConfPath, packagedFirewalldConf),
+		},
+		{
+			// The recorder has no rule for the is-enabled call, which is what a
+			// systemd that was never asked to start the daemon answers.
+			name:      "never enabled",
+			rec:       primitivestest.NewRecorder(),
+			fs:        primitivestest.NewMemFS().WithFile(shared.MountRoot+shared.FirewalldConfPath, packagedFirewalldConf),
+			wantIssue: "is not enabled in the installed system",
+		},
+		{
+			name: "the trusted zone is not a firewall",
+			rec:  firewallEnabled(),
+			fs: primitivestest.NewMemFS().
+				WithFile(shared.MountRoot+shared.FirewalldConfPath, "# default zone\nDefaultZone=trusted\n"),
+			wantIssue: "accepts everything: nothing is filtered",
+		},
+		{
+			name:      "no config at all",
+			rec:       firewallEnabled(),
+			fs:        primitivestest.NewMemFS(),
+			wantIssue: "failed to read " + shared.MountRoot + shared.FirewalldConfPath,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer primitives.SetFileSystem(c.fs)()
+			defer primitives.SetCommandRunner(c.rec)()
+
+			var issues, info []string
+			checkFirewall(&shared.InstallContext{}, &issues, &info)
+
+			if c.wantIssue == "" {
+				if len(issues) != 0 {
+					t.Fatalf("issues = %v, want none", issues)
+				}
+				if len(info) != 1 || !strings.Contains(info[0], "default zone "+shared.FirewalldDefaultZone) {
+					t.Errorf("info = %v, want a line naming the zone the install boots with", info)
+				}
+				return
+			}
+			if !strings.Contains(strings.Join(issues, "\n"), c.wantIssue) {
+				t.Errorf("issues = %v, want one containing %q", issues, c.wantIssue)
+			}
+		})
+	}
+}
+
+// TestFirewalldDefaultZone reads the zone out of the file the way firewalld does:
+// the packaged answer when the key is only commented, the last assignment when a
+// person has changed their mind more than once, and a zone of their own when they
+// have chosen one — the check has to accept that, because the default zone is
+// theirs to pick.
+func TestFirewalldDefaultZone(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{"the packaged file", packagedFirewalldConf, shared.FirewalldDefaultZone},
+		{"the key left commented", "# DefaultZone=trusted\nCleanupOnExit=yes\n", shared.FirewalldDefaultZone},
+		{"the key never mentioned", "FirewallBackend=nftables\n", shared.FirewalldDefaultZone},
+		{"a zone a person chose", "DefaultZone=home\n", "home"},
+		{"the last word wins", "DefaultZone=home\nDefaultZone=work\n", "work"},
+		{"an empty value is not a zone", "DefaultZone=\n", shared.FirewalldDefaultZone},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := firewalldDefaultZone(c.content); got != c.want {
+				t.Errorf("firewalldDefaultZone() = %q, want %q", got, c.want)
+			}
+		})
+	}
+}

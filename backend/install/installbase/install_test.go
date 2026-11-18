@@ -16,7 +16,10 @@ func TestBasePackages_NotEmpty(t *testing.T) {
 func TestBasePackages_ContainsEssential(t *testing.T) {
 	// base-devel is the AUR build tools: the package installer's AUR page runs
 	// makepkg on the installed machine, and it refuses to run without them.
-	expected := []string{"base", "linux-lts", "linux-firmware", "base-devel"}
+	// firewalld is the inbound policy every install is expected to boot with, and
+	// firewall-config is the window onto it — a desktop whose only answer is a
+	// command line is a desktop whose firewall stays whatever the install set.
+	expected := []string{"base", "linux-lts", "linux-firmware", "base-devel", "firewalld", "firewall-config"}
 	for _, pkg := range expected {
 		found := false
 		for _, p := range BasePackages {

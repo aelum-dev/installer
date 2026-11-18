@@ -12,13 +12,35 @@ import (
 	"aelum-installer/backend/shared"
 )
 
-// recorderMounted returns a CommandRunner whose findmnt check passes and whose
-// kernel/initrd probes succeed, so Run exercises the file-driven checks.
+// recorderMounted returns a CommandRunner whose findmnt check passes, whose
+// kernel/initrd probes succeed and whose systemctl reports the firewall as it is on
+// a finished install, so Run exercises the file-driven checks.
 func recorderMounted() *primitivestest.Recorder {
 	return primitivestest.NewRecorder().
 		OnOutput("findmnt", "/dev/vda2\n").
-		OnArgsOutput([]string{"find", shared.BootMountPoint}, "vmlinuz-linux-lts\n")
+		OnArgsOutput([]string{"find", shared.BootMountPoint}, "vmlinuz-linux-lts\n").
+		OnArgsOutput([]string{"arch-chroot", shared.MountRoot, "systemctl", "is-enabled", shared.FirewalldServiceName}, "enabled\n")
 }
+
+// packagedFirewalldConf is the part of firewalld's own configuration an installed
+// system boots with — the packaged file's default-zone lines, quoted from the
+// package. The installer never writes this file, so the fixtures carry it the way
+// pacstrap does: as what the package shipped.
+const packagedFirewalldConf = `# firewalld config file
+
+# default zone
+# The default zone used if an empty zone string is used.
+# Default: public
+DefaultZone=public
+
+# FirewallBackend
+# Selects the firewall backend implementation.
+# Choices:
+#   - nftables (default)
+#   - iptables (recommended for RHEL-6/7 and older)
+#
+FirewallBackend=nftables
+`
 
 // withInputMethodFiles adds the two files the input method check reads: the
 // session's input method list, in the framework's own format, and the config that
@@ -58,7 +80,8 @@ func TestRun_PassesWhenEverythingMatches(t *testing.T) {
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
-		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry)
+		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry).
+		WithFile(shared.MountRoot+shared.FirewalldConfPath, packagedFirewalldConf)
 	withInputMethodFiles(fs, "keyboard-us")
 	defer primitives.SetFileSystem(fs)()
 	rec := recorderMounted()
@@ -99,6 +122,7 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt filesystems)\n").
+		WithFile(shared.MountRoot+shared.FirewalldConfPath, packagedFirewalldConf).
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindConfigPath, "include "+shared.RefindThemeInclude+"\ninclude "+shared.RefindEntryInclude(id)+"\n").
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry), "keyboard-us", "keyboard-ru"),

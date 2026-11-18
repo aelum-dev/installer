@@ -43,6 +43,22 @@ var BasePackages = []string{
 	"power-profiles-daemon",
 	"zram-generator",
 
+	// The firewall. A desktop is carried onto networks nobody owns, and until now
+	// an install answered everything on them: `iproute2` has always pulled
+	// `iptables → nftables`, so the tools sat on every disk and nothing ever
+	// loaded a policy. firewalld is the policy — inbound is refused unless a rule
+	// accepts it, and which rules apply is a property of the network, so a café
+	// and a home network are not the same machine. Its unit is enabled by
+	// configure.EnableServices.
+	//
+	// firewall-config is the same product's window (Arch ships them at the same
+	// version): this desktop asks a question in a dialog, not in a man page, and a
+	// person who needs a port open should not have to learn firewall-cmd first. It
+	// costs about 100 KiB on top — firewalld's python stack and its gtk3 are
+	// already in the closure of the list above.
+	"firewalld",
+	"firewall-config",
+
 	// Build tools. The package installer's AUR page builds what it installs on
 	// this machine, and makepkg refuses to run without these; an install that
 	// lacks them can only take repository packages. This list is what puts them

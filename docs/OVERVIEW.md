@@ -55,7 +55,7 @@ key patterns, rules. This file is the human-facing companion.
 | 5 | Setup Users | 2 | Copy what the live ISO ships (`install/isocopy/`), write the weather location into the skeleton (`install/users/weather.go`), then useradd, chpasswd, sudoers (`install/users/`) |
 | 6 | Configure System | 4 | Merged step, see sub-steps below (`install/configure/`) |
 | 7 | Clear Cache | 1 | `pacman -Scc` in the chroot (`install/clearcache/`) |
-| 8 | Verify System | 1 | Read-only post-install checks: fstab, kernel + initrd, rEFInd entry, packages, IM profile, weather location, user, hostname (`install/verify/`) |
+| 8 | Verify System | 1 | Read-only post-install checks: fstab, kernel + initrd, rEFInd entry, packages, firewall enabled, IM profile, weather location, user, hostname (`install/verify/`) |
 
 Weights total 100 and drive the progress bar (`shared.Weight*` in `backend/shared/config.go`).
 
@@ -71,7 +71,7 @@ snapshot only contains what was written before it was taken):
 7. Plymouth theme + boot-progress service
 8. zram swap
 9. Link `/etc/resolv.conf` → `/run/NetworkManager/resolv.conf` (so a snapshot boot resolves)
-10. Enable services (NetworkManager, greetd, bluetooth, …)
+10. Enable services (NetworkManager, greetd, firewalld; bluetooth is optional)
 11. Enable the `[aelum]` repo + `[multilib]`, trust the distro key
 12. Snapper, **btrfs only, last**: configs for `@`/`@home`, pacman transaction hooks, rEFInd
     snapshot menu, snapshot-boot state generator, then the "after installation" snapshot
@@ -150,6 +150,21 @@ OS's ESP. LUKS2 always sits below LVM; one PV per install, the VG named after th
 `/dev/mapper` paths.** Each install owns its own kernel dir on the ESP (`aelum/<id>/`), so
 several installs share a disk without overwriting each other.
 
+### Inbound filtering (every install)
+A desktop is carried onto networks nobody owns, so an install ships a default-deny
+inbound policy: `firewalld` (base step) with `firewall-config` beside it, and
+`firewalld.service` enabled as a **required** service — a machine that was supposed to
+get a firewall behaves exactly like a machine that has one until somebody tries its
+ports, so a failed enable has to abort the install and name the unit. The policy is the
+zone a network lands in: NetworkManager leaves connections unzoned, so firewalld's
+`DefaultZone` (`public`, the packaged value) answers for every network a laptop joins
+until a person picks a zone per connection. The installer deliberately never edits
+`/etc/firewalld/firewalld.conf` — it is in the package's backup list, so a line added
+there becomes a merge prompt on every future upgrade and a pinned value would outlive a
+change of upstream default — which is why `verify.checkFirewall` *reads* the zone and
+refuses only `trusted`, the one zone that accepts everything. `openssh` is on the disk as
+a dependency and nothing enables `sshd`, so a fresh install has no listener at all.
+
 ---
 
 ## Build & Test
@@ -201,6 +216,7 @@ docs/                          # this file, EXECUTION_FLOW, TROUBLESHOOTING, CON
 Hyprland + Dux Shell + Dux Greeter + Foot + Firefox + PipeWire + zram + branded Plymouth.
 Ships: Nautilus (+video thumbnailers), gnome-text-editor, mpv, amberol, papers, loupe, btop, fastfetch,
 brightnessctl, ddcutil, cava, matugen, `aelum-video-player`, `aelum-package-installer`,
-the Fcitx5 input method core (engines chosen per language), Noto CJK/Emoji + Terminus +
-JetBrains Mono Nerd fonts. Btrfs installs additionally carry snapper (base) and
-btrfs-assistant (desktop).
+the Fcitx5 input method core (engines chosen per language), the firewall and its
+configuration window (`firewalld` + `firewall-config`, "Firewall" in the launcher),
+Noto CJK/Emoji + Terminus + JetBrains Mono Nerd fonts. Btrfs installs additionally
+carry snapper (base) and btrfs-assistant (desktop).

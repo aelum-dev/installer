@@ -1,6 +1,7 @@
 package configure
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -63,7 +64,7 @@ func TestUncommentMirrors_RealMirrorList(t *testing.T) {
 }
 
 func TestServicesToEnable(t *testing.T) {
-	want := map[string]bool{"NetworkManager": false, "greetd": false, "bluetooth": false}
+	want := map[string]bool{"NetworkManager": false, "greetd": false, "bluetooth": false, "firewalld": false}
 	seen := map[string]bool{}
 	for _, svc := range append(append([]string{}, requiredServices...), optionalServices...) {
 		if seen[svc] {
@@ -78,5 +79,13 @@ func TestServicesToEnable(t *testing.T) {
 		if !found {
 			t.Errorf("expected servicesToEnable to include %q", svc)
 		}
+	}
+
+	// Which list the firewall sits in is the whole decision: in requiredServices a
+	// failed enable aborts the install, in optionalServices it is a line in the log
+	// on a machine that then answers everything on the network it joins.
+	if !slices.Contains(requiredServices, shared.FirewalldServiceName) {
+		t.Errorf("%s is not a required service: a system that boots without it must not be reported as installed",
+			shared.FirewalldServiceName)
 	}
 }

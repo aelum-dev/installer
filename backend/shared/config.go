@@ -481,6 +481,38 @@ const Fcitx5ConfigPath = Fcitx5ConfigDir + "/config"
 // switchable by the same key as an engine.
 const Fcitx5KeyboardIMPrefix = "keyboard-"
 
+// --- Firewall (firewalld) -----------------------------------------------------
+
+// FirewalldServiceName is the unit the configure step enables, and the one the
+// verify step demands. Its absence is the invisible failure: a missing
+// NetworkManager shows as a desktop with no network, a missing firewall shows as
+// nothing at all until somebody probes the machine from the network it is
+// sitting on.
+const FirewalldServiceName = "firewalld"
+
+// FirewalldConfPath is firewalld's own configuration. The installer never writes
+// it: it is in the package's backup list, so every line put here by an install
+// turns into a merge prompt on the next firewalld upgrade, and a value pinned
+// here would silently outlive a change of upstream default. The verify step reads
+// it to confirm the posture it inherited is still a firewall.
+const FirewalldConfPath = "/etc/firewalld/firewalld.conf"
+
+// FirewalldDefaultZoneKey is the config key that names the zone a network with no
+// zone of its own belongs to. NetworkManager leaves connections unzoned, so this
+// key answers that question for every network a laptop joins until somebody says
+// otherwise.
+const FirewalldDefaultZoneKey = "DefaultZone"
+
+// FirewalldDefaultZone is what the packaged config sets and what an install
+// inherits: unsolicited inbound traffic is refused and only rules can open a
+// port. Recorded here as the expected value, not as a value to write.
+const FirewalldDefaultZone = "public"
+
+// FirewalldZoneTrusted is the one zone that is not a firewall at all: it accepts
+// everything. An install whose default zone is this one has a firewall package
+// and no filtering, which is exactly the state the verify step exists to catch.
+const FirewalldZoneTrusted = "trusted"
+
 // --- Desktop session state (Dux Shell) ---------------------------------------
 
 // SkelDir is the seeded home skeleton: every home is copied out of it — archiso

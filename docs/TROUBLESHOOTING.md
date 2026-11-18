@@ -282,6 +282,40 @@ ISO build's list — and `lib32-*` names resolve there because the ISO build ena
 (`docker/scripts/build-iso.sh`); the installed system gets `[multilib]` from
 `configure/pacman_repo.go`.
 
+### Something on my network cannot reach this machine
+
+Every install boots with a firewall: `firewalld` on the `public` zone, which drops
+inbound connections unless a rule accepts them. Outbound is unrestricted, so the
+machine still finds printers, phones and TV receivers on the LAN — what stopped
+working is *being found*. Decide which of the two you have:
+
+```bash
+ss -lntup            # what this machine is actually listening on (an empty list is normal)
+```
+
+- **Nothing listening** (`ss -lntup` prints no `sshd`, no server of any kind): the other
+  device is looking for a service this machine does not run. The firewall is not involved —
+  opening a port for a service that is not running changes nothing.
+- **Something is listening and the peer is refused**: open it, in the **Firewall**
+  window from the launcher (pick the zone, tick the service, use the permanent view) or:
+
+  ```bash
+  sudo firewall-cmd --permanent --add-service=kdeconnect   # mdns, ipp-client, …
+  sudo firewall-cmd --reload
+  ```
+
+  Being *discoverable* is its own rule: `public` ships no `mdns` allowance, which is why
+  the machine finds printers and phones but the phone does not find the machine.
+  (`ssh` is the exception — the packaged `public` zone already accepts it, so enabling
+  `sshd` makes this machine reachable until you tell it not to be:
+  `sudo firewall-cmd --permanent --remove-service=ssh`.)
+
+If the device only ever appears at home, prefer the zone over the rule: assign that
+connection's zone to `home` (NetworkManager's per-connection `zone=`, or Firewall →
+Options → Change Zone of a Connection) so the port stays closed on every network
+except that one. See `docs/SECURITY.md` → Day-one inbound filtering for what the
+policy is and why an install cannot boot without it.
+
 ## Recovery: Starting Over
 
 If an installation is partially complete and you want to start fresh:

@@ -46,9 +46,9 @@ func expectedPackagesFor(ctx *shared.InstallContext) []string {
 
 // Run verifies that the installed system (mounted at /mnt) is complete and
 // bootable. The check is read-only and fast: it verifies fstab, kernel/initrd
-// images, required packages, the input method list the sessions start with, the
-// weather location the desktop is set to, the user account, and the hostname. It
-// never modifies the installed system.
+// images, required packages, that inbound filtering is on, the input method list
+// the sessions start with, the weather location the desktop is set to, the user
+// account, and the hostname. It never modifies the installed system.
 //
 // On failure it returns an error listing every problem found, and logs the
 // collected diagnostics to help locate the root cause.
@@ -74,6 +74,7 @@ func Run(ctx *shared.InstallContext) error {
 	checkBootloader(ctx, &issues, &info)
 	checkKernelImages(ctx, &issues, &info)
 	checkPackages(ctx, &issues, &info)
+	checkFirewall(ctx, &issues, &info)
 	checkInputMethods(ctx, &issues, &info)
 	checkWeatherLocation(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
@@ -474,6 +475,68 @@ func checkPackages(ctx *shared.InstallContext, issues, info *[]string) {
 	}
 
 	*info = append(*info, fmt.Sprintf("all %d packages installed and present ✓ (base + desktop)", len(expected)))
+}
+
+// checkFirewall verifies the day-one inbound posture: the filter's unit is enabled,
+// and the zone a network a laptop has never seen lands in is one that filters.
+//
+// systemd is asked whether the unit is enabled instead of a path being probed:
+// `systemctl enable` writes a link into a directory whose name systemd owns, and
+// the target's own systemctl answers for the root it is chrooted into — the same
+// way verify asks pacman about packages.
+//
+// The zone is read, not written; see shared.FirewalldConfPath for why the installer
+// keeps out of that file. Only shared.FirewalldZoneTrusted is refused, because it
+// is the one zone that accepts everything: an install pointing there has the
+// package and none of the posture. Every other zone drops what no rule accepts, and
+// which one a person wants as their default is theirs to choose.
+func checkFirewall(ctx *shared.InstallContext, issues, info *[]string) {
+	out, err := primitives.RunChroot("systemctl", "is-enabled", shared.FirewalldServiceName)
+	if answer := strings.TrimSpace(string(out)); answer != "enabled" {
+		issue := shared.FirewalldServiceName + " is not enabled in the installed system: it boots with nothing filtering inbound connections"
+		if answer == "" && err != nil {
+			answer = err.Error()
+		}
+		if answer != "" {
+			issue += " (systemctl says " + answer + ")"
+		}
+		*issues = append(*issues, issue)
+		return
+	}
+
+	path := shared.MountRoot + shared.FirewalldConfPath
+	data, err := primitives.ReadFile(path)
+	if err != nil {
+		*issues = append(*issues, "failed to read "+path)
+		return
+	}
+	zone := firewalldDefaultZone(string(data))
+	if zone == shared.FirewalldZoneTrusted {
+		*issues = append(*issues, fmt.Sprintf("%s puts every new network in the %s zone, which accepts everything: nothing is filtered",
+			path, zone))
+		return
+	}
+
+	*info = append(*info, shared.FirewalldServiceName+" enabled, default zone "+zone)
+}
+
+// firewalldDefaultZone returns the zone firewalld assigns to a network that has no
+// zone of its own, as a firewalld.conf names it. The last assignment wins, matching
+// its parser, and a config that never mentions the key is not a gap: firewalld
+// falls back to its own default, which is the value the packaged config carries.
+func firewalldDefaultZone(content string) string {
+	zone := shared.FirewalldDefaultZone
+	prefix := shared.FirewalldDefaultZoneKey + "="
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "#") || !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		if value := strings.TrimSpace(strings.TrimPrefix(line, prefix)); value != "" {
+			zone = value
+		}
+	}
+	return zone
 }
 
 // checkInputMethods verifies the input method wiring the desktop and configure

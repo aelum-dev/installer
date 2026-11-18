@@ -482,6 +482,18 @@ func TestEnableServices(t *testing.T) {
 	if err := EnableServices(&shared.InstallContext{}); err != nil {
 		t.Fatalf("EnableServices() = %v, want nil when an optional service fails", err)
 	}
+
+	// The firewall is not optional, even though nothing about a machine without it
+	// looks wrong: an install that could not enable it has to stop and say which
+	// unit, rather than hand over a system that answers everything on its network.
+	rec4 := primitivestest.NewRecorder().
+		OnOutput("findmnt", "/dev/vda2\n").
+		OnArgsError([]string{"arch-chroot", shared.MountRoot, "systemctl", "enable", shared.FirewalldServiceName}, errors.New("exit status 1"))
+	defer primitives.SetCommandRunner(rec4)()
+	if err := EnableServices(&shared.InstallContext{}); err == nil ||
+		!strings.Contains(err.Error(), shared.FirewalldServiceName) {
+		t.Fatalf("EnableServices() error = %v, want a %s failure", err, shared.FirewalldServiceName)
+	}
 }
 
 // --- ConfigureSystemBase -----------------------------------------------------

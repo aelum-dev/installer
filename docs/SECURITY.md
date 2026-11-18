@@ -75,6 +75,64 @@ online updates resolve against official Arch mirrors with their normal
 signature enforcement. The offline `SigLevel = Never` applies **only** to the
 build-time mirror, never to the installed system.
 
+### Day-one inbound filtering
+
+The trust placed in a network is not the installer's to grant, and a desktop is
+carried onto networks nobody owns. So every install ships an inbound policy from
+the first boot:
+
+- `firewalld` is in the base package set and `firewalld.service` is enabled as a
+  **required** service (`install/configure/services.go`). A machine that was
+  supposed to get a firewall behaves exactly like a machine that has one until
+  somebody tries its ports, so a failed enable aborts the install and names the
+  unit instead of logging a warning.
+- The default zone is `public`: unsolicited inbound traffic is dropped unless a
+  rule accepts it, and outbound is unrestricted. Because NetworkManager leaves
+  connections unzoned, this zone answers for every network the machine joins until
+  a person assigns one per connection — the mechanism that keeps a home network and
+  a café network from being the same machine.
+- `firewall-config` ships beside it ("Firewall" in the launcher). Opening a port is
+  a click in a window, not a man page; `firewall-cmd` is there for anyone who
+  prefers it.
+- Nothing installed listens by default: `openssh` arrives as a dependency of the
+  desktop set, and no step enables `sshd` or `sshd.socket`.
+- The posture is verified, not assumed: `install/verify/verify.go` asks the target's
+  own systemd whether the unit is enabled and reads the default zone out of
+  `/etc/firewalld/firewalld.conf`, refusing `trusted` — the one zone that accepts
+  everything. `docker/scripts/verify-installed.sh` proves the same against a real
+  installed disk. The installer never *writes* that config file (it is in the
+  package's backup list, so an edit there becomes a merge prompt on every firewalld
+  upgrade and a pinned value would outlive a changed upstream default), which is
+  precisely why the value is read rather than trusted.
+
+Two things about that zone are worth knowing before they are reported as bugs:
+
+- Outbound discovery still works, so the machine finds printers, receivers and phones
+  on the LAN, but it no longer *answers* being discovered: `public` carries no `mdns`
+  allowance. Anything that has to reach this machine — a phone's KDE Connect, a
+  printer polling it — needs a rule, which is what the Firewall window is for.
+- The zone is shipped **exactly as the package defines it**
+  (`/usr/lib/firewalld/zones/public.xml`), and Arch's copy carries two allowances:
+  `dhcpv6-client` (stateless DHCPv6 replies arrive inbound, so dropping it would
+  quietly cost address information on some networks) and `ssh`. That second one is
+  why a fresh install has no listener and, the moment someone enables `sshd` from a
+  wiki, why it is reachable on every network it joins. Closing it is one permanent
+  rule (`firewall-cmd --permanent --zone=public --remove-service=ssh`), and the
+  packaged behaviour is kept deliberately: the firewall does what its own
+  documentation and every distro guide say it does, and the QEMU harness reaches the
+  *installed* test system over exactly that allowance.
+
+### The live ISO's SSH
+
+The live image enables `sshd.service` with root login and an empty password, because
+the whole QEMU test harness (`docker/`) drives the guest through it. That is a
+support channel, not a service: an image booted on a network nobody owns and left
+running through an install would otherwise present an unauthenticated root login on
+its only interface. So the unit is gated on the host's 9p share
+(`live-iso/airootfs/etc/systemd/system/sshd.service.d/aelum-live-ssh.conf`) — only a
+boot that carries that share, which is a harness boot and nothing else, starts
+`sshd`. With no share, nothing listens on 22 at all.
+
 ### Verifying a released ISO
 
 ISOs are published to Cloudflare R2 (too large for GitHub releases) and linked
