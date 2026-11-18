@@ -299,8 +299,10 @@ aelum-package-installer, amberol, papers, loupe,
 gnome-text-editor, nautilus (+ the ffmpegthumbnailer/ffmpegthumbs video thumbnailers), file-roller with the
 archive tools its own optdeps name (zip, unzip, unrar, 7zip), the gvfs network/device backends
 (gvfs-smb/-wsdd/-nfs/-dnssd/-mtp/-gphoto2/-afc — deliberately not the cloud ones, which need an account UI
-this desktop does not ship), and fprintd (the Dux Shell lock screen and the greeter enable fingerprint unlock
-as soon as it is installed; enrollment stays the person's choice), and Noto fonts (CJK + Emoji)
+this desktop does not ship), fprintd (the Dux Shell lock screen and the greeter enable fingerprint unlock
+as soon as it is installed; enrollment stays the person's choice), and fwupd (the daemon the package
+installer's Firmware page is a D-Bus client of — Arch ships no preset, so it wakes on the bus name and
+never by itself), and Noto fonts (CJK + Emoji)
 + Terminus + JetBrains Mono Nerd. Screen sharing rides on **`xdg-desktop-portal-hyprland`**: the portal
 daemon and its GTK backend arrive on their own because `gtk4` hard-depends on `xdg-desktop-portal-gtk`,
 but that backend has no wlr-screencopy, so without the Hyprland one every ScreenCast client (Firefox,

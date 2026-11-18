@@ -150,6 +150,16 @@ var DesktopPackages = []string{
 	// person's choice, and a machine without a reader loses nothing.
 	"fprintd",
 
+	// Firmware updates. fwupd is the daemon the package installer's Firmware
+	// page talks to and the only thing that reaches LVFS: laptops carry their
+	// most consequential fixes in NVMe, dock and UEFI firmware, and an offline
+	// install cannot fetch the daemon afterwards from the running desktop's
+	// own pages if nothing shipped it. Nothing runs unasked here either — the
+	// daemon answers a D-Bus client that is never started until the page is
+	// pressed, and a desktop-only install without firmware to write loses
+	// nothing.
+	"fwupd",
+
 	// Fonts
 	"noto-fonts",
 	"noto-fonts-cjk",
