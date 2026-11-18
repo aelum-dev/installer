@@ -31,6 +31,16 @@ var DesktopPackages = []string{
 	// dux-gop is Dux GOP (renamed from dgop); both Provides/Replaces/Conflicts
 	// the old names, so an existing install upgrades in place.
 	"hyprland",
+	// Screen sharing. hyprland names this backend only as an optdep, and the
+	// portal stack arrives on its own through gtk4, which hard-depends on
+	// xdg-desktop-portal-gtk — but the GTK backend has no wlr-screencopy: it
+	// cannot read a Hyprland screen, so every client that shares through
+	// org.freedesktop.portal.ScreenCast (Firefox, Meet, Zoom, OBS) gets no
+	// stream. This provides the same xdg-desktop-portal-impl virtual, so
+	// nothing conflicts: its .portal file claims the session through
+	// XDG_CURRENT_DESKTOP (hyprland and uwsm both set it) and the GTK backend
+	// stays beside it for the rest.
+	"xdg-desktop-portal-hyprland",
 	"dux-shell",
 	"cava",
 	"dux-gop",

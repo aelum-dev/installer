@@ -299,7 +299,11 @@ archive tools its own optdeps name (zip, unzip, unrar, 7zip), the gvfs network/d
 (gvfs-smb/-wsdd/-nfs/-dnssd/-mtp/-gphoto2/-afc — deliberately not the cloud ones, which need an account UI
 this desktop does not ship), and fprintd (the Dux Shell lock screen and the greeter enable fingerprint unlock
 as soon as it is installed; enrollment stays the person's choice), and Noto fonts (CJK + Emoji)
-+ Terminus + JetBrains Mono Nerd. The base step additionally carries `git`, `man-db` and `man-pages` — none
++ Terminus + JetBrains Mono Nerd. Screen sharing rides on **`xdg-desktop-portal-hyprland`**: the portal
+daemon and its GTK backend arrive on their own because `gtk4` hard-depends on `xdg-desktop-portal-gtk`,
+but that backend has no wlr-screencopy, so without the Hyprland one every ScreenCast client (Firefox,
+Meet, Zoom, OBS) gets no stream — and neither the live profile nor `pkg-list.go` would have carried the
+name into the offline mirror. The base step additionally carries `git`, `man-db` and `man-pages` — none
 ships in `base`, and an offline install could not fetch them afterwards either. Every install also carries the **Fcitx5 input method core**
 (framework, GTK/Qt modules, config tool); the language table (`installdesktop/inputmethods.go`)
 decides which engines are added on top, the configure step writes the session's input method list
