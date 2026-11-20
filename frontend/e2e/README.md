@@ -51,6 +51,41 @@ you want to click through the app by hand, that's the same environment the
 tests use — stop it with `npm run e2e:stop` first and start a normal
 `wails dev` if you need a non-dry one.
 
+## Website screenshots
+
+```bash
+cd frontend
+npm run shots          # the walkthrough, dark + light, into $TMPDIR/aelum-installer-shots
+AELUM_SHOT_DIR=… npm run shots     # somewhere else
+AELUM_SHOT_SCALE=2 npm run shots   # a different raster (default 3x)
+```
+
+`screenshots.spec.ts` is the source of the website's installer walkthrough
+(`website/src/components/Install.astro` → the `installer-step-N-theme` keys). It is
+skipped by `npm run e2e` and runs only when `AELUM_SHOTS=1` is set, which
+`npm run shots` does.
+
+It drives the same real app for a reason: the frames have to be the installer a
+visitor meets, and only this harness has the backend under them.
+
+- The viewport is the shipped window (900×600, fixed in `main.go`) and
+  `deviceScaleFactor: 3`, so the site's 1280 px derivative is a downscale of real
+  pixels rather than an upscale of a 1× grab off a display.
+- One run per theme, so all seven frames of a theme share one session: same
+  language, same user, same disk (`Samsung 990 PRO 2TB` — one of the clean rows of
+  the fake disk table, so no row in the disk list reads as mounted).
+- The theme is switched with the app's own header control; the DRY RUN badge —
+  which marks this dev-mode session, not a screen the installer has — is hidden by
+  a stylesheet injected into the loaded document. An `addInitScript` does **not**
+  work against the Wails dev page (measured: it never runs), so anything the
+  capture needs has to be injected after load. Nothing navigates after that, so it
+  holds for every frame.
+
+Then, from `website/`: `scripts/prepare-sources.py --single` for each frame (they
+are already the whole window, so there is nothing to crop) and
+`scripts/build-images.py`. The full command is in `website/AGENTS.md` → Assets →
+Screenshots.
+
 ## If Playwright appears to hang at startup
 
 `wails dev` opens the native installer window and binds two ports: **34115**
@@ -82,6 +117,9 @@ with warm Go caches.
   deleting rows, and the delete-confirmation dialog.
 - `install.spec.ts` — the full wizard flow through to the Installation step and
   its terminal state.
+- `screenshots.spec.ts` — the website's walkthrough frames. Not a test of
+  behaviour: it asserts only that each screen is the one it is about to capture,
+  and it is skipped unless `AELUM_SHOTS=1`. See **Website screenshots** above.
 
 ## Note on validation
 
@@ -95,9 +133,10 @@ are the states the tests assert.
 
 ## Note on the install step
 
-In this dev environment the dry-run CLI validates the synthetic disk's
-partition layout and reports an error ("exactly one Boot partition is required"),
-so the automated flow lands on the Installation page's error hint rather than
-the Finish screen. The test accepts either terminal state — it validates that
-the install path is wired correctly (navigation, backend bindings, CLI spawn).
-A clean run-to-Finish requires a real disk layout / non-dry install.
+The dry-run flow runs to the end: the GUI spawns the CLI without sudo, the
+synthetic disk the suite selects has a layout the CLI accepts, and
+`install.spec.ts` waits for the Finish screen's "Aelum has been installed
+successfully." — about ten seconds. The wizard's success path is therefore
+covered here, including the progress events and the finish state
+`screenshots.spec.ts` captures. A real install against a real disk is tested in
+QEMU from `docker/`, never here.

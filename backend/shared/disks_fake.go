@@ -103,6 +103,31 @@ func fakeDisks() []DiskInfo {
 			Rotational: false, Readonly: false, Trans: "nvme",
 			IsRemovable: false, Serial: "S9YNX0H1234567",
 		},
+		// The clean half of the table: nothing on them is mounted, so no MOUNTED or
+		// IN USE chip — what a disk looks like on a machine that is not using it
+		// right now, which is the ordinary case for a second drive. The website's
+		// walkthrough screenshots run on /dev/nvme4n1.
+		{
+			Name: "nvme4n1", Path: "/dev/nvme4n1", Size: 2000398934016,
+			SizeFormatted: "1.8 TB", Type: "disk",
+			Model: "Samsung 990 PRO 2TB", Vendor: "Samsung",
+			Rotational: false, Readonly: false, Trans: "nvme",
+			IsRemovable: false, Serial: "S6YANF9R654321",
+		},
+		{
+			Name: "nvme5n1", Path: "/dev/nvme5n1", Size: 1000204886016,
+			SizeFormatted: "931.5 GB", Type: "disk",
+			Model: "WD Black SN850X 1TB", Vendor: "Western Digital",
+			Rotational: false, Readonly: false, Trans: "nvme",
+			IsRemovable: false, Serial: "2112A0B7C1D9",
+		},
+		{
+			Name: "sdi", Path: "/dev/sdi", Size: 480103681024,
+			SizeFormatted: "447.1 GB", Type: "disk",
+			Model: "Kingston A400 480GB", Vendor: "Kingston",
+			Rotational: false, Readonly: false, Trans: "sata",
+			IsRemovable: false, Serial: "5025B04C1A7F",
+		},
 	}
 }
 
@@ -169,6 +194,23 @@ func fakePartitions(diskPath string) []PartitionEntry {
 			{Path: "/dev/nvme3n1p8", Name: "nvme3n1p8", Type: "part", Size: 53687091200, Fstype: "xfs", UUID: "N3P8-BACKUP", Mountpoints: []string{"/backup"}},
 			{Path: "/dev/nvme3n1p9", Name: "nvme3n1p9", Type: "part", Size: 214748364800, Fstype: "btrfs", UUID: "N3P9-RAID", Mountpoints: []string{}},
 			{Path: "/dev/nvme3n1p10", Name: "nvme3n1p10", Type: "part", Size: 1073741824000, Fstype: "zfs", UUID: "N3P10-ZFS", Mountpoints: []string{}},
+		}
+	// The clean disks: unmounted partitions, or none, so the rows carry no chip.
+	case "/dev/nvme4n1":
+		// A previous Linux install nobody is booted into: its ESP and its root, and
+		// the rest of the disk free — the layout manual mode is asked to re-decide.
+		return []PartitionEntry{
+			{Path: "/dev/nvme4n1p1", Name: "nvme4n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "E4P1-EFI", Mountpoints: []string{}},
+			{Path: "/dev/nvme4n1p2", Name: "nvme4n1p2", Type: "part", Size: 1099511627776, Fstype: "ext4", UUID: "e4p2-root-a1b2", Mountpoints: []string{}},
+		}
+	case "/dev/nvme5n1":
+		// Blank: the state a new drive arrives in, and the reason automatic mode
+		// needs nothing chosen to produce a layout.
+		return []PartitionEntry{}
+	case "/dev/sdi":
+		// An NTFS partition kept for its files, with room beside it for the install.
+		return []PartitionEntry{
+			{Path: "/dev/sdi1", Name: "sdi1", Type: "part", Size: 107374182400, Fstype: "ntfs", UUID: "5A2D-E9C1", Mountpoints: []string{}},
 		}
 	default:
 		return []PartitionEntry{}

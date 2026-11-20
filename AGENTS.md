@@ -117,7 +117,9 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       config.go                 — ALL constants: paths, command names, weights, thresholds, wallpaper, progress-tick, etc.
       logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
       disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath()
-      disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1, also used in dry-run)
+      disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1, also used in dry-run);
+                                  the last three rows are clean disks (nothing mounted → no MOUNTED /
+                                  IN USE chip), and /dev/nvme4n1 is what the website's walkthrough captures
       regions.go                — Location model: Region (ISO code, name, timezone, keymap) and WeatherPlace (city + "lat,lon"), GetRegions/GetRegion, RegionForLanguage (the language→location pre-fill), LocaleForLanguage, XkbLayoutForRegion (the desktop keyboard layout of a location), WeatherForRegion (the capital a location's weather is reported for; no capital = no answer)
       regions_table.go          — GENERATED baseline: 74 locations = every Arch mirrorlist country + the worldwide entry (regions_gen.go writes it)
       regions_gen.go            — Region-table generator (go run ./backend/shared/regions_gen.go; reads all_https.txt + zone1970.tab, ZONE_TABLE_PATH overrides)
@@ -232,6 +234,7 @@ cd frontend && npm run e2e           # headless suite (dev server stays warm for
 cd frontend && npm run e2e:stop      # stop the warm dev server
 cd frontend && npm run e2e:headed    # visible browser, for debugging
 cd frontend && npm run e2e:report    # the HTML report after a run
+cd frontend && npm run shots         # the website's installer screenshots (opt-in; see e2e/README.md)
 ```
 
 `scripts/e2e.sh` keeps a warm `wails dev` on :34115 between runs — the cold build is ~4 min while the

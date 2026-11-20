@@ -14,7 +14,8 @@
     "e2e:headed": "bash scripts/e2e.sh --headed",
     "e2e:stop": "bash scripts/e2e.sh --stop",
     "e2e:install": "npx playwright install chromium",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "shots": "env AELUM_SHOTS=1 bash scripts/e2e.sh e2e/screenshots.spec.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
