@@ -2,13 +2,14 @@
 	import { getContext } from 'svelte';
 	import { GetSelectedLanguage, GetSelectedRegion, GetSessionInputMethods, GetLanguages, GetRegions } from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
-import { uiState } from '$lib/ui.svelte';
+	import { uiState } from '$lib/ui.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import type { LanguageOption, RegionOption } from '$lib/types';
 	import { TYPE_ESP, TYPE_SYSTEM } from '$lib/types';
 	import { t } from '$lib/i18n';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { groupDigits, escapeHtml } from '$lib/format';
+	import { tooltip } from '$lib/tooltip.svelte';
 	import PageLayout from '$components/PageLayout.svelte';
 	import {
 		WIZARD_NAV,
@@ -86,9 +87,10 @@ import { uiState } from '$lib/ui.svelte';
 	let planScrollEl = $state<HTMLElement | null>(null);
 
 	// Bound .plan-scroll's height to the space left over in the column after the
-	// fixed summary content (language, user, disk header). When the table fits,
-	// the summary stays naturally sized and vertically centered; when it doesn't
-	// (many partitions), the table fills the column and scrolls internally.
+	// fixed summary content (the choices card, the disk header, its meta line).
+	// When the table fits, the summary stays naturally sized and vertically
+	// centered; when it doesn't (many partitions), the table fills the column
+	// and scrolls internally.
 	function updatePlanScrollHeight(): void {
 		if (!pageContentEl || !planScrollEl) return;
 		const summary = pageContentEl.querySelector<HTMLElement>('.summary');
@@ -119,49 +121,69 @@ import { uiState } from '$lib/ui.svelte';
 	variant="summary"
 	bind:contentEl={pageContentEl}
 >
+	<!-- The window is fixed at 900×600, so the summary must not spend the column
+		as a stack of label-over-value sections: with LUKS and LVM on, that stack
+		ran under the footer. The choices fit on rows now — label left, value
+		right, the storage-options card's look — and everything about the disk
+		lives in one bounded card of its own. -->
 	<div class="summary">
-		<div class="summary-section">
-			<h3 class="section-title">{t('page.confirmation.sectionLanguage')}</h3>
-			<p class="section-value">{selectedLanguageName}</p>
-		</div>
-
-		<div class="summary-section">
-			<h3 class="section-title">{t('page.confirmation.sectionInputMethod')}</h3>
-			<p class="section-value">{inputMethodValue}</p>
-		</div>
-
-		<div class="summary-section">
-			<h3 class="section-title">{t('page.confirmation.sectionRegion')}</h3>
-			<p class="section-value">{selectedRegionName}</p>
-		</div>
-
-		<div class="summary-section">
-			<h3 class="section-title">{t('page.confirmation.sectionUser')}</h3>
-			<p class="section-value">
-				{t('page.confirmation.username')}: <strong>{installState.username || '—'}</strong>
-			</p>
-			{#if installState.password}
-				<p class="section-value">
-					{t('page.confirmation.password')}: <strong>{'●'.repeat(installState.password.length)}</strong>
+		<section class="card">
+			<div class="crow">
+				<h3 class="clabel">{t('page.confirmation.sectionLanguage')}</h3>
+				<p class="cvalue">{selectedLanguageName}</p>
+			</div>
+			<div class="crow">
+				<h3 class="clabel">{t('page.confirmation.sectionRegion')}</h3>
+				<p class="cvalue">{selectedRegionName}</p>
+			</div>
+			<div class="crow">
+				<h3 class="clabel">{t('page.confirmation.sectionInputMethod')}</h3>
+				<p class="cvalue">{inputMethodValue}</p>
+			</div>
+			<div class="crow">
+				<h3 class="clabel">{t('page.confirmation.sectionUser')}</h3>
+				<p class="cvalue">
+					<strong>{installState.username || '—'}</strong>
+					{#if installState.password}
+						<span class="dim">· {t('page.confirmation.password')}: {'●'.repeat(installState.password.length)}</span>
+					{/if}
 				</p>
-			{/if}
-		</div>
+			</div>
+		</section>
 
-		<div class="summary-section">
-			<h3 class="section-title">{t('page.confirmation.sectionDisk')}</h3>
-			{#if installState.disk}
-				<div class="disk-summary">
-					<p class="section-value disk-name">
-						{installState.disk.model || '—'} ({installState.disk.sizeFormatted} {t(installState.disk.rotational ? 'disk.hdd' : 'disk.ssd')} {installState.disk.trans?.toUpperCase() || ''})
+		<section class="card">
+			<div class="dblock">
+				<h3 class="clabel">{t('page.confirmation.sectionDisk')}</h3>
+				{#if installState.disk}
+					<p class="dname">
+						{installState.disk.model || '—'}
+						<!-- One expression per parenthetical piece: Svelte trims the whitespace run
+									that opens a {#if} block, which silently ate the " · " separator. -->
+						<span class="dsize">({installState.disk.sizeFormatted} · {t(installState.disk.rotational ? 'disk.hdd' : 'disk.ssd')}{installState.disk.trans ? ` · ${installState.disk.trans.toUpperCase()}` : ''})</span>
 					</p>
-					{#if installState.disk.serial}
-						<p class="disk-extra">{t('validation.serial')}: <span class="tag serial-tag">{installState.disk.serial}</span></p>
-					{/if}
-					<!-- Path + current fs are redundant in manual mode: the plan table lists every path, and a disk has no single filesystem. -->
+					<!-- The serial stays off the summary: the disk page names the selected disk
+						already. The path is redundant in manual mode too — the plan table lists
+						every path, and a disk has no single filesystem. -->
 					{#if !installState.manualMode}
-						<p class="disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
+						<p class="dmeta disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
 					{/if}
 
+					{#if !installState.manualMode || installState.luksEnabled || installState.lvmEnabled}
+						<!-- The options as chips: their full hint sentences stay reachable
+							on hover (they are the same strings the disk-page switches carry)
+							and in full on the disk page, which owns the choices. -->
+						<div class="chiprow">
+							{#if !installState.manualMode}
+								<span class="tag fs-tag" use:tooltip={`${t('page.diskSelection.selectedFileSystem')}: ${installState.fileSystem || '—'}`}>{installState.fileSystem || '—'}</span>
+							{/if}
+							{#if installState.luksEnabled}
+								<span class="tag luks-tag" use:tooltip={t('disk.encryptHint')}>{t('page.confirmation.luksEncrypted')}</span>
+							{/if}
+							{#if installState.lvmEnabled}
+								<span class="tag lvm-tag" use:tooltip={t('disk.lvmHint')}>{t('page.confirmation.lvmEnabled')}</span>
+							{/if}
+						</div>
+					{/if}
 					{#if installState.manualMode}
 						<!-- Manual mode: show the partition plan the user designed -->
 						{#if installState.manualLayout && hasDesignated}
@@ -194,31 +216,14 @@ import { uiState } from '$lib/ui.svelte';
 							</table>
 							</div>
 						{:else}
-							<p class="disk-extra">{t('manual.dualbootHint')}</p>
+							<p class="dmeta">{t('manual.dualbootHint')}</p>
 						{/if}
-					{:else}
-						<p class="disk-extra">
-							{t('page.diskSelection.selectedFileSystem')}: <span class="tag fs-tag">{installState.fileSystem || '—'}</span>
-						</p>
 					{/if}
-
-					{#if installState.luksEnabled}
-						<div class="option-row">
-							<span class="tag luks-tag">{t('page.confirmation.luksEncrypted')}</span>
-							<span class="option-hint">{t('disk.encryptHint')}</span>
-						</div>
-					{/if}
-					{#if installState.lvmEnabled}
-						<div class="option-row">
-							<span class="tag lvm-tag">{t('page.confirmation.lvmEnabled')}</span>
-							<span class="option-hint">{t('disk.lvmHint')}</span>
-						</div>
-					{/if}
-				</div>
-			{:else}
-				<p class="section-value error">{t('validation.noDiskSelected')}</p>
-			{/if}
-		</div>
+				{:else}
+					<p class="dmeta error">{t('validation.noDiskSelected')}</p>
+				{/if}
+			</div>
+		</section>
 	</div>
 </PageLayout>
 
@@ -239,16 +244,44 @@ import { uiState } from '$lib/ui.svelte';
 		flex-direction: column;
 		gap: var(--spacing-md);
 		width: 100%;
+		/* Auto margins center the summary while it fits and collapse to zero
+		   the moment it does not, so the column's overflow-y scroll always
+		   reaches the first line (justify-content: center would hide the top
+		   of an overflowing child). */
+		margin-block: auto;
 	}
 
-	.summary-section {
+	/* One block of writing per card — the options-card look from the disk
+		page, so the summary invents no new visual language. */
+	.card {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-xs);
+		width: 100%;
+		box-sizing: border-box;
+		background: var(--color-bg-white);
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius-lg);
+		padding: 2px var(--spacing-md);
 	}
 
-	.section-title {
-		font-size: var(--font-size-sm);
+	.crow {
+		display: flex;
+		align-items: baseline;
+		gap: var(--spacing-md);
+		padding: 9px 0;
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.crow:last-child {
+		border-bottom: none;
+	}
+
+	.clabel {
+		/* min-width, not width: a translation longer than the English label
+		   grows its own column instead of stacking mid-word. */
+		flex: 0 1 max-content;
+		min-width: 108px;
+		font-size: 0.7rem;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -256,27 +289,48 @@ import { uiState } from '$lib/ui.svelte';
 		margin: 0;
 	}
 
-	.section-value {
+	.cvalue {
+		min-width: 0;
 		margin: 0;
 		font-size: var(--font-size-md);
 	}
 
-	.disk-summary {
+	.cvalue strong {
+		font-weight: var(--font-weight-600);
+	}
+
+	.dim {
+		color: var(--color-text-muted);
+	}
+
+	.dblock {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-xs);
-		width: 100%;
+		gap: var(--gap-xs);
+		padding: 11px 0;
 	}
 
-	.disk-name {
-		margin-bottom: var(--spacing-sm);
+	.dname {
+		margin: 0;
 		font-size: var(--font-size-md);
+		font-weight: var(--font-weight-600);
 	}
 
-	.disk-path {
+	/* The size · type · interface parenthetical sits beside the model, so it
+		stays quiet while the model stays the identifying fact. */
+	.dsize {
+		color: var(--color-text-muted);
+		font-weight: 400;
+	}
+
+	.dmeta {
 		margin: 0;
 		font-size: var(--font-size-sm);
 		color: var(--color-text-muted);
+	}
+
+	.dmeta.error {
+		color: var(--color-danger);
 	}
 
 	.disk-path code {
@@ -287,14 +341,11 @@ import { uiState } from '$lib/ui.svelte';
 		font-size: var(--font-size-sm);
 	}
 
-	.disk-extra {
-		margin: 0;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-	}
-
-	.error {
-		color: var(--color-danger);
+	.chiprow {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-xs) var(--spacing-sm);
+		margin-top: var(--spacing-xs);
 	}
 
 	/* Manual partition plan — native table keeps every column perfectly aligned */
@@ -305,6 +356,7 @@ import { uiState } from '$lib/ui.svelte';
 	.plan-scroll {
 		width: 100%;
 		overflow: auto;
+		margin-top: var(--spacing-xs);
 	}
 
 	.plan-table {
@@ -368,7 +420,7 @@ import { uiState } from '$lib/ui.svelte';
 		white-space: nowrap;
 	}
 
-		.part-new {
+	.part-new {
 		font-size: 0.72rem;
 		color: var(--color-progress);
 		font-weight: 600;
@@ -383,19 +435,6 @@ import { uiState } from '$lib/ui.svelte';
 		font-family: var(--font-sans);
 		font-size: 0.75rem;
 		font-weight: 600;
-	}
-
-	.option-row {
-		display: flex;
-		align-items: flex-start;
-		flex-wrap: wrap;
-		gap: var(--spacing-xs) var(--spacing-sm);
-	}
-
-	.option-hint {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-		line-height: 1.45;
 	}
 
 	.luks-tag {

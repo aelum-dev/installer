@@ -71,10 +71,16 @@
 	}
 
 	.page-content--summary {
-		justify-content: center;
+		/* The summary centers itself through its own auto margins, and the column
+		   starts at the top so an overflowing summary stays fully reachable by
+		   scrolling — a justify-content: center would push an overflowing child
+		   above the scroll origin, where nothing can reach it. Only the
+		   confirmation page uses this variant. */
+		justify-content: flex-start;
 		align-items: flex-start;
 		text-align: left;
 		min-width: 0;
+		overflow-y: auto;
 	}
 
 	.page-content--list {
