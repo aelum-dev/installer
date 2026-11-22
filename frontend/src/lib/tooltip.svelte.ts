@@ -31,6 +31,47 @@ export const tooltipState = $state({
 export const TOOLTIP_SHOW_DELAY_MS = 1000;
 
 /**
+ * Count of times the app itself ended the hint it was showing — a dialog
+ * taking the screen. Not UI state: armed timers compare against it, so a
+ * dismiss between arming and firing cancels the show. The hover or focus a
+ * hint belongs to is over the moment a dialog opens, and a bubble that
+ * still opened behind the overlay would resurface above the page — stuck,
+ * with no pointer on its anchor and no blur coming — when the dialog hides
+ * itself. Only a dismiss can cancel other nodes' pending shows; leaving a
+ * node cancels that node's own through hide().
+ */
+let dismissals = 0;
+
+/** Ends the open hint now and voids every pending show. Dialogs call it. */
+export function dismissTooltip(): void {
+	dismissals += 1;
+	tooltipState.text = '';
+	tooltipState.anchor = null;
+	tooltipState.cursor = null;
+}
+
+/**
+ * True only while the app moves focus by itself — a dialog handing focus
+ * back to the control that opened it (Dialog.svelte). A hint must not
+ * reopen for that focus: the interaction it would answer for was the
+ * dialog's, and it just ended. A bubble waking a second after the dialog
+ * hid itself, hung from an element no key is on its way to, has no
+ * pointer to carry it off and no blur until the person clicks something —
+ * a tooltip stuck in place. A focus the person brings still gets its hint.
+ */
+let focusRestored = false;
+
+/** Runs a programmatic focus() so it cannot wake a tooltip. */
+export function withRestoredFocus(restore: () => void): void {
+	focusRestored = true;
+	try {
+		restore();
+	} finally {
+		focusRestored = false;
+	}
+}
+
+/**
  * Svelte 5 action: shows the shared tooltip while the node is hovered or
  * focused, like a native title — but themed, wrapped, and unclippable.
  * An empty text (e.g. the Manual pill once a disk IS selected) means no
@@ -63,11 +104,15 @@ export function tooltip(node: HTMLElement, text: string | null | undefined) {
 		// One pending timer per node; an already-open tooltip keeps its text
 		// instead of restarting the wait.
 		if (!current || timer !== null || tooltipState.anchor === node) return;
+		const armedAt = dismissals;
 		timer = setTimeout(() => {
 			timer = null;
 			// current is only ever emptied through hide(), which cancels this —
-			// the guard is the cheap guarantee, not the mechanism.
-			if (current) open();
+			// the guard is the cheap guarantee, not the mechanism. A dismiss
+			// since arming means a dialog took the screen: the wait this hint
+			// was the end of is over, and opening now would only hide this
+			// bubble under the overlay to outlive it.
+			if (current && armedAt === dismissals) open();
 		}, TOOLTIP_SHOW_DELAY_MS);
 	}
 
@@ -77,6 +122,9 @@ export function tooltip(node: HTMLElement, text: string | null | undefined) {
 	}
 
 	function showFromKeyboard(): void {
+		// A focus the app handed over — a dialog closing — carries no new
+		// interaction, so it arms nothing (see withRestoredFocus).
+		if (focusRestored) return;
 		// Nothing to hang the bubble from, and the last pointer position is not
 		// this interaction's: focus hangs it from the element.
 		pointer = null;

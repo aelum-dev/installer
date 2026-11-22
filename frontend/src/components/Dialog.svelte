@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { dismissTooltip, withRestoredFocus } from '$lib/tooltip.svelte';
 	import './dialog.css';
 
 	/**
@@ -81,11 +82,18 @@
 	// keyboard users are never left on a detached element.
 	$effect(() => {
 		if (show) {
+			// The dialog owns the screen now: a hint still open or still being
+			// waited out belongs to the page beneath the overlay, and would
+			// resurface — stuck — when this dialog hides itself. It ends here.
+			dismissTooltip();
 			restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 			if (focusOnOpen) requestAnimationFrame(() => dialogEl?.focus());
 		} else if (restoreFocus) {
-			restoreFocus.focus();
+			const trigger = restoreFocus;
 			restoreFocus = null;
+			// Handing focus back is not a focus the person brought, so it must
+			// not wake the trigger's tooltip (see withRestoredFocus).
+			withRestoredFocus(() => trigger.focus());
 		}
 	});
 </script>
