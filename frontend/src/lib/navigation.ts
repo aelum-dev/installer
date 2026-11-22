@@ -1,8 +1,9 @@
-import { installState, navState } from '$lib/store.svelte';
+import { installState, navState, markDiskChoicesStale } from '$lib/store.svelte';
 import { uiState } from '$lib/ui.svelte';
 import { PAGE_IDS } from '$lib/types';
 import {
 	RebootAndClose,
+	ResetDiskSelection,
 	SaveDiskSelection,
 	SaveManualLayout,
 	SaveUserAccount,
@@ -85,6 +86,18 @@ export async function goNext(currentPage: number): Promise<string | null> {
 export async function goBack(currentPage: number): Promise<string | null> {
 	const prevPage = currentPage - 1;
 	try {
+		// The disk page's answers belong to the visit that made them: leaving it
+		// backwards to the user account voids them, so the next visit starts
+		// clean. A return from the Confirmation page keeps everything — there
+		// the person only stepped back to read the summary. The frontend wipe
+		// is only marked, not performed: the disk page is still fading out and
+		// must not watch its choices collapse. The backend copy is cleared now
+		// (it is never on screen, and no abandoned LUKS passphrase may linger);
+		// if that call fails, nothing is voided and the wizard keeps the state.
+		if (currentPage === PAGE_IDS.DISK_SELECTION) {
+			await ResetDiskSelection();
+			markDiskChoicesStale();
+		}
 		await setCurrentPage(prevPage);
 	} catch (err) {
 		return errorMessage(err);

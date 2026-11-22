@@ -9,7 +9,7 @@
 	import LuksPassphraseDialog from '$components/LuksPassphraseDialog.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import type { PlanChoice } from '$lib/disk-layout';
-	import { installState, requestEnableLuks, disableLuks, toggleLvm, setFileSystem } from '$lib/store.svelte';
+	import { installState, navState, requestEnableLuks, disableLuks, toggleLvm, setFileSystem, resetDiskChoicesIfStale } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
 	import { inferDiskFileSystem } from '$lib/disks';
 	import { type DiskInfo, type InstallMode, type PartitionEntry, PAGE_IDS } from '$lib/types';
@@ -143,7 +143,26 @@
 		installState.manualMode = false;
 	}
 
+	// A visit that follows leaving this page backwards starts clean: the wipe
+	// was deferred out of the Back transition (see resetDiskChoicesIfStale),
+	// and this mount — before its first paint and before loadDisks reads the
+	// saved selection — is where it lands first. A return from the Confirmation
+	// page was never marked stale and restores everything below.
+	resetDiskChoicesIfStale();
+
 	loadDisks();
+
+	// A fast Back→Next cancels this page's fade-out, and Svelte keeps this very
+	// instance mounted instead of recreating it — then the call above does not
+	// run a second time and a pending reset would be missed. Effects survive a
+	// cancelled outro, so this catches every landing on the page, recreated or
+	// reused. While the page fades away, currentPage names the page behind it,
+	// so the choices the person just made never collapse on screen.
+	$effect(() => {
+		if (navState.currentPage === PAGE_IDS.DISK_SELECTION) {
+			resetDiskChoicesIfStale();
+		}
+	});
 
 	// Never get stuck in manual mode with no disk selected. Manual mode is only
 	// reachable with a disk (the Manual segment is disabled otherwise), so a

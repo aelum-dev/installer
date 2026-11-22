@@ -110,6 +110,52 @@ export function toggleLvm(): void {
 	installState.lvmEnabled = !installState.lvmEnabled;
 }
 
+// ── Leaving the disk page backwards ────────────────────────────────────────
+
+// Wipes every answer the disk page owns: the selected disk, its filesystem,
+// the LUKS and LVM switches, and manual mode with its plan — back to the
+// defaults a first visit shows. Callers: only resetDiskChoicesIfStale below,
+// so a fresh visit to the page starts clean. A return from the Confirmation
+// page never marks the choices stale: there the person only stepped back to
+// read the summary, and the selection stays.
+function resetDiskChoices(): void {
+	installState.diskId = '';
+	installState.disk = null;
+	installState.fileSystem = DefaultFileSystem;
+	// The passphrase is dropped with the choice it belongs to — a held secret
+	// must not outlive the option that asked for it.
+	installState.luksPassphrase = '';
+	installState.luksEnabled = false;
+	installState.lvmEnabled = false;
+	installState.manualMode = false;
+	installState.manualLayout = null;
+	uiState.pendingAddMB = 0;
+	uiState.luksError = '';
+}
+
+// The wipe is deferred, not instant: on Back the disk page is still on screen
+// fading out, and clearing the shared state then would make the choices the
+// person just made visibly collapse under the transition. So leaving the page
+// backwards only marks the answers stale, and the next mount of the page —
+// before its first paint — performs the actual reset. The backend copy is
+// cleared immediately by navigation.goBack: it is never on screen, and no
+// stale LUKS passphrase should sit in it while the wizard is back on an
+// earlier page.
+let diskChoicesStale = false;
+
+export function markDiskChoicesStale(): void {
+	diskChoicesStale = true;
+}
+
+/** Reset a stale answer set once, the next time the wizard shows the disk
+ * page — whether that is a fresh mount or a reused instance (see the page's
+ * effect). */
+export function resetDiskChoicesIfStale(): void {
+	if (!diskChoicesStale) return;
+	diskChoicesStale = false;
+	resetDiskChoices();
+}
+
 // ── Backend sync ───────────────────────────────────────────────────────────
 
 // syncStorageToBackend pushes the committed LUKS/LVM state to the Go backend

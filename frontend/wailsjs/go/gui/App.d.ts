@@ -46,6 +46,8 @@ export function GetUILocale():Promise<string>;
 
 export function RebootAndClose():Promise<void>;
 
+export function ResetDiskSelection():Promise<void>;
+
 export function SaveDiskSelection(arg1:shared.DiskSelectionData):Promise<void>;
 
 export function SaveManualLayout(arg1:shared.ManualLayout):Promise<void>;

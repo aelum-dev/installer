@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { installState } from '$lib/store.svelte';
+import { installState, resetDiskChoicesIfStale } from '$lib/store.svelte';
 import { uiState } from '$lib/ui.svelte';
 import { goNext, goBack } from '$lib/navigation';
+import { DefaultFileSystem } from '$lib/constants';
 import { PAGE_IDS } from '$lib/types';
-import type { DiskInfo } from '$lib/types';
+import type { DiskInfo, ManualLayout } from '$lib/types';
 
 // Mock Wails Go bindings
 vi.mock('@wails/go/gui/App.js', () => ({
@@ -12,6 +13,7 @@ vi.mock('@wails/go/gui/App.js', () => ({
 	SaveUserAccount: vi.fn(() => Promise.resolve()),
 	SaveDiskSelection: vi.fn(() => Promise.resolve()),
 	SaveManualLayout: vi.fn(() => Promise.resolve()),
+	ResetDiskSelection: vi.fn(() => Promise.resolve()),
 	RebootAndClose: vi.fn(() => Promise.resolve()),
 }));
 
@@ -42,12 +44,20 @@ const fakeDisk: DiskInfo = {
 describe('App navigation', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// The deferred-reset marker is module state: drain it so a test can
+		// never inherit a pending wipe from its predecessor.
+		resetDiskChoicesIfStale();
 		installState.username = '';
 		installState.password = '';
 		installState.confirmPassword = '';
 		installState.diskId = '';
 		installState.disk = null;
 		installState.fileSystem = '';
+		installState.luksEnabled = false;
+		installState.luksPassphrase = '';
+		installState.lvmEnabled = false;
+		installState.manualMode = false;
+		installState.manualLayout = null;
 		uiState.showConfirmDialog = false;
 	});
 
@@ -106,6 +116,47 @@ describe('App navigation', () => {
 			await goBack(PAGE_IDS.CONFIRMATION);
 			expect(installState.diskId).toBe('/dev/sda');
 			expect(installState.disk).not.toBeNull();
+			// A summary visit must not even mark the choices stale: the next
+			// mount restores everything.
+			resetDiskChoicesIfStale();
+			expect(installState.disk).not.toBeNull();
+		});
+
+		it('leaving the disk page backwards keeps its answers on screen, then resets them on the next mount', async () => {
+			installState.diskId = '/dev/sda';
+			installState.disk = fakeDisk;
+			installState.fileSystem = 'ext4';
+			installState.luksEnabled = true;
+			installState.luksPassphrase = 'secret1';
+			installState.lvmEnabled = true;
+			installState.manualMode = true;
+			installState.manualLayout = { disk: '/dev/sda', partitions: [] } as unknown as ManualLayout;
+
+			const result = await goBack(PAGE_IDS.DISK_SELECTION);
+
+			expect(result).toBeNull();
+			// The disk page is still fading out showing its answers — the wipe
+			// must not touch the shared state during the transition…
+			expect(installState.disk).not.toBeNull();
+			expect(installState.luksPassphrase).toBe('secret1');
+			// …but the backend copy is cleared right away, secret included.
+			const { ResetDiskSelection } = await import('@wails/go/gui/App.js');
+			expect(ResetDiskSelection).toHaveBeenCalledOnce();
+
+			// The page's next mount performs the deferred reset.
+			resetDiskChoicesIfStale();
+			expect(installState.diskId).toBe('');
+			expect(installState.disk).toBeNull();
+			expect(installState.fileSystem).toBe(DefaultFileSystem);
+			expect(installState.luksEnabled).toBe(false);
+			expect(installState.luksPassphrase).toBe('');
+			expect(installState.lvmEnabled).toBe(false);
+			expect(installState.manualMode).toBe(false);
+			expect(installState.manualLayout).toBeNull();
+			// And performs it exactly once: a second mount changes nothing.
+			installState.lvmEnabled = true;
+			resetDiskChoicesIfStale();
+			expect(installState.lvmEnabled).toBe(true);
 		});
 	});
 });

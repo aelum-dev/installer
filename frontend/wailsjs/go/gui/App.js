@@ -86,6 +86,10 @@ export function RebootAndClose() {
   return window['go']['gui']['App']['RebootAndClose']();
 }
 
+export function ResetDiskSelection() {
+  return window['go']['gui']['App']['ResetDiskSelection']();
+}
+
 export function SaveDiskSelection(arg1) {
   return window['go']['gui']['App']['SaveDiskSelection'](arg1);
 }

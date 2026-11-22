@@ -227,3 +227,38 @@ func TestValidateDiskSelection_DoesNotSaveOnFailure(t *testing.T) {
 		t.Errorf("expected saved fileSystem to still be 'ext4', got %q", app.fileSystem)
 	}
 }
+
+func TestResetDiskSelection(t *testing.T) {
+	app := NewApp(false)
+
+	// Fill in every answer the disk page owns.
+	app.SaveDiskSelection(shared.DiskSelectionData{DiskID: "/dev/sda", Size: 1000, FileSystem: "ext4"})
+	app.SetLuksPassphrase("secret1")
+	app.SetLuks(true)
+	app.SetLvm(true)
+	app.SaveManualLayout(shared.ManualLayout{Disk: "/dev/sda"})
+
+	app.ResetDiskSelection()
+
+	if app.diskSelection.DiskID != "" || app.diskSelection.FileSystem != "" {
+		t.Errorf("expected disk selection cleared, got %+v", app.diskSelection)
+	}
+	if app.fileSystem != shared.DefaultFileSystem {
+		t.Errorf("expected filesystem %q, got %q", shared.DefaultFileSystem, app.fileSystem)
+	}
+	if app.luks {
+		t.Error("expected luks disabled")
+	}
+	if app.luksPassphrase != nil {
+		t.Error("expected held LUKS passphrase cleared")
+	}
+	if app.lvm {
+		t.Error("expected lvm disabled")
+	}
+	if app.manualMode {
+		t.Error("expected manual mode disabled")
+	}
+	if app.manualLayout.Disk != "" {
+		t.Errorf("expected manual layout cleared, got %+v", app.manualLayout)
+	}
+}

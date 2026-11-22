@@ -136,6 +136,28 @@ test.describe('Installer wizard', () => {
     await expect(page.locator('.disk-card.selected .disk-name')).toHaveText(diskName);
   });
 
+  test('Disk selection: leaving it backwards to the user account resets its answers', async ({ page }) => {
+    await page.goto('/');
+    await next(page).click(); // -> User account
+    await fillUserAccount(page);
+    await next(page).click(); // -> Disk selection
+
+    await page.locator('.disk-card').first().click();
+    await page.locator('.fs-pill').filter({ hasText: /^ext4$/ }).click();
+    const lvm = page.getByRole('switch').nth(1);
+    await lvm.click();
+    await expect(lvm).toHaveAttribute('aria-checked', 'true');
+
+    await back(page).click(); // -> User account (the answers belong to the disk visit)
+    await expect(page.getByRole('heading', { name: 'Create user account' })).toBeVisible();
+
+    await next(page).click(); // -> Disk selection again — a fresh visit
+    await expect(page.getByRole('heading', { name: 'Select Installation Disk' })).toBeVisible();
+    await expect(page.locator('.disk-card.selected')).toHaveCount(0);
+    await expect(page.locator('.fs-pill.selected')).toContainText('btrfs'); // back to the default
+    await expect(lvm).toHaveAttribute('aria-checked', 'false');
+  });
+
   test('Back button navigates between pages', async ({ page }) => {
     await page.goto('/');
     await next(page).click(); // -> User account
