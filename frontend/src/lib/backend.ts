@@ -43,7 +43,7 @@ import {
 	ValidateManualLayout as rawValidateManualLayout,
 	ValidateUserAccount,
 } from '@wails/go/gui/App.js';
-import { EventsOn, LogInfo } from '@wails/runtime/runtime.js';
+import { EventsOn, LogInfo, Quit } from '@wails/runtime/runtime.js';
 import { gui } from '@wails/go/models';
 import type { shared } from '@wails/go/models';
 import type { DiskInfo, LanguageOption, ManualLayout, PartitionEntry, RegionOption } from '$lib/types';
@@ -74,6 +74,9 @@ export {
 	ValidateUserAccount,
 	EventsOn,
 	LogInfo,
+	// Closes the window. Wails asks OnBeforeClose first, so this is refused while
+	// an install is running and immediate on the cancelled screen.
+	Quit,
 };
 
 // ── Adapted bindings (generated struct → domain type) ───────────────────────

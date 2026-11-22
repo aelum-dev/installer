@@ -9,9 +9,10 @@
 
 	const nav = getContext<WizardNavigation>(WIZARD_NAV);
 
-	const EVENT_PROGRESS = 'installation:progress';
-	const EVENT_COMPLETE = 'installation:complete';
-	const EVENT_ERROR    = 'installation:error';
+	const EVENT_PROGRESS  = 'installation:progress';
+	const EVENT_COMPLETE  = 'installation:complete';
+	const EVENT_ERROR     = 'installation:error';
+	const EVENT_CANCELLED = 'installation:cancelled';
 
 	let currentStepId = $state('');
 	let currentStepLabel = $state('');
@@ -63,11 +64,28 @@
 			LogInfo(`[InstallationPage] Installation error: ${message}`);
 		};
 
+		// The person stopped the run. By the time this arrives the backend has
+		// cancelled the CLI and released the disk, and it kept the window open on
+		// purpose — so hand the screen over to the cancelled page, which is where
+		// this gets explained instead of in a log nobody opens.
+		const handleCancelled = () => {
+			isRunning = false;
+			errorMessage = '';
+			LogInfo('[InstallationPage] Installation cancelled');
+			nav.cancelled();
+		};
+
 		const offProgress = EventsOn(EVENT_PROGRESS, handleProgress);
 		const offComplete = EventsOn(EVENT_COMPLETE, handleComplete);
 		const offError = EventsOn(EVENT_ERROR, handleError);
+		const offCancelled = EventsOn(EVENT_CANCELLED, handleCancelled);
 
-		return () => { offProgress(); offComplete(); offError(); };
+		return () => {
+			offProgress();
+			offComplete();
+			offError();
+			offCancelled();
+		};
 	});
 
 	$effect(() => {

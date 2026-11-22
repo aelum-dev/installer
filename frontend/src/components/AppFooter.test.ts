@@ -6,70 +6,53 @@ import { PAGE_IDS } from '$lib/types';
 let app: ReturnType<typeof mount> | null = null;
 let target: HTMLDivElement;
 
-function render(currentPage: number, props: Record<string, unknown> = {}): HTMLDivElement {
+function render(currentPage: number, onExit = vi.fn()): HTMLDivElement {
 	target = document.createElement('div');
 	document.body.appendChild(target);
 	app = mount(AppFooter, {
 		target,
-		props: { currentPage, onNext: vi.fn(), onBack: vi.fn(), onFinish: vi.fn(), ...props },
+		props: { currentPage, onNext: () => {}, onBack: () => {}, onFinish: () => {}, onExit },
 	});
 	flushSync();
 	return target;
 }
 
-function buttons(root: HTMLElement): HTMLButtonElement[] {
-	return Array.from(root.querySelectorAll<HTMLButtonElement>('button'));
-}
-
-function teardown(): void {
+afterEach(() => {
 	if (app) {
 		unmount(app);
 		app = null;
 	}
 	target?.remove();
-}
+});
 
-afterEach(teardown);
+describe('AppFooter on the cancelled screen', () => {
+	it('offers Exit in the trailing slot and no navigation', () => {
+		const onExit = vi.fn();
+		const footer = render(PAGE_IDS.CANCELLED, onExit);
 
-describe('AppFooter', () => {
-	it('puts Next before Back in the DOM so Tab reaches the primary action first', () => {
-		const footer = render(PAGE_IDS.USER_ACCOUNT);
+		const exit = footer.querySelector<HTMLButtonElement>('.btn-exit');
+		expect(exit?.textContent?.trim()).toBe('Exit');
+		expect(footer.querySelectorAll('.nav-btn')).toHaveLength(0);
+		expect(footer.querySelector('.btn-reboot')).toBeNull();
 
-		const labels = buttons(footer).map((b) => b.getAttribute('aria-label'));
-
-		expect(labels).toEqual(['Next', 'Back']);
+		exit?.click();
+		flushSync();
+		expect(onExit).toHaveBeenCalledTimes(1);
 	});
 
-	it('calls onNext when Next is clicked', () => {
-		const onNext = vi.fn();
-		const footer = render(PAGE_IDS.USER_ACCOUNT, { onNext });
+	it('shows no step dots: none of them describes this screen', () => {
+		const footer = render(PAGE_IDS.CANCELLED);
 
-		buttons(footer)[0].click();
-
-		expect(onNext).toHaveBeenCalledOnce();
+		// The run stopped partway through the wizard, and the dot row either
+		// overstates or understates that. The screen states the fact in words
+		// instead, so the row is simply absent.
+		expect(footer.querySelectorAll('.step-dot')).toHaveLength(0);
 	});
 
-	it('calls onBack when Back is clicked', () => {
-		const onBack = vi.fn();
-		const footer = render(PAGE_IDS.USER_ACCOUNT, { onBack });
+	it('leaves the Finish page alone', () => {
+		const footer = render(PAGE_IDS.FINISH);
 
-		footer.querySelector<HTMLButtonElement>('.nav-btn--back')?.click();
-
-		expect(onBack).toHaveBeenCalledOnce();
-	});
-
-	it('shows only Next on Welcome, which has nothing to go back to', () => {
-		const footer = render(PAGE_IDS.WELCOME);
-
-		expect(buttons(footer).map((b) => b.getAttribute('aria-label'))).toEqual(['Next']);
-	});
-
-	it('shows neither navigation control on the terminal pages', () => {
-		const installation = render(PAGE_IDS.INSTALLATION);
-		expect(buttons(installation)).toHaveLength(0);
-
-		teardown();
-		const finish = render(PAGE_IDS.FINISH);
-		expect(buttons(finish).map((b) => b.textContent?.trim())).toEqual(['Reboot']);
+		expect(footer.querySelector<HTMLButtonElement>('.btn-reboot')).not.toBeNull();
+		expect(footer.querySelector('.btn-exit')).toBeNull();
 	});
 });

@@ -27,6 +27,8 @@ export interface WizardNavigation {
 	next: () => void;
 	back: () => void;
 	finish: () => void;
+	/** Move to the cancelled screen. Nothing else navigates there. */
+	cancelled: () => void;
 }
 
 export const WIZARD_NAV = Symbol('wizard-navigation');
@@ -53,10 +55,15 @@ export function cancelConfirmation(): void {
 
 /**
  * Whether the wizard shows a Next control on this page. Installation is in
- * progress and Finish is terminal, so neither may advance.
+ * progress, Finish is terminal, and the cancelled screen's only way out is its
+ * Exit button, so none of them may advance.
  */
 export function canGoNext(page: number): boolean {
-	return page !== PAGE_IDS.INSTALLATION && page !== PAGE_IDS.FINISH;
+	return (
+		page !== PAGE_IDS.CANCELLED &&
+		page !== PAGE_IDS.INSTALLATION &&
+		page !== PAGE_IDS.FINISH
+	);
 }
 
 /** Advance one page. Returns an error message to surface, or null on success. */

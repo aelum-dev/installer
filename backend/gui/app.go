@@ -78,17 +78,33 @@ func (a *App) GetDryRun() bool {
 	return a.dryRun
 }
 
-// OnBeforeClose is called by Wails when the user attempts to close the window.
-// If an installation is in progress, sends SIGINT to the CLI and waits for
-// cleanup before allowing the window to close. Skipped in dry-run mode.
+// OnBeforeClose is called by Wails when the person asks the window to close —
+// super+q in the live session is such a request. While an installation is running,
+// that request becomes a cancel: the CLI stops (taking the command it was waiting
+// on with it), its deferred cleanup releases the disk, and the close is
+// prevented — an abandoned install deserves a screen that says what state the disk
+// is in, not a window that vanished mid-step.
+//
+// Nobody is trapped by that veto: the cancelled page's Exit button and a second
+// close request both arrive with no install running and fall through to the
+// normal close below.
+//
+// The log is not closed here any more, because the app lives past this call;
+// Shutdown closes it on the way out for good.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
 	if a.installationRunning.Load() {
 		a.CancelInstallation()
 		a.WaitForCleanup()
-		shared.GetLogger().Close()
+		return true
 	}
 
 	return false
+}
+
+// Shutdown is Wails' OnShutdown: the window is going away for good, so the log
+// files close with it.
+func (a *App) Shutdown(ctx context.Context) {
+	shared.GetLogger().Close()
 }
 
 // GetInstallationRunning reports whether an installation is currently in progress.

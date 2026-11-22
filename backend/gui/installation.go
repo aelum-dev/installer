@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	EventInstallationProgress = "installation:progress"
-	EventInstallationComplete = "installation:complete"
-	EventInstallationError    = "installation:error"
+	EventInstallationProgress  = "installation:progress"
+	EventInstallationComplete  = "installation:complete"
+	EventInstallationError     = "installation:error"
+	EventInstallationCancelled = "installation:cancelled"
 )
 
 // InstallationProgress is emitted as an event to the frontend.
@@ -35,6 +36,11 @@ type InstallationProgress struct {
 type InstallationComplete struct {
 	ElapsedSeconds int `json:"elapsedSeconds"`
 }
+
+// cleanupWaitTimeout is how long WaitForCleanup waits for a cancelled install to
+// release the disk. Tests shorten it; the shipped value is the measured cancel
+// (about 600 ms) with room for a slow disk.
+var cleanupWaitTimeout = time.Duration(shared.CleanupWaitTimeoutMs) * time.Millisecond
 
 // findCLIBinary locates the aelum-installer-cli binary.
 func findCLIBinary() string {
@@ -215,12 +221,13 @@ func (a *App) StartInstallation() error {
 				ElapsedSeconds: int(time.Since(a.installStartedAt).Seconds()),
 			})
 		case a.installCancelled.Load():
-			// The person closed the window during the install or asked for a
-			// reboot: the CLI stopped on request and exits with the signal code.
-			// Say so — "Installation failed" tells someone who stopped a run that
-			// the installer broke.
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation cancelled",
-				fmt.Sprintf("You cancelled the install. The remaining steps did not run, so the install on %s is not finished. For details, check: %s", diskID, logPath))
+			// The person closed the window during the install: the CLI stopped on
+			// request and exits with the signal code. That is not a failure of the
+			// installer's, so it does not travel on the error event — it gets the
+			// cancelled event, and the window that receives it stays open on the
+			// cancelled page (see App.OnBeforeClose). The payload is empty on
+			// purpose: the page names the disk from the answer the person gave.
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationCancelled)
 		default:
 			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed",
 				fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
@@ -252,9 +259,18 @@ func (a *App) CancelInstallation() {
 	}
 }
 
-// WaitForCleanup blocks until the current installation's cleanup has completed.
+// WaitForCleanup blocks until the current installation's cleanup has completed, or
+// until waiting any longer would cost the person a window that does not answer.
+// A cancelled CLI is killed as a process group and exits within a second, so a
+// wait that runs past the timeout is a hung process — and the cancelled page is
+// still the honest screen to be left on, not a dead callback.
 func (a *App) WaitForCleanup() {
-	if a.installDone != nil {
-		<-a.installDone
+	if a.installDone == nil {
+		return
+	}
+	select {
+	case <-a.installDone:
+	case <-time.After(cleanupWaitTimeout):
+		shared.GetLogger().Info("Cleanup has not finished after %s — carrying on without it", cleanupWaitTimeout)
 	}
 }

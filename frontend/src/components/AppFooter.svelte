@@ -9,15 +9,19 @@
 		onNext,
 		onBack,
 		onFinish,
+		onExit,
 	}: {
 		currentPage: number;
 		onNext: () => void;
 		onBack: () => void;
 		onFinish: () => void;
+		onExit?: () => void;
 	} = $props();
 
 	const isLastPage = $derived(currentPage === PAGE_IDS.FINISH);
 	const canAdvance = $derived(canGoNext(currentPage));
+	// The cancelled screen is terminal, so the trailing slot holds its one control.
+	const isCancelled = $derived(currentPage === PAGE_IDS.CANCELLED);
 	// The base chevron points down; rotate it to face the travel direction. In
 	// RTL the arrows flip: Next points left, Back points right.
 	const nextArrow = $derived(getIsRTL() ? 'left' : 'right');
@@ -54,16 +58,26 @@
 			<button type="button" class="btn-reboot" onclick={onFinish}>
 				{t('page.finish.reboot')}
 			</button>
+		{:else if isCancelled}
+			<button type="button" class="btn-exit" onclick={onExit}>
+				{t('page.cancelled.exit')}
+			</button>
 		{/if}
 	</div>
 	<div class="footer-center">
-		{#each steps as step, index}
-			<div
-				class={['step-dot', `step-dot--${getStepState(index)}`]}
-				aria-label={`Step ${index + 1}`}
-				aria-current={index === currentPage ? 'step' : undefined}
-			></div>
-		{/each}
+		<!-- The step dots describe the wizard's steps. The cancelled screen is not
+		     one of them, and every row of them would be a lie — the run stopped
+		     partway, and this screen is about that, not about progress — so it
+		     shows no dots at all. -->
+		{#if !isCancelled}
+			{#each steps as step, index}
+				<div
+					class={['step-dot', `step-dot--${getStepState(index)}`]}
+					aria-label={`Step ${index + 1}`}
+					aria-current={index === currentPage ? 'step' : undefined}
+				></div>
+			{/each}
+		{/if}
 	</div>
 	<div class="footer-back">
 		{#if showBack}
@@ -158,7 +172,10 @@
 		background-color: var(--color-bg-hover);
 	}
 
-	.btn-reboot {
+	/* The two labelled footer controls: Reboot on Finish, Exit on the cancelled
+	   screen. Same trailing slot, same control, so one style. */
+	.btn-reboot,
+	.btn-exit {
 		font-family: inherit;
 		font-weight: 600;
 		font-size: var(--font-size-md);
@@ -173,7 +190,8 @@
 		align-items: center;
 	}
 
-	.btn-reboot:hover {
+	.btn-reboot:hover,
+	.btn-exit:hover {
 		background-color: var(--color-primary);
 		color: var(--color-on-primary);
 		border-color: var(--color-primary);

@@ -99,6 +99,7 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 20, G: 18, B: 24, A: 1}, // #141218, the dark surface
 		OnStartup:        app.StartUp,
 		OnBeforeClose:    app.OnBeforeClose,
+		OnShutdown:       app.Shutdown,
 		Bind: []interface{}{
 			app,
 		},

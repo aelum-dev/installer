@@ -459,6 +459,17 @@ body {
     outline-offset: -2px;
 }
 
+/* Quiet the ring only where the software chose the focus itself: the page
+   heading App moves focus to when a screen opens, and the dialog container
+   Dialog focuses on open. Neither is a control, so a ring around it is noise —
+   and WebKitGTK decides on its own that an app-caused focus() deserves a
+   visible ring, which lands as a pill around the heading's text. A person
+   tabbing still gets the ring on every control they reach, because those are
+   never given tabindex="-1". */
+[tabindex='-1']:focus-visible {
+    outline: none;
+}
+
 /* Wizard page transition: while a page is fading out it gets [data-exiting]
    (set by the pageFade transition), which hides the scrollbars inside it. A
    native overlay scrollbar fades on its own timer and would otherwise linger

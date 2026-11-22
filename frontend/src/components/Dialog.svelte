@@ -14,6 +14,7 @@
 		title,
 		onCancel,
 		focusOnOpen = true,
+		compact = false,
 		children,
 		actions,
 	}: {
@@ -22,6 +23,10 @@
 		onCancel: () => void;
 		/** Set false when the dialog body focuses its own first field. */
 		focusOnOpen?: boolean;
+		/** Fit the panel to its content and center the actions. Right for a
+			dialog whose whole body is centered — a title, a line, the choices —
+			where the full width and trailing actions serve a left-aligned body. */
+		compact?: boolean;
 		children: Snippet;
 		actions: Snippet;
 	} = $props();
@@ -108,7 +113,7 @@
 		}}
 	>
 		<div
-			class="dialog"
+			class={['dialog', compact && 'dialog--compact']}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={titleId}

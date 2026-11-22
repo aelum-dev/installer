@@ -2,8 +2,10 @@ package gui
 
 import (
 	"context"
+	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"aelum-installer/backend/shared"
 )
@@ -89,14 +91,44 @@ func TestOnBeforeClose_Idle(t *testing.T) {
 	}
 }
 
-func TestOnBeforeClose_DuringInstallation(t *testing.T) {
+// TestOnBeforeClose_KeepsTheWindowDuringAnInstall is the contract a stopped install
+// depends on: closing the window mid-install is a cancel, not an exit, so the close
+// is prevented and the window stays open on the cancelled page. The cancel must
+// still reach the CLI, and the cleanup must still be waited for, or the person is
+// left on that screen with the disk still mounted.
+func TestOnBeforeClose_KeepsTheWindowDuringAnInstall(t *testing.T) {
+	cmd := exec.Command("sleep", "30")
+	if err := cmd.Start(); err != nil {
+		t.Skipf("cannot start sleep: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	})
+
 	a := NewApp(false)
-	// Simulate a running install with no live process/cleanup channel: Cancel
-	// and Wait must tolerate the nil handles, and GetLogger().Close is safe.
+	a.installCmd = cmd
+	a.installDone = make(chan struct{})
 	a.installationRunning.Store(true)
 
-	if a.OnBeforeClose(context.Background()) {
-		t.Error("OnBeforeClose should return false")
+	// Stands for the CLI's exit, which the completion goroutine signals in the app.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		close(a.installDone)
+	}()
+
+	start := time.Now()
+	if !a.OnBeforeClose(context.Background()) {
+		t.Error("a close requested during an install must be prevented")
+	}
+	if elapsed := time.Since(start); elapsed < 40*time.Millisecond {
+		t.Errorf("OnBeforeClose returned after %v, before waiting for cleanup", elapsed)
+	}
+	if !a.installCancelled.Load() {
+		t.Error("closing the window during an install must read as a cancel")
+	}
+	if err := cmd.Wait(); err == nil || !strings.Contains(err.Error(), "interrupt") {
+		t.Errorf("the running install was not interrupted: %v", err)
 	}
 }
 

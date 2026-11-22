@@ -41,6 +41,23 @@
 	justify-content: flex-end;
 }
 
+/* Compact panel: a dialog whose whole body is centered — a title, one line,
+   the choices — has no left-aligned text to anchor trailing actions to, so
+   the full width and the trailing corner only read as empty space. Fit the
+   panel to its content (still capped) and center the actions under it. */
+.dialog--compact {
+	width: fit-content;
+	/* fit-content drops the panel from the 90% guard the base width keeps, so
+	   the cap carries that guard instead — a long translation in a narrow
+	   window wraps instead of overflowing. */
+	max-width: min(440px, 90%);
+	min-width: 0;
+}
+
+.dialog--compact .dialog-actions {
+	justify-content: center;
+}
+
 .btn-cancel,
 .btn-confirm {
 	font-family: inherit;

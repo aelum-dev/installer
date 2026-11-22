@@ -11,6 +11,7 @@
 	import DiskSelectionPage from '$pages/DiskSelectionPage.svelte';
 	import ConfirmationPage from '$pages/ConfirmationPage.svelte';
 	import InstallationPage from '$pages/InstallationPage.svelte';
+	import CancelledPage from '$pages/CancelledPage.svelte';
 	import FinishPage from '$pages/FinishPage.svelte';
 
 	import { PAGE_IDS, TOTAL_PAGES } from '$lib/types';
@@ -22,11 +23,12 @@
 	import { t, getIsRTL } from '$lib/i18n/index.svelte';
 	import { pageFade } from '$lib/transitions';
 
-	import { GetStartPage, ClearStartPage, GetDryRun } from '$lib/backend';
+	import { GetStartPage, ClearStartPage, GetDryRun, LogInfo, Quit } from '$lib/backend';
 
 	// One entry per wizard page. Record<PageID, …> makes the compiler reject a
 	// missing or unknown page, so this can't drift from PAGE_IDS.
 	const PAGES: Record<PageID, Component> = {
+		[PAGE_IDS.CANCELLED]: CancelledPage,
 		[PAGE_IDS.WELCOME]: WelcomePage,
 		[PAGE_IDS.USER_ACCOUNT]: UserAccountPage,
 		[PAGE_IDS.DISK_SELECTION]: DiskSelectionPage,
@@ -118,6 +120,40 @@
 		}
 	}
 
+	// A stopped run lands on its own screen. The backend's page pointer deliberately
+	// stays on the installation: the wizard did not advance, it stopped, and that
+	// screen is reached from no other place.
+	function showCancelled(): void {
+		navState.currentPage = PAGE_IDS.CANCELLED;
+	}
+
+	// Exit on the cancelled screen asks whether to reboot too: someone who stops an
+	// install usually wants the machine off the live media next. Both answers close
+	// the installer, and Escape or the backdrop picks the one that changes nothing
+	// about the machine.
+	let askRebootOnExit = $state(false);
+
+	function handleExit(): void {
+		askRebootOnExit = true;
+	}
+
+	function dismissRebootAsk(): void {
+		askRebootOnExit = false;
+		handleQuit();
+	}
+
+	// Quit only. Wails asks OnBeforeClose first, and on this screen nothing is
+	// running, so the answer is "close".
+	function handleQuit(): void {
+		LogInfo('[App] Cancelled screen: closing the installer');
+		Quit();
+	}
+
+	// The other answer: reboot, with the installer closing behind it.
+	function handleReboot(): void {
+		void handleFinish();
+	}
+
 	// Share the navigation callbacks with pages via context, so a dialog or the
 	// installation-complete handler can advance the wizard without dispatching
 	// DOM events.
@@ -125,6 +161,7 @@
 		next: handleNext,
 		back: handleBack,
 		finish: handleFinish,
+		cancelled: showCancelled,
 	});
 
 	// Move focus to the new page's heading when the wizard transitions, so
@@ -174,6 +211,7 @@
 		onNext={advance}
 		onBack={handleBack}
 		onFinish={handleFinish}
+		onExit={handleExit}
 	/>
 
 	<!-- The app's single tooltip bubble (use:tooltip hosts feed it). A sibling
@@ -202,6 +240,24 @@
 			showCancel={false}
 		/>
 	{/if}
+
+	<!-- The cancelled screen's Exit asks whether to reboot as well. No warning
+	     glyph: this question destroys nothing further — the install was already
+	     stopped. Either answer closes the installer; dismissing picks that. The
+	     body line is what carries the distance between title and buttons —
+	     without it the dialog collapses to a title with two buttons glued under
+	     it, unlike every other dialog in the wizard, which has a body. -->
+	<ConfirmDialog
+		bind:show={askRebootOnExit}
+		title={t('page.cancelled.rebootTitle')}
+		message={t('page.cancelled.rebootMessage')}
+		confirmLabel={t('page.finish.reboot')}
+		cancelLabel={t('page.cancelled.exitNoReboot')}
+		showIcon={false}
+		compact={true}
+		onConfirm={handleReboot}
+		onCancel={dismissRebootAsk}
+	/>
 </div>
 
 <style>

@@ -1,5 +1,11 @@
 // Page IDs for the installer wizard.
 export const PAGE_IDS = {
+	// The screen a stopped install ends on. It lives outside the wizard's numbering
+	// on purpose: it is not a step, so it has no dot in the footer, is not counted
+	// in TOTAL_PAGES, cannot be jumped to with AELUM_START_PAGE, and is terminal —
+	// like the Finish page it has no Next or Back. Nothing navigates here except a
+	// cancelled run; the only way out is its Exit button.
+	CANCELLED: -1,
 	WELCOME: 0,
 	USER_ACCOUNT: 1,
 	DISK_SELECTION: 2,

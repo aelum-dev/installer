@@ -127,6 +127,7 @@ export const DryRunStepDurationMs = 1000;
 export const ProgressTickDelayMs = 2000;
 export const ProgressTickIntervalMs = 8000;
 export const ProgressTickMaxPercent = 99;
+export const CleanupWaitTimeoutMs = 10000;
 export const PacstrapDownloadBandEnd = 5;
 export const PacstrapInstallBandEnd = 80;
 export const WeightFormatDisk = 3;

@@ -678,6 +678,13 @@ const ProgressTickIntervalMs = 8000
 // ProgressTickMaxPercent is the maximum percentage the tick goroutine will reach.
 const ProgressTickMaxPercent = 99
 
+// CleanupWaitTimeoutMs bounds how long the GUI waits for a cancelled install to
+// release the disk before it moves on to its cancelled page. A cancelled run is
+// killed as a process group, and a measured cancel needs about 600 ms of it
+// (unmount, volume group down, LUKS close); anything still running past this is a
+// hung process, and a window that never answers helps nobody.
+const CleanupWaitTimeoutMs = 10000
+
 // --- Pacstrap progress bands ------------------------------------------------
 // Each pacstrap step (base + desktop) reports a step-relative 0-100 percentage
 // assembled from ordered phase bands rather than a single unit ratio. The

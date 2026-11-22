@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { installState, resetDiskChoicesIfStale } from '$lib/store.svelte';
 import { uiState } from '$lib/ui.svelte';
-import { goNext, goBack } from '$lib/navigation';
+import { canGoNext, goBack, goNext } from '$lib/navigation';
 import { DefaultFileSystem } from '$lib/constants';
 import { PAGE_IDS } from '$lib/types';
 import type { DiskInfo, ManualLayout } from '$lib/types';
@@ -158,5 +158,26 @@ describe('App navigation', () => {
 			resetDiskChoicesIfStale();
 			expect(installState.lvmEnabled).toBe(true);
 		});
+	});
+});
+
+describe('canGoNext', () => {
+	// The footer asks this one predicate whether to show Next and Back, so a screen
+	// nobody may navigate away from has to answer it itself.
+	it.each([
+		['the running installation', PAGE_IDS.INSTALLATION],
+		['the cancelled screen', PAGE_IDS.CANCELLED],
+		['the finish page', PAGE_IDS.FINISH],
+	])('refuses to advance from %s', (_name, page) => {
+		expect(canGoNext(page)).toBe(false);
+	});
+
+	it.each([
+		PAGE_IDS.WELCOME,
+		PAGE_IDS.USER_ACCOUNT,
+		PAGE_IDS.DISK_SELECTION,
+		PAGE_IDS.CONFIRMATION,
+	])('advances from page %i', (page) => {
+		expect(canGoNext(page)).toBe(true);
 	});
 });

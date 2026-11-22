@@ -16,6 +16,9 @@
 		showIcon = true,
 		// Validation modal uses OK-only (no cancel).
 		showCancel = true,
+		// For a body that is all centered (title + one line + the choices): fit
+		// the panel to its content and center the actions. See .dialog--compact.
+		compact = false,
 		onConfirm,
 		onCancel,
 	}: {
@@ -29,6 +32,7 @@
 		confirmLabel?: string;
 		showIcon?: boolean;
 		showCancel?: boolean;
+		compact?: boolean;
 		onConfirm?: () => void;
 		onCancel?: () => void;
 	} = $props();
@@ -46,7 +50,7 @@
 	}
 </script>
 
-<Dialog bind:show {title} onCancel={handleCancel}>
+<Dialog bind:show {title} {compact} onCancel={handleCancel}>
 	{#if showIcon}
 		<div class="dialog-icon">
 			<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

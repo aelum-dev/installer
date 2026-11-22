@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFileExists(t *testing.T) {
@@ -154,6 +155,30 @@ func TestWaitForCleanup_ClosedChannel(t *testing.T) {
 	close(a.installDone)
 
 	a.WaitForCleanup() // returns immediately
+}
+
+// TestWaitForCleanup_HungInstallStillReleasesTheCaller: OnBeforeClose calls this on
+// the way to a screen the person must be able to read, so an install that never
+// exits may not turn that call into a window that never answers.
+func TestWaitForCleanup_HungInstallStillReleasesTheCaller(t *testing.T) {
+	previous := cleanupWaitTimeout
+	cleanupWaitTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { cleanupWaitTimeout = previous })
+
+	a := NewApp(false)
+	a.installDone = make(chan struct{}) // never closed: the CLI never exits
+
+	returned := make(chan struct{})
+	go func() {
+		a.WaitForCleanup()
+		close(returned)
+	}()
+
+	select {
+	case <-returned:
+	case <-time.After(2 * time.Second):
+		t.Fatal("WaitForCleanup stayed blocked on an install that never finished")
+	}
 }
 
 func TestWaitForCleanup_NoChannelIsSafe(t *testing.T) {
