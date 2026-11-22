@@ -71,5 +71,14 @@ func mirrorPathFor(path string) string {
 	if err != nil || !info.IsDir() {
 		return ""
 	}
-	return filepath.Join(logMirrorDir, filepath.Base(path))
+	mirror := filepath.Join(logMirrorDir, filepath.Base(path))
+	// A log that is already written in the mirror dir has nowhere second to live.
+	// The logger writes to the file and its mirror as two handles, so handing back
+	// the same path twice would append every line twice — which is what happens
+	// when --log-path names a file inside the share. Decided by the paths, not by
+	// who set them: the GUI passes its own, and a test or a hand run may pass any.
+	if mirror == filepath.Clean(path) {
+		return ""
+	}
+	return mirror
 }

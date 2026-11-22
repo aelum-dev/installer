@@ -49,6 +49,25 @@ func TestGetLogMirrorPath(t *testing.T) {
 	}
 }
 
+// TestGetLogMirrorPathSameFile: a log written inside the share has no second place
+// to live. The logger holds the log and its mirror as two handles and writes to
+// both, so mirroring a path onto itself puts every line in the file twice — which
+// is what a --log-path inside the share produced.
+func TestGetLogMirrorPathSameFile(t *testing.T) {
+	dir := t.TempDir()
+	old := logMirrorDir
+	logMirrorDir = dir
+	t.Cleanup(func() {
+		logMirrorDir = old
+		SetLogPath("")
+	})
+
+	SetLogPath(filepath.Join(dir, "run.log"))
+	if got := GetLogMirrorPath(); got != "" {
+		t.Errorf("GetLogMirrorPath() = %q, want no mirror: the log is already in the mirror dir", got)
+	}
+}
+
 func TestGetLogMirrorPathAbsent(t *testing.T) {
 	old := logMirrorDir
 	logMirrorDir = filepath.Join(t.TempDir(), "missing")
