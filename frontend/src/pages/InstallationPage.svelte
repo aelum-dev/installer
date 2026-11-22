@@ -3,6 +3,7 @@
 	import { installState, syncStorageToBackend } from '$lib/store.svelte';
 	import { t } from '$lib/i18n';
 	import { StartInstallation, EventsOn, LogInfo } from '$lib/backend';
+	import { formatDuration } from '$lib/format';
 	import { WIZARD_NAV, type WizardNavigation } from '$lib/navigation';
 	import CenteredPage from '$components/CenteredPage.svelte';
 
@@ -44,11 +45,15 @@
 			}
 		};
 
-		const handleComplete = () => {
+		// The backend measures the install from CLI start to a clean exit and
+		// ships the seconds with the event; the finish page shows them. The
+		// local counter is only the fallback for a payload that never arrived.
+		const handleComplete = (data?: { elapsedSeconds?: number }) => {
 			isRunning = false;
 			isComplete = true;
 			progress = 100;
 			errorMessage = '';
+			installState.installDurationSeconds = data?.elapsedSeconds ?? elapsedSeconds;
 			LogInfo('[InstallationPage] Installation complete');
 		};
 
@@ -96,12 +101,6 @@
 
 	init();
 
-	function formatTime(s: number): string {
-		const mins = Math.floor(s / 60);
-		const secs = s % 60;
-		return `${mins}:${secs.toString().padStart(2, '0')}`;
-	}
-
 	const currentLabel = $derived(
 		isComplete ? t('page.installation.completed') :
 		errorMessage ? errorMessage :
@@ -127,7 +126,7 @@
 			</div>
 			<div class="progress-info">
 				<span class="progress-percent">{progress}%</span>
-				<span class="progress-time">{formatTime(elapsedSeconds)}</span>
+				<span class="progress-time">{formatDuration(elapsedSeconds)}</span>
 			</div>
 		</div>
 		<p class="step-label">{currentLabel}</p>

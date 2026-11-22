@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Sistema de arquivos selecionado",
   "page.diskSelection.subtitle": "Para instalar o Aelum",
   "page.diskSelection.title": "Selecione um disco",
+  "page.finish.duration": "A instalação levou {time}.",
   "page.finish.message": "O Aelum foi instalado com sucesso.",
   "page.finish.reboot": "Reiniciar",
   "page.finish.title": "Instalação concluída",

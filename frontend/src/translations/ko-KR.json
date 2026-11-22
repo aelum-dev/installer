@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "선택된 파일 시스템",
   "page.diskSelection.subtitle": "Aelum을 설치할 디스크 선택",
   "page.diskSelection.title": "디스크 선택",
+  "page.finish.duration": "설치에 {time}이(가) 소요되었습니다.",
   "page.finish.message": "Aelum가 성공적으로 설치되었습니다.",
   "page.finish.reboot": "다시 시작",
   "page.finish.title": "설치 완료",

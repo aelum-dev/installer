@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Επιλεγμένο σύστημα αρχείων",
   "page.diskSelection.subtitle": "Για εγκατάσταση Aelum",
   "page.diskSelection.title": "Επιλέξτε δίσκο",
+  "page.finish.duration": "Η εγκατάσταση κράτησε {time}.",
   "page.finish.message": "Το Aelum εγκαταστάθηκε με επιτυχία.",
   "page.finish.reboot": "Επανεκκίνηση",
   "page.finish.title": "Η εγκατάσταση ολοκληρώθηκε",

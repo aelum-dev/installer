@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"aelum-installer/backend/shared"
 
@@ -26,6 +27,13 @@ type InstallationProgress struct {
 	Label   string `json:"label"`
 	Percent int    `json:"percent"`
 	Phase   string `json:"phase"` // "running" | "done" | "error"
+}
+
+// InstallationComplete is the payload of the installation:complete event: how
+// long the install took, measured from CLI start to a clean exit. The finish
+// page shows it, so the number covers the whole install, not just the last step.
+type InstallationComplete struct {
+	ElapsedSeconds int `json:"elapsedSeconds"`
 }
 
 // findCLIBinary locates the aelum-installer-cli binary.
@@ -140,6 +148,10 @@ func (a *App) StartInstallation() error {
 		return fmt.Errorf("failed to start CLI: %w", err)
 	}
 
+	// The install clock starts when the CLI is actually running, so the
+	// duration covers the install itself, not argument parsing.
+	a.installStartedAt = time.Now()
+
 	a.installCmd = cmd
 	a.installCancel = cancel
 	a.installDone = make(chan struct{})
@@ -197,7 +209,9 @@ func (a *App) StartInstallation() error {
 	go func() {
 		err := cmd.Wait()
 		if err == nil {
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, nil)
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, InstallationComplete{
+				ElapsedSeconds: int(time.Since(a.installStartedAt).Seconds()),
+			})
 		} else {
 			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed", fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
 		}

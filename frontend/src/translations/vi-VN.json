@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Hệ thống tệp đã chọn",
   "page.diskSelection.subtitle": "Để cài đặt Aelum",
   "page.diskSelection.title": "Chọn đĩa",
+  "page.finish.duration": "Cài đặt mất {time}.",
   "page.finish.message": "Aelum đã được cài đặt thành công.",
   "page.finish.reboot": "Khởi động lại",
   "page.finish.title": "Cài đặt hoàn tất",

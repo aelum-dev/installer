@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "已選檔案系統",
   "page.diskSelection.subtitle": "選擇要安裝 Aelum 的磁碟。",
   "page.diskSelection.title": "選擇安裝磁碟",
+  "page.finish.duration": "安裝花費 {time}。",
   "page.finish.message": "Aelum 已成功安裝。",
   "page.finish.reboot": "重新啟動",
   "page.finish.title": "安裝完成",

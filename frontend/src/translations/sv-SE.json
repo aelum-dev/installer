@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Valt filsystem",
   "page.diskSelection.subtitle": "För att installera Aelum",
   "page.diskSelection.title": "Välj en disk",
+  "page.finish.duration": "Installationen tog {time}.",
   "page.finish.message": "Aelum har installerats framgångsrikt.",
   "page.finish.reboot": "Starta om",
   "page.finish.title": "Installation slutförd",

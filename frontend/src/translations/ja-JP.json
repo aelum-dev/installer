@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "選択されたファイルシステム",
   "page.diskSelection.subtitle": "インストールするディスクを選択",
   "page.diskSelection.title": "インストールディスクの選択",
+  "page.finish.duration": "インストールに {time} かかりました。",
   "page.finish.message": "Aelum が正常にインストールされました。",
   "page.finish.reboot": "再起動",
   "page.finish.title": "インストール完了",

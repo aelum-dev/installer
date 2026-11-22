@@ -44,6 +44,12 @@ export const installState = $state({
 	manualMode: false as boolean,
 	manualLayout: null as ManualLayout | null,
 
+	// How long the finished install took, in whole seconds. The backend
+	// measures it from CLI start to a clean exit and ships it with the
+	// installation:complete event; the finish page shows it. 0 = no install
+	// has completed in this session.
+	installDurationSeconds: 0,
+
 	// Dry-run mode (set by backend on startup)
 	isDryRun: false,
 });

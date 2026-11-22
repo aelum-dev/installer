@@ -27,6 +27,15 @@ export function mbToGB(mb: number): number {
 	return Math.round((mb / 1024) * 10) / 10;
 }
 
+// formatDuration renders seconds as m:ss (e.g. 754 -> "12:34"). The
+// installation page shows it as a running clock and the finish page as the
+// total install time, so both read the same way.
+export function formatDuration(totalSeconds: number): string {
+	const mins = Math.floor(totalSeconds / 60);
+	const secs = totalSeconds % 60;
+	return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 // escapeHtml neutralises text that is interpolated into a translation rendered
 // with {@html}. Translation templates are trusted; their runtime arguments
 // (e.g. a disk model reported by the hardware) are not.

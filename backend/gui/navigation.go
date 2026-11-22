@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"sync/atomic"
+	"time"
 
 	"aelum-installer/backend/shared"
 )
@@ -58,6 +59,9 @@ type App struct {
 	installCancel func()
 	// installDone is closed when the CLI process has exited and cleanup is complete.
 	installDone chan struct{}
+	// installStartedAt is when the CLI subprocess started; the completion
+	// event reports the elapsed time so the finish page can show it.
+	installStartedAt time.Time
 }
 
 // GetCurrentPage returns the current page index (0-based).

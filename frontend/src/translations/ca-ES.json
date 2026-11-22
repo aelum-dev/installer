@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Sistema de fitxers seleccionat",
   "page.diskSelection.subtitle": "Per instal·lar l'Aelum",
   "page.diskSelection.title": "Trieu un disc",
+  "page.finish.duration": "La instal·lació ha trigat {time}.",
   "page.finish.message": "Aelum s'ha instal·lat correctament.",
   "page.finish.reboot": "Reinicieu",
   "page.finish.title": "Instal·lació completada",

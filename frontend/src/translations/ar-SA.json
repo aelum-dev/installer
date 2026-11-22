@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "نظام الملفات المحدد",
   "page.diskSelection.subtitle": "لتثبيت Aelum",
   "page.diskSelection.title": "اختر قرصًا",
+  "page.finish.duration": "استغرق التثبيت {time}.",
   "page.finish.message": "تم تثبيت Aelum بنجاح.",
   "page.finish.reboot": "إعادة تشغيل",
   "page.finish.title": "تم التثبيت",

@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Valittu tiedostojärjestelmä",
   "page.diskSelection.subtitle": "Aelumin asentamiseksi",
   "page.diskSelection.title": "Valitse levy",
+  "page.finish.duration": "Asennus kesti {time}.",
   "page.finish.message": "Aelum on asennettu onnistuneesti.",
   "page.finish.reboot": "Käynnistä uudelleen",
   "page.finish.title": "Asennus valmis",

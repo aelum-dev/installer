@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Elektita dosiersistemo",
   "page.diskSelection.subtitle": "Por instali Aelum",
   "page.diskSelection.title": "Elektu diskon",
+  "page.finish.duration": "La instalado daŭris {time}.",
   "page.finish.message": "Aelum estis sukcese instalita.",
   "page.finish.reboot": "Restartigi",
   "page.finish.title": "Instalado finita",

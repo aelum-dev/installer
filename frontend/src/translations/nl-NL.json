@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Geselecteerd bestandssysteem",
   "page.diskSelection.subtitle": "Om Aelum te installeren",
   "page.diskSelection.title": "Kies een schijf",
+  "page.finish.duration": "De installatie duurde {time}.",
   "page.finish.message": "Aelum is succesvol geïnstalleerd.",
   "page.finish.reboot": "Opnieuw opstarten",
   "page.finish.title": "Installatie voltooid",

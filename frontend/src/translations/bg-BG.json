@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Избрана файлова система",
   "page.diskSelection.subtitle": "За инсталиране на Aelum",
   "page.diskSelection.title": "Изберете диск",
+  "page.finish.duration": "Инсталирането отне {time}.",
   "page.finish.message": "Aelum беше инсталиран успешно.",
   "page.finish.reboot": "Рестартиране",
   "page.finish.title": "Инсталацията завърши",

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHtml, formatBytes, groupDigits, mbToGB } from './format';
+import { escapeHtml, formatBytes, formatDuration, groupDigits, mbToGB } from './format';
 
 describe('groupDigits', () => {
 	it('groups thousands with spaces', () => {
@@ -31,6 +31,18 @@ describe('mbToGB', () => {
 	it('converts MiB to GiB rounded to one decimal', () => {
 		expect(mbToGB(1536)).toBe(1.5);
 		expect(mbToGB(80000)).toBe(78.1);
+	});
+});
+
+describe('formatDuration', () => {
+	it('renders seconds as m:ss', () => {
+		expect(formatDuration(754)).toBe('12:34');
+		expect(formatDuration(0)).toBe('0:00');
+	});
+
+	it('pads the seconds to two digits', () => {
+		expect(formatDuration(5)).toBe('0:05');
+		expect(formatDuration(3661)).toBe('61:01');
 	});
 });
 

@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "מערכת הקבצים הנבחרת",
   "page.diskSelection.subtitle": "להתקנת Aelum",
   "page.diskSelection.title": "בחר דיסק",
+  "page.finish.duration": "ההתקנה נמשכה {time}.",
   "page.finish.message": "Aelum הותקנה בהצלחה.",
   "page.finish.reboot": "הפעל מחדש",
   "page.finish.title": "ההתקנה הושלמה",

@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "سیستم فایل انتخاب شده",
   "page.diskSelection.subtitle": "برای نصب Aelum",
   "page.diskSelection.title": "انتخاب دیسک",
+  "page.finish.duration": "نصب {time} طول کشید.",
   "page.finish.message": "Aelum با موفقیت نصب شد.",
   "page.finish.reboot": "راه‌اندازی مجدد",
   "page.finish.title": "نصب کامل شد",

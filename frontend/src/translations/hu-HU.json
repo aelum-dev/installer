@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Kiválasztott fájlrendszer",
   "page.diskSelection.subtitle": "Az Aelum telepítéséhez",
   "page.diskSelection.title": "Válasszon lemezt",
+  "page.finish.duration": "A telepítés {time} alatt készült.",
   "page.finish.message": "Az Aelum sikeresen telepítve.",
   "page.finish.reboot": "Újraindítás",
   "page.finish.title": "Telepítés befejezve",

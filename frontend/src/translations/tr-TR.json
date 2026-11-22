@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Seçili dosya sistemi",
   "page.diskSelection.subtitle": "Aelum'u yüklemek için",
   "page.diskSelection.title": "Disk seçin",
+  "page.finish.duration": "Yükleme {time} sürdü.",
   "page.finish.message": "Aelum başarıyla yüklendi.",
   "page.finish.reboot": "Yeniden başlat",
   "page.finish.title": "Yükleme Tamamlandı",

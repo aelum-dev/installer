@@ -139,6 +139,7 @@
   "page.diskSelection.selectedFileSystem": "Sistem berkas yang dipilih",
   "page.diskSelection.subtitle": "Untuk menginstal Aelum",
   "page.diskSelection.title": "Pilih disk",
+  "page.finish.duration": "Instalasi memakan waktu {time}.",
   "page.finish.message": "Aelum berhasil diinstal.",
   "page.finish.reboot": "Mulai ulang",
   "page.finish.title": "Instalasi selesai",

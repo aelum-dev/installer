@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
+	import { installState } from '$lib/store.svelte';
+	import { formatDuration } from '$lib/format';
 	import CenteredPage from '$components/CenteredPage.svelte';
 </script>
 
@@ -7,6 +9,11 @@
 	<div class="finish">
 		<div class="icon">✓</div>
 		<p class="message">{t('page.finish.message')}</p>
+		{#if installState.installDurationSeconds > 0}
+			<p class="duration">
+				{t('page.finish.duration', { time: formatDuration(installState.installDurationSeconds) })}
+			</p>
+		{/if}
 	</div>
 </CenteredPage>
 
@@ -28,6 +35,13 @@
 		color: var(--color-text-muted);
 		margin: 0;
 		font-size: var(--font-size-lg);
+		text-align: center;
+	}
+
+	.duration {
+		color: var(--color-text-muted);
+		margin: 0;
+		font-size: var(--font-size-base);
 		text-align: center;
 	}
 </style>
