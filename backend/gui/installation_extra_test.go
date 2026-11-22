@@ -185,3 +185,45 @@ func TestWaitForCleanup_NoChannelIsSafe(t *testing.T) {
 	a := NewApp(false)
 	a.WaitForCleanup() // installDone is nil
 }
+
+// TestReadCLILines_KeepsReadingPastALongLine guards the freeze: a reader that
+// stops at a long line is a pipe nobody drains, so the CLI blocks on its next log
+// write and the install halts mid-flight with the bar stopped and no error to
+// read. bufio.Scanner ended its loop past its 64 KiB token cap, and the CLI's
+// output holds lines that grow — it echoes what a command printed; the line
+// waiting behind a long one can be the 100% progress event.
+func TestReadCLILines_KeepsReadingPastALongLine(t *testing.T) {
+	long := strings.Repeat("p", 200*1024)
+	event := `{"stepId":"install_desktop","label":"desktop system","percent":100,"phase":"done"}`
+
+	var lengths []int
+	var last string
+	readCLILines("stderr", strings.NewReader(long+"\n"+event+"\n"), func(line string) {
+		lengths = append(lengths, len(line))
+		last = line
+	})
+
+	if len(lengths) != 2 {
+		t.Fatalf("lines delivered = %d (%v), want the long line and the event after it", len(lengths), lengths)
+	}
+	if lengths[0] != len(long) {
+		t.Errorf("first line = %d bytes, want the whole line of %d", lengths[0], len(long))
+	}
+	if last != event {
+		t.Errorf("last line = %q, want the progress event that followed the long line", last)
+	}
+}
+
+// TestReadCLILines_DeliversALineWithNoTrailingNewline: a CLI that dies mid-write
+// ends its last line at EOF, and ReadString hands that fragment back together with
+// the error. Dropping it would drop the reason the install ended.
+func TestReadCLILines_DeliversALineWithNoTrailingNewline(t *testing.T) {
+	var got []string
+	readCLILines("stderr", strings.NewReader("first\r\nlast"), func(line string) {
+		got = append(got, line)
+	})
+
+	if len(got) != 2 || got[0] != "first" || got[1] != "last" {
+		t.Errorf("lines delivered = %q, want [first last]", got)
+	}
+}

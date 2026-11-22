@@ -4,10 +4,14 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"aelum-installer/backend/shared"
@@ -60,6 +64,42 @@ func findCLIBinary() string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// readCLILines hands every line of one of the CLI's output pipes to handle,
+// until the pipe reaches EOF.
+//
+// It reads with a bufio.Reader rather than a bufio.Scanner for the same reason
+// installbase reads pacstrap with one: a Scanner ends its loop at the first token
+// longer than its 64 KiB buffer, and a reader that ends early is a pipe nobody
+// drains any more. The CLI logs on both pipes at every step — human-readable
+// lines on stdout, progress events on stderr — so a pipe that fills stops the CLI
+// on its next log write and the install freezes mid-flight: bar stopped, no
+// error, nothing on screen to explain it. What grows past a buffer is what the
+// CLI echoes from a command it ran: a "Packages (N) …" line follows the size of
+// the transaction, and an error can carry a tool's whole output. A bufio.Reader
+// has no such cap: ReadString accumulates across buffer fills, so the size below
+// is only how much is read at a time.
+//
+// A read error that is not EOF is reported rather than ending the loop quietly:
+// the CLI is still running, so a reader that died is a stuck install waiting to
+// happen, and the install log is the only place anyone will look for it.
+func readCLILines(what string, r io.Reader, handle func(string)) {
+	reader := bufio.NewReaderSize(r, 64*1024)
+	for {
+		line, err := reader.ReadString('\n')
+		if line != "" {
+			line = strings.TrimSuffix(line, "\n")
+			line = strings.TrimSuffix(line, "\r")
+			handle(line)
+		}
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				shared.GetLogger().Info("Reading the CLI's %s stopped: %v", what, err)
+			}
+			return
+		}
+	}
 }
 
 // StartInstallation spawns the CLI binary via sudo. Returns an error if one is
@@ -189,31 +229,54 @@ func (a *App) StartInstallation() error {
 		}
 	}()
 
+	// Both pipes are read to EOF, and the completion goroutine gives the readers
+	// time to finish before it calls Wait: Wait closes the pipes it created, so a
+	// Wait that wins the race discards whatever the CLI wrote last — the 100%
+	// progress event included. os/exec calls it incorrect to wait before every read
+	// from the pipe has completed.
+	var readers sync.WaitGroup
+	readers.Add(2)
+
 	// Forward stdout to terminal.
 	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			fmt.Fprintf(os.Stderr, "%s\n", scanner.Text())
-		}
+		defer readers.Done()
+		readCLILines("stdout", stdout, func(line string) {
+			fmt.Fprintf(os.Stderr, "%s\n", line)
+		})
 	}()
 
 	// Read stderr: emit JSON progress events, forward everything else to terminal.
 	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			line := scanner.Text()
+		defer readers.Done()
+		readCLILines("stderr", stderr, func(line string) {
 			var p InstallationProgress
 			if json.Unmarshal([]byte(line), &p) == nil {
 				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, p)
-				continue
+				return
 			}
 			fmt.Fprintf(os.Stderr, "%s\n", line)
-		}
+		})
 	}()
 
 	// Wait for the CLI to finish, then emit completion/error events and
 	// signal completion to WaitForCleanup callers.
 	go func() {
+		// Give the readers the time to reach EOF before reaping, but only so long:
+		// a killed command can leave a grandchild holding the write end open, and a
+		// writer that never closes it would otherwise hold up the event the person is
+		// watching for. The bound is the GUI's existing measure for "the CLI's work
+		// has stopped".
+		drained := make(chan struct{})
+		go func() {
+			readers.Wait()
+			close(drained)
+		}()
+		select {
+		case <-drained:
+		case <-time.After(cleanupWaitTimeout):
+			shared.GetLogger().Info("The CLI's output had not stopped after %s — waiting for it no longer", cleanupWaitTimeout)
+		}
+
 		err := cmd.Wait()
 		switch {
 		case err == nil:
