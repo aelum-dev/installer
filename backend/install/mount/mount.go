@@ -269,7 +269,7 @@ func mountBtrfsSubvolumes(ctx *shared.InstallContext, p *shared.PartitionInfo, r
 
 // ensureLuksOpen opens the LUKS root mapper if it isn't already open. The
 // format step closes the mapper after creating the filesystem, so mount must
-// reopen it. Idempotent: if the mapper device already exists, skip.
+// reopen it. Idempotent: an already open mapper is left as it is.
 func ensureLuksOpen(ctx *shared.InstallContext, rootPart string) error {
 	if len(ctx.LuksPassphrase) == 0 {
 		return fmt.Errorf("LUKS enabled but no passphrase set")
@@ -279,8 +279,9 @@ func ensureLuksOpen(ctx *shared.InstallContext, rootPart string) error {
 	// cryptsetup close removes the device synchronously). A stale node makes
 	// os.Stat succeed even though the device is gone, which would make the
 	// subsequent mount fail with "fsconfig() failed: No such file or directory".
-	// Verify the dm device is really open before skipping the reopen.
-	if isLuksMapperOpen(shared.LuksMapperName) {
+	// Ask cryptsetup whether the dm device is really open before skipping the
+	// reopen (luks.IsOpen).
+	if luks.IsOpen(shared.LuksMapperName) {
 		if ctx.Logger != nil {
 			ctx.Logger.Info("LUKS root mapper already open (%s)", shared.LuksMapperPath)
 		}
@@ -293,15 +294,6 @@ func ensureLuksOpen(ctx *shared.InstallContext, rootPart string) error {
 		ctx.Logger.Info("Opened LUKS root mapper %s", shared.LuksMapperPath)
 	}
 	return nil
-}
-
-// isLuksMapperOpen reports whether the dm-crypt mapper is actually open, i.e.
-// backed by a live device-mapper node. cryptsetup status returns 0 only when
-// the mapper exists and is open; a stale /dev/mapper node (device already
-// removed) makes it return non-zero, so the caller reopens.
-func isLuksMapperOpen(mapperName string) bool {
-	_, err := primitives.Run("cryptsetup", "status", mapperName).Output()
-	return err == nil
 }
 
 // BuildMountOpts is an alias for primitives.BuildMountOpts.

@@ -218,10 +218,17 @@ Aelum's own menu entries.
 
 ### Rollback Leaves Disk in Unknown State
 
-**Cause**: Rollback partially failed (e.g., `wipefs` succeeded on one partition but not the other).
+**Cause**: A rollback could not finish — for example `wipefs` succeeded on one
+partition but not the other. Your disk still holds whatever the failed command
+could not remove. A rollback that could not finish reports an error and names each
+command that failed.
 
 **Fix**:
 ```bash
+# Close the decrypted root first: an open mapper holds its partition,
+# and the wipe is refused while it is open.
+sudo cryptsetup close aelum
+
 # Full wipe — removes partition table and all signatures
 sudo sgdisk -Z /dev/sda
 ```

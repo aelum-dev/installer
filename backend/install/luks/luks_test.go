@@ -106,6 +106,27 @@ func TestIsLuks(t *testing.T) {
 	}
 }
 
+// TestIsOpen verifies the mapper probe asks cryptsetup, and that a non-zero answer
+// — including the one a stale /dev/mapper node gives — reads as closed.
+func TestIsOpen(t *testing.T) {
+	rec := primitivestest.NewRecorder().OnArgsOutput([]string{"cryptsetup", "status"}, "active\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	if !IsOpen(shared.LuksMapperName) {
+		t.Error("IsOpen() = false, want true when cryptsetup status succeeds")
+	}
+	calls := rec.CallsFor("cryptsetup")
+	if len(calls) != 1 || !reflect.DeepEqual(calls[0], statusArgs(shared.LuksMapperName)) {
+		t.Errorf("argv = %v, want %v", calls, statusArgs(shared.LuksMapperName))
+	}
+
+	rec.Reset()
+	rec.OnArgsError([]string{"cryptsetup", "status"}, errors.New("Device aelum is not active."))
+	if IsOpen(shared.LuksMapperName) {
+		t.Error("IsOpen() = true, want false for a mapper that is not open")
+	}
+}
+
 // TestLuksFormat_Success verifies the passphrase is fed via stdin (never argv)
 // and the correct luksFormat invocation is built.
 func TestLuksFormat_Success(t *testing.T) {

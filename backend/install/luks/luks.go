@@ -1,5 +1,6 @@
 // Package luks implements the LUKS2 operations the installer needs to encrypt
-// the root partition: format, open, close, and read the header UUID.
+// the root partition: format, open, close, ask whether a mapper is open, and read
+// the header UUID.
 //
 // Only the root partition is encrypted; the EFI partition stays plaintext
 // (mandatory for UEFI boot). Every command feeds the passphrase via a stdin
@@ -55,6 +56,11 @@ func closeArgs(mapperName string) []string {
 	return []string{"cryptsetup", "close", mapperName}
 }
 
+// statusArgs builds the `cryptsetup status <mapper>` arguments.
+func statusArgs(mapperName string) []string {
+	return []string{"cryptsetup", "status", mapperName}
+}
+
 // uuidArgs builds the `cryptsetup luksUUID <path>` arguments.
 func uuidArgs(path string) []string {
 	return []string{"cryptsetup", "luksUUID", path}
@@ -76,6 +82,16 @@ func feedPassphrase(cmd *primitives.Command, passphrase string) {
 // IsLuks reports whether path already carries a LUKS2 header.
 func IsLuks(path string) bool {
 	return primitives.Run(isLuksArgs(path)...).Run() == nil
+}
+
+// IsOpen reports whether the named dm-crypt mapper is actually open, i.e. backed
+// by a live device-mapper node. cryptsetup status answers 0 only for a mapper that
+// exists and is open; a stale /dev/mapper node (the device is already gone, udev
+// removes the node asynchronously) answers non-zero, so a leftover node is never
+// mistaken for an open device.
+func IsOpen(mapperName string) bool {
+	_, err := primitives.Run(statusArgs(mapperName)...).Output()
+	return err == nil
 }
 
 // LuksFormat initializes a LUKS2 header on path with the given passphrase.
