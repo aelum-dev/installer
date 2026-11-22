@@ -165,17 +165,22 @@
 						already. The path is redundant in manual mode too — the plan table lists
 						every path, and a disk has no single filesystem. -->
 					{#if !installState.manualMode}
-						<p class="dmeta disk-path">{t('page.installation.target')}: <code>{installState.disk.path}</code></p>
+						<!-- The filesystem rides the target line: it belongs to this disk's
+							identity, one fact per line ("Цель: /dev/sda btrfs"). -->
+						<p class="dmeta disk-path">
+							{t('page.installation.target')}: <code>{installState.disk.path}</code>
+							<span class="tag" use:tooltip={`${t('page.diskSelection.selectedFileSystem')}: ${installState.fileSystem || '—'}`}>{installState.fileSystem || '—'}</span>
+						</p>
 					{/if}
 
-					{#if !installState.manualMode || installState.luksEnabled || installState.lvmEnabled}
+					{#if installState.luksEnabled || installState.lvmEnabled}
 						<!-- The options as chips: their full hint sentences stay reachable
 							on hover (they are the same strings the disk-page switches carry)
-							and in full on the disk page, which owns the choices. -->
+							and in full on the disk page, which owns the choices. They must
+							not share the target line: the summary column in the 900-wide
+							window is too narrow for the path plus both chips in most
+							languages (measured: the Russian pair already overflowed). -->
 						<div class="chiprow">
-							{#if !installState.manualMode}
-								<span class="tag fs-tag" use:tooltip={`${t('page.diskSelection.selectedFileSystem')}: ${installState.fileSystem || '—'}`}>{installState.fileSystem || '—'}</span>
-							{/if}
 							{#if installState.luksEnabled}
 								<span class="tag luks-tag" use:tooltip={t('disk.encryptHint')}>{t('page.confirmation.luksEncrypted')}</span>
 							{/if}
@@ -350,6 +355,13 @@
 		border-radius: var(--radius-sm);
 		font-family: var(--font-mono);
 		font-size: var(--font-size-sm);
+	}
+
+	/* The chips belong to the target line, right of the path; every pill
+	   rides at the path pill's height. */
+	.disk-path .tag {
+		margin-left: var(--spacing-xs);
+		vertical-align: middle;
 	}
 
 	.chiprow {
