@@ -1,6 +1,8 @@
 package primitives
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"aelum-installer/backend/shared"
@@ -66,21 +69,164 @@ func SetCommandRunner(r CommandRunner) (restore func()) {
 	return func() { defaultRunner = prev }
 }
 
+// ============================================================================
+// Cancellation
+// ============================================================================
+
+// cancelSource is the channel whose closing cancels the commands the install
+// steps run. It is process-wide for the same reason the two seams above are:
+// one process performs one installation, and the steps reach these primitives
+// from dozens of call sites that have no business threading a context through.
+var cancelSource <-chan struct{}
+
+// SetCancellation registers the channel whose closing cancels the commands the
+// install steps run, and returns a function that clears the registration.
+// Once it is closed:
+//
+//   - a command that has not started is never started, and the call returns
+//     shared.ErrInterrupted — a cancelled install writes nothing further to the
+//     disk instead of finishing the step it happens to be in;
+//   - a command already running is killed, together with everything it spawned, so
+//     the step ends with it rather than after it.
+//
+// The Installer registers its run's channel for the duration of the step loop
+// and clears it before the deferred cleanup: unmounting and closing the LUKS
+// mapper have to survive a cancellation, or the next attempt starts from a busy
+// disk. Tests and single-step callers that never register are never cancelled.
+func SetCancellation(cancel <-chan struct{}) (restore func()) {
+	prev := cancelSource
+	cancelSource = cancel
+	return func() { cancelSource = prev }
+}
+
+// cancelled reports whether cancellation has been requested. A nil channel — no
+// install loop running — is never cancelled.
+func cancelled() bool {
+	select {
+	case <-cancelSource:
+		return true
+	default:
+		return false
+	}
+}
+
+// notCancelled guards every entry point that would start a process.
+func notCancelled() error {
+	if cancelled() {
+		return shared.ErrInterrupted
+	}
+	return nil
+}
+
+// KillProcessGroup stops every process in the group led by pid.
+//
+// The install steps start commands that are shell scripts — pacstrap, arch-chroot —
+// and a script hands the real work to a second generation: pacman runs inside
+// arch-chroot, two generations below the process the installer started. Killing
+// only that first process therefore stops nothing: the grandchild keeps installing,
+// keeps the output pipe the step is reading open, and the step waits for exactly the
+// command the cancellation was meant to stop (measured on the test disk: 50 seconds
+// of a cancelled install spent finishing a pacstrap nobody asked for any more).
+//
+// The process group is the only handle that reaches every generation at once:
+// children inherit their parent's group and almost nothing here changes it, so a
+// command started with Setpgid and stopped by this function leaves no child
+// running behind it.
+//
+// A missing group is not a failure — the command may already be gone, which is the
+// outcome wanted anyway. It never takes the group of the caller: pid 0 is refused,
+// and every caller passes the pid of a process it started.
+func KillProcessGroup(pid int) error {
+	if pid <= 0 {
+		return nil
+	}
+	err := syscall.Kill(-pid, syscall.SIGKILL)
+	if errors.Is(err, syscall.ESRCH) {
+		return nil
+	}
+	return err
+}
+
 // execRunner runs commands for real via os/exec.
 type execRunner struct{}
 
-func (execRunner) build(cmd *Command) *exec.Cmd {
-	c := exec.Command(cmd.Args[0], cmd.Args[1:]...)
+// build prepares the command and returns, with it, the function that releases
+// the cancellation watcher — callers must defer it.
+func (r execRunner) build(cmd *Command) (*exec.Cmd, func()) {
+	if cancelSource == nil {
+		c := exec.Command(cmd.Args[0], cmd.Args[1:]...)
+		c.Stdin = cmd.Stdin
+		return c, func() {}
+	}
+
+	// exec.CommandContext kills the process as soon as the context is done, and
+	// Run/Output/CombinedOutput only return after that kill. The step therefore
+	// stops with the command it was waiting on, which is what makes cancelling
+	// partway through an install mean something.
+	ctx, stopWatching := watchCancellation(cancelSource)
+	c := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
+	c.SysProcAttr = OwnProcessGroup()
+	// Kill the group, not the process: the direct child is usually a script whose
+	// grandchild is doing the work and holding the output pipe, so killing one
+	// process would stop nothing and unblock nothing. See KillProcessGroup.
+	c.Cancel = func() error { return KillProcessGroup(c.Process.Pid) }
 	c.Stdin = cmd.Stdin
-	return c
+	return c, stopWatching
 }
 
-func (r execRunner) Run(cmd *Command) error { return r.build(cmd).Run() }
+// OwnProcessGroup returns the SysProcAttr that puts a command into a process group
+// of its own: the command becomes the group's leader, so its group id equals its
+// pid, which is what KillProcessGroup sends the signal to. Every streaming command
+// the installer runs is started this way, so stopping one stops everything it
+// spawned too.
+//
+// Only a command that can be cancelled is moved into a group of its own. Nothing
+// the installer runs reads a terminal — every passphrase goes to a command on
+// stdin, and a command with no Stdin gets /dev/null — so taking the command out of
+// the foreground group costs it nothing it uses.
+func OwnProcessGroup() *syscall.SysProcAttr {
+	return &syscall.SysProcAttr{Setpgid: true}
+}
 
-func (r execRunner) Output(cmd *Command) ([]byte, error) { return r.build(cmd).Output() }
+// watchCancellation turns a close-on-cancel channel into a context. The
+// returned function ends the watcher goroutine once the command is done.
+func watchCancellation(ch <-chan struct{}) (context.Context, func()) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-ch:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
+}
+
+func (r execRunner) Run(cmd *Command) error {
+	if err := notCancelled(); err != nil {
+		return err
+	}
+	c, stopWatching := r.build(cmd)
+	defer stopWatching()
+	return c.Run()
+}
+
+func (r execRunner) Output(cmd *Command) ([]byte, error) {
+	if err := notCancelled(); err != nil {
+		return nil, err
+	}
+	c, stopWatching := r.build(cmd)
+	defer stopWatching()
+	return c.Output()
+}
 
 func (r execRunner) CombinedOutput(cmd *Command) ([]byte, error) {
-	return r.build(cmd).CombinedOutput()
+	if err := notCancelled(); err != nil {
+		return nil, err
+	}
+	c, stopWatching := r.build(cmd)
+	defer stopWatching()
+	return c.CombinedOutput()
 }
 
 // Run builds a command to execute directly (no helper needed when running as
@@ -319,7 +465,10 @@ func btrfsMountOptions(subvol string, sv *shared.BtrfsSubvolume) string {
 	return strings.Join(opts, ",")
 }
 
-// CleanupMounts forcefully unmounts everything under /mnt.
+// CleanupMounts forcefully unmounts everything under /mnt. It runs on the
+// failure and cancellation paths, after the install loop has cleared its
+// cancellation registration, so these commands are never the ones a cancellation
+// kills — an unmount left half done would leave the next attempt's disk busy.
 func CleanupMounts(logger shared.Logger) error {
 	pids, err := findHoldingPIDs(shared.MountRoot)
 	if err != nil {

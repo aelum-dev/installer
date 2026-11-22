@@ -390,16 +390,9 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 		}
 	}()
 
-	// If running in a terminal and not already interrupted, handle SIGINT so
-	// Ctrl+C during a GUI-launched CLI installation also cancels and cleans up.
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT)
-	go func() {
-		<-sigChan
-		log.Info("Interrupted — cancelling child process on %s", disk)
-		installer.Cancel()
-		installer.SetInterrupted()
-	}()
+	// Ctrl+C in a terminal, and the SIGINT the GUI sends from its cancel button,
+	// stop the install here.
+	watchInterrupt(installer, disk)
 
 	if stepName != "" {
 		// Run a single step
@@ -430,6 +423,32 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 	}
 
 	return 0
+}
+
+// watchInterrupt makes an interrupt stop the install: the step loop halts before
+// the next step, the command in flight is killed, the streaming pacstrap kills
+// its child, and the deferred cleanup releases the disk.
+//
+// A second interrupt means that stop is not arriving — a killed pacstrap can
+// leave its child holding the output pipe the step reads, and Go's default action
+// no longer applies once signal.Notify is watching the signal — so it forces the
+// cleanup and exits. A mounted /mnt is exactly what the first interrupt was meant
+// to avoid leaving behind. RunCleanup is once-guarded, so the cleanup deferred by
+// the install path does nothing after this.
+func watchInterrupt(installer *install.Installer, disk string) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
+	go func() {
+		<-sigChan
+		log.Info("Interrupted — cancelling the install on %s", disk)
+		installer.Cancel()
+		installer.SetInterrupted()
+
+		<-sigChan
+		log.Info("Second interrupt — forcing cleanup on %s", disk)
+		installer.RunCleanup()
+		exitCode(130)
+	}()
 }
 
 // handleCleanup performs cleanup operations (unmount /mnt).

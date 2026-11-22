@@ -41,7 +41,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       root_check_test.go        — Root check tests
       validation_test.go        — Validation tests
     install/
-      installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 7 steps.
+      installer.go              — Installer orchestrator (shared by CLI + GUI). Install() runs 8 steps.
       step.go                   — Step interface + stepFunc + Steps()/stepWeights() (order + weights)
       context.go                — InstallContext struct (shared state, Cancel channel, Logger)
       errors.go                 — ValidationError, InstallError types
@@ -51,6 +51,8 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
                                   WriteFile(), AppendFile(), ReadFile(), Stat(), RemoveAll(), Chmod(),
                                   ValidateMountedSystem(), CleanupMounts()
                                   (+ CommandRunner seam: SetCommandRunner() injects a fake)
+                                  (+ SetCancellation(): closing the channel kills the step's running
+                                  command and refuses the next one — see the Cancellation bullet)
                                   (+ FileSystem seam: SetFileSystem() injects a fake)
         primitivestest/
           recorder.go           — Scripted primitives.CommandRunner for unit tests (no root needed)
@@ -114,6 +116,7 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       *_test.go                 — Unit + integration tests (installer, installer_integration)
     shared/
       types.go                  — DiskInfo, PartitionInfo, UserAccountData, DiskSelectionData
+      errors.go                 — shared.ErrInterrupted: the one error every layer returns for a cancelled install
       config.go                 — ALL constants: paths, command names, weights, thresholds, wallpaper, progress-tick, etc.
       logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
       disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath()
@@ -266,6 +269,7 @@ All UI strings are translated by a small custom flat-key runtime in `frontend/sr
 - **File I/O for root ops**: Install steps write/read the target via `primitives.WriteFile()`/`AppendFile()`/`ReadFile()`/`Stat()`/`RemoveAll()`/`Chmod()` rather than calling `os` directly. Those go through the `primitives.FileSystem` seam: tests inject `primitivestest.NewMemFS()` with `primitives.SetFileSystem(fs)()` to exercise file-driven logic without writing under `/mnt`. `WriteFile`/`AppendFile` prepend `MountRoot` for chroot paths and leave host paths (`/mnt/...`) as-is; `WriteFileMode`/`ReadFile`/`Stat`/`RemoveAll`/`Chmod` take host paths verbatim. `os/exec`, `shared/` (logger, mirrorlist), and the GUI binary lookup still use `os` directly.
 - **InstallContext**: Shared state passed through all install steps. New fields go here, not in Installer struct.
 - **Progress tracking**: pacstrap uses a phase-banded tracker in `install/progress/pacstrap.go` (download/install/hook bands; see `PacstrapDownloadBandEnd`/`PacstrapInstallBandEnd` in `shared/config.go`). Step weights in `install/step.go`.
+- **Cancellation**: `InstallContext.Cancel` — the channel closed by the CLI's SIGINT handler or by `Installer.Cancel()` — is the only cancel signal, and every layer answers it, so no step has to know it exists. The step loop checks it before every step and reports a step that died from it as `shared.ErrInterrupted` instead of a step failure; `primitives.SetCancellation` (registered for the step loop only and cleared before `RunCleanup`, because unmounting must never be the command a cancel kills) refuses to start the next command and kills the one in flight; the streaming pacstrap in `installbase` kills its own child. **A kill is always a process-group kill** (`primitives.OwnProcessGroup` when the command is started, `primitives.KillProcessGroup` to stop it): the steps run scripts — `pacstrap` → `arch-chroot` → `pacman` — and killing only the process the installer started leaves the grandchild still installing and still holding the output pipe the step reads, so the step waits for the very command the cancellation was meant to stop (measured on the test disk: 50 seconds of a cancelled install finishing a pacstrap nobody asked for any more, against 316 ms to silence with the group kill). Before all three read the channel, a cancelled run finished the step it was in, ran the seven after it, and reported a fully installed, bootable system as "Installation failed". The CLI exits 130 via `Interrupted()`; the GUI records its own cancel so the same exit code reads as "cancelled" rather than a broken installer — the two ways the GUI cancels are closing the window during an install and `RebootAndClose`, there is no cancel button. Each run gets a fresh channel and `Cancel()` closes the current one — guarding that with a `sync.Once` leaves a retried install impossible to cancel. A second SIGINT forces cleanup and exits 130: a killed `pacstrap` can leave a child holding the output pipe its reader waits on, and Go's default action no longer applies once `signal.Notify` is watching the signal.
 - **Dry run**: `AELUM_DRY_RUN=1` — steps sleep 200ms instead of executing.
 - **Fake disks**: `FAKE_DISKS=1` — synthetic disk data for frontend dev.
 - **Rollback**: `--rollback /dev/vda` — unmounts + wipes partition signatures.

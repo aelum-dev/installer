@@ -167,6 +167,12 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 	args = append(args, packages...)
 	cmd := exec.Command("pacstrap", args...)
 
+	// pacstrap is a shell script that hands the work to arch-chroot and then to
+	// pacman, and those grandchildren are what hold the two pipes below. Give it a
+	// process group of its own so the cancellation paths can stop the whole tree at
+	// once — see primitives.KillProcessGroup.
+	cmd.SysProcAttr = primitives.OwnProcessGroup()
+
 	// Stream stdout to parse real progress from pacstrap's lines.
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -241,9 +247,9 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 	select {
 	case <-scanDone:
 		if scanErr != nil {
-			// Stop the child: with its stdout reader gone it could block on a
-			// full pipe and never exit.
-			_ = cmd.Process.Kill()
+			// Stop the tree: with its stdout reader gone it could block on a full
+			// pipe and never exit.
+			_ = primitives.KillProcessGroup(cmd.Process.Pid)
 		}
 		// Wait for the stderr reader to finish before reading stderrBuf: the
 		// strings.Builder it writes is not safe for concurrent access.
@@ -261,13 +267,18 @@ func InstallPackages(ctx *shared.InstallContext, packages []string, description 
 		}
 		return nil
 	case <-ctx.Cancel:
-		// Kill the child process so the scanner goroutine unblocks and exits.
-		// Cleanup is handled by the Installer's defer, not here.
-		_ = cmd.Process.Kill()
+		// Kill the whole tree so the scanner goroutine unblocks and exits: the
+		// pacman doing the work is a grandchild of this process, and it holds the
+		// output pipe, so killing only the direct child would leave the step
+		// waiting for the install nobody asked for any more.
+		// Cleanup is handled by the Installer's defer, not here. The error is the
+		// shared one so the step loop reports a cancelled install rather than a
+		// pacstrap that went wrong.
+		_ = primitives.KillProcessGroup(cmd.Process.Pid)
 		<-scanDone
 		<-stderrDone
 		// Reap the killed child so it does not linger as a zombie.
 		_ = cmd.Wait()
-		return fmt.Errorf("interrupted")
+		return shared.ErrInterrupted
 	}
 }

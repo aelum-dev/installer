@@ -155,6 +155,7 @@ func (a *App) StartInstallation() error {
 	a.installCmd = cmd
 	a.installCancel = cancel
 	a.installDone = make(chan struct{})
+	a.installCancelled.Store(false)
 	a.installationRunning.Store(true)
 
 	// Write password to stdin, then (when encrypting) the LUKS passphrase. The
@@ -208,12 +209,21 @@ func (a *App) StartInstallation() error {
 	// signal completion to WaitForCleanup callers.
 	go func() {
 		err := cmd.Wait()
-		if err == nil {
+		switch {
+		case err == nil:
 			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, InstallationComplete{
 				ElapsedSeconds: int(time.Since(a.installStartedAt).Seconds()),
 			})
-		} else {
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed", fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
+		case a.installCancelled.Load():
+			// The person closed the window during the install or asked for a
+			// reboot: the CLI stopped on request and exits with the signal code.
+			// Say so — "Installation failed" tells someone who stopped a run that
+			// the installer broke.
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation cancelled",
+				fmt.Sprintf("You cancelled the install. The remaining steps did not run, so the install on %s is not finished. For details, check: %s", diskID, logPath))
+		default:
+			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed",
+				fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
 		}
 		close(a.installDone)
 		a.installCmd = nil
@@ -224,13 +234,20 @@ func (a *App) StartInstallation() error {
 	return nil
 }
 
-// CancelInstallation sends SIGINT to the running CLI process and lets it
-// exit gracefully. The CLI's own signal handler closes the cancel channel,
-// steps return, defers run (CleanupMounts), and the CLI exits. We do NOT
-// cancel the exec.CommandContext here — doing so would SIGKILL the process
-// before its defers get a chance to unmount /mnt.
+// CancelInstallation sends SIGINT to the running CLI process and lets it exit
+// gracefully. The CLI's own signal handler closes the cancel channel: the step
+// loop stops before the next step, the command in flight is killed together with
+// its whole process group, the defers run (CleanupMounts), and the CLI exits with
+// the signal code. We do NOT cancel the exec.CommandContext here — doing so would
+// SIGKILL the process before its defers get a chance to unmount /mnt.
+//
+// The two callers are closing the window mid-install and RebootAndClose; the
+// wizard has no cancel button. The request is recorded first, so the completion
+// goroutine can tell that stop from a CLI that died on its own, even when the CLI
+// dies before it is signalled.
 func (a *App) CancelInstallation() {
 	if a.installCmd != nil && a.installCmd.Process != nil {
+		a.installCancelled.Store(true)
 		_ = a.installCmd.Process.Signal(os.Interrupt)
 	}
 }

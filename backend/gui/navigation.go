@@ -62,6 +62,10 @@ type App struct {
 	// installStartedAt is when the CLI subprocess started; the completion
 	// event reports the elapsed time so the finish page can show it.
 	installStartedAt time.Time
+	// installCancelled records that this GUI asked the running install to stop.
+	// A cancelled CLI exits with the signal code, and without this flag the GUI
+	// would report the stop as a failure of the installer's own.
+	installCancelled atomic.Bool
 }
 
 // GetCurrentPage returns the current page index (0-based).

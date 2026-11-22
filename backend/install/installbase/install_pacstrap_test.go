@@ -1,6 +1,7 @@
 package installbase
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,9 +118,12 @@ func TestInstallPackages_PacstrapFails(t *testing.T) {
 }
 
 func TestInstallPackages_Interrupted(t *testing.T) {
-	// `exec` replaces the shell with sleep so killing cmd.Process closes the
-	// stdout pipe immediately (a plain `sleep` child would hold it open).
-	fakePacstrap(t, `exec sleep 5`)
+	// A fake that leaves a child behind, the way real pacstrap does: the script is
+	// only a wrapper around arch-chroot and pacman, and the child is what prints
+	// and what holds the output pipe open. Killing the wrapper alone leaves the
+	// reader waiting for the child — the 50 seconds a cancelled install measured
+	// on the test disk — so this fake deliberately does not exec.
+	fakePacstrap(t, `echo ":: Packages (1) base"; ( i=0; while [ $i -lt 40 ]; do echo "installing pkg$i..."; sleep 0.5; i=$((i+1)); done ) & wait`)
 	mounted(t)
 
 	ctx := &shared.InstallContext{Cancel: make(chan struct{})}
@@ -130,8 +134,8 @@ func TestInstallPackages_Interrupted(t *testing.T) {
 
 	start := time.Now()
 	err := InstallPackages(ctx, []string{"base"}, "base system")
-	if err == nil || !strings.Contains(err.Error(), "interrupted") {
-		t.Fatalf("InstallPackages() error = %v, want interrupted", err)
+	if !errors.Is(err, shared.ErrInterrupted) {
+		t.Fatalf("InstallPackages() error = %v, want the interrupted error", err)
 	}
 	if elapsed := time.Since(start); elapsed > 4*time.Second {
 		t.Errorf("cancellation took %s; the child was not killed promptly", elapsed)

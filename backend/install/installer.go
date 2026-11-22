@@ -53,20 +53,26 @@ type Installer struct {
 	// Progress callback (nil for CLI, sets up UI events for GUI)
 	OnProgress func(stepID, label string, percent int, phase string)
 
-	// interrupted is set to true when SIGINT is received. Used by the CLI to
-	// decide the exit code (130 for SIGINT vs 1 for other errors).
+	// interrupted is set when the run is cancelled — by the CLI's signal
+	// handler, or by the step loop observing the closed cancel channel. Used by
+	// the CLI to decide the exit code (130 for SIGINT vs 1 for other errors).
 	interrupted atomic.Bool
-
-	// cancelOnce ensures Cancel() only closes the cancel channel once.
-	cancelOnce sync.Once
 
 	// cleanupOnce ensures Cleanup runs at most once, regardless of which
 	// path triggers it (defer, OnBeforeClose, a signal handler, or panic recovery).
 	cleanupOnce sync.Once
 
-	// cancel is closed when SIGINT is received during a long-running command
-	// (e.g. pacstrap). This unblocks scanner goroutines so they return promptly.
-	cancel chan struct{}
+	// cancelMu guards cancel and cancelClosed, because Cancel runs on the
+	// signal-handler goroutine while the install goroutine builds the channel.
+	cancelMu sync.Mutex
+
+	// cancel is closed when the run is cancelled. It unblocks the goroutines
+	// waiting on it (the streaming pacstrap's readers) and tells the primitives
+	// to kill the command in flight and refuse the next one. Each run gets a
+	// fresh channel; cancelClosed keeps a second Cancel on an old run from
+	// closing a channel twice.
+	cancel       chan struct{}
+	cancelClosed bool
 }
 
 // InstallerConfig holds the inputs for a new installation run.
@@ -158,6 +164,13 @@ func (inst *Installer) Install() error {
 
 	ctx := inst.context()
 
+	// From here to the end of the step loop, the commands the steps run are
+	// killed the moment the run is cancelled, and the next one is not started at
+	// all. Defers run in reverse order, so this registration is cleared before
+	// the cleanup above runs: unmounting and closing the LUKS mapper must never
+	// be the commands a cancellation kills.
+	defer primitives.SetCancellation(ctx.Cancel)()
+
 	steps := Steps()
 	weights := stepWeights()
 	totalWeight := 0
@@ -171,6 +184,14 @@ func (inst *Installer) Install() error {
 		label := step.Label()
 		if inst.dryRun {
 			label = "[DRY RUN] " + label
+		}
+
+		// A cancellation is honoured here as well as inside the step that
+		// notices it. Without this check a cancelled run finishes the step it
+		// was in, runs every step after it, and then reports the completed
+		// install as a failure.
+		if ctx.Cancelled() {
+			return inst.interruptedError(step.Label(), nil)
 		}
 
 		startPercent := cumulativePercent
@@ -213,6 +234,12 @@ func (inst *Installer) Install() error {
 		close(stopTick) // stop the tick goroutine
 
 		if err != nil {
+			// A step that died because its command was killed on request did not
+			// fail: say it was cancelled, or the log and the UI blame a broken
+			// installer for a stop the person asked for.
+			if ctx.Cancelled() {
+				return inst.interruptedError(step.Label(), err)
+			}
 			return fmt.Errorf("step \"%s\" failed: %w", step.Label(), err)
 		}
 
@@ -222,6 +249,23 @@ func (inst *Installer) Install() error {
 
 	inst.logInfo("Installation completed successfully")
 	return nil
+}
+
+// interruptedError is what a cancelled run returns. Seeing the cancellation
+// marks the installer interrupted as well, so a run stopped by a Cancel() call
+// with no signal handler attached still exits with the signal exit code.
+//
+// label names the step the run stopped at; cause is that step's own error when
+// it had one — a killed command reports "signal: killed", which belongs in the
+// log but is not the reason the install stopped.
+func (inst *Installer) interruptedError(label string, cause error) error {
+	inst.SetInterrupted()
+	if cause != nil {
+		inst.logInfo("Cancelled during %s (%v) — the remaining steps do not run", label, cause)
+		return fmt.Errorf("%w during %s", shared.ErrInterrupted, label)
+	}
+	inst.logInfo("Cancelled — the remaining steps do not run")
+	return fmt.Errorf("%w before %s", shared.ErrInterrupted, label)
 }
 
 // tickProgress slowly advances the percentage from start to end, emitting
@@ -335,6 +379,9 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 			inst.emitProgress(s.Name(), label, 0, "running")
 			inst.logInfo("Starting step: %s", s.Label())
 			ctx := inst.context()
+			// Same rule as the full run: the step's commands are killed if the
+			// run is cancelled, and the registration is cleared before cleanup.
+			defer primitives.SetCancellation(ctx.Cancel)()
 			var stepErr error
 			if inst.dryRun {
 				stepErr = simulateStep(ctx.Cancel, time.Duration(shared.DryRunStepDurationMs)*time.Millisecond)
@@ -342,6 +389,9 @@ func (inst *Installer) RunStep(stepName string) (label string, percent int, err 
 				stepErr = s.Run(ctx)
 			}
 			if stepErr != nil {
+				if ctx.Cancelled() {
+					return label, 0, inst.interruptedError(s.Label(), stepErr)
+				}
 				return label, 0, fmt.Errorf("step \"%s\" failed: %w", s.Label(), stepErr)
 			}
 			inst.emitProgress(s.Name(), label, 100, "done")
@@ -374,8 +424,14 @@ func (inst *Installer) context() *InstallContext {
 		}
 	}
 
-	// Create a fresh cancel channel for this installation run.
+	// Create a fresh cancellation channel for this installation run. An earlier
+	// run's channel stays closed — that run is over — and this one can be
+	// cancelled again.
+	inst.cancelMu.Lock()
 	inst.cancel = make(chan struct{})
+	inst.cancelClosed = false
+	cancel := inst.cancel
+	inst.cancelMu.Unlock()
 
 	// Default an unset filesystem so the format/mount steps have a concrete type.
 	fileSystem := inst.fileSystem
@@ -398,22 +454,29 @@ func (inst *Installer) context() *InstallContext {
 		GPUDriver:      inst.gpuDriver,
 		InputMethod:    inst.inputMethod,
 		Logger:         inst.Logger,
-		Cancel:         inst.cancel,
+		Cancel:         cancel,
 	}
 	ctx.ManualMode = inst.manualMode
 	ctx.ManualLayout = inst.manualLayout
 	return ctx
 }
 
-// Cancel closes the install cancellation channel, unblocking any scanner
-// goroutines (e.g. pacstrap output reader) that are waiting on input.
-// Called by the CLI signal handler on SIGINT.
+// Cancel closes the current run's cancellation channel. The step loop stops
+// before the next step, the command primitives kill the command in flight and
+// refuse the next one, and the streaming pacstrap kills its child so the
+// goroutines reading its output return. Called by the CLI signal handler on
+// SIGINT.
+//
+// Closing is guarded by a mutex and a flag rather than a sync.Once: each run
+// gets a fresh channel, and a Once would leave a retried install impossible to
+// cancel.
 func (inst *Installer) Cancel() {
-	inst.cancelOnce.Do(func() {
-		if inst.cancel != nil {
-			close(inst.cancel)
-		}
-	})
+	inst.cancelMu.Lock()
+	defer inst.cancelMu.Unlock()
+	if inst.cancel != nil && !inst.cancelClosed {
+		close(inst.cancel)
+		inst.cancelClosed = true
+	}
 }
 
 // emitProgress reports progress to the UI.
@@ -438,7 +501,7 @@ func (inst *Installer) logError(format string, args ...interface{}) {
 }
 
 // simulateStep simulates a step by sleeping for the given duration.
-// Respects the cancel channel — exits early if SIGINT is received.
+// Respects the cancel channel — exits early if the run is cancelled.
 // Used in dry-run mode to give the user a sense of progress.
 // Can be overridden in tests for faster execution.
 var simulateStep = func(cancel chan struct{}, duration time.Duration) error {
@@ -446,7 +509,7 @@ var simulateStep = func(cancel chan struct{}, duration time.Duration) error {
 	case <-time.After(duration):
 		return nil
 	case <-cancel:
-		return fmt.Errorf("interrupted")
+		return shared.ErrInterrupted
 	}
 }
 

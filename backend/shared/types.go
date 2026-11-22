@@ -73,10 +73,27 @@ type InstallContext struct {
 	// nil when no progress reporting is needed (e.g. CLI without UI).
 	ProgressCallback func(percent int)
 
-	// Cancel is closed when SIGINT is received during a long-running command.
-	// Used to unblock scanner goroutines (e.g. in installPackages) so they
-	// return promptly instead of waiting for the child process to finish.
+	// Cancel is closed when the install is cancelled: SIGINT in the CLI, or a
+	// call to the Installer's Cancel. Everything long-running reads it — the
+	// step loop stops before the next step, the command primitives kill the
+	// command that is running and refuse the next one, and the streaming
+	// pacstrap kills its child so the scanner goroutines return.
+	//
+	// Read it through Cancelled rather than selecting on it directly: a context
+	// built without a channel (every unit test that runs one step) has none.
 	Cancel chan struct{}
+}
+
+// Cancelled reports whether cancellation has been requested for this install.
+// A context with no channel is never cancelled, so the answer of a test context
+// is always false.
+func (ctx *InstallContext) Cancelled() bool {
+	select {
+	case <-ctx.Cancel:
+		return true
+	default:
+		return false
+	}
 }
 
 // Language represents a selectable language.

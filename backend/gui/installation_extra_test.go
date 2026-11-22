@@ -115,6 +115,39 @@ func TestCancelInstallation_NoProcessIsSafe(t *testing.T) {
 	a.CancelInstallation() // installCmd is nil
 }
 
+// TestCancelInstallation_MarksTheRunCancelled: the flag is how the completion
+// goroutine tells a stop the person asked for from a CLI that died on its own.
+func TestCancelInstallation_MarksTheRunCancelled(t *testing.T) {
+	cmd := exec.Command("sleep", "5")
+	if err := cmd.Start(); err != nil {
+		t.Skipf("cannot start sleep: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	})
+
+	a := NewApp(false)
+	a.installCmd = cmd
+
+	a.CancelInstallation()
+
+	if !a.installCancelled.Load() {
+		t.Error("signalling the CLI must record the run as cancelled")
+	}
+}
+
+// TestCancelInstallation_WithoutAProcessRecordsNothing: a CLI that has already
+// exited failed on its own, and there is no stop to attribute to the person.
+func TestCancelInstallation_WithoutAProcessRecordsNothing(t *testing.T) {
+	a := NewApp(false)
+	a.CancelInstallation()
+
+	if a.installCancelled.Load() {
+		t.Error("nothing was signalled, so nothing should read as cancelled")
+	}
+}
+
 func TestWaitForCleanup_ClosedChannel(t *testing.T) {
 	a := NewApp(false)
 	a.installDone = make(chan struct{})
