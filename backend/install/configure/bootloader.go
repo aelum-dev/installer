@@ -471,23 +471,35 @@ func registerRefindBootEntry(ctx *shared.InstallContext) error {
 // pointing at this ESP's rEFInd binary. Re-creating it on every reinstall would
 // pile up duplicate entries. The loader path alone is not enough to identify the
 // entry: a dualboot machine may have another rEFInd on a different ESP with the
-// same \EFI\refind\refind_x64.efi path. When the ESP's PARTUUID is readable,
-// require the existing entry to reference it as well.
+// same \EFI\refind\refind_x64.efi path. efibootmgr -v prints one line per entry
+// and each line carries that entry's own device path, so both signals must
+// appear on the same line: matching each against the whole output reads a
+// foreign rEFInd entry (right loader, wrong ESP) plus this ESP's PARTUUID on
+// some other entry — a stale Windows entry on the freshly formatted ESP, say —
+// as "ours" and silently skips the create.
+//
+// When the ESP's PARTUUID cannot be read, the entry counts as missing and the
+// caller creates one. A duplicate firmware entry is a nuisance someone can
+// undo with efibootmgr; skipping on an unreadable PARTUUID leaves the install
+// with no Aelum entry in the boot order at all, and that failure is invisible
+// because registration is best-effort. Creating is the only safe default.
 func refindNvramEntryExists(espPart string) bool {
 	out, err := primitives.Run("efibootmgr", "-v").Output()
 	if err != nil {
 		return false
 	}
-	entries := strings.ToLower(string(out))
-	if !strings.Contains(entries, strings.ToLower(shared.RefindNvramLoader)) {
-		return false
-	}
 	partUUID, err := primitives.Run("blkid", "-s", "PARTUUID", "-o", "value", espPart).Output()
 	if err != nil || strings.TrimSpace(string(partUUID)) == "" {
-		// Can't identify the ESP; the loader path is the best signal available.
-		return true
+		return false
 	}
-	return strings.Contains(entries, strings.ToLower(strings.TrimSpace(string(partUUID))))
+	loader := strings.ToLower(shared.RefindNvramLoader)
+	uuid := strings.ToLower(strings.TrimSpace(string(partUUID)))
+	for _, line := range strings.Split(strings.ToLower(string(out)), "\n") {
+		if strings.Contains(line, loader) && strings.Contains(line, uuid) {
+			return true
+		}
+	}
+	return false
 }
 
 // partitionNumber extracts the partition number from an existing device path by

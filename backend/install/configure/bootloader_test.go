@@ -576,14 +576,64 @@ func TestRegisterRefindBootEntry_SkipsExistingEntryForAnotherESP(t *testing.T) {
 	if err := registerRefindBootEntry(ctx); err != nil {
 		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
 	}
-	found := false
+	if !bootCreateRan(rec) {
+		t.Fatal("efibootmgr --create did not run for an entry belonging to another ESP")
+	}
+}
+
+// bootCreateRan reports whether the recorder saw an efibootmgr --create call.
+func bootCreateRan(rec *primitivestest.Recorder) bool {
 	for _, argv := range rec.CallsFor("efibootmgr") {
 		if len(argv) > 1 && argv[1] == "--create" {
-			found = true
+			return true
 		}
 	}
-	if !found {
-		t.Fatal("efibootmgr --create did not run for an entry belonging to another ESP")
+	return false
+}
+
+func TestRegisterRefindBootEntry_CreatesWhenPartUUIDUnreadable(t *testing.T) {
+	// A transient blkid failure must not be read as "this ESP's entry already
+	// exists": the firmware can hold a foreign rEFInd entry, and skipping the
+	// create would leave this install with no boot entry in the boot order —
+	// silently, because registration is best-effort.
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"}, `Boot0002* rEFInd HD(1,GPT,OTHER-PARTUUID,0x800,0x32000)/File(\EFI\refind\refind_x64.efi)`+"\n").
+		OnArgsError([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, errors.New("blkid: I/O error while reading /dev/vda1"))
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1"},
+	}
+	if err := registerRefindBootEntry(ctx); err != nil {
+		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
+	}
+	if !bootCreateRan(rec) {
+		t.Fatal("efibootmgr --create did not run although the ESP's PARTUUID was unreadable")
+	}
+}
+
+func TestRegisterRefindBootEntry_DoesNotMixSignalsFromDifferentEntries(t *testing.T) {
+	// Both signals appear in efibootmgr -v, but on different entries: a foreign
+	// rEFInd (right loader, wrong ESP) and this ESP's stale Windows entry
+	// (right ESP, wrong loader). Neither line is this install's entry, so it
+	// has to be created.
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"},
+			`Boot0001* Windows Boot Manager HD(1,GPT,AELUM-PARTUUID,0x800,0x32000)/File(\EFI\Microsoft\Boot\bootmgfw.efi)`+"\n"+
+				`Boot0002* rEFInd HD(1,GPT,OTHER-PARTUUID,0x800,0x32000)/File(\EFI\refind\refind_x64.efi)`+"\n").
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, "AELUM-PARTUUID\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1"},
+	}
+	if err := registerRefindBootEntry(ctx); err != nil {
+		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
+	}
+	if !bootCreateRan(rec) {
+		t.Fatal("efibootmgr --create did not run although loader and PARTUUID belonged to different entries")
 	}
 }
 
