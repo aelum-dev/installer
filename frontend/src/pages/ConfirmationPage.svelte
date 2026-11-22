@@ -127,7 +127,7 @@
 		right, the storage-options card's look — and everything about the disk
 		lives in one bounded card of its own. -->
 	<div class="summary">
-		<section class="card">
+		<section class="card choices-card">
 			<div class="crow">
 				<h3 class="clabel">{t('page.confirmation.sectionLanguage')}</h3>
 				<p class="cvalue">{selectedLanguageName}</p>
@@ -264,10 +264,22 @@
 		padding: 2px var(--spacing-md);
 	}
 
+	/* The values must start at one offset on every row. Flex rows let each
+	   label size its own column, so a language with both short and long
+	   labels (Ukrainian "Мова" vs "Місцезнаходження") left the values ragged.
+	   One grid column shared by all rows — as wide as this card's longest
+	   label — aligns them in every language. */
+	.choices-card {
+		display: grid;
+		grid-template-columns: max-content minmax(0, 1fr);
+		column-gap: var(--spacing-md);
+	}
+
 	.crow {
-		display: flex;
+		display: grid;
+		grid-column: 1 / -1;
+		grid-template-columns: subgrid;
 		align-items: baseline;
-		gap: var(--spacing-md);
 		padding: 9px 0;
 		border-bottom: 1px solid var(--color-border-subtle);
 	}
@@ -277,9 +289,8 @@
 	}
 
 	.clabel {
-		/* min-width, not width: a translation longer than the English label
-		   grows its own column instead of stacking mid-word. */
-		flex: 0 1 max-content;
+		/* The floor keeps short English labels from hugging their values; a
+		   longer translation grows the shared column instead of wrapping. */
 		min-width: 108px;
 		font-size: 0.7rem;
 		font-weight: 600;
