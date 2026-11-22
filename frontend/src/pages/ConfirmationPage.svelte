@@ -162,16 +162,14 @@
 						<span class="dsize">({installState.disk.sizeFormatted} · {t(installState.disk.rotational ? 'disk.hdd' : 'disk.ssd')}{installState.disk.trans ? ` · ${installState.disk.trans.toUpperCase()}` : ''})</span>
 					</p>
 					<!-- The serial stays off the summary: the disk page names the selected disk
-						already. The path is redundant in manual mode too — the plan table lists
-						every path, and a disk has no single filesystem. -->
-					{#if !installState.manualMode}
-						<!-- The filesystem rides the target line: it belongs to this disk's
-							identity, one fact per line ("Цель: /dev/sda btrfs"). -->
-						<p class="dmeta disk-path">
-							{t('page.installation.target')}: <code>{installState.disk.path}</code>
-							<span class="tag" use:tooltip={`${t('page.diskSelection.selectedFileSystem')}: ${installState.fileSystem || '—'}`}>{installState.fileSystem || '—'}</span>
-						</p>
-					{/if}
+						already. The target line names what the install writes — the disk, and
+						the filesystem its System partition gets. Manual mode shows it too:
+						its Apply formats the System partition with this same filesystem, and
+						only the plan table below owns the per-partition rows (Boot stays vfat). -->
+					<p class="dmeta disk-path">
+						{t('page.installation.target')}: <code>{installState.disk.path}</code>
+						<span class="tag" use:tooltip={`${t('page.diskSelection.selectedFileSystem')}: ${installState.fileSystem || '—'}`}>{installState.fileSystem || '—'}</span>
+					</p>
 
 					{#if installState.luksEnabled || installState.lvmEnabled}
 						<!-- The options as chips: their full hint sentences stay reachable
