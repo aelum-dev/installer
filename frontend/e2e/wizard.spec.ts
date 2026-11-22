@@ -97,6 +97,34 @@ test.describe('Installer wizard', () => {
     await expect(next(page)).toBeEnabled();
   });
 
+  test('Disk selection: a disk the system is using cannot be selected', async ({ page }) => {
+    await page.goto('/');
+    await next(page).click(); // -> User account
+    await fillUserAccount(page);
+    await next(page).click(); // -> Disk selection
+
+    // /dev/sda is the fake machine's booted system (root, home and swap are
+    // live): the row carries the danger chip, says why, and is not a button
+    // anyone can press.
+    const row = page
+      .locator('.disk-card')
+      .filter({ has: page.locator('.disk-name', { hasText: 'WD Blue SA516 1TB' }) });
+    await expect(row).toBeVisible();
+    await expect(row.locator('.chip--danger')).toHaveText('In use');
+    await expect(row.locator('.disk-content')).toHaveText(
+      'In use — the system is using this disk',
+    );
+    await expect(row).toBeDisabled();
+    await row.click({ force: true });
+    await expect(page.locator('.disk-card.selected')).toHaveCount(0);
+
+    // A data disk the system merely mounted (/dev/sdh) is refused the same way.
+    const mounted = page
+      .locator('.disk-card')
+      .filter({ has: page.locator('.disk-name', { hasText: 'Toshiba X300 8TB' }) });
+    await expect(mounted).toBeDisabled();
+  });
+
   test('Confirmation: summarizes language, user, and disk', async ({ page }) => {
     await page.goto('/');
     await next(page).click(); // -> User account

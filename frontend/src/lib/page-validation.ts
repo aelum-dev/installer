@@ -104,6 +104,12 @@ function autoDiskValidationReasons(): string[] {
 	if (installState.disk && installState.disk.size < MinDiskSizeBytes) {
 		reasons.push(t('validation.modal.diskTooSmall'));
 	}
+	// The disk list already refuses an in-use disk, and the CLI refuses it
+	// again before writing anything; this catches the selection that went
+	// stale on this page — the disk got mounted while the wizard was open.
+	if (installState.disk && (installState.disk.inUse || installState.disk.isLiveDevice)) {
+		reasons.push(t('validation.modal.diskInUse'));
+	}
 	return reasons;
 }
 
@@ -115,6 +121,10 @@ function manualLayoutValidationReasons(): string[] {
 	}
 	if (!installState.fileSystem) {
 		reasons.push(t('validation.modal.selectFileSystem'));
+		return reasons;
+	}
+	if (installState.disk && (installState.disk.inUse || installState.disk.isLiveDevice)) {
+		reasons.push(t('validation.modal.diskInUse'));
 		return reasons;
 	}
 	if (installState.disk && installState.disk.size < MinManualDiskSizeBytes) {

@@ -106,10 +106,19 @@ type lsblkEntry struct {
 	Ro         jsonBool     `json:"ro"`
 	Fstype     string       `json:"fstype"`
 	Mountpoint string       `json:"mountpoint"`
+	Fsused     jsonSize     `json:"fsused"`
+	MajMin     string       `json:"maj:min"`
 	Serial     string       `json:"serial"`
 	Trans      string       `json:"tran"`
 	UUID       string       `json:"uuid"`
 	Children   []lsblkEntry `json:"children"`
+}
+
+// fakeDisksActive reports whether the installer is running on synthetic disk
+// data (UI development, dry-run). Real device probing — lsblk columns, the
+// mount table — must be skipped then: the fake device paths do not exist here.
+func fakeDisksActive() bool {
+	return fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1"
 }
 
 // fakeDisksEnabled can be set to true to force fake disk data (e.g. when
@@ -124,7 +133,7 @@ func SetFakeDisks(enabled bool) {
 
 // GetDisks returns a list of available block devices (disks) for installation.
 func GetDisks() ([]DiskInfo, error) {
-	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
+	if fakeDisksActive() {
 		disks := fakeDisks()
 		// Derive fstype from fake partitions for disks that don't have it set.
 		for i := range disks {
@@ -137,7 +146,12 @@ func GetDisks() ([]DiskInfo, error) {
 		}
 		return disks, nil
 	}
-	cmd := exec.Command("lsblk", "-b", "-d", "-o", "NAME,TYPE,SIZE,MODEL,VENDOR,ROTA,RO,FSTYPE,MOUNTPOINT,SERIAL,TRAN", "-J")
+	// No -d: whole disks report FSTYPE/MOUNTPOINT/FSUSED only through their
+	// partitions and the devices held by them (LUKS mappers, LVM volumes), so the
+	// whole tree is needed to answer "is anything on this disk mounted". Top-level
+	// entries are filtered to TYPE "disk" below; partitions and holders only ever
+	// arrive nested.
+	cmd := exec.Command("lsblk", "-b", "-o", "NAME,TYPE,SIZE,MODEL,VENDOR,ROTA,RO,FSTYPE,MOUNTPOINT,FSUSED,SERIAL,TRAN,MAJ:MIN", "-J")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to run lsblk: %w", err)
@@ -149,6 +163,9 @@ func GetDisks() ([]DiskInfo, error) {
 	if err := json.Unmarshal(output, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
 	}
+
+	// Computed once for the whole listing: the devices the running system is on.
+	liveMajMin := liveSystemMajMin()
 
 	disks := []DiskInfo{}
 	for _, bd := range result.Blockdevices {
@@ -175,6 +192,8 @@ func GetDisks() ([]DiskInfo, error) {
 			Trans:          bd.Trans,
 			IsRemovable:    isRemovable(bd.Trans),
 			PartitionTable: PartitionTableType("/dev/" + bd.Name),
+			InUse:          subtreeInUse(bd),
+			IsLiveDevice:   subtreeIsLive(bd, liveMajMin),
 		}
 
 		if disk.Model == "" && disk.Vendor != "" {
@@ -275,13 +294,131 @@ func deriveFstypeFromChildren(children []lsblkEntry) string {
 	return ""
 }
 
+// installerMountSet is the closed set of mount points the installer itself
+// creates on the target during a run: the target root, its btrfs subvolumes and
+// history, the ext4 home volume, the ESP, and the per-install boot bind. They
+// are all built from the shared path constants and the subvolume scheme, so
+// they cannot drift from what mount_filesystem actually writes. Mounts at these
+// paths belong to the installer's own work on this disk — a per-step CLI run
+// resumed after mount_filesystem, or a --rollback of an aborted install — and
+// must not make the target disk read as "in use by the system". A mount at any
+// other path, /mnt/data included, is somebody else's.
+var installerMountSet = func() map[string]struct{} {
+	set := map[string]struct{}{
+		MountRoot:                            {},
+		ESPMountPoint:                        {},
+		BootMountPoint:                       {},
+		MountRoot + BtrfsSnapshotsMountPoint: {},
+	}
+	for _, sv := range GetBtrfsSubvolumes() {
+		if sv.MountPoint == "/" {
+			continue // the root subvolume is mounted at MountRoot, already in
+		}
+		set[MountRoot+sv.MountPoint] = struct{}{}
+	}
+	return set
+}()
+
+// subtreeInUse reports whether any device of e's tree (e itself included) is
+// mounted outside the installer's own target mounts. Active swap counts:
+// util-linux prints "[SWAP]" in the MOUNTPOINT column for an enabled swap
+// area, and "[SWAP]" is not an installer mount point. A device with FSUSED but
+// no printed mount point also counts: util-linux fills FSUSED only for mounted
+// filesystems, and the MOUNTPOINT column "displays only one mount point
+// (usually the last mounted instance of the filesystem)" (lsblk(8)) — a btrfs
+// partition mounted twice can hide one of its mounts, and FSUSED is the signal
+// that survives that.
+func subtreeInUse(e lsblkEntry) bool {
+	if e.Mountpoint != "" {
+		if _, ours := installerMountSet[e.Mountpoint]; !ours {
+			return true
+		}
+	} else if e.Fsused.Int64() > 0 {
+		return true
+	}
+	for _, c := range e.Children {
+		if subtreeInUse(c) {
+			return true
+		}
+	}
+	return false
+}
+
+// procMountsPath is the mount table the live-device check reads. A variable so
+// tests can point it at a fixture instead of the host's real mounts.
+var procMountsPath = "/proc/self/mountinfo"
+
+// liveSystemMajMin returns the "major:minor" of the block devices the running
+// system is built on: the one whose filesystem backs / (the installer GUI's own
+// root on a normally booted machine) and the archiso boot device mounted at
+// ArchisoBootMountPoint (the live ISO — on which / is an overlay over tmpfs, so
+// / alone answers "nothing"). Unreadable mount table answers "nothing": a
+// failed read must not lock every disk out of the listing.
+func liveSystemMajMin() map[string]bool {
+	live := map[string]bool{}
+	data, err := os.ReadFile(procMountsPath)
+	if err != nil {
+		return live
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		// mountinfo(8): id parent major:minor root mount-point options…
+		fields := strings.Fields(line)
+		if len(fields) < 5 {
+			continue
+		}
+		target := unescapeMountPath(fields[4])
+		if target == "/" || target == ArchisoBootMountPoint {
+			live[fields[2]] = true
+		}
+	}
+	return live
+}
+
+// unescapeMountPath decodes the octal escapes mountinfo uses for characters
+// mountinfo itself separates on (space \040, tab \011, newline \012, backslash
+// \134). A path holding them can never equal a constant being compared against,
+// but decoding keeps that a fact about the format rather than an assumption.
+func unescapeMountPath(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+3 < len(s) {
+			if v, err := strconv.ParseUint(s[i+1:i+4], 8, 8); err == nil {
+				b.WriteByte(byte(v))
+				i += 3
+				continue
+			}
+		}
+		b.WriteByte(s[i])
+	}
+	return b.String()
+}
+
+// subtreeIsLive reports whether any device of e's tree is one the running
+// system is built on. lsblk nests every holder below its source (partition →
+// LUKS mapper → filesystem), so the device backing / or ArchisoBootMountPoint
+// appears inside the disk's subtree for LUKS, LVM, and plain layouts alike.
+func subtreeIsLive(e lsblkEntry, liveMajMin map[string]bool) bool {
+	if e.MajMin != "" && liveMajMin[e.MajMin] {
+		return true
+	}
+	for _, c := range e.Children {
+		if subtreeIsLive(c, liveMajMin) {
+			return true
+		}
+	}
+	return false
+}
+
 // LogicalSectorSize returns the logical sector size of a disk in bytes,
 // defaulting to 512 when it cannot be determined (or in fake-disk mode). sgdisk
 // numbers partition start/end sectors in this unit, so the installer's sector
 // math must use the same value — a 4Kn disk reports 4096, not 512.
 func LogicalSectorSize(diskPath string) int64 {
 	const fallback = int64(512)
-	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
+	if fakeDisksActive() {
 		return fallback
 	}
 	if !strings.HasPrefix(diskPath, "/dev/") {
@@ -310,7 +447,7 @@ func LogicalSectorSize(diskPath string) int64 {
 // reports no PTTYPE for loop devices, while blkid reports gpt/dos for every
 // device checked, real virtio disk and loop-backed image alike.
 func PartitionTableType(diskPath string) string {
-	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
+	if fakeDisksActive() {
 		return PartitionTableGPT
 	}
 	if !strings.HasPrefix(diskPath, "/dev/") {
@@ -328,7 +465,7 @@ func PartitionTableType(diskPath string) string {
 // For btrfs partitions, Mountpoints is expanded via findmnt; for others it
 // contains a single element (the direct mountpoint).
 func GetDiskPartitions(diskPath string) ([]PartitionEntry, error) {
-	if fakeDisksEnabled || os.Getenv("FAKE_DISKS") == "1" {
+	if fakeDisksActive() {
 		return fakePartitions(diskPath), nil
 	}
 	if !strings.HasPrefix(diskPath, "/dev/") {

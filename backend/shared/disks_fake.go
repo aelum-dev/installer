@@ -19,12 +19,16 @@ func fakeDisks() []DiskInfo {
 			Rotational: false, Readonly: false, Trans: "virtio",
 			IsRemovable: false, Serial: "QEMU_QM00001",
 		},
+		// sda is the disk the fake machine is booted from: its root, home and
+		// swap are live. That makes it InUse and the live device — the row shows
+		// the danger chip and cannot be selected.
 		{
 			Name: "sda", Path: "/dev/sda", Size: 1000204886016,
 			SizeFormatted: "931.5 GB", Type: "disk",
 			Model: "WD Blue SA516 1TB", Vendor: "Western Digital",
 			Rotational: true, Readonly: false, Trans: "sata",
 			Fstype: "ext4", Mountpoint: "/", Serial: "WDBJBK001001",
+			InUse: true, IsLiveDevice: true,
 		},
 		{
 			Name: "sdb", Path: "/dev/sdb", Size: 2000398934016,
@@ -53,6 +57,8 @@ func fakeDisks() []DiskInfo {
 			Model: "Crucial MX500 500GB", Vendor: "Crucial",
 			Rotational: false, Readonly: false, Trans: "sata",
 			Fstype: "btrfs", Mountpoint: "/home", Serial: "2112E9234567",
+			// Mounted by the running system → refused as an install target.
+			InUse: true,
 		},
 		{
 			Name: "sde", Path: "/dev/sde", Size: 4000787031616,
@@ -81,6 +87,8 @@ func fakeDisks() []DiskInfo {
 			Model: "Toshiba X300 8TB", Vendor: "Toshiba",
 			Rotational: true, Readonly: false, Trans: "sata",
 			Fstype: "ext4", Mountpoint: "/mnt/data", Serial: "81VY2A123",
+			// A data disk the running system has mounted → refused as a target.
+			InUse: true,
 		},
 		{
 			Name: "sdcard", Path: "/dev/sdcard", Size: 68719476736,
@@ -135,12 +143,12 @@ func fakePartitions(diskPath string) []PartitionEntry {
 	switch diskPath {
 	case "/dev/nvme0n1":
 		return []PartitionEntry{
-			{Path: "/dev/nvme0n1p1", Name: "nvme0n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "A1B2-C3D4", Mountpoints: []string{"/boot/efi"}},
+			{Path: "/dev/nvme0n1p1", Name: "nvme0n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "A1B2-C3D4", Mountpoints: []string{}},
 			{Path: "/dev/nvme0n1p2", Name: "nvme0n1p2", Type: "part", Size: 511574094848, Fstype: "ext4", UUID: "e5f6-a7b8-c9d0-e1f2", Mountpoints: []string{}},
 		}
 	case "/dev/vda":
 		return []PartitionEntry{
-			{Path: "/dev/vda1", Name: "vda1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "VDA1-EFI", Mountpoints: []string{"/boot/efi"}},
+			{Path: "/dev/vda1", Name: "vda1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "VDA1-EFI", Mountpoints: []string{}},
 			{Path: "/dev/vda2", Name: "vda2", Type: "part", Size: 42412802048, Fstype: "ext4", UUID: "VDA2-ROOT", Mountpoints: []string{}},
 		}
 	case "/dev/sda":
@@ -154,7 +162,7 @@ func fakePartitions(diskPath string) []PartitionEntry {
 		return []PartitionEntry{{Path: "/dev/sdb1", Name: "sdb1", Type: "part", Size: 2000398934016, Fstype: "ntfs", UUID: "F0A1-B2C3-D4E5-F6A7", Mountpoints: []string{}}}
 	case "/dev/nvme1n1":
 		return []PartitionEntry{
-			{Path: "/dev/nvme1n1p1", Name: "nvme1n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "C3D4-E5F6", Mountpoints: []string{"/boot/efi"}},
+			{Path: "/dev/nvme1n1p1", Name: "nvme1n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "C3D4-E5F6", Mountpoints: []string{}},
 			{Path: "/dev/nvme1n1p2", Name: "nvme1n1p2", Type: "part", Size: 1999861872640, Fstype: "btrfs", UUID: "a7b8-c9d0-e1f2-a3b4", Mountpoints: []string{}},
 		}
 	case "/dev/sdc":
@@ -163,12 +171,12 @@ func fakePartitions(diskPath string) []PartitionEntry {
 		return []PartitionEntry{{Path: "/dev/sdd1", Name: "sdd1", Type: "part", Size: 500107862016, Fstype: "btrfs", UUID: "b8c9-d0e1-f2a3-b4c5", Mountpoints: []string{"/home"}}}
 	case "/dev/sde":
 		return []PartitionEntry{
-			{Path: "/dev/sde1", Name: "sde1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "E5F6-A7B8", Mountpoints: []string{"/boot/efi"}},
+			{Path: "/dev/sde1", Name: "sde1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "E5F6-A7B8", Mountpoints: []string{}},
 			{Path: "/dev/sde2", Name: "sde2", Type: "part", Size: 3999649161728, Fstype: "ext4", UUID: "c9d0-e1f2-a3b4-c5d6", Mountpoints: []string{}},
 		}
 	case "/dev/nvme2n1":
 		return []PartitionEntry{
-			{Path: "/dev/nvme2n1p1", Name: "nvme2n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "F6A7-B8C9", Mountpoints: []string{"/boot/efi"}},
+			{Path: "/dev/nvme2n1p1", Name: "nvme2n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "F6A7-B8C9", Mountpoints: []string{}},
 			{Path: "/dev/nvme2n1p2", Name: "nvme2n1p2", Type: "part", Size: 999678379776, Fstype: "ext4", UUID: "d0e1-f2a3-b4c5-d6e7", Mountpoints: []string{}},
 		}
 	case "/dev/sdg":
@@ -183,15 +191,18 @@ func fakePartitions(diskPath string) []PartitionEntry {
 	case "/dev/mmcblk1":
 		return []PartitionEntry{{Path: "/dev/mmcblk1p1", Name: "mmcblk1p1", Type: "part", Size: 137438953472, Fstype: "vfat", UUID: "MXMC1-128", Mountpoints: []string{}}}
 	case "/dev/nvme3n1":
+		// The dense row fixture: ten partitions reaching the longest device
+		// path a disk can produce (/dev/nvme3n1p10). Deliberately unmounted —
+		// the row has to stay selectable for manual mode.
 		return []PartitionEntry{
-			{Path: "/dev/nvme3n1p1", Name: "nvme3n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "N3P1-EFI", Mountpoints: []string{"/boot/efi"}},
-			{Path: "/dev/nvme3n1p2", Name: "nvme3n1p2", Type: "part", Size: 10737418240, Fstype: "ext4", UUID: "N3P2-ROOT", Mountpoints: []string{"/"}},
-			{Path: "/dev/nvme3n1p3", Name: "nvme3n1p3", Type: "part", Size: 21474836480, Fstype: "ext4", UUID: "N3P3-HOME", Mountpoints: []string{"/home"}},
-			{Path: "/dev/nvme3n1p4", Name: "nvme3n1p4", Type: "part", Size: 5368709120, Fstype: "ext4", UUID: "N3P4-SRV", Mountpoints: []string{"/srv"}},
-			{Path: "/dev/nvme3n1p5", Name: "nvme3n1p5", Type: "part", Size: 107374182400, Fstype: "ext4", UUID: "N3P5-DATA", Mountpoints: []string{"/data"}},
-			{Path: "/dev/nvme3n1p6", Name: "nvme3n1p6", Type: "part", Size: 53687091200, Fstype: "ext4", UUID: "N3P6-VM", Mountpoints: []string{"/var/lib/vm"}},
-			{Path: "/dev/nvme3n1p7", Name: "nvme3n1p7", Type: "part", Size: 107374182400, Fstype: "xfs", UUID: "N3P7-DB", Mountpoints: []string{"/var/lib/db"}},
-			{Path: "/dev/nvme3n1p8", Name: "nvme3n1p8", Type: "part", Size: 53687091200, Fstype: "xfs", UUID: "N3P8-BACKUP", Mountpoints: []string{"/backup"}},
+			{Path: "/dev/nvme3n1p1", Name: "nvme3n1p1", Type: "part", Size: 536870912, Fstype: "fat32", UUID: "N3P1-EFI", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p2", Name: "nvme3n1p2", Type: "part", Size: 10737418240, Fstype: "ext4", UUID: "N3P2-ROOT", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p3", Name: "nvme3n1p3", Type: "part", Size: 21474836480, Fstype: "ext4", UUID: "N3P3-HOME", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p4", Name: "nvme3n1p4", Type: "part", Size: 5368709120, Fstype: "ext4", UUID: "N3P4-SRV", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p5", Name: "nvme3n1p5", Type: "part", Size: 107374182400, Fstype: "ext4", UUID: "N3P5-DATA", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p6", Name: "nvme3n1p6", Type: "part", Size: 53687091200, Fstype: "ext4", UUID: "N3P6-VM", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p7", Name: "nvme3n1p7", Type: "part", Size: 107374182400, Fstype: "xfs", UUID: "N3P7-DB", Mountpoints: []string{}},
+			{Path: "/dev/nvme3n1p8", Name: "nvme3n1p8", Type: "part", Size: 53687091200, Fstype: "xfs", UUID: "N3P8-BACKUP", Mountpoints: []string{}},
 			{Path: "/dev/nvme3n1p9", Name: "nvme3n1p9", Type: "part", Size: 214748364800, Fstype: "btrfs", UUID: "N3P9-RAID", Mountpoints: []string{}},
 			{Path: "/dev/nvme3n1p10", Name: "nvme3n1p10", Type: "part", Size: 1073741824000, Fstype: "zfs", UUID: "N3P10-ZFS", Mountpoints: []string{}},
 		}

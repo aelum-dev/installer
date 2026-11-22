@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -82,13 +83,38 @@ func ValidateUserAccount(data UserAccountData) error {
 
 // ValidateDiskPath checks that a disk path is valid and safe to use.
 // It must start with /dev/ and contain only alphanumeric characters, slashes,
-// hyphens, and underscores (no shell metacharacters).
+// hyphens, and underscores (no shell metacharacters). It must also name a whole
+// disk: automatic mode's first command is `sgdisk -Z`, which treats its argument
+// as a disk, so handing it a partition (/dev/sda1 passes a pure name-pattern
+// check just as well as /dev/sda) destroys that partition as if it were a disk.
 func ValidateDiskPath(path string) error {
 	if path == "" {
 		return fmt.Errorf("disk path is required")
 	}
 	if !regexp.MustCompile(`^/dev/[a-zA-Z0-9_-]+$`).MatchString(path) {
 		return fmt.Errorf("invalid disk path: %q (must be /dev/ followed by alphanumeric characters, hyphens, or underscores)", path)
+	}
+	return validateWholeDisk(path)
+}
+
+// validateWholeDisk asks lsblk what kind of block device the path names and
+// rejects anything it reports as not a whole disk ("part", "crypt", "lvm", …).
+// An empty answer — the path names no device the kernel knows — is accepted:
+// ValidateDiskSize surfaces that case as its own error, and a caller that
+// cannot read the device (dry-run on a host without it, unprivileged) must not
+// be blocked — format and partition.Apply re-check as root before writing.
+// Fake-disk mode skips the probe: the synthetic paths do not exist.
+func validateWholeDisk(path string) error {
+	if fakeDisksActive() {
+		return nil
+	}
+	out, err := exec.Command("lsblk", "-n", "-o", "TYPE", path).Output()
+	if err != nil {
+		return nil
+	}
+	// The first line is the named device itself; its holders would follow.
+	if kind := strings.TrimSpace(strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]); kind != "" && kind != "disk" {
+		return fmt.Errorf("%s is not a whole disk (lsblk type %q) — pass the disk itself, not a partition or mapped device on it", path, kind)
 	}
 	return nil
 }
@@ -143,6 +169,47 @@ func ValidateManualPartitionTable(diskPath string) error {
 		return nil
 	}
 	return fmt.Errorf("disk %s has a %s partition table: manual partitioning needs a GPT, or a disk with no partition table at all. Automatic mode rewrites the table for you", diskPath, table)
+}
+
+// ValidateDiskNotInUse rejects a disk the running system is using: anything on
+// it (partition, LUKS mapper, volume, or a whole-disk filesystem) mounted at a
+// path the installer never mounts a target at — which includes enabled swap
+// ("[SWAP]") — or the disk carrying the live system itself: the device backing
+// /, or the archiso boot device at ArchisoBootMountPoint. The disk an ISO was
+// booted from passes every size and shape check and is mounted at a path no one
+// would mistake for a system mount, and the live root is an overlay no partition
+// claims — so this guard, not a mount-at-"/" test, is what keeps the installer
+// from erasing the system it runs on. The CLI runs it as the authoritative gate
+// before the first destructive step (and for --rollback), because a selection
+// made in the wizard minutes earlier can be stale by then. A device the kernel
+// does not know is accepted: nothing on it can be mounted, and the size check
+// names that case.
+func ValidateDiskNotInUse(diskPath string) error {
+	if fakeDisksActive() {
+		return nil
+	}
+	if !strings.HasPrefix(diskPath, "/dev/") {
+		diskPath = "/dev/" + diskPath
+	}
+	cmd := exec.Command("lsblk", "-b", "-J", "-o", "NAME,TYPE,MOUNTPOINT,FSUSED,MAJ:MIN", diskPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	var result struct {
+		Blockdevices []lsblkEntry `json:"blockdevices"`
+	}
+	if err := json.Unmarshal(output, &result); err != nil || len(result.Blockdevices) == 0 {
+		return nil
+	}
+	disk := result.Blockdevices[0]
+	if subtreeIsLive(disk, liveSystemMajMin()) {
+		return fmt.Errorf("disk %s holds the running system: the installer itself is booted from it, and erasing it would erase the system that is installing", diskPath)
+	}
+	if subtreeInUse(disk) {
+		return fmt.Errorf("disk %s is in use: something on it is mounted or used as swap. Unmount everything mounted from it, or run the installer from the Aelum ISO instead", diskPath)
+	}
+	return nil
 }
 
 // diskSizeBytes returns a whole disk's size in bytes (via lsblk).

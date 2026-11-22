@@ -56,6 +56,8 @@ export namespace shared {
 	    trans: string;
 	    isRemovable: boolean;
 	    partitionTable: string;
+	    inUse: boolean;
+	    isLiveDevice: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new DiskInfo(source);
@@ -78,6 +80,8 @@ export namespace shared {
 	        this.trans = source["trans"];
 	        this.isRemovable = source["isRemovable"];
 	        this.partitionTable = source["partitionTable"];
+	        this.inUse = source["inUse"];
+	        this.isLiveDevice = source["isLiveDevice"];
 	    }
 	}
 	export class DiskSelectionData {

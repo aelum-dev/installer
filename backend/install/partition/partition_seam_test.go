@@ -36,15 +36,17 @@ const (
 )
 
 const lsblkShimBody = `for a in "$@"; do
-  if [ "$a" = "-d" ]; then
-    cat <<'JSON'
-` + fakeDiskJSON + `
+  case "$a" in
+    /dev/*)
+      cat <<'JSON'
+` + fakePartJSON + `
 JSON
-    exit 0
-  fi
+      exit 0
+      ;;
+  esac
 done
 cat <<'JSON'
-` + fakePartJSON + `
+` + fakeDiskJSON + `
 JSON
 `
 
@@ -52,15 +54,17 @@ JSON
 const emptyPartJSON = `{"blockdevices":[{"name":"vda","type":"disk","size":"21474836480","children":[]}]}`
 
 const lsblkEmptyShimBody = `for a in "$@"; do
-  if [ "$a" = "-d" ]; then
-    cat <<'JSON'
-` + fakeDiskJSON + `
+  case "$a" in
+    /dev/*)
+      cat <<'JSON'
+` + emptyPartJSON + `
 JSON
-    exit 0
-  fi
+      exit 0
+      ;;
+  esac
 done
 cat <<'JSON'
-` + emptyPartJSON + `
+` + fakeDiskJSON + `
 JSON
 `
 

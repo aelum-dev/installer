@@ -119,17 +119,23 @@ In short: this repo = what installs onto the disk; the Aelum repo = the ISO that
       errors.go                 — shared.ErrInterrupted: the one error every layer returns for a cancelled install
       config.go                 — ALL constants: paths, command names, weights, thresholds, wallpaper, progress-tick, etc.
       logger.go                 — Logger interface + ConsoleLogger (shared by CLI + GUI)
-      disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath()
+      disks.go                  — GetDisks(), GetPartitions(), DerivePartitionPath(); GetDisks reads the
+                                  whole lsblk tree (no `-d` — a disk's mounts only show through its
+                                  partitions and holders) and answers per disk InUse (any mount outside
+                                  the installer's own target-mount set, `[SWAP]`, or FSUSED without a
+                                  visible mount) and IsLiveDevice (a device in the tree matches the
+                                  maj:min backing / or ArchisoBootMountPoint in /proc/self/mountinfo)
       disks_fake.go             — fakeDisks() for frontend dev (FAKE_DISKS=1, also used in dry-run);
-                                  the last three rows are clean disks (nothing mounted → no MOUNTED /
-                                  IN USE chip), and /dev/nvme4n1 is what the website's walkthrough captures
+                                  sda is the booted system (InUse + IsLiveDevice), sdd/sdh are mounted
+                                  data disks (InUse), and the table's last rows are clean + selectable
+                                  — /dev/nvme4n1 is what the website's walkthrough captures
       regions.go                — Location model: Region (ISO code, name, timezone, keymap) and WeatherPlace (city + "lat,lon"), GetRegions/GetRegion, RegionForLanguage (the language→location pre-fill), LocaleForLanguage, XkbLayoutForRegion (the desktop keyboard layout of a location), WeatherForRegion (the capital a location's weather is reported for; no capital = no answer)
       regions_table.go          — GENERATED baseline: 74 locations = every Arch mirrorlist country + the worldwide entry (regions_gen.go writes it)
       regions_gen.go            — Region-table generator (go run ./backend/shared/regions_gen.go; reads all_https.txt + zone1970.tab, ZONE_TABLE_PATH overrides)
       countries.go              — the curated half of the region table: Arch section name → ISO code, PreferredZone for multi-zone countries, KeymapByISO (console, default us), XkbLayoutByISO (desktop layout in xkeyboard-config names, default us — a separate table, not a translation: kbd has no kr/th maps, the name spaces differ, and Latin America is `latam` not `es`), and WeatherByISO (every country's capital + coordinates, the weather location the desktop is set to; the worldwide entry has none)
       locales.go                — Language list (28 languages; locale only — names carry no country)
       btrfs.go                  — BtrfsSubvolume definitions + GetBtrfsSubvolumes()
-      validators.go             — ValidateUserAccount(), ValidateDiskPath(), ValidateDiskSelection(), ValidateDiskSize()
+      validators.go             — ValidateUserAccount(), ValidateDiskPath() (whole-disk probe: lsblk TYPE must say "disk"), ValidateDiskSelection(), ValidateDiskSize(), ValidateDiskNotInUse() (the authoritative in-use/live gate)
       mirrorlist.go             — Embedded mirrorlists + ParseMirrorList + BuildMirrorList(code): the chosen country's servers followed by the worldwide ones, deduped (falls back to worldwide.list for an unknown code)
       mirrorlist_gen.go         — Mirrorlist refresh script (force-refreshes every file; build.sh runs it)
       logpath.go                — GetLogPath()
@@ -359,6 +365,7 @@ Welcome (language list + location picker)
 ## Constants Reference
 - Min disk size: `shared.MinDiskSizeBytes` = 8 GiB (reduced from 16 GiB after removing the swap file in favor of zram); manual mode uses the same `shared.MinManualDiskSizeBytes` = 8 GiB floor
 - Partition table: manual mode needs a GPT. `shared.PartitionTableType` reads it (`blkid -p -o value -s PTTYPE`) and `shared.ValidateManualPartitionTable` rejects any other table in `ComputeLayout`, `ValidateFeasible` and `Apply` — sgdisk refuses to save changes on a non-GPT disk (exit 3), so the rejection must come before anything is deleted. An empty type (no table, or an unreadable device) is allowed: sgdisk writes a GPT there, and Apply re-checks as root. Automatic mode is unaffected — `sgdisk -Z` replaces any table.
+- **Disk in use** (every install, both modes): the disk the system runs on must never be an install target, and neither the old name-pattern check nor a mount-at-`"/"` test can say so — automatic mode's first command is `sgdisk -Z`, which destroys `/dev/sda1` handed to it as a disk just as happily as `/dev/sda`, and on a booted ISO the live root is an overlay no partition claims while the stick itself sits at `shared.ArchisoBootMountPoint` (`/run/archiso/bootmnt`). So `GetDisks` answers it from the whole lsblk tree: **InUse** when any device on the disk is mounted somewhere the installer never mounts a target (the closed `installerMountSet`: MountRoot, its btrfs subvolumes, the ESP/boot mounts — `/mnt/data` is somebody else's), or has active swap (`[SWAP]`), or reports FSUSED without a visible mount (lsblk shows only one mount point per device); **IsLiveDevice** when a device in the tree carries the maj:min of `/` or bootmnt in `/proc/self/mountinfo` (holders nest in the tree, so this covers LUKS and LVM). `zram` joins `VirtualDevicePrefixes` — it reports TYPE "disk" and its swap would be a phantom in-use row. Three layers refuse it: the row is disabled with `disk.inUse` as its content line, `page-validation` names `validation.modal.diskInUse` for a selection that went stale on the page, and the CLI — the gate that runs as root, for the GUI too — calls `shared.ValidateDiskNotInUse` (via the `validateDiskUnusedFunc` seam, re-reading the mount table) before the first destructive step and for `--rollback`; fake-disk/dry-run mode skips both probes (synthetic paths). `ValidateDiskPath` additionally rejects anything lsblk does not report as TYPE "disk" (partitions, mappers), accepting an unreadable device so its own size check keeps naming that case.
 - EFI partition: 512MB, vfat, label "EFI", type GUID `C12A7328...`
 - Boot floor: every Boot partition (new or existing) must be at least `shared.MinESPSizeBytes` = 512 MiB. Manual mode always formats the selected Boot partition as FAT32, so it never reuses another OS's ESP.
 - System floor: `shared.MinSystemPartitionBytes` = 7680 MiB (the 8 GiB disk minimum minus the 512 MiB Boot partition). With LVM it rises to `shared.MinLvmSystemPartitionBytes` (16 GiB + 16 MiB metadata), plus `shared.LuksHeaderReserveBytes` when LUKS sits under it — use `shared.SystemPartitionFloorBytes(lvm, luks)`.

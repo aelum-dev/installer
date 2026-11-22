@@ -165,6 +165,17 @@ type DiskInfo struct {
 	// ("gpt", "dos", …), or "" when the disk has no partition table or the type
 	// could not be read. Manual mode needs a GPT; automatic mode writes one.
 	PartitionTable string `json:"partitionTable"`
+	// InUse reports that the running system is using this disk: something on it
+	// (a partition, a LUKS mapper, a volume, or the disk's own filesystem) is
+	// mounted somewhere the installer does not mount a target — swap on it
+	// included. Such a disk can never be the install target — automatic mode's
+	// sgdisk -Z would erase a live filesystem.
+	InUse bool `json:"inUse"`
+	// IsLiveDevice reports that this disk holds the running live system: one of
+	// its devices backs / or the live ISO's /run/archiso/bootmnt (the disk the
+	// ISO was booted from). Stricter than InUse — erasing it erases the
+	// installer's own system — so the UI can mark it "in use" not "mounted".
+	IsLiveDevice bool `json:"isLiveDevice"`
 }
 
 // PartitionType is the type assigned to a partition in a manual layout plan.

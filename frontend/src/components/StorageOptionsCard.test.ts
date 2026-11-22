@@ -20,6 +20,8 @@ const disk: DiskInfo = {
 	trans: 'sata',
 	isRemovable: false,
 	partitionTable: 'gpt',
+	inUse: false,
+	isLiveDevice: false,
 };
 
 let app: ReturnType<typeof mount> | null = null;

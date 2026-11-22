@@ -126,8 +126,10 @@ test.describe('Manual partitioning', () => {
   });
 
   test('adding a partition then deleting it changes the row count', async ({ page }) => {
-    // /dev/sdh (Toshiba X300 8TB) has ~1.3 GB free, so a new partition fits.
-    await selectDiskByModel(page, 'Toshiba X300 8TB');
+    // /dev/nvme4n1 (Samsung 990 PRO 2TB) is clean and has ~900 GB free, so a
+    // new partition fits. (The old fixture disk, /dev/sdh, is now correctly
+    // marked in use — a mounted data disk is not an install target.)
+    await selectDiskByModel(page, 'Samsung 990 PRO 2TB');
     await page.getByRole('button', { name: 'Manual' }).click();
 
     const rows = page.locator('.part-row');
@@ -168,7 +170,7 @@ test.describe('Manual partitioning', () => {
   });
 
   test('cancelling the delete dialog keeps the partition', async ({ page }) => {
-    await selectDiskByModel(page, 'Toshiba X300 8TB');
+    await selectDiskByModel(page, 'Samsung 990 PRO 2TB');
     await page.getByRole('button', { name: 'Manual' }).click();
 
     await page

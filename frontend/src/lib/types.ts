@@ -108,6 +108,14 @@ export interface DiskInfo {
 	// the disk has no partition table or the backend could not read one.
 	// Manual mode can only write a GPT; automatic mode writes one for any disk.
 	partitionTable: string;
+	// True when the running system is using this disk: something on it is
+	// mounted outside the installer's own target mounts, swap included. The
+	// row is then a warning chip and cannot be selected.
+	inUse: boolean;
+	// True when this disk holds the running system itself — it backs / or the
+	// live ISO's /run/archiso/bootmnt. Shown as the danger "In use" chip
+	// rather than "Mounted", and refused like inUse.
+	isLiveDevice: boolean;
 }
 
 // PartitionEntry represents a partition on a disk.

@@ -74,11 +74,21 @@ function directories(p: PartitionEntry): string[] {
 
 /** True when this disk (or a partition on it) is where the session booted from. */
 function isBootedFrom(disk: DiskInfo, parts: PartitionEntry[]): boolean {
+	// The backend names the live system's own disk by device identity — the
+	// disk behind / or behind the ISO's /run/archiso/bootmnt. On a booted ISO
+	// no partition is mounted at "/" (the root is an overlay), so without this
+	// bit the stick the installer is running from would only ever read as
+	// "mounted".
+	if (disk.isLiveDevice) return true;
 	return disk.mountpoint === '/' || parts.some((p) => (p.mountpoints ?? []).includes('/'));
 }
 
 /** True when anything on this disk is mounted somewhere. */
 function isMounted(disk: DiskInfo, parts: PartitionEntry[]): boolean {
+	// The backend's aggregate is authoritative and counts what the per-mount
+	// view cannot see: active swap, and a mount hidden behind the single
+	// mountpoint lsblk prints for a filesystem mounted more than once.
+	if (disk.inUse) return true;
 	if (disk.mountpoint && disk.mountpoint !== '/') return true;
 	return parts.some((p) => directories(p).length > 0);
 }
@@ -187,6 +197,12 @@ export function statusChip(
 export function disabledReason(disk: DiskInfo): string | null {
 	if (disk.size < MinDiskSizeBytes) {
 		return t('disk.tooSmall', { minSize: formatBytes(MinDiskSizeBytes) });
+	}
+	// The running system is on this disk — as its booted-from system or as a
+	// mounted volume. Automatic mode's first command rewrites the partition
+	// table; nothing mounted survives that, so the row is not a choice.
+	if (disk.inUse || disk.isLiveDevice) {
+		return t('disk.inUse');
 	}
 	return null;
 }

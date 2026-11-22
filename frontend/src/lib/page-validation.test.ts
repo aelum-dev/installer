@@ -26,6 +26,8 @@ function diskInfo(over: Partial<DiskInfo> = {}): DiskInfo {
 		trans: 'virtio',
 		isRemovable: false,
 		partitionTable: 'gpt',
+		inUse: false,
+		isLiveDevice: false,
 		...over,
 	};
 }
@@ -137,6 +139,38 @@ describe('getPageValidationReasons — manual mode partition table', () => {
 
 		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([]);
 		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(true);
+	});
+});
+
+describe('getPageValidationReasons — disk in use', () => {
+	// The list refuses an in-use disk, but a selection can go stale on the
+	// page (the disk got mounted while the wizard was open). The modal path is
+	// what catches that before the CLI would refuse the same disk as root.
+	const IN_USE_REASON = 'Selected disk is in use. Please select another disk.';
+
+	it('refuses an in-use selection in automatic mode', () => {
+		installState.diskId = '/dev/vda';
+		installState.fileSystem = 'ext4';
+		installState.disk = diskInfo({ inUse: true });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([IN_USE_REASON]);
+		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(false);
+	});
+
+	it("refuses the live system's own disk in automatic mode", () => {
+		installState.diskId = '/dev/vda';
+		installState.fileSystem = 'ext4';
+		installState.disk = diskInfo({ isLiveDevice: true });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([IN_USE_REASON]);
+	});
+
+	it('refuses an in-use selection in manual mode, before the plan is even read', () => {
+		setManual(validManualLayout());
+		installState.disk = diskInfo({ inUse: true });
+
+		expect(getPageValidationReasons(PAGE_IDS.DISK_SELECTION)).toEqual([IN_USE_REASON]);
+		expect(isPageValid(PAGE_IDS.DISK_SELECTION)).toBe(false);
 	});
 });
 

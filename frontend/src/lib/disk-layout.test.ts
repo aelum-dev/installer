@@ -30,6 +30,8 @@ function disk(over: Partial<DiskInfo> = {}): DiskInfo {
 		trans: 'sata',
 		isRemovable: false,
 		partitionTable: 'gpt',
+		inUse: false,
+		isLiveDevice: false,
 		...over,
 	};
 }
@@ -139,6 +141,17 @@ describe('contentSummary', () => {
 		expect(contentSummary(disk(), [])).toBe('Empty — no partitions');
 		expect(contentSummary(disk({ fstype: 'ntfs' }), [])).toBe('NTFS');
 	});
+
+	it('names the booted disk even when no partition claims "/" (a live ISO)', () => {
+		// On a booted ISO the USB stick's only mount is /run/archiso/bootmnt
+		// and the root is an overlay — the backend's live bit is all that
+		// marks the stick, and it outranks the mount list.
+		expect(
+			contentSummary(disk({ isLiveDevice: true }), [
+				part({ fstype: 'iso9660', mountpoints: ['/run/archiso/bootmnt'] }),
+			]),
+		).toBe('mounted at / — the system booted from');
+	});
 });
 
 describe('statusChip', () => {
@@ -165,6 +178,21 @@ describe('statusChip', () => {
 	it('does not count "[SWAP]" as a mount', () => {
 		expect(statusChip(disk(), [part({ fstype: 'swap', mountpoints: ['[SWAP]'] })])).toBeNull();
 	});
+
+	it('trusts the backend flags that no mount list can show', () => {
+		// The live ISO's stick: no partition is mounted at "/", the root is an
+		// overlay — the live bit is what makes it the danger chip.
+		expect(statusChip(disk({ isLiveDevice: true }), [])).toEqual({
+			tone: 'danger',
+			text: 'In use',
+		});
+		// Active swap or a hidden btrfs mount: the backend saw it, the
+		// partition mountpoints cannot show it.
+		expect(statusChip(disk({ inUse: true }), [])).toEqual({
+			tone: 'warning',
+			text: 'Mounted',
+		});
+	});
 });
 
 describe('disabledReason', () => {
@@ -173,6 +201,20 @@ describe('disabledReason', () => {
 			'Too small — Aelum needs at least 8.0 GB',
 		);
 		expect(disabledReason(disk({ size: 240 * 1024 ** 3 }))).toBeNull();
+	});
+
+	it('refuses a disk the running system is using', () => {
+		const big = { size: 240 * 1024 ** 3 };
+		expect(disabledReason(disk({ ...big, inUse: true }))).toBe(
+			'In use — the system is using this disk',
+		);
+		expect(disabledReason(disk({ ...big, isLiveDevice: true }))).toBe(
+			'In use — the system is using this disk',
+		);
+		// Size is the older, harder fact — it is named first.
+		expect(disabledReason(disk({ size: 7 * 1024 ** 3, inUse: true }))).toBe(
+			'Too small — Aelum needs at least 8.0 GB',
+		);
 	});
 });
 

@@ -133,6 +133,12 @@ const ESPMountPoint = "/mnt/efi"
 // a bind mount of InstalledESPMountPoint/<EspInstallDirName>/<id>.
 const InstalledESPMountPoint = "/efi"
 
+// ArchisoBootMountPoint is where archiso (the live ISO) mounts the device that
+// holds the ISO itself. The installer runs on top of that filesystem, so the
+// disk behind this mount point is part of the running system and can never be
+// an install target.
+const ArchisoBootMountPoint = "/run/archiso/bootmnt"
+
 // EspInstallDirName is the directory at the ESP root that holds one boot
 // directory per Aelum installation (kernel + initramfs).
 const EspInstallDirName = "aelum"
@@ -855,7 +861,10 @@ const ChrootCommand = "arch-chroot"
 // --- Virtual device filters --------------------------------------------------
 
 // VirtualDevicePrefixes are device name prefixes filtered out by GetDisks().
-var VirtualDevicePrefixes = []string{"loop", "ram", "dm-", "md"}
+// "zram" is here because zram devices report lsblk TYPE "disk": the live ISO and
+// every installed Aelum system carry a zram swap, and without the filter it
+// would be listed as an installable disk whose swap marks it "in use".
+var VirtualDevicePrefixes = []string{"loop", "ram", "dm-", "md", "zram"}
 
 // RemovableTransportTypes are transport types that indicate removable media.
 var RemovableTransportTypes = []string{"usb", "sd", "mmc"}

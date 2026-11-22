@@ -19,6 +19,8 @@ function disk(over: Partial<DiskInfo> = {}): DiskInfo {
 		trans: 'nvme',
 		isRemovable: false,
 		partitionTable: 'gpt',
+		inUse: false,
+		isLiveDevice: false,
 		...over,
 	};
 }

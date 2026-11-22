@@ -39,6 +39,8 @@ const fakeDisk: DiskInfo = {
 	trans: '',
 	isRemovable: false,
 	partitionTable: 'gpt',
+	inUse: false,
+	isLiveDevice: false,
 };
 
 describe('App navigation', () => {

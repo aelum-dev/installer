@@ -60,6 +60,11 @@ var validateDiskPathFunc = shared.ValidateDiskPath
 // validateDiskSizeFunc is a variable for testing — allows mocking disk size validation.
 var validateDiskSizeFunc = shared.ValidateDiskSize
 
+// validateDiskUnusedFunc is a variable for testing — allows mocking the in-use
+// gate. It re-reads the live mount table, so a disk that was free when the
+// wizard showed it is still refused when the install would erase it.
+var validateDiskUnusedFunc = shared.ValidateDiskNotInUse
+
 // cleanupMountsFunc is a variable for testing — allows mocking cleanup.
 var cleanupMountsFunc = primitives.CleanupMounts
 
@@ -250,6 +255,15 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 			if strings.Contains(err.Error(), "exit status") {
 				fmt.Fprintf(os.Stderr, "Hint: ensure the disk path is correct and you have permission to read it.\n")
 			}
+			return 1
+		}
+
+		// The in-use gate, fresh as of this moment and read as root: a disk the
+		// running system is using — above all the one the live ISO booted from —
+		// must never reach the destructive steps. The wizard's own refusal is
+		// minutes older and cannot see the mount table change underneath it.
+		if err := validateDiskUnusedFunc(disk); err != nil {
+			log.Error("%v", err)
 			return 1
 		}
 	}
@@ -473,6 +487,12 @@ func handleRollback(disk string, dryRun *bool) int {
 	}
 	log.Info("Rolling back %s...", disk)
 	if err := validateDiskPathFunc(disk); err != nil {
+		log.Error("%v", err)
+		return 1
+	}
+	// Rollback wipes the disk's partition signatures — the same reason the
+	// install refuses the disk the system runs on applies here.
+	if err := validateDiskUnusedFunc(disk); err != nil {
 		log.Error("%v", err)
 		return 1
 	}

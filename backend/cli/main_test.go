@@ -229,6 +229,52 @@ func TestRun_RollbackInvalidDisk(t *testing.T) {
 	}
 }
 
+// The in-use gate is a refusal, not a warning: the full install must stop
+// before the password prompt and before the first step can destroy the disk.
+// runInstallation is called directly — run() would stop a non-root test at its
+// own root check before any validator is reached.
+func TestRunInstallation_RefusesInUseDisk(t *testing.T) {
+	oldPath, oldSize, oldUnused := validateDiskPathFunc, validateDiskSizeFunc, validateDiskUnusedFunc
+	defer func() {
+		validateDiskPathFunc, validateDiskSizeFunc, validateDiskUnusedFunc = oldPath, oldSize, oldUnused
+	}()
+	validateDiskPathFunc = func(string) error { return nil }
+	validateDiskSizeFunc = func(string) error { return nil }
+	var gateDisk string
+	validateDiskUnusedFunc = func(disk string) error {
+		gateDisk = disk
+		return os.ErrInvalid
+	}
+
+	if code := runInstallation("/dev/vda", "", "aelum", installOptions{dryRun: false}); code != 1 {
+		t.Errorf("runInstallation(in-use disk) = %d, want 1", code)
+	}
+	if gateDisk != "/dev/vda" {
+		t.Errorf("in-use gate ran on %q, want /dev/vda", gateDisk)
+	}
+}
+
+// Rollback wipes the disk's partition signatures, so it answers the in-use
+// gate the same way the install does.
+func TestHandleRollback_RefusesInUseDisk(t *testing.T) {
+	oldPath, oldUnused := validateDiskPathFunc, validateDiskUnusedFunc
+	defer func() { validateDiskPathFunc, validateDiskUnusedFunc = oldPath, oldUnused }()
+	validateDiskPathFunc = func(string) error { return nil }
+	var gateDisk string
+	validateDiskUnusedFunc = func(disk string) error {
+		gateDisk = disk
+		return os.ErrInvalid
+	}
+
+	notDryRun := false
+	if code := handleRollback("/dev/vda", &notDryRun); code != 1 {
+		t.Errorf("handleRollback(in-use disk) = %d, want 1", code)
+	}
+	if gateDisk != "/dev/vda" {
+		t.Errorf("in-use gate ran on %q, want /dev/vda", gateDisk)
+	}
+}
+
 // --- --gpu-driver ------------------------------------------------------------
 
 func TestRun_InvalidGPUDriver(t *testing.T) {
