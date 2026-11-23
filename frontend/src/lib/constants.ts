@@ -24,6 +24,7 @@ export const MountRoot = "/mnt";
 export const BootMountPoint = "/mnt/boot";
 export const ESPMountPoint = "/mnt/efi";
 export const InstalledESPMountPoint = "/efi";
+export const ArchisoBootMountPoint = "/run/archiso/bootmnt";
 export const EspInstallDirName = "aelum";
 export const LogDir = "/var/log";
 export const LogMirrorDir = "/shared";
