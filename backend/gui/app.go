@@ -92,7 +92,7 @@ func (a *App) GetDryRun() bool {
 // The log is not closed here any more, because the app lives past this call;
 // Shutdown closes it on the way out for good.
 func (a *App) OnBeforeClose(ctx context.Context) bool {
-	if a.installationRunning.Load() {
+	if a.installActive() {
 		a.CancelInstallation()
 		a.WaitForCleanup()
 		return true
@@ -109,7 +109,7 @@ func (a *App) Shutdown(ctx context.Context) {
 
 // GetInstallationRunning reports whether an installation is currently in progress.
 func (a *App) GetInstallationRunning() bool {
-	return a.installationRunning.Load()
+	return a.installActive()
 }
 
 // GetDiskID returns the currently selected disk ID.
@@ -126,7 +126,7 @@ func (a *App) RebootAndClose() error {
 		return nil
 	}
 
-	if a.installationRunning.Load() {
+	if a.installActive() {
 		a.CancelInstallation()
 		a.WaitForCleanup()
 	}

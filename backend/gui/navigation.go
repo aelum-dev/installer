@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,21 +28,20 @@ var (
 
 // App struct
 type App struct {
-	ctx                 context.Context
-	currentPage         PageID
-	startPage           PageID
-	dryRun              bool
-	userAccount         shared.UserAccountData
-	diskSelection       shared.DiskSelectionData
-	hostname            string
-	selectedLanguage    string
-	locale              string        // system locale implied by selectedLanguage
-	region              shared.Region // location: timezone, keymap, mirrors
-	uiLocale            string        // UI language (separate from installed system locale)
-	fileSystem          string        // root filesystem: "ext4" or "btrfs"
-	manualMode          bool          // manual partitioning enabled
-	manualLayout        shared.ManualLayout
-	installationRunning atomic.Bool
+	ctx              context.Context
+	currentPage      PageID
+	startPage        PageID
+	dryRun           bool
+	userAccount      shared.UserAccountData
+	diskSelection    shared.DiskSelectionData
+	hostname         string
+	selectedLanguage string
+	locale           string        // system locale implied by selectedLanguage
+	region           shared.Region // location: timezone, keymap, mirrors
+	uiLocale         string        // UI language (separate from installed system locale)
+	fileSystem       string        // root filesystem: "ext4" or "btrfs"
+	manualMode       bool          // manual partitioning enabled
+	manualLayout     shared.ManualLayout
 
 	// luks enables optional LUKS2 encryption of the root partition. luksPassphrase
 	// is the passphrase held in memory (zeroed buffer) from entry until the CLI
@@ -53,11 +53,25 @@ type App struct {
 	// orthogonal to luks: LUKS always sits below LVM.
 	lvm bool
 
+	// installMu guards the state of an installation run below. The
+	// Wails-bound methods arrive on a goroutine per call and the
+	// goroutine that reaps the CLI clears the same state while a close
+	// request, a GetInstallationRunning poll or a retried
+	// StartInstallation can be reading it.
+	installMu sync.Mutex
+	// installationRunning is true while the CLI subprocess of an install
+	// runs — or is being started, since StartInstallation reserves it
+	// before spawning. Under installMu, so a second call cannot get past
+	// the guard and start a second root CLI against the same disk.
+	installationRunning bool
 	// installCmd is the currently running CLI subprocess, or nil.
 	installCmd *exec.Cmd
 	// installCancel cancels the context for the current CLI subprocess.
 	installCancel func()
-	// installDone is closed when the CLI process has exited and cleanup is complete.
+	// installDone is closed when the CLI process has exited and cleanup is
+	// complete, then set to nil. WaitForCleanup takes the channel out
+	// under this same lock and waits on it outside the lock, because the
+	// close itself needs the lock to happen.
 	installDone chan struct{}
 	// installStartedAt is when the CLI subprocess started; the completion
 	// event reports the elapsed time so the finish page can show it.

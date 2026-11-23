@@ -107,14 +107,18 @@ func TestOnBeforeClose_KeepsTheWindowDuringAnInstall(t *testing.T) {
 	})
 
 	a := NewApp(false)
+	a.installMu.Lock()
 	a.installCmd = cmd
 	a.installDone = make(chan struct{})
-	a.installationRunning.Store(true)
+	a.installationRunning = true
+	a.installMu.Unlock()
 
 	// Stands for the CLI's exit, which the completion goroutine signals in the app.
 	go func() {
 		time.Sleep(50 * time.Millisecond)
+		a.installMu.Lock()
 		close(a.installDone)
+		a.installMu.Unlock()
 	}()
 
 	start := time.Now()

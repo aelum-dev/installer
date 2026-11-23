@@ -1,10 +1,13 @@
 package gui
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -69,7 +72,9 @@ func TestStartInstallation_NoDisk(t *testing.T) {
 
 func TestStartInstallation_AlreadyRunning(t *testing.T) {
 	a := NewApp(true)
-	a.installationRunning.Store(true)
+	a.installMu.Lock()
+	a.installationRunning = true
+	a.installMu.Unlock()
 
 	err := a.StartInstallation()
 	if err == nil || !strings.Contains(err.Error(), "already in progress") {
@@ -105,7 +110,9 @@ func TestCancelInstallation_SignalsProcess(t *testing.T) {
 	})
 
 	a := NewApp(false)
+	a.installMu.Lock()
 	a.installCmd = cmd
+	a.installMu.Unlock()
 
 	// Must not block or panic; the process should receive SIGINT.
 	a.CancelInstallation()
@@ -129,7 +136,9 @@ func TestCancelInstallation_MarksTheRunCancelled(t *testing.T) {
 	})
 
 	a := NewApp(false)
+	a.installMu.Lock()
 	a.installCmd = cmd
+	a.installMu.Unlock()
 
 	a.CancelInstallation()
 
@@ -151,8 +160,10 @@ func TestCancelInstallation_WithoutAProcessRecordsNothing(t *testing.T) {
 
 func TestWaitForCleanup_ClosedChannel(t *testing.T) {
 	a := NewApp(false)
+	a.installMu.Lock()
 	a.installDone = make(chan struct{})
 	close(a.installDone)
+	a.installMu.Unlock()
 
 	a.WaitForCleanup() // returns immediately
 }
@@ -166,7 +177,9 @@ func TestWaitForCleanup_HungInstallStillReleasesTheCaller(t *testing.T) {
 	t.Cleanup(func() { cleanupWaitTimeout = previous })
 
 	a := NewApp(false)
+	a.installMu.Lock()
 	a.installDone = make(chan struct{}) // never closed: the CLI never exits
+	a.installMu.Unlock()
 
 	returned := make(chan struct{})
 	go func() {
@@ -225,5 +238,114 @@ func TestReadCLILines_DeliversALineWithNoTrailingNewline(t *testing.T) {
 
 	if len(got) != 2 || got[0] != "first" || got[1] != "last" {
 		t.Errorf("lines delivered = %q, want [first last]", got)
+	}
+}
+
+// TestStartInstallation_ConcurrentCallsSpawnOneCLI is the regression for the
+// unguarded spawn: the running flag used to be set only after cmd.Start, so
+// overlapping calls all got past the guard and a second sudo-ed root CLI ran
+// against the same disk. The shim CLI logs every spawn, so the test counts
+// what was really started — not just what the bookkeeping claims.
+func TestStartInstallation_ConcurrentCallsSpawnOneCLI(t *testing.T) {
+	for _, dir := range []string{"/usr/local/bin", "/usr/bin"} {
+		if fileExists(filepath.Join(dir, "aelum-installer-cli")) {
+			t.Skipf("a real CLI exists at %s", dir)
+		}
+	}
+
+	bin := t.TempDir()
+	spawns := filepath.Join(bin, "spawns")
+	// A stand-in CLI that never exits: a run that finished during the test
+	// would release the guard and let another call start legitimately, and
+	// what is under test is the guard. exec replaces the shell with sleep
+	// so the SIGINT of the teardown reaches the live process.
+	script := "#!/bin/sh\necho started >> " + spawns + "\nexec sleep 30\n"
+	if err := os.WriteFile(filepath.Join(bin, "aelum-installer-cli"), []byte(script), 0o755); err != nil {
+		t.Fatalf("write CLI shim: %v", err)
+	}
+	// bin first so the shim resolves ahead of any installed CLI, and the
+	// real PATH stays behind it — the shim itself runs sleep.
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	a := NewApp(true) // dry-run: no sudo prefix, synthetic disk
+
+	// The completion goroutine emits an event on the CLI's exit; a Wails
+	// context is not there in a test, so record instead.
+	var eventsMu sync.Mutex
+	var events []string
+	originalEmit := emitEvent
+	emitEvent = func(_ context.Context, name string, _ ...interface{}) {
+		eventsMu.Lock()
+		events = append(events, name)
+		eventsMu.Unlock()
+	}
+	// The emit seam goes back only after the stand-in CLI is released —
+	// cleanups run LIFO — so even a test that fails early hands the
+	// completion event to the recorder, not to the real EventsEmit that
+	// demands a running Wails app.
+	t.Cleanup(func() { emitEvent = originalEmit })
+	t.Cleanup(func() {
+		a.CancelInstallation()
+		deadline := time.Now().Add(10 * time.Second)
+		for a.installActive() && time.Now().Before(deadline) {
+			time.Sleep(20 * time.Millisecond)
+		}
+	})
+
+	const calls = 8
+	errs := make(chan error, calls)
+	for i := 0; i < calls; i++ {
+		go func() { errs <- a.StartInstallation() }()
+	}
+	started := 0
+	for i := 0; i < calls; i++ {
+		err := <-errs
+		if err == nil {
+			started++
+		} else if !strings.Contains(err.Error(), "already in progress") {
+			t.Errorf("StartInstallation() error = %v, want success or already-in-progress", err)
+		}
+	}
+	if started != 1 {
+		t.Errorf("%d calls started a CLI, want exactly 1", started)
+	}
+
+	// cmd.Start only forks, so wait for the shim to log its spawn. Every
+	// losing call has already returned once the channel drained, so from
+	// that point on the set of spawned processes is closed — whatever has
+	// not written after the grace period never will.
+	spawnCount := 0
+	deadline := time.Now().Add(5 * time.Second)
+	for spawnCount < 1 && time.Now().Before(deadline) {
+		if data, err := os.ReadFile(spawns); err == nil {
+			spawnCount = strings.Count(string(data), "started")
+		}
+		if spawnCount < 1 {
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	time.Sleep(300 * time.Millisecond)
+	if data, err := os.ReadFile(spawns); err == nil {
+		spawnCount = strings.Count(string(data), "started")
+	}
+	if spawnCount != 1 {
+		t.Errorf("the CLI was spawned %d times, want exactly 1", spawnCount)
+	}
+
+	// Release the stand-in CLI and wait for the completion goroutine to
+	// clear the run state.
+	a.CancelInstallation()
+	releaseDeadline := time.Now().Add(10 * time.Second)
+	for a.installActive() && time.Now().Before(releaseDeadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if a.installActive() {
+		t.Error("the cancelled CLI never released the run state")
+	}
+
+	eventsMu.Lock()
+	defer eventsMu.Unlock()
+	if !slices.Contains(events, EventInstallationCancelled) {
+		t.Errorf("events = %v, want the cancelled event for the stop the test asked for", events)
 	}
 }

@@ -46,6 +46,13 @@ type InstallationComplete struct {
 // (about 600 ms) with room for a slow disk.
 var cleanupWaitTimeout = time.Duration(shared.CleanupWaitTimeoutMs) * time.Millisecond
 
+// emitEvent sends one app event to the frontend. It is wailsRuntime.EventsEmit
+// behind a variable so tests can drive the completion paths: a Wails context
+// only a running Wails app has is what EventsEmit demands, and the completion
+// goroutine reaches it even in a headless test. The other test seams in this
+// project (simulateStep, validateDiskUnusedFunc) work the same way.
+var emitEvent = wailsRuntime.EventsEmit
+
 // findCLIBinary locates the aelum-installer-cli binary.
 func findCLIBinary() string {
 	if exe, err := os.Executable(); err == nil {
@@ -102,10 +109,73 @@ func readCLILines(what string, r io.Reader, handle func(string)) {
 	}
 }
 
+// installActive reports whether an installation holds the run state. The read
+// takes installMu because that is where the state is written: the answer is a
+// fact about the instant of the lock, not about what is true a moment later.
+func (a *App) installActive() bool {
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
+	return a.installationRunning
+}
+
+// installCLIArgs builds the CLI argv from the answers the wizard holds. The
+// target disk, the account and the filesystem ride as flags; language and
+// location travel as separate flags — the CLI writes the system locale from
+// one, and the clock, console keymap and mirrors from the other, an empty
+// region code meaning "the country of the language", which is what the CLI
+// falls back to. The encryption switches ride as flags, and the manual
+// layout as JSON, which is what tells the CLI to format only the Boot and
+// System partitions it is given.
+func (a *App) installCLIArgs() ([]string, error) {
+	diskID := a.diskSelection.DiskID
+	if diskID == "" && a.dryRun {
+		diskID = "/dev/loop0"
+	}
+	// Without a disk the CLI prints usage and exits 1, surfacing as an opaque
+	// "installation failed" at 0%. Refuse up front with the real cause.
+	if diskID == "" {
+		return nil, fmt.Errorf("no target disk selected")
+	}
+
+	args := []string{
+		"--install", diskID,
+		"--username", a.userAccount.Username,
+		"--filesystem", a.fileSystem,
+		"--language", a.selectedLanguage,
+		"--region", a.region.Code,
+	}
+	if a.luks {
+		args = append(args, "--luks")
+	}
+	if a.lvm {
+		args = append(args, "--lvm")
+	}
+	if a.dryRun {
+		args = append(args, "--dry-run")
+	}
+	if a.manualMode {
+		layoutJSON, err := json.Marshal(a.manualLayout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize manual layout: %w", err)
+		}
+		args = append(args, "--manual-layout", string(layoutJSON))
+	}
+	return args, nil
+}
+
 // StartInstallation spawns the CLI binary via sudo. Returns an error if one is
 // already running or if the CLI binary cannot be found.
 func (a *App) StartInstallation() error {
-	if a.installationRunning.Load() {
+	// The guard here and the state recorded after cmd.Start belong to one
+	// critical section, together with everything that spawns the CLI in
+	// between: a guard checked before the spawn let a second call get past
+	// while the first was still starting, and two sudo-ed root CLIs then
+	// ran against the same disk. Nothing in this section waits for the CLI
+	// — only fork and exec — so no caller is ever held up behind a run.
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
+
+	if a.installationRunning {
 		return fmt.Errorf("an installation is already in progress")
 	}
 
@@ -119,45 +189,9 @@ func (a *App) StartInstallation() error {
 
 	cliBinary := findCLIBinary()
 
-	diskID := a.diskSelection.DiskID
-	if diskID == "" && a.dryRun {
-		diskID = "/dev/loop0"
-	}
-	// Without a disk the CLI prints usage and exits 1, surfacing as an opaque
-	// "installation failed" at 0%. Refuse up front with the real cause.
-	if diskID == "" {
-		return fmt.Errorf("no target disk selected")
-	}
-
-	args := []string{
-		"--install", diskID,
-		"--username", a.userAccount.Username,
-		"--filesystem", a.fileSystem,
-		// Language and location travel as separate flags: the CLI writes the
-		// system locale from one, and the clock, console keymap and mirrors from
-		// the other. An empty region code means "the country of the language",
-		// which is what the CLI falls back to.
-		"--language", a.selectedLanguage,
-		"--region", a.region.Code,
-	}
-	if a.luks {
-		args = append(args, "--luks")
-	}
-	if a.lvm {
-		args = append(args, "--lvm")
-	}
-	if a.dryRun {
-		args = append(args, "--dry-run")
-	}
-
-	// Manual mode: pass the user-designed layout so the CLI only formats the
-	// Boot/System partitions. It is serialized as JSON.
-	if a.manualMode {
-		layoutJSON, err := json.Marshal(a.manualLayout)
-		if err != nil {
-			return fmt.Errorf("failed to serialize manual layout: %w", err)
-		}
-		args = append(args, "--manual-layout", string(layoutJSON))
+	args, err := a.installCLIArgs()
+	if err != nil {
+		return err
 	}
 
 	// The GUI computes the log path once and passes it to the CLI so both
@@ -202,7 +236,7 @@ func (a *App) StartInstallation() error {
 	a.installCancel = cancel
 	a.installDone = make(chan struct{})
 	a.installCancelled.Store(false)
-	a.installationRunning.Store(true)
+	a.installationRunning = true
 
 	// Write password to stdin, then (when encrypting) the LUKS passphrase. The
 	// order matches the CLI's sequential stdin reads: username flag → account pw
@@ -251,7 +285,7 @@ func (a *App) StartInstallation() error {
 		readCLILines("stderr", stderr, func(line string) {
 			var p InstallationProgress
 			if json.Unmarshal([]byte(line), &p) == nil {
-				wailsRuntime.EventsEmit(a.ctx, EventInstallationProgress, p)
+				emitEvent(a.ctx, EventInstallationProgress, p)
 				return
 			}
 			fmt.Fprintf(os.Stderr, "%s\n", line)
@@ -280,7 +314,7 @@ func (a *App) StartInstallation() error {
 		err := cmd.Wait()
 		switch {
 		case err == nil:
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationComplete, InstallationComplete{
+			emitEvent(a.ctx, EventInstallationComplete, InstallationComplete{
 				ElapsedSeconds: int(time.Since(a.installStartedAt).Seconds()),
 			})
 		case a.installCancelled.Load():
@@ -290,15 +324,23 @@ func (a *App) StartInstallation() error {
 			// cancelled event, and the window that receives it stays open on the
 			// cancelled page (see App.OnBeforeClose). The payload is empty on
 			// purpose: the page names the disk from the answer the person gave.
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationCancelled)
+			emitEvent(a.ctx, EventInstallationCancelled)
 		default:
-			wailsRuntime.EventsEmit(a.ctx, EventInstallationError, "Installation failed",
+			emitEvent(a.ctx, EventInstallationError, "Installation failed",
 				fmt.Sprintf("%s. For details, check: %s", err.Error(), logPath))
 		}
+		// The run's state is cleared as one unit, and the done channel is
+		// closed inside the same lock: a reader that takes the lock —
+		// WaitForCleanup's snapshot — sees either this run complete or no run
+		// at all, and a retried StartInstallation can only claim the state
+		// once nothing in it still points at the old CLI.
+		a.installMu.Lock()
 		close(a.installDone)
+		a.installDone = nil
 		a.installCmd = nil
 		a.installCancel = nil
-		a.installationRunning.Store(false)
+		a.installationRunning = false
+		a.installMu.Unlock()
 	}()
 
 	return nil
@@ -316,6 +358,8 @@ func (a *App) StartInstallation() error {
 // goroutine can tell that stop from a CLI that died on its own, even when the CLI
 // dies before it is signalled.
 func (a *App) CancelInstallation() {
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
 	if a.installCmd != nil && a.installCmd.Process != nil {
 		a.installCancelled.Store(true)
 		_ = a.installCmd.Process.Signal(os.Interrupt)
@@ -328,11 +372,21 @@ func (a *App) CancelInstallation() {
 // wait that runs past the timeout is a hung process — and the cancelled page is
 // still the honest screen to be left on, not a dead callback.
 func (a *App) WaitForCleanup() {
-	if a.installDone == nil {
+	// The channel is taken out of the guarded state under installMu and
+	// waited on outside the lock: the completion goroutine closes the
+	// channel inside that same lock, so a wait held while holding it could
+	// never be woken by the close it is waiting for. A snapshot of nil is
+	// also the answer that no run is left to wait for — the completion
+	// goroutine nils the field in the same section that closes it.
+	a.installMu.Lock()
+	done := a.installDone
+	a.installMu.Unlock()
+
+	if done == nil {
 		return
 	}
 	select {
-	case <-a.installDone:
+	case <-done:
 	case <-time.After(cleanupWaitTimeout):
 		shared.GetLogger().Info("Cleanup has not finished after %s — carrying on without it", cleanupWaitTimeout)
 	}
