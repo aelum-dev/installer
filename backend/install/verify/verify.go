@@ -304,9 +304,19 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"
 	if data, err := primitives.ReadFile(confPath); err == nil {
-		if !strings.Contains(string(data), shared.LvmInitramfsHook) {
+		content := string(data)
+		hook := hookIndex(content, shared.LvmInitramfsHook)
+		systemd := hookIndex(content, "systemd")
+		switch {
+		case hook < 0:
 			*issues = append(*issues, "lvm2 hook not found in mkinitcpio.conf")
-		} else {
+		case systemd >= 0 && systemd > hook:
+			// The hook picks its activation path by whether install/systemd was
+			// sourced first, and HOOKS order is what sources it: named before
+			// "systemd", it ships the busybox rule a systemd initramfs has nobody
+			// to run, so the volume group stays inactive and the root never appears.
+			*issues = append(*issues, "lvm2 hook is named before the systemd hook in mkinitcpio.conf")
+		default:
 			*info = append(*info, "initramfs lvm2 hook present ✓")
 		}
 	} else {
@@ -327,6 +337,27 @@ func checkLvm(ctx *shared.InstallContext, issues, info *[]string) {
 	} else {
 		*issues = append(*issues, "failed to read rEFInd config "+entryPath)
 	}
+}
+
+// hookIndex returns the position of a hook inside the HOOKS=(…) line of a
+// mkinitcpio.conf, or -1 when it is not named. Matching whole fields rather than
+// a substring is what lets a check tell "lvm2" from a stale "sd-lvm2" — the
+// latter contains the former as text, and has not been a hook since mkinitcpio 38
+// (see shared.LvmInitramfsHook).
+func hookIndex(content, hook string) int {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "HOOKS=") {
+			continue
+		}
+		for i, field := range strings.Fields(strings.NewReplacer("(", " ", ")", " ").Replace(line)) {
+			if i > 0 && field == hook {
+				return i - 1
+			}
+		}
+		return -1
+	}
+	return -1
 }
 
 // lvListContains reports whether lvs output lists the given logical volume.

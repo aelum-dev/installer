@@ -704,6 +704,25 @@ func TestCheckLvm(t *testing.T) {
 			wantIssue: "lvm2 hook not found",
 		},
 		{
+			// "sd-lvm2" is not a hook since mkinitcpio 38 — an image built with it
+			// cannot be built at all — and it contains "lvm2" as text, so a substring
+			// match would call it present.
+			name:      "lvm2 hook named only as the dropped sd-lvm2",
+			ctx:       ctx,
+			rec:       goodRecorder(),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, "HOOKS=(base systemd sd-lvm2 filesystems fsck)\n"),
+			wantIssue: "lvm2 hook not found",
+		},
+		{
+			// The hook picks the systemd activation path by whether install/systemd
+			// was sourced first, so the name alone is not enough.
+			name:      "lvm2 hook named before the systemd hook",
+			ctx:       ctx,
+			rec:       goodRecorder(),
+			fs:        primitivestest.NewMemFS().WithFile(entryPath, goodEntry).WithFile(confPath, "HOOKS=(base lvm2 systemd filesystems fsck)\n"),
+			wantIssue: "named before the systemd hook",
+		},
+		{
 			name:      "boot entry does not use the root UUID",
 			ctx:       ctx,
 			rec:       goodRecorder(),

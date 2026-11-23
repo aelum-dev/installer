@@ -101,6 +101,11 @@ func copyMirrorList(regionCode string) error {
 // initramfs unlocks and activates the root before mounting it. Aelum supports a
 // systemd-based initramfs only, so the order is:
 // systemd ... plymouth ... [sd-encrypt] ... [lvm2] ... filesystems.
+//
+// The two halves of that order that are not cosmetic: sd-encrypt must precede
+// lvm2 (the decrypted device is the PV), and systemd must precede lvm2, because
+// the lvm2 hook picks its activation path by whether install/systemd has been
+// sourced by the time its build() runs — see shared.LvmInitramfsHook.
 func configureInitramfs(ctx *shared.InstallContext) error {
 	// Edit the target system's config, not the live ISO's.
 	confPath := shared.MountRoot + "/etc/mkinitcpio.conf"

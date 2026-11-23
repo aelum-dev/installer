@@ -704,6 +704,85 @@ func TestConfigureInitramfs(t *testing.T) {
 	}
 }
 
+// hookPos returns the position of a hook in a HOOKS=(…) line, or -1. Whole
+// fields only, so "sd-lvm2" is not counted as "lvm2".
+func hookPos(content, hook string) int {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "HOOKS=") {
+			continue
+		}
+		for i, field := range strings.Fields(strings.NewReplacer("(", " ", ")", " ").Replace(line)) {
+			if i > 0 && field == hook {
+				return i - 1
+			}
+		}
+	}
+	return -1
+}
+
+// TestConfigureInitramfs_HookOrder holds the name and the two orderings the LVM
+// boot rests on. "lvm2" is the only LVM hook mkinitcpio has: "sd-lvm2" was a
+// deprecation symlink and upstream dropped it in mkinitcpio 38, and an unknown
+// hook is a hard error — run_build_hook() in /usr/lib/initcpio/functions fails
+// the build with "Hook 'x' cannot be found" — so writing the old name would fail
+// mkinitcpio -P and abort every LVM install. The single hook then chooses its
+// activation path by whether install/systemd has been sourced when its build()
+// runs, and HOOKS order is what sources it: named before "systemd" it ships the
+// busybox rule that a systemd initramfs has nobody to run, and the volume group
+// stays inactive. Named after "filesystems" it activates the group too late to
+// mount the root LV.
+func TestConfigureInitramfs_HookOrder(t *testing.T) {
+	tests := []struct {
+		name  string
+		ctx   *shared.InstallContext
+		pairs [][2]string
+	}{
+		{
+			name: "lvm",
+			ctx:  &shared.InstallContext{Lvm: true},
+			pairs: [][2]string{
+				{"systemd", shared.LvmInitramfsHook},
+				{shared.LvmInitramfsHook, "filesystems"},
+			},
+		},
+		{
+			name: "luks on lvm",
+			ctx:  &shared.InstallContext{Luks: true, Lvm: true},
+			pairs: [][2]string{
+				{"systemd", shared.LvmInitramfsHook},
+				{"sd-encrypt", shared.LvmInitramfsHook},
+				{shared.LvmInitramfsHook, "filesystems"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
+			fs := primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "MODULES=()\nHOOKS=(base udev autodetect)\n")
+			defer primitives.SetFileSystem(fs)()
+
+			if err := configureInitramfs(tt.ctx); err != nil {
+				t.Fatalf("configureInitramfs() = %v, want nil", err)
+			}
+			got, _ := fs.Read(shared.MountRoot + "/etc/mkinitcpio.conf")
+			for _, pair := range tt.pairs {
+				first, second := hookPos(got, pair[0]), hookPos(got, pair[1])
+				if first < 0 || second < 0 {
+					t.Errorf("hooks %q and %q must both be named:\n%s", pair[0], pair[1], got)
+					continue
+				}
+				if first > second {
+					t.Errorf("%s (position %d) must precede %s (position %d):\n%s", pair[0], first, pair[1], second, got)
+				}
+			}
+			if hookPos(got, "sd-lvm2") >= 0 {
+				t.Errorf("sd-lvm2 is not a hook since mkinitcpio 38 and fails the build:\n%s", got)
+			}
+		})
+	}
+}
+
 func TestConfigureInitramfs_NoHooks(t *testing.T) {
 	defer primitives.SetCommandRunner(primitivestest.NewRecorder())()
 	defer primitives.SetFileSystem(primitivestest.NewMemFS().WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "MODULES=()\n"))()

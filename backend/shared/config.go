@@ -766,8 +766,29 @@ const LvmHomeVolumeName = "home"
 const LvmRootPercent = 30
 
 // LvmInitramfsHook is the mkinitcpio hook that activates the volume group in the
-// initramfs. It must follow sd-encrypt (LUKS sits below LVM) and precede
-// filesystems.
+// initramfs. It must follow the systemd hook and sd-encrypt (LUKS sits below
+// LVM), and precede filesystems.
+//
+// It is "lvm2", not "sd-lvm2", on a systemd initramfs, and that is easy to get
+// wrong because every other systemd-side hook here is sd-*. "sd-lvm2" was only
+// ever a deprecation symlink to "lvm2", and upstream dropped it in mkinitcpio 38
+// (Arch news, 2024-03-04: the lvm2 hook moved from the lvm2 package into
+// mkinitcpio). An unknown hook is a hard error — run_build_hook() in
+// /usr/lib/initcpio/functions fails the build with "Hook 'x' cannot be found" —
+// so writing sd-lvm2 would make `mkinitcpio -P` fail and abort every LVM install.
+// Measured against mkinitcpio 42.2-1, the package this image ships: it carries
+// usr/lib/initcpio/install/lvm2 and nothing else for LVM — no sd-lvm2, and no
+// hooks/lvm2 either, because the hook has no run script to run.
+//
+// The one hook serves both initramfs flavours, and it chooses between them by
+// whether add_systemd_unit is defined when its build() runs. That function comes
+// from install/systemd, which HOOKS order is what sources, so "lvm2" must come
+// after "systemd" to get the systemd activation path: the lvm2 package's own
+// 69-dm-lvm.rules, which runs `lvm pvscan --cache --udevoutput` and activates
+// through `systemd-run … lvm vgchange -aay` (add_udev_rule pulls both binaries in
+// from the rule). Before "systemd" it silently ships mkinitcpio's copy for a
+// busybox init, `pvscan --background --cache --activate ay`, which a systemd
+// initramfs has nobody to run.
 const LvmInitramfsHook = "lvm2"
 
 // MinLvmVolumeGroupBytes is the smallest usable volume group (16 GiB). With the
