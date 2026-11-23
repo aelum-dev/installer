@@ -553,6 +553,17 @@ func TestGetDiskPartitions_Error(t *testing.T) {
 	}
 }
 
+// An lsblk that exits 0 without naming the device would otherwise make the
+// Blockdevices[0] index panic the whole GUI: this runs for every disk on
+// page load. The twin GetPartitions already refused this; both must.
+func TestGetDiskPartitions_NoDevices(t *testing.T) {
+	fakeTools(t, map[string]string{"lsblk": lsblkShim(disksJSON, `{"blockdevices":[]}`)})
+
+	if _, err := GetDiskPartitions("/dev/vda"); err == nil || !strings.Contains(err.Error(), "no block devices found") {
+		t.Fatalf("GetDiskPartitions() error = %v", err)
+	}
+}
+
 // --- LogicalSectorSize -------------------------------------------------------
 
 func TestLogicalSectorSize(t *testing.T) {

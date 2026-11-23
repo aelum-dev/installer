@@ -494,6 +494,13 @@ func GetDiskPartitions(diskPath string) ([]PartitionEntry, error) {
 		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
 	}
 
+	// The loop below indexes Blockdevices[0]. GetPartitions refuses the
+	// empty answer the same way; this function runs for every disk the
+	// frontend loads, so a panic here would take the whole GUI down.
+	if len(result.Blockdevices) == 0 {
+		return nil, fmt.Errorf("no block devices found for %s", diskPath)
+	}
+
 	var partitions []PartitionEntry
 	for _, child := range result.Blockdevices[0].Children {
 		if child.Type != "part" {
