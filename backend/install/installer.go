@@ -177,7 +177,7 @@ func (inst *Installer) Install() error {
 	for _, w := range weights {
 		totalWeight += w
 	}
-	cumulativePercent := 0
+	cumulativeWeight := 0
 
 	for idx, step := range steps {
 		stepID := step.Name()
@@ -194,9 +194,13 @@ func (inst *Installer) Install() error {
 			return inst.interruptedError(step.Label(), nil)
 		}
 
-		startPercent := cumulativePercent
-		cumulativePercent += weights[idx]
-		endPercent := cumulativePercent * 100 / totalWeight
+		// Both ends of this step's progress band are mapped by the same
+		// formula (stepPercentBounds): the previous step's end is exactly
+		// where this one starts, and both numbers are on the 0-100 scale
+		// that tickProgress interpolates inside, that the parsed progress
+		// converts into, and that every progress event reports.
+		startPercent, endPercent := stepPercentBounds(cumulativeWeight, weights[idx], totalWeight)
+		cumulativeWeight += weights[idx]
 
 		// high is this step's high-water mark (absolute percent). Both the
 		// parsed pacstrap progress and the gap-filling ticker raise it, so the
@@ -266,6 +270,18 @@ func (inst *Installer) interruptedError(label string, cause error) error {
 	}
 	inst.logInfo("Cancelled — the remaining steps do not run")
 	return fmt.Errorf("%w before %s", shared.ErrInterrupted, label)
+}
+
+// stepPercentBounds maps the cumulative step weight before and after one
+// step onto the 0-100 percentage scale every progress event carries. Both
+// bounds must come from this one mapping: a step's end is the next step's
+// start — the bar never jumps at a boundary — and tickProgress advances the
+// bar inside the band while the parsed progress converts into it. Starting
+// a band at the raw weight sum while ending it at the scaled one agreed
+// only while the weights happened to total exactly 100; the first change to
+// the weight table would have made the bar jump at every boundary.
+func stepPercentBounds(weightBefore, weight, totalWeight int) (start, end int) {
+	return weightBefore * 100 / totalWeight, (weightBefore + weight) * 100 / totalWeight
 }
 
 // tickProgress slowly advances the percentage from start to end, emitting

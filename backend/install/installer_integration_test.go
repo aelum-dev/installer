@@ -363,6 +363,44 @@ func TestCumulativePercentages(t *testing.T) {
 	}
 }
 
+// TestStepPercentBounds_SingleScale guards the scale the step loop puts its
+// progress band on. The loop used to start a band at the raw weight sum and
+// end it on the scaled one, which agreed only because the shipped weights
+// add up to exactly 100; the first change to the table would have jumped
+// the bar at every boundary. Whatever weights are asked about, the bands
+// must tile 0-100 contiguously — the property the bar rides on.
+func TestStepPercentBounds_SingleScale(t *testing.T) {
+	tables := [][]int{
+		stepWeights(), // the shipped table
+		{1, 1, 1, 1, 1},
+		{7, 11, 13},
+		{300, 700},
+		{1, 2, 4, 8, 16, 32, 64, 128},
+	}
+	for _, weights := range tables {
+		total := 0
+		for _, w := range weights {
+			total += w
+		}
+		before := 0
+		wantStart := 0
+		for i, w := range weights {
+			start, end := stepPercentBounds(before, w, total)
+			if start != wantStart {
+				t.Errorf("weights %v step %d: band starts at %d, want the previous band's end %d", weights, i, start, wantStart)
+			}
+			if end < start {
+				t.Errorf("weights %v step %d: band runs backwards, %d to %d", weights, i, start, end)
+			}
+			before += w
+			wantStart = end
+		}
+		if wantStart != 100 {
+			t.Errorf("weights %v: the run ends at %d, want 100", weights, wantStart)
+		}
+	}
+}
+
 // TestStepWeightsSum verifies that step weights sum to the expected total.
 func TestStepWeightsSum(t *testing.T) {
 	total := 0
