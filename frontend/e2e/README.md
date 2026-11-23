@@ -36,6 +36,34 @@ npx playwright install-deps chromium   # needs sudo
 xvfb-run -a npm run e2e
 ```
 
+### When it needs a display and the shell has none
+
+A terminal opened inside the desktop session inherits `WAYLAND_DISPLAY` /
+`DISPLAY`, so this never shows up there. A shell started some other way — SSH, a
+service, an agent harness — has neither, and `wails dev` then dies in
+`gtk_init_check` with `panic: failed to init GTK`.
+
+That failure is not fast and its message is misleading: the panic kills the app
+child while the `wails dev` watcher keeps running, so `scripts/e2e.sh` waits its
+full 300 s and reports only `wails dev did not serve :34115 in 300s`. The real
+line is in `/tmp/aelum-e2e-wails-dev.log`. Read that log before waiting or
+re-running, and kill the watcher the dead run left (`pgrep -af "wails dev"`) —
+it holds no port, so the next run starts a second one.
+
+Point the run at the session's display instead:
+
+```bash
+WAYLAND_DISPLAY=wayland-1 XDG_RUNTIME_DIR=/run/user/1000 \
+  GDK_BACKEND=wayland XDG_SESSION_TYPE=wayland npm run shots
+```
+
+This opens the real installer window on the running desktop for the length of
+the run. That is expected and harmless — the server is dry-run with fake disks —
+and it is what every successful run here has looked like. `xvfb-run` is not
+installed on the dev host and installing it needs root; `gtk3`'s `broadwayd` was
+tried as a headless fallback and never created its socket, so on this machine
+the session display is the answer.
+
 ## Running
 
 ```bash
