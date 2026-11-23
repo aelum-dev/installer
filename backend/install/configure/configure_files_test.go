@@ -237,7 +237,7 @@ func TestWriteRefindConfig(t *testing.T) {
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", RootPart: "/dev/sda2"},
 	}
-	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{Width: 1920, Height: 1080}, true, false); err != nil {
+	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", false); err != nil {
 		t.Fatalf("writeRefindConfig() = %v, want nil", err)
 	}
 
@@ -292,7 +292,7 @@ func TestWriteRefindConfig_PreservesOtherInstalls(t *testing.T) {
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{RootUUID: "2222BBBB-0000-0000-0000-000000000000", RootPart: "/dev/sda3"},
 	}
-	if err := writeRefindConfig(shared.BootMountPoint, secondCtx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{}, false, false); err != nil {
+	if err := writeRefindConfig(shared.BootMountPoint, secondCtx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", false); err != nil {
 		t.Fatalf("writeRefindConfig() = %v, want nil", err)
 	}
 
@@ -326,7 +326,7 @@ func TestWriteRefindConfig_WriteFails(t *testing.T) {
 	defer primitives.SetFileSystem(fs)()
 
 	ctx := &shared.InstallContext{Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"}}
-	err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux", "initramfs-linux.img", displayMode{}, false, false)
+	err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux", "initramfs-linux.img", false)
 	if err == nil || !strings.Contains(err.Error(), "failed to write rEFInd config") {
 		t.Fatalf("writeRefindConfig() error = %v, want write failure", err)
 	}

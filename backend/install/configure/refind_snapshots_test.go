@@ -26,7 +26,7 @@ func TestWriteRefindConfig_SnapshotFragment(t *testing.T) {
 		FileSystem: shared.FileSystemBtrfs,
 		Partitions: &shared.PartitionInfo{RootUUID: "1a2b3c4d-0000-0000-0000-000000000000", RootPart: "/dev/sda2"},
 	}
-	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{}, false, false); err != nil {
+	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", false); err != nil {
 		t.Fatalf("writeRefindConfig() = %v, want nil", err)
 	}
 
@@ -60,7 +60,7 @@ func TestWriteRefindConfig_NoSnapshotFragmentForExt4(t *testing.T) {
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{RootUUID: "1a2b3c4d-0000-0000-0000-000000000000", RootPart: "/dev/sda2"},
 	}
-	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", displayMode{}, false, false); err != nil {
+	if err := writeRefindConfig(shared.BootMountPoint, ctx, "vmlinuz-linux-lts", "initramfs-linux-lts.img", false); err != nil {
 		t.Fatalf("writeRefindConfig() = %v, want nil", err)
 	}
 

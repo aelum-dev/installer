@@ -80,7 +80,7 @@ func TestRefindConfig(t *testing.T) {
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID", LuksUUID: "LUKS-UUID", RootPart: "/dev/sda2"},
 	}
 	includes := []string{"aelum/aaaa1111.conf", "aelum/bbbb2222.conf"}
-	got := refindConfig(ctx, displayMode{Width: 1920, Height: 1080}, true, false, includes)
+	got := refindConfig(ctx, false, includes)
 
 	for _, want := range []string{
 		"resolution max",
@@ -143,25 +143,55 @@ func TestRefindConfig_HiDPI(t *testing.T) {
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
 	}
 
+	// The panel's width alone decides the sheet — rEFInd neither scales a custom
+	// font nor measures the panel — and the 2x sheet has to land after the theme
+	// include, because the last "font" token rEFInd reads is the one it uses.
 	for _, tc := range []struct {
-		name string
-		mode displayMode
+		name   string
+		width  int
+		want2x bool
 	}{
-		{"2K", displayMode{Width: 2560, Height: 1440}},
-		{"4K", displayMode{Width: 3840, Height: 2160}},
+		{"1080p", 1920, false},
+		{"2K", 2560, true},
+		{"4K", 3840, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := refindConfig(ctx, tc.mode, true, true, nil)
+			// drmRoot is unread when a preferred mode is known, which is the
+			// branch this table exercises.
+			hiDPI := fontIsHiDPI(displayMode{Width: tc.width, Height: 1080}, true, "")
+			got := refindConfig(ctx, hiDPI, nil)
 
-			for _, want := range []string{
-				"resolution max",
-				"font " + shared.RefindThemeFont2x,
-			} {
-				if !strings.Contains(got, want) {
-					t.Fatalf("%s refind.conf missing %q:\n%s", tc.name, want, got)
+			if !strings.Contains(got, "resolution max") {
+				t.Fatalf("%s refind.conf missing \"resolution max\":\n%s", tc.name, got)
+			}
+			font := "font " + shared.RefindThemeFont2x
+			if strings.Contains(got, font) != tc.want2x {
+				t.Fatalf("%s: 2x font present=%v want=%v:\n%s", tc.name, !tc.want2x, tc.want2x, got)
+			}
+			if tc.want2x {
+				theme := strings.Index(got, "include "+shared.RefindThemeInclude)
+				if theme < 0 || strings.Index(got, font) < theme {
+					t.Errorf("%s: the 2x font must be written after the theme include:\n%s", tc.name, got)
 				}
 			}
 		})
+	}
+}
+
+// TestFontIsHiDPIWithoutPreferredMode covers the fallback a live session takes
+// when no connector answers with a preferred mode: the font still has to follow
+// the panel, and the answer then comes from any connector's mode list.
+func TestFontIsHiDPIWithoutPreferredMode(t *testing.T) {
+	root := t.TempDir()
+	writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "1920x1080\n3840x2160\n")
+	if !fontIsHiDPI(displayMode{}, false, root) {
+		t.Error("fontIsHiDPI() = false for a connector advertising 4K; want true")
+	}
+
+	root = t.TempDir()
+	writeDRMConnector(t, root, "card0-eDP-1", "connected", "enabled", "1920x1080\n")
+	if fontIsHiDPI(displayMode{}, false, root) {
+		t.Error("fontIsHiDPI() = true for a 1080p-only connector; want false")
 	}
 }
 
@@ -170,7 +200,7 @@ func TestRefindConfig_NoDetectedMode(t *testing.T) {
 		FileSystem: shared.FileSystemExt4,
 		Partitions: &shared.PartitionInfo{RootUUID: "ROOT-UUID"},
 	}
-	got := refindConfig(ctx, displayMode{}, false, false, nil)
+	got := refindConfig(ctx, false, nil)
 
 	if !strings.Contains(got, "resolution max") {
 		t.Fatalf("fallback refind.conf missing \"resolution max\":\n%s", got)
