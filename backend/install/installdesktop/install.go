@@ -1,6 +1,7 @@
 package installdesktop
 
 import (
+	"aelum-installer/backend/install/clearcache"
 	"aelum-installer/backend/install/installbase"
 	"aelum-installer/backend/install/primitives"
 	"aelum-installer/backend/shared"
@@ -199,6 +200,22 @@ var BtrfsOnlyDesktopPackages = []string{
 // a normal outcome, and the choice is recorded on ctx.IMPackages.
 func Run(ctx *shared.InstallContext) error {
 	if err := primitives.ValidateMountedSystem(); err != nil {
+		return err
+	}
+
+	// Drop the base transaction's archives before this one starts, so at most one
+	// transaction's worth of archives is ever on the target. pacstrap copies every
+	// archive it installs into the target's package cache, and pacman fetches a
+	// transaction in full before installing any of it, so the two steps together
+	// would leave 977 MiB + 890 MiB of archives beside the 5426 MiB they install
+	// (measured on the ext4+LUKS+LVM cell, where the root volume is the
+	// 7680 MiB floor: the desktop step died partway through with "could not
+	// extract … (Write failed)"). ext4+LVM is the only layout where that matters
+	// — every other one gives the root the rest of the disk. Nothing on a
+	// finished system reads these files (ClearCache empties the cache one step
+	// later), and pacman refetches from the offline mirror if a package this list
+	// repeats is wanted again, so dropping them costs nothing.
+	if err := clearcache.Run(ctx); err != nil {
 		return err
 	}
 

@@ -14,7 +14,7 @@ func Run(ctx *shared.InstallContext) error {
 
 	// Remove cached packages directly to avoid pacman's interactive
 	// confirmation prompt and exit code 1 when cache is empty.
-	pkgDir := shared.MountRoot + "/var/cache/pacman/pkg"
+	pkgDir := shared.MountRoot + shared.PacmanCacheDir
 	if _, err := primitives.Stat(pkgDir); err == nil {
 		if err := primitives.RemoveAll(pkgDir); err != nil {
 			// Best-effort: log the failure but don't abort installation.

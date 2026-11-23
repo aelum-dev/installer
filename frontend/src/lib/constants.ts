@@ -53,6 +53,7 @@ export const AelumKeyringPath = "/usr/share/aelum/keyring/aelum-release.gpg";
 export const AelumSigningKeyFingerprint = "728F5F59FB2F5A88C6EE28D4930A672A3A1B5B60";
 export const PacmanConfPath = "/etc/pacman.conf";
 export const PacmanSyncDir = "/var/lib/pacman/sync";
+export const PacmanCacheDir = "/var/cache/pacman/pkg";
 export const MinFstabContentLengthBytes = 50;
 export const DefaultHostname = "aelum";
 export const DefaultCLIUsername = "aelum";

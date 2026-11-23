@@ -280,6 +280,14 @@ const PacmanConfPath = "/etc/pacman.conf"
 // says why that file cannot stay.
 const PacmanSyncDir = "/var/lib/pacman/sync"
 
+// PacmanCacheDir is pacman's package cache, chroot-relative like PacmanConfPath.
+// pacstrap copies every archive it installs into the target's copy of this
+// directory, and ClearCache empties it at the end of every install, so no
+// finished system ever reads it. That is why the base transaction's archives are
+// dropped before the desktop transaction starts (see installdesktop.Run): the
+// copy is peak space, not held space.
+const PacmanCacheDir = "/var/cache/pacman/pkg"
+
 // --- Fstab -------------------------------------------------------------------
 
 // MinFstabContentLengthBytes is the minimum expected fstab content length.
