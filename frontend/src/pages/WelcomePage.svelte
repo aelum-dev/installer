@@ -45,6 +45,10 @@
 	// Which list the content column shows. It is a view state, not an answer: the
 	// three answers are always all in play, and the summary card shows all three.
 	let tab = $state<WelcomeTab>('language');
+	// The row the visible list should lead with. It follows the tab, not the
+	// clicks: picking a row must not yank the list around under the pointer, but
+	// switching which list is on screen opens it on that list's answer.
+	let scrollTarget = $state('');
 	// Each list keeps its own filter text, so switching away from a filtered list
 	// and back does not silently drop what was typed.
 	let queries = $state<Record<WelcomeTab, string>>({ language: '', location: '', timezone: '' });
@@ -187,6 +191,7 @@
 				? DefaultLanguageCode
 				: (languages[0]?.code ?? '');
 			installState.locale = savedLang && languages.some((l) => l.code === savedLang) ? savedLang : fallback;
+			scrollTarget = installState.locale;
 			installState.region = findRegion(regions, savedRegion)?.code ?? '';
 			installState.timezone = zones.some((z) => z.id === savedZone) ? savedZone : '';
 			applyUiLocale(installState.locale);
@@ -252,6 +257,9 @@
 
 	function pickTab(next: WelcomeTab): void {
 		tab = next;
+		// The new list opens on its own answer, brought to the top of the view.
+		scrollTarget =
+			next === 'language' ? installState.locale : next === 'location' ? installState.region : installState.timezone;
 		searchEl?.focus();
 	}
 
@@ -331,7 +339,7 @@
 			</div>
 		{/if}
 
-		<ScrollBox persistKey={PAGE_IDS.WELCOME} scrollToCode={installState.locale}>
+		<ScrollBox persistKey={PAGE_IDS.WELCOME} scrollToCode={scrollTarget}>
 			{#if listItems.length === 0}
 				<p class="list-empty">{tabEmpty}</p>
 			{:else if zoneGroups.length > 0}

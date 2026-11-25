@@ -45,6 +45,35 @@ test.describe('Installer wizard', () => {
     await expect(next(page)).toBeEnabled();
   });
 
+  test('Welcome page: switching list opens it on the current answer', async ({ page }) => {
+    await page.goto('/');
+
+    // Distance between the selected row's top and the scroll viewport's top;
+    // near zero means the answer leads the view rather than hiding in the list.
+    const topOffset = async () => {
+      const row = await page.locator('.option-item--selected').boundingBox();
+      const box = await page.locator('.scroll-box').boundingBox();
+      return row && box ? Math.abs(row.y - box.y) : Number.MAX_SAFE_INTEGER;
+    };
+    const summary = page.locator('.summary');
+
+    // Location: the cascade's pre-fill (United States) leads the country list.
+    await summary.getByRole('button', { name: /Location/ }).click();
+    await expect(page.locator('.option-item--selected')).toHaveAttribute('data-code', 'us');
+    await expect.poll(topOffset).toBeLessThan(4);
+
+    // Time zone: the country's clock list opens on the selected clock too.
+    await summary.getByRole('button', { name: /Time zone/ }).click();
+    await expect(page.locator('.option-item--selected')).toHaveAttribute('data-code', 'America/New_York');
+    await expect.poll(topOffset).toBeLessThan(4);
+
+    // And back to Language: the language leads again, not the scroll position
+    // the country list left behind.
+    await summary.getByRole('button', { name: /Language/ }).click();
+    await expect(page.locator('.option-item--selected')).toHaveAttribute('data-code', 'en_US');
+    await expect.poll(topOffset).toBeLessThan(4);
+  });
+
   test('Welcome page: three answers in the rail, one list in the content column', async ({ page }) => {
     await page.goto('/');
 
