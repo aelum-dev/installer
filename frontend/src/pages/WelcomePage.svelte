@@ -12,7 +12,7 @@
 	} from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 	import { DefaultLanguageCode } from '$lib/constants';
-	import { t, setLocale, backendLocaleToFrontend, isDmsLocale, DEFAULT_LOCALE } from '$lib/i18n';
+	import { t, setLocale, translationForLocale, isDmsLocale, DEFAULT_LOCALE } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import OptionList from '$components/OptionList.svelte';
@@ -130,10 +130,12 @@
 		if (tab === 'language') {
 			return filterLanguages(languages, query).map((l) => {
 				// A language the installer has no translation for gets no mark: the
-				// globe means "this row is translated", so it must not sit on a row
-				// that only sets the system locale. The tooltip then splits the
-				// translated rows by how far the translation reaches.
-				const uiLocale = backendLocaleToFrontend(l.locale);
+				// globe means "this row's language is translated", so it must not sit
+				// on a row that only sets the system locale. Every territory variant of
+				// a translated language matches alike — Russian, German, Spanish and the
+				// rest all read their one translation however the territory is spelled.
+				// The tooltip then splits the translated rows by how far it reaches.
+				const uiLocale = translationForLocale(l.locale);
 				return {
 					code: l.code,
 					name: l.name,
@@ -192,7 +194,7 @@
 	// selected.
 	function applyUiLocale(code: string): void {
 		const lang = languages.find((l) => l.code === code);
-		const uiLocale = lang ? backendLocaleToFrontend(lang.locale) : undefined;
+		const uiLocale = lang ? translationForLocale(lang.locale) : undefined;
 		setLocale(uiLocale ?? DEFAULT_LOCALE);
 	}
 

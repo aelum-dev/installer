@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { BACKEND_TO_FRONTEND, backendLocaleToFrontend, setLocale, t } from './index.svelte';
+import { BACKEND_TO_FRONTEND, backendLocaleToFrontend, translationForLocale, setLocale, t } from './index.svelte';
 import { DMS_LOCALES, LOCALES, isDmsLocale } from './locales';
 
 afterEach(() => setLocale('en-US'));
@@ -67,6 +67,51 @@ describe('desktop (DMS) translation set', () => {
 		expect(isDmsLocale('de-DE')).toBe(true);
 		expect(isDmsLocale('eo')).toBe(true);
 		expect(isDmsLocale('xx-XX')).toBe(false);
+	});
+});
+
+describe('translation lookup across territory variants', () => {
+	// The exact territory still wins when it is a shipped translation.
+	it('matches an exact territory first', () => {
+		expect(translationForLocale('ru_RU.UTF-8')).toBe('ru-RU');
+		expect(translationForLocale('zh_CN.UTF-8')).toBe('zh-CN');
+		expect(translationForLocale('zh_TW.UTF-8')).toBe('zh-TW');
+	});
+
+	// The bug this guards: a translated language offered under another territory
+	// ("Русский (Ukraine)") must read the same translation as its home territory.
+	it('falls back to the language for an unshipped territory', () => {
+		expect(translationForLocale('ru_UA.UTF-8')).toBe('ru-RU');
+		expect(translationForLocale('de_AT.UTF-8')).toBe('de-DE');
+		expect(translationForLocale('es_MX.UTF-8')).toBe('es-ES');
+		expect(translationForLocale('pt_PT.UTF-8')).toBe('pt-BR');
+		expect(translationForLocale('en_GB.UTF-8')).toBe('en-US');
+	});
+
+	// A codeset or @modifier on the locale must not defeat the match.
+	it('ignores the codeset and modifier', () => {
+		expect(translationForLocale('de_DE.UTF-8@euro')).toBe('de-DE');
+		expect(translationForLocale('de_AT.UTF-8@euro')).toBe('de-DE');
+	});
+
+	// Chinese is the one language code with two shipped written forms, so the
+	// territory — not the bare language — decides which one a row wants.
+	it('splits Chinese by territory into Simplified and Traditional', () => {
+		expect(translationForLocale('zh_HK.UTF-8')).toBe('zh-TW');
+		expect(translationForLocale('zh_MO.UTF-8')).toBe('zh-TW');
+		expect(translationForLocale('zh_SG.UTF-8')).toBe('zh-CN');
+	});
+
+	// A language with no translation stays untranslated, whatever its territory.
+	it('returns undefined for an untranslated language', () => {
+		expect(translationForLocale('nn_NO.UTF-8')).toBeUndefined();
+		expect(translationForLocale('sr_RS.UTF-8@latin')).toBeUndefined();
+		expect(translationForLocale('xx_XX.UTF-8')).toBeUndefined();
+	});
+
+	// A region-less locale (Esperanto) resolves through the language path too.
+	it('resolves a region-less locale', () => {
+		expect(translationForLocale('eo.UTF-8')).toBe('eo');
 	});
 });
 

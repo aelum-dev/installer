@@ -5,6 +5,7 @@ export {
 	locale,
 	getIsRTL,
 	backendLocaleToFrontend,
+	translationForLocale,
 	isDmsLocale,
 	DEFAULT_LOCALE,
 	type Locale,
