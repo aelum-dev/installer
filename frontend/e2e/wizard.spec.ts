@@ -122,17 +122,18 @@ test.describe('Installer wizard', () => {
     // it, so the card is complete on the first paint — the same three answers a
     // click produces, not an empty location and clock until the person touches
     // the list.
-    await expect(summary.getByRole('button', { name: /Keyboard us/ })).toBeVisible();
+    await expect(summary.getByRole('button', { name: /Keyboard: US/ })).toBeVisible();
     await expect(summary.getByRole('button', { name: /New York/ })).toBeVisible();
 
     // Location: the list becomes every country. A country Arch has no mirror
-    // section for is still there (Afghanistan), and every row says which mirror
-    // list the install will use — Ukraine has its own section, so it says so.
+    // section for is still there (Afghanistan), and every row says where the
+    // installed system's updates will come from — Ukraine has its own section, so
+    // it names it; Afghanistan falls back to the worldwide list.
     await summary.getByRole('button', { name: /Location/ }).click();
-    await expect(page.locator('.option-item[data-code="af"]')).toContainText('Worldwide mirrors');
+    await expect(page.locator('.option-item[data-code="af"]')).toContainText('Mirrors: Worldwide');
     await page.locator('.option-item[data-code="ua"]').click();
     await expect(summary.getByText('Ukraine')).toBeVisible();
-    await expect(summary.getByText(/Arch mirrors/)).toBeVisible();
+    await expect(summary.getByText(/Mirrors: UA/)).toBeVisible();
 
     // Time zone: the country's own clocks first, with the whole set one press away.
     await summary.getByRole('button', { name: /Time zone/ }).click();

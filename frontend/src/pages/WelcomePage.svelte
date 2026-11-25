@@ -11,7 +11,7 @@
 		SetSelectedTimezone,
 	} from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
-	import { DefaultLanguageCode } from '$lib/constants';
+	import { DefaultLanguageCode, DefaultRegionCode } from '$lib/constants';
 	import { t, setLocale, translationForLocale, isDmsLocale, DEFAULT_LOCALE } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
@@ -64,6 +64,16 @@
 	const selectedLanguage = $derived(languages.find((l) => l.code === installState.locale));
 	const selectedRegion = $derived(findRegion(regions, installState.region));
 
+	// The mirrors half of a location's facts: the country's own code when Arch has
+	// a mirror section there, otherwise the worldwide list. The worldwide
+	// pseudo-region carries Mirrors too, but it is not a country — it IS the
+	// worldwide answer — so it never prints its own code.
+	function mirrorsSub(region: RegionOption): string {
+		return region.mirrors && region.code !== DefaultRegionCode
+			? t('page.welcome.mirrorsLocalValue', { x: region.code.toUpperCase() })
+			: t('page.welcome.mirrorsWorldValue');
+	}
+
 	// The summary card: the three answers, always visible, and the control that
 	// switches which list the content column edits. Each row says what it holds and
 	// what that answer brings with it, so the page can be read without opening
@@ -84,10 +94,12 @@
 				value: selectedRegion?.name ?? '',
 				tail: '',
 				// The two things a country decides that are not obvious from its name:
-				// which keyboards it sells and whether the install comes from there.
+				// which keyboard it sells, and where the installed system will fetch its
+				// package updates from afterwards. (The install itself is offline; these
+				// mirrors are for the first update.) "Worldwide" is not a country, so it
+				// never claims local mirrors — it is the global list.
 				sub: selectedRegion
-					? `${t('page.welcome.keyboard')} ${selectedRegion.xkb} · ` +
-						(selectedRegion.mirrors ? t('page.welcome.mirrorsLocal') : t('page.welcome.mirrorsWorld'))
+					? `${t('page.welcome.keyboardValue', { x: selectedRegion.xkb.toUpperCase() })} · ${mirrorsSub(selectedRegion)}`
 					: '',
 			},
 			{
@@ -153,7 +165,7 @@
 			return filterRegions(regions, query).map((r) => ({
 				code: r.code,
 				name: r.name,
-				sub: r.mirrors ? t('page.welcome.mirrorsLocal') : t('page.welcome.mirrorsWorld'),
+				sub: mirrorsSub(r),
 			}));
 		}
 		return visibleZones.map(zoneRow);
