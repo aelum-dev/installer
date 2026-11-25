@@ -9,9 +9,10 @@ package shared
 // tell two written forms of one language apart ("Deutsch (Germany)" against
 // "Deutsch (Austria)"); it is not a location choice.
 //
-// The table is sorted by English name, so someone searching in English finds the
-// language they are after; the native name is the row's primary text, so someone
-// who cannot read English finds it too.
+// The table is sorted by the native name the row displays, so the list reads
+// alphabetically to the person who can read it; the search box matches the
+// English name, the code and the locale too, so a reader hunting for "German"
+// still finds "Deutsch".
 func GetLanguages() []Language {
 	out := make([]Language, len(languageTable))
 	copy(out, languageTable)

@@ -3,6 +3,11 @@ package shared
 import (
 	"strings"
 	"testing"
+	"unicode"
+
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 func TestGetLanguages_Invariants(t *testing.T) {
@@ -69,4 +74,33 @@ func TestLanguagesResolveToLocaleAndLocation(t *testing.T) {
 			t.Errorf("language %q resolved to %q, not its own territory %q", l.Code, r.Code, territory)
 		}
 	}
+}
+
+// TestLanguagesSortedByNativeName guards the order the Welcome page renders:
+// the table is sorted by the native name the row displays — accents and case
+// folded — so a reader scanning for "Deutsch" finds it under D, not under G.
+// Rows of one language stay together, ordered by the parenthetical that tells
+// them apart.
+func TestLanguagesSortedByNativeName(t *testing.T) {
+	langs := GetLanguages()
+	for i := 1; i < len(langs); i++ {
+		prev, cur := langs[i-1], langs[i]
+		prevKey, curKey := foldForSort(prev.Native), foldForSort(cur.Native)
+		if curKey < prevKey {
+			t.Fatalf("language %q (%q) sorts before %q (%q)", cur.Code, cur.Native, prev.Code, prev.Native)
+		}
+		if curKey == prevKey && foldForSort(cur.Name) < foldForSort(prev.Name) {
+			t.Fatalf("language %q (%q) sorts before %q (%q)", cur.Code, cur.Name, prev.Code, prev.Name)
+		}
+	}
+}
+
+// foldForSort mirrors the generator's sort key: lower case, combining marks
+// stripped. Kept here so the test checks the intent, not the generator's code.
+func foldForSort(s string) string {
+	folded, _, err := transform.String(transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC), s)
+	if err != nil {
+		folded = s
+	}
+	return strings.ToLower(folded)
 }

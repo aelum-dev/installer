@@ -32,6 +32,12 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 
 	"aelum-installer/backend/shared"
 )
@@ -96,11 +102,22 @@ func generate(localesDir, isoDir string) error {
 		fmt.Fprintf(os.Stderr, "note: no English name for (fell back to the code): %s\n", strings.Join(missing, " "))
 	}
 
+	// Sort by the name the row actually shows, the way Ubuntu's installer does:
+	// a list whose primary text is "Deutsch" has to put it under D, not under G.
+	// Accents and case are folded away so "Čeština" sits with C and not after Z;
+	// non-Latin scripts then cluster after Latin by code point, which is what
+	// every native-sorted list a user has ever seen does. Ties — one language in
+	// several territories or written forms — are broken by the parenthetical that
+	// tells the rows apart, then by code, so the order is stable and the rows of
+	// one language stay together.
 	sort.Slice(table, func(i, j int) bool {
-		if strings.ToLower(table[i].En) != strings.ToLower(table[j].En) {
-			return strings.ToLower(table[i].En) < strings.ToLower(table[j].En)
+		if fi, fj := foldName(table[i].Native), foldName(table[j].Native); fi != fj {
+			return fi < fj
 		}
-		return strings.ToLower(table[i].Name) < strings.ToLower(table[j].Name)
+		if fi, fj := foldName(table[i].Name), foldName(table[j].Name); fi != fj {
+			return fi < fj
+		}
+		return table[i].Code < table[j].Code
 	})
 
 	if err := writeTable(table); err != nil {
@@ -108,6 +125,32 @@ func generate(localesDir, isoDir string) error {
 	}
 	fmt.Printf("Wrote %d languages (from %s).\n", len(table), localesDir)
 	return nil
+}
+
+// foldName turns a display name into its sort key: lower case, with the
+// combining marks of NFD stripped so accents do not affect the order
+// ("Đ" sorts as "D", "Čeština" under C).
+func foldName(s string) string {
+	folded, _, err := transform.String(transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC), s)
+	if err != nil {
+		// A transform over a string only fails if the input is not valid UTF-8,
+		// which a Go string literal from a generated table is not. Fall back to
+		// sorting by the raw name rather than dropping the row.
+		folded = s
+	}
+	return strings.ToLower(folded)
+}
+
+// capitalizeFirst upper-cases the first letter of a display name so the list
+// reads consistently — "Shqip", not "shqip" — while Native keeps the form its
+// speakers use in running text (many languages write language names in lower
+// case). Scripts without letter case pass through unchanged.
+func capitalizeFirst(s string) string {
+	r, size := utf8.DecodeRuneInString(s)
+	if up := unicode.ToUpper(r); up != r {
+		return string(up) + s[size:]
+	}
+	return s
 }
 
 // buildLanguage turns one glibc locale file name into a Language row. The name is
@@ -156,7 +199,7 @@ func buildLanguage(file string, enNames map[string]string) shared.Language {
 			paren = append(paren, modifier)
 		}
 	}
-	name := native
+	name := capitalizeFirst(native)
 	if len(paren) > 0 {
 		name += " (" + strings.Join(paren, ", ") + ")"
 	}
@@ -238,7 +281,10 @@ func writeTable(table []shared.Language) error {
 //	go run ./backend/shared/locales_gen.go
 //
 // Native names (what a language calls itself) are curated in locales_native.go;
-// English names and territory names come from iso-codes. Sorted by English name.
+// English names and territory names come from iso-codes. Sorted by the native
+// name the row displays — accents and case folded — then by the full display
+// name. Display names carry a capital first letter; Native keeps the speakers'
+// own form, which is often lower case.
 
 package shared
 

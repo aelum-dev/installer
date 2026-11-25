@@ -14,7 +14,10 @@ package shared
 
 // NativeNameByLanguage is what a language calls itself, keyed on the ISO 639 code
 // (the language half of a locale name, so "de" for de_DE and de_AT alike). Names
-// are written in the language's own script, the way its speakers write them.
+// are written in the language's own script, the way its speakers write them —
+// which for many languages means lower case ("español", "čeština"). The list's
+// display name capitalizes the first letter for a consistent look; this table
+// keeps the speakers' own form.
 var NativeNameByLanguage = map[string]string{
 	"aa":  "Qafar af",
 	"ab":  "Аҧсшәа",
