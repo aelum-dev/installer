@@ -331,7 +331,7 @@
 			</div>
 		{/if}
 
-		<ScrollBox persistKey={PAGE_IDS.WELCOME}>
+		<ScrollBox persistKey={PAGE_IDS.WELCOME} scrollToCode={installState.locale}>
 			{#if listItems.length === 0}
 				<p class="list-empty">{tabEmpty}</p>
 			{:else if zoneGroups.length > 0}

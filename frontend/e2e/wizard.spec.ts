@@ -30,6 +30,17 @@ test.describe('Installer wizard', () => {
     // A language is auto-selected on load (required to proceed).
     await expect(page.locator('.option-item--selected')).toBeVisible();
 
+    // The list opens scrolled to that language: it is the first row in view,
+    // not something to hunt for deep in the table. (en_US sits mid-table once
+    // the list is sorted by native name, so this only passes if it scrolled.)
+    await expect
+      .poll(async () => {
+        const row = await page.locator('.option-item--selected').boundingBox();
+        const box = await page.locator('.scroll-box').boundingBox();
+        return row && box ? Math.abs(row.y - box.y) : Number.MAX_SAFE_INTEGER;
+      })
+      .toBeLessThan(4);
+
     // Next is enabled because a language is selected.
     await expect(next(page)).toBeEnabled();
   });
