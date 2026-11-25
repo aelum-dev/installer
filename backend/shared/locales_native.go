@@ -33,7 +33,10 @@ var NativeNameByLanguage = map[string]string{
 	"az":  "azərbaycanca",
 	"be":  "беларуская",
 	"bem": "Chibemba",
-	"ber": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+	// The Berber entries are the Latin-script spelling ("Tamaziɣt"), not the
+	// Tifinagh (ⵜⴰⵎⴰⵣⵉⵖⵜ): WebKitGTK lays Tifinagh out with zero advance for
+	// every font, so a Tifinagh name overlaps whatever is printed beside it.
+	"ber": "Tamaziɣt",
 	"bg":  "български",
 	"bhb": "भोजपुरी",
 	"bho": "भोजपुरी",
@@ -159,7 +162,7 @@ var NativeNameByLanguage = map[string]string{
 	"pt":  "português",
 	"quz": "Runa Simi",
 	"raj": "राजस्थानी",
-	"rif": "ⵜⴰⵔⵉⴼⵉⵜ",
+	"rif": "Tarifit",
 	"ro":  "română",
 	"ru":  "русский",
 	"rw":  "Kinyarwanda",
@@ -217,7 +220,7 @@ var NativeNameByLanguage = map[string]string{
 	"yi":  "ייִדיש",
 	"yo":  "Yorùbá",
 	"yue": "粵語",
-	"zgh": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+	"zgh": "Tamaziɣt",
 	"zh":  "中文",
 	"zu":  "isiZulu",
 }
