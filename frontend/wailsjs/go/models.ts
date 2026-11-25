@@ -104,6 +104,9 @@ export namespace shared {
 	    code: string;
 	    name: string;
 	    locale: string;
+	    native: string;
+	    en: string;
+	    territory: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Language(source);
@@ -114,6 +117,9 @@ export namespace shared {
 	        this.code = source["code"];
 	        this.name = source["name"];
 	        this.locale = source["locale"];
+	        this.native = source["native"];
+	        this.en = source["en"];
+	        this.territory = source["territory"];
 	    }
 	}
 	export class ManualPartition {
@@ -212,6 +218,8 @@ export namespace shared {
 	    name: string;
 	    timezone: string;
 	    keymap: string;
+	    xkb: string;
+	    mirrors: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Region(source);
@@ -223,6 +231,24 @@ export namespace shared {
 	        this.name = source["name"];
 	        this.timezone = source["timezone"];
 	        this.keymap = source["keymap"];
+	        this.xkb = source["xkb"];
+	        this.mirrors = source["mirrors"];
+	    }
+	}
+	export class Timezone {
+	    id: string;
+	    countries: string[];
+	    comment: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Timezone(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.countries = source["countries"];
+	        this.comment = source["comment"];
 	    }
 	}
 	export class UserAccountData {

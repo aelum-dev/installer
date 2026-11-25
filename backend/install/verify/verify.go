@@ -79,6 +79,7 @@ func Run(ctx *shared.InstallContext) error {
 	checkWeatherLocation(ctx, &issues, &info)
 	checkUserAccount(ctx, &issues, &info)
 	checkHostname(ctx, &issues, &info)
+	checkClockAndLocale(ctx, &issues, &info)
 
 	// Emit collected diagnostics before deciding success/failure.
 	for _, line := range info {
@@ -719,4 +720,58 @@ func checkHostname(ctx *shared.InstallContext, issues, info *[]string) {
 		return
 	}
 	*info = append(*info, "hostname set: "+ctx.Hostname)
+}
+
+// checkClockAndLocale verifies the two answers the Welcome page now makes
+// independently: the clock and the language.
+//
+// The clock is checked exactly — /etc/localtime is a symlink to
+// /usr/share/zoneinfo/<zone>, and its target must name the zone this install was
+// told to set. There is no fallback for a zone, so a mismatch is a real fault.
+//
+// The locale is checked as "set and UTF-8", not "exactly what was asked": the
+// configure step falls back to the default locale when the target's glibc cannot
+// generate the one chosen (a newer host glibc than the ISO's), and that deliberate
+// degradation must not fail an install that warned about it. A missing or
+// non-UTF-8 LANG is still a fault.
+func checkClockAndLocale(ctx *shared.InstallContext, issues, info *[]string) {
+	if ctx.Timezone != "" {
+		path := shared.MountRoot + "/etc/localtime"
+		out, err := primitives.Run("readlink", path).Output()
+		if err != nil {
+			*issues = append(*issues, "failed to read the clock symlink "+path)
+		} else if target := strings.TrimSpace(string(out)); !strings.HasSuffix(target, "/"+ctx.Timezone) {
+			*issues = append(*issues, fmt.Sprintf("clock is %q, want zone %q", target, ctx.Timezone))
+		} else {
+			*info = append(*info, "clock set: "+ctx.Timezone)
+		}
+	}
+
+	if ctx.Locale == "" {
+		return
+	}
+	path := shared.MountRoot + "/etc/locale.conf"
+	data, err := primitives.ReadFile(path)
+	if err != nil {
+		*issues = append(*issues, "failed to read "+path)
+		return
+	}
+	lang := ""
+	for _, line := range strings.Split(string(data), "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "LANG="); ok {
+			lang = value
+		}
+	}
+	switch {
+	case lang == "":
+		*issues = append(*issues, path+" sets no LANG")
+	case !strings.Contains(lang, ".UTF-8"):
+		*issues = append(*issues, "locale "+lang+" is not a UTF-8 locale")
+	case lang != ctx.Locale:
+		// A deliberate fallback (the target could not generate the chosen locale)
+		// is reported, not failed — configure already logged the warning.
+		*info = append(*info, fmt.Sprintf("locale set: %s (requested %s)", lang, ctx.Locale))
+	default:
+		*info = append(*info, "locale set: "+lang)
+	}
 }

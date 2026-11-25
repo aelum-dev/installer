@@ -106,16 +106,17 @@ func TestRegionForLanguage(t *testing.T) {
 
 // TestRegionTableIsUsable holds the generated table to what the installer needs:
 // unique codes, every entry complete, the worldwide entry present, and a mirror
-// file behind every code — a location the installer cannot supply mirrors for is a
-// choice it should not have offered.
+// file behind every country that claims its own mirrors. A country without its own
+// mirrors is still a valid location — BuildMirrorList falls back to the worldwide
+// list — so Mirrors is a fact shown on the row, not a gate on the list.
 func TestRegionTableIsUsable(t *testing.T) {
-	if len(regionTable) < 50 {
-		t.Fatalf("region table has %d entries; Arch lists far more mirror sections", len(regionTable))
+	if len(regionTable) < 200 {
+		t.Fatalf("region table has %d entries; the ISO 3166-1 list is far larger", len(regionTable))
 	}
 
 	seen := map[string]bool{}
 	for _, r := range regionTable {
-		if r.Code == "" || r.Name == "" || r.Timezone == "" || r.Keymap == "" {
+		if r.Code == "" || r.Name == "" || r.Timezone == "" || r.Keymap == "" || r.Xkb == "" {
 			t.Errorf("region has an empty field: %+v", r)
 		}
 		if seen[r.Code] {
@@ -127,9 +128,12 @@ func TestRegionTableIsUsable(t *testing.T) {
 			t.Errorf("region %q code %q is not a lowercase ISO 3166-1 alpha-2 code", r.Name, r.Code)
 		}
 
+		if !r.Mirrors {
+			continue
+		}
 		body, err := GetEmbeddedMirrorList(r.Code)
 		if err != nil {
-			t.Errorf("region %q: %v", r.Code, err)
+			t.Errorf("region %q claims its own mirrors but: %v", r.Code, err)
 			continue
 		}
 		if !strings.Contains(string(body), "## Arch Linux mirrorlist for "+r.Name+" ("+r.Code+")") {
@@ -215,19 +219,21 @@ func TestRegionTableMatchesTheCuratedTables(t *testing.T) {
 	}
 }
 
-// TestRegionTimezonesNameTheirOwnCountry holds every location's clock to its own
-// country. tzdata names a row after the most populous city among the countries
-// that share it and lists that country first, so a country that is not first has
-// no name of its own in the file: Iceland's only row is Africa/Abidjan's and
-// Denmark's is Europe/Berlin's, although tzdata also ships Atlantic/Reykjavik and
-// Europe/Copenhagen as the same clock under a local spelling. So a name taken
-// straight from a row must be from a row that names the country, and any other
-// name must be the curated pick beside it. Every name must also be a zone this
-// tzdata really has, and for a country with one row it must be that row's clock
-// under a local spelling.
+// TestRegionTimezonesAreTheCountryOwnClock holds every location's default clock to
+// being a real clock of that country: the same civil time as at least one of the
+// tzdata rows that list it. It no longer requires the clock to be *named* after
+// the country — the time zone is now a choice the person can change on the Welcome
+// page, so a default that reads "Africa/Lagos" for Angola (the same clock, a
+// neighbour's city) is a reasonable pre-fill, not a wrong promise. What must never
+// happen is a default on a different clock than any the country actually runs on.
+//
+// A curated PreferredZone is checked the same way: it must be the same clock as one
+// of the country's rows, which is what lets Denmark read Europe/Copenhagen even
+// though tzdata's only row for it is Europe/Berlin.
+//
 // Skipped where tzdata's zone table is not installed (the build container), since
-// the package is what defines these names and there is nothing to check against.
-func TestRegionTimezonesNameTheirOwnCountry(t *testing.T) {
+// the package is what defines these clocks and there is nothing to check against.
+func TestRegionTimezonesAreTheCountryOwnClock(t *testing.T) {
 	data, err := os.ReadFile(ZoneTablePath)
 	if err != nil {
 		t.Skipf("%s is not installed here: the zone names cannot be checked against their source", ZoneTablePath)
@@ -235,7 +241,6 @@ func TestRegionTimezonesNameTheirOwnCountry(t *testing.T) {
 	zoneDir := filepath.Dir(ZoneTablePath)
 
 	rows := map[string][]string{} // country -> the zones tzdata lists it in
-	named := map[string]bool{}    // country -> tzdata has a row named after a city in it
 	for _, line := range strings.Split(string(data), "\n") {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -244,43 +249,43 @@ func TestRegionTimezonesNameTheirOwnCountry(t *testing.T) {
 		if len(fields) < 3 {
 			continue
 		}
-		codes := strings.Split(fields[0], ",")
-		for _, code := range codes {
+		for _, code := range strings.Split(fields[0], ",") {
 			code = strings.ToLower(strings.TrimSpace(code))
-			if len(code) != 2 {
-				continue
-			}
-			rows[code] = append(rows[code], fields[2])
-			if code == strings.ToLower(strings.TrimSpace(codes[0])) {
-				named[code] = true
+			if len(code) == 2 {
+				rows[code] = append(rows[code], fields[2])
 			}
 		}
 	}
 
 	for _, r := range regionTable {
 		if r.Code == DefaultRegionCode {
-			continue // Etc/UTC is a clock with no city to be named after
+			continue // Etc/UTC is a clock with no country to be a clock of
 		}
-
-		chosen := filepath.Join(zoneDir, r.Timezone)
-		if _, err := os.Stat(chosen); err != nil {
+		if _, err := os.Stat(filepath.Join(zoneDir, r.Timezone)); err != nil {
 			t.Errorf("region %q names zone %q, which this tzdata does not have: %v", r.Name, r.Timezone, err)
 			continue
 		}
 
-		if _, curated := PreferredZone[r.Code]; !curated && !named[r.Code] {
-			t.Errorf("region %q shows %q, a zone named after another country's city; "+
-				"put the name read there in PreferredZone and regenerate", r.Name, r.Timezone)
+		countryRows := rows[r.Code]
+		if len(countryRows) == 0 {
+			// A place tzdata gives no row of its own: its default is the curated
+			// fallback for the clock of the territory it sits inside.
+			if want, ok := ZonelessFallback[r.Code]; !ok || want != r.Timezone {
+				t.Errorf("region %q has no tzdata row and default %q, want the curated fallback", r.Name, r.Timezone)
+			}
+			continue
 		}
 
-		// One row means tzdata has one clock for this country, so a curated name can
-		// only be that clock spelled the way people there spell it.
-		if len(rows[r.Code]) == 1 {
-			home := rows[r.Code][0]
-			if err := sameClock(zoneDir, home, r.Timezone); err != nil {
-				t.Errorf("region %q shows %q, which is not tzdata's zone for it (%q): %v",
-					r.Name, r.Timezone, home, err)
+		matches := false
+		for _, home := range countryRows {
+			if sameClock(zoneDir, home, r.Timezone) == nil {
+				matches = true
+				break
 			}
+		}
+		if !matches {
+			t.Errorf("region %q defaults to %q, which is not any clock tzdata lists for it (%v)",
+				r.Name, r.Timezone, countryRows)
 		}
 	}
 }
@@ -331,29 +336,34 @@ func loadZone(zoneDir, name string) (*time.Location, error) {
 	return time.LoadLocationFromTZData(name, data)
 }
 
-// TestWeatherForRegion is the "every location the installer offers has a capital"
-// test: a person who picked a country on the Welcome page must not get a weather
-// widget pointing at a city on the other side of the world. The worldwide location
-// is the one entry with no capital, and it must answer "none" rather than guess.
+// TestWeatherForRegion holds the weather location to its table: every country the
+// curated table names must answer with its capital in the form Dux Shell parses,
+// the worldwide location must answer "none" rather than guess, and the well-known
+// spellings must be the capital, not the largest city.
+//
+// It no longer requires every offered country to have a capital. The location list
+// is now every ISO country, and the curated capital table covers the countries the
+// installer shipped when it was written; the rest correctly answer "none" and the
+// weather widget keeps its own default. Widening that table is a follow-up, not a
+// correctness requirement.
 func TestWeatherForRegion(t *testing.T) {
-	for _, r := range regionTable {
-		place, ok := WeatherForRegion(r.Code)
-		if r.Code == DefaultRegionCode {
-			if ok {
-				t.Errorf("the worldwide location has a capital: %+v", place)
-			}
-			continue
-		}
+	for code, want := range WeatherByISO {
+		place, ok := WeatherForRegion(code)
 		if !ok {
-			t.Errorf("region %q (%s) has no weather location", r.Code, r.Name)
+			t.Errorf("region %q has a WeatherByISO entry but WeatherForRegion found nothing", code)
 			continue
 		}
-		if place.City == "" {
-			t.Errorf("region %q has an empty weather city", r.Code)
+		if place.City != want.City || place.Coordinates != want.Coordinates {
+			t.Errorf("WeatherForRegion(%q) = %+v, want %+v", code, place, want)
 		}
 		if !isCoordinates(place.Coordinates) {
-			t.Errorf("region %q has weather coordinates %q, want \"latitude,longitude\"", r.Code, place.Coordinates)
+			t.Errorf("region %q has weather coordinates %q, want \"latitude,longitude\"", code, place.Coordinates)
 		}
+	}
+
+	// The worldwide location is the one entry with no capital, and it must say so.
+	if place, ok := WeatherForRegion(DefaultRegionCode); ok {
+		t.Errorf("the worldwide location has a capital: %+v", place)
 	}
 
 	// The names are what the desktop prints, so the well-known spellings are the

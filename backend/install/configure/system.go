@@ -2,6 +2,7 @@ package configure
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"slices"
 	"strings"
@@ -30,6 +31,14 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	}
 	region := ctx.Region
 
+	// The clock is the person's choice; the region only pre-fills it. The installer
+	// resolved the fallback already, so an empty zone here is a bug, not "use the
+	// region" — but answer the region's clock rather than write a broken symlink.
+	timezone := ctx.Timezone
+	if timezone == "" {
+		timezone = region.Timezone
+	}
+
 	if ctx.Hostname == "" {
 		return fmt.Errorf("hostname not set")
 	}
@@ -37,10 +46,24 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 		return err
 	}
 
-	cmd := primitives.Run("ln", "-sf", fmt.Sprintf("/usr/share/zoneinfo/%s", region.Timezone), shared.MountRoot+"/etc/localtime")
+	cmd := primitives.Run("ln", "-sf", fmt.Sprintf("/usr/share/zoneinfo/%s", timezone), shared.MountRoot+"/etc/localtime")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %w: %s", err, string(output))
+	}
+
+	// The language list is every locale glibc can generate on the build host, but
+	// the target's glibc comes from the ISO's package set, which can be older. A
+	// locale the target cannot generate would make locale-gen fail the install at
+	// ~90%, so check it exists in the target first and fall back to the default
+	// locale with a warning rather than aborting.
+	locale := ctx.Locale
+	if !localeAvailableInTarget(locale) {
+		fallback := shared.DefaultLanguageCode + ".UTF-8"
+		if ctx.Logger != nil {
+			ctx.Logger.Error("Warning: the target's glibc cannot generate locale %q; installing %q instead", locale, fallback)
+		}
+		locale = fallback
 	}
 
 	localeGenPath := shared.MountRoot + "/etc/locale.gen"
@@ -51,7 +74,7 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 	// The locale comes from the language the person chose; the timezone, console
 	// keymap and mirrors below come from where the machine is. They are separate
 	// inputs because they are separate questions.
-	localeGenContent := enableLocale(string(data), ctx.Locale)
+	localeGenContent := enableLocale(string(data), locale)
 	if err := primitives.WriteFile("/etc/locale.gen", localeGenContent); err != nil {
 		return err
 	}
@@ -64,7 +87,7 @@ func ConfigureSystemBase(ctx *shared.InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 
-	if err := primitives.WriteFile("/etc/locale.conf", "LANG="+ctx.Locale+"\n"); err != nil {
+	if err := primitives.WriteFile("/etc/locale.conf", "LANG="+locale+"\n"); err != nil {
 		return err
 	}
 
@@ -192,6 +215,29 @@ func configureInitramfs(ctx *shared.InstallContext) error {
 		ctx.Logger.Command(string(output))
 	}
 	return nil
+}
+
+// localeAvailableInTarget reports whether the installed system's glibc can
+// generate a locale — that is, whether its locale source file is present in the
+// target. The file is named by the locale's base ("en_US" for en_US.UTF-8,
+// "sr_RS" for sr_RS.UTF-8@latin: the @modifier is a variant of the same source),
+// under /usr/share/i18n/locales. A locale the target does not have would make
+// locale-gen fail the install near the end, so the caller checks first and falls
+// back. An unreadable directory is treated as available: the installer must not
+// refuse a locale it merely could not confirm.
+func localeAvailableInTarget(locale string) bool {
+	base := locale
+	if i := strings.IndexByte(base, '.'); i >= 0 {
+		base = base[:i]
+	}
+	if base == "" {
+		return false
+	}
+	_, err := primitives.Stat(shared.MountRoot + "/usr/share/i18n/locales/" + base)
+	if err != nil && !os.IsNotExist(err) {
+		return true
+	}
+	return err == nil
 }
 
 // enableLocale makes sure locale is enabled (uncommented) in the target's

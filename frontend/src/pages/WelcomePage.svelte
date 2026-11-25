@@ -4,47 +4,167 @@
 		GetRegions,
 		GetSelectedLanguage,
 		GetSelectedRegion,
+		GetSelectedTimezone,
+		GetTimezones,
 		SetSelectedLanguage,
 		SetSelectedRegion,
+		SetSelectedTimezone,
 	} from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
+	import { DefaultLanguageCode } from '$lib/constants';
 	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import OptionList from '$components/OptionList.svelte';
-	import RegionPicker from '$components/RegionPicker.svelte';
 	import { glyph, STEP_ICONS } from '$lib/icons';
 	import { PAGE_IDS } from '$lib/types';
-	import type { LanguageOption, RegionOption } from '$lib/types';
+	import type { LanguageOption, RegionOption, TimezoneOption } from '$lib/types';
+	import {
+		filterLanguages,
+		filterRegions,
+		filterTimezones,
+		findRegion,
+		groupTimezones,
+		selectLanguage,
+		selectRegion,
+		selectTimezone,
+		utcOffset,
+		zoneCity,
+		zonesForRegion,
+		type WelcomeSelection,
+		type WelcomeTab,
+	} from '$lib/welcome-cascade';
 
 	const pageIcon = glyph(STEP_ICONS.welcome);
 
 	let languages = $state<LanguageOption[]>([]);
 	let regions = $state<RegionOption[]>([]);
+	let zones = $state<TimezoneOption[]>([]);
 	let loading = $state(true);
-	let showRegionPicker = $state(false);
-	let filter = $state('');
 
-	const selectedRegion = $derived(regions.find((r) => r.code === installState.region));
-	const selectedRegionName = $derived(selectedRegion?.name || '—');
+	// Which list the content column shows. It is a view state, not an answer: the
+	// three answers are always all in play, and the summary card shows all three.
+	let tab = $state<WelcomeTab>('language');
+	// Each list keeps its own filter text, so switching away from a filtered list
+	// and back does not silently drop what was typed.
+	let queries = $state<Record<WelcomeTab, string>>({ language: '', location: '', timezone: '' });
+	// The clock list starts at the country's own clocks; the whole tzdb set is one
+	// press away. A typed query overrides it — searching always searches everything.
+	let tzOnlyCountry = $state(true);
 
-	// 28 names in twenty scripts: reading them is the intended path, but someone
-	// who cannot read the script they are after has to be able to type it. The
-	// location picker has had a filter from the start for the same reason; the
-	// language list is the choice the whole rest of the installer is written in,
-	// and it was the one you could only scroll. The table's own order is kept —
-	// it is deliberate (English first, then the additions after it), not sorted.
-	const visibleLanguages = $derived.by(() => {
-		const q = filter.trim().toLowerCase();
-		if (q === '') return languages;
-		return languages.filter(
-			(l) => l.name.toLowerCase().includes(q) || l.code.toLowerCase().startsWith(q),
-		);
+	let searchEl = $state<HTMLInputElement | null>(null);
+
+	const selectedLanguage = $derived(languages.find((l) => l.code === installState.locale));
+	const selectedRegion = $derived(findRegion(regions, installState.region));
+
+	// The summary card: the three answers, always visible, and the control that
+	// switches which list the content column edits. Each row says what it holds and
+	// what that answer brings with it, so the page can be read without opening
+	// anything.
+	const summaryRows = $derived.by(() => {
+		const zone = installState.timezone;
+		return [
+			{
+				tab: 'language' as const,
+				key: 'page.welcome.language',
+				value: selectedLanguage?.name ?? '',
+				sub: selectedLanguage?.locale ?? '',
+			},
+			{
+				tab: 'location' as const,
+				key: 'page.welcome.region',
+				value: selectedRegion?.name ?? '',
+				// The two things a country decides that are not obvious from its name:
+				// which keyboards it sells and whether the install comes from there.
+				sub: selectedRegion
+					? `${t('page.welcome.keyboard')} ${selectedRegion.xkb} · ` +
+						(selectedRegion.mirrors ? t('page.welcome.mirrorsLocal') : t('page.welcome.mirrorsWorld'))
+					: '',
+			},
+			{
+				tab: 'timezone' as const,
+				key: 'page.welcome.timezone',
+				value: zone === '' ? '' : zoneCity(zone),
+				sub: zone === '' ? '' : `${zone} · ${utcOffset(zone)}`,
+			},
+		];
 	});
 
-	// Apply the UI translation that belongs to a backend language code.
-	// Used for both the restored selection and a user click, so the UI language
-	// always matches the selected install language.
+	// The i18n prefix for the current tab. The tab is a view id ("location"); the
+	// key family for that answer is the page's long-standing `region` one
+	// (page.welcome.region and its Placeholder/Empty siblings), so the tab id and
+	// the key prefix are deliberately not the same word.
+	const tabKey = $derived(tab === 'location' ? 'region' : tab);
+	const tabLabel = $derived(t(summaryRows.find((r) => r.tab === tab)?.key ?? ''));
+	const tabPlaceholder = $derived(t(`page.welcome.${tabKey}Placeholder`));
+	const tabEmpty = $derived(t(`page.welcome.${tabKey}Empty`));
+	const selectedValue = $derived(
+		tab === 'language' ? installState.locale : tab === 'location' ? installState.region : installState.timezone,
+	);
+
+	const query = $derived(queries[tab]);
+
+	// The clock list's two views. A query always searches every clock, so the
+	// country-only view is only ever the unfiltered starting point.
+	const tzCountryOnly = $derived(query.trim() === '' && tzOnlyCountry);
+
+	const visibleZones = $derived(
+		tab !== 'timezone'
+			? []
+			: tzCountryOnly
+				? zonesForRegion(zones, selectedRegion)
+				: filterTimezones(zones, query),
+	);
+
+	const listItems = $derived.by(() => {
+		if (tab === 'language') {
+			return filterLanguages(languages, query).map((l) => ({
+				code: l.code,
+				name: l.name,
+				sub: l.locale,
+				subMono: true,
+			}));
+		}
+		if (tab === 'location') {
+			return filterRegions(regions, query).map((r) => ({
+				code: r.code,
+				name: r.name,
+				sub: r.mirrors ? t('page.welcome.mirrorsLocal') : t('page.welcome.mirrorsWorld'),
+			}));
+		}
+		return visibleZones.map(zoneRow);
+	});
+
+	// The full set is grouped by continent so 320 clocks can be scanned, not only
+	// searched. A country's own list is short enough to read straight through.
+	const zoneGroups = $derived(tab === 'timezone' && !tzCountryOnly ? groupTimezones(visibleZones) : []);
+
+	function zoneRow(z: TimezoneOption) {
+		return { code: z.id, name: zoneCity(z.id), sub: z.id, subMono: true, chip: utcOffset(z.id) };
+	}
+
+	// The three answers travel to the backend in cascade order: the language
+	// pre-fills the location there, and the location pre-fills the clock, so pushing
+	// them in that order leaves the backend holding exactly what the person chose —
+	// never a suggestion that overwrote a decision on the way.
+	async function pushSelection(): Promise<void> {
+		await SetSelectedLanguage(installState.locale);
+		await SetSelectedRegion(installState.region);
+		await SetSelectedTimezone(installState.timezone);
+	}
+
+	function applySelection(next: WelcomeSelection): void {
+		installState.locale = next.locale;
+		installState.region = next.region;
+		installState.timezone = next.timezone;
+		installState.regionChosen = next.regionChosen;
+		installState.timezoneChosen = next.timezoneChosen;
+	}
+
+	// Apply the UI translation that belongs to a backend language code. Used for
+	// both the restored selection and a user click, so the UI language always
+	// matches the selected install language. A language with no UI translation keeps
+	// the chrome as it is — the system it installs still reads that language.
 	function applyUiLocale(code: string): void {
 		const lang = languages.find((l) => l.code === code);
 		const uiLocale = lang ? backendLocaleToFrontend(lang.locale) : undefined;
@@ -53,53 +173,86 @@
 
 	async function loadChoices(): Promise<void> {
 		try {
-			[languages, regions] = await Promise.all([GetLanguages(), GetRegions()]);
+			[languages, regions, zones] = await Promise.all([GetLanguages(), GetRegions(), GetTimezones()]);
 
-			const saved = await GetSelectedLanguage();
-			if (saved && languages.some((l) => l.code === saved)) {
-				installState.locale = saved;
-				applyUiLocale(saved);
-			} else if (languages.length > 0) {
-				installState.locale = languages[0].code;
-				applyUiLocale(installState.locale);
-				await SetSelectedLanguage(installState.locale);
+			const [savedLang, savedRegion, savedZone] = await Promise.all([
+				GetSelectedLanguage(),
+				GetSelectedRegion(),
+				GetSelectedTimezone(),
+			]);
+
+			// The default is the backend's own fallback language, not the table's
+			// first row — that row is merely the alphabetically first language.
+			const fallback = languages.some((l) => l.code === DefaultLanguageCode)
+				? DefaultLanguageCode
+				: (languages[0]?.code ?? '');
+			installState.locale = savedLang && languages.some((l) => l.code === savedLang) ? savedLang : fallback;
+			installState.region = findRegion(regions, savedRegion)?.code ?? '';
+			installState.timezone = zones.some((z) => z.id === savedZone) ? savedZone : '';
+			applyUiLocale(installState.locale);
+
+			// A first visit adopts the backend's own pre-fill; a later one keeps what
+			// the person already chose here. The pre-fill is the cascade itself — the
+			// language's country and that country's clock — so the card holds all
+			// three answers from the first paint, exactly as after a click.
+			if (!savedLang && installState.locale) {
+				applySelection(
+					selectLanguage(
+						{
+							locale: installState.locale,
+							region: '',
+							timezone: '',
+							regionChosen: false,
+							timezoneChosen: false,
+						},
+						languages,
+						regions,
+						installState.locale,
+					),
+				);
+				await pushSelection();
 			}
-
-			// The location is whatever the backend holds: selecting a language
-			// pre-fills its country, so nobody chooses their country twice.
-			installState.region = await GetSelectedRegion();
 		} catch (err) {
-			console.error(`Failed to load languages: ${err}`);
+			console.error(`Failed to load the Welcome page's choices: ${err}`);
 		} finally {
 			loading = false;
 		}
 	}
 
-	async function selectLanguage(code: string): Promise<void> {
-		installState.locale = code;
-		applyUiLocale(code);
+	async function select(code: string): Promise<void> {
+		const current: WelcomeSelection = {
+			locale: installState.locale,
+			region: installState.region,
+			timezone: installState.timezone,
+			regionChosen: installState.regionChosen,
+			timezoneChosen: installState.timezoneChosen,
+		};
+		const next =
+			tab === 'language'
+				? selectLanguage(current, languages, regions, code)
+				: tab === 'location'
+					? selectRegion(current, regions, code)
+					: selectTimezone(current, regions, zones, code);
+
+		applySelection(next);
+		if (tab === 'language') applyUiLocale(code);
+		// A new location means new clocks; the view follows it, so the clock the
+		// person is after is in the list in front of them.
+		if (tab !== 'timezone') tzOnlyCountry = true;
 
 		try {
-			await SetSelectedLanguage(code);
-			// A language re-prefills the location only until the person has said
-			// where they are; an explicit choice outlives a language change.
-			if (installState.regionChosen && installState.region) {
-				await SetSelectedRegion(installState.region);
-			}
-			installState.region = await GetSelectedRegion();
+			await pushSelection();
 		} catch (err) {
-			console.error(`Failed to set language: ${err}`);
+			console.error(`Failed to record the choice: ${err}`);
 		}
+		// The list re-rendered and took the clicked row's focus with it; the search
+		// field is where the next keystroke belongs.
+		searchEl?.focus();
 	}
 
-	async function selectRegion(code: string): Promise<void> {
-		try {
-			await SetSelectedRegion(code);
-			installState.region = code;
-			installState.regionChosen = true;
-		} catch (err) {
-			console.error(`Failed to set region: ${err}`);
-		}
+	function pickTab(next: WelcomeTab): void {
+		tab = next;
+		searchEl?.focus();
 	}
 
 	loadChoices();
@@ -113,68 +266,85 @@
 	wideInset
 >
 	{#snippet info()}
-		<!-- The location is the one control on this page that decides the clock, the
-		     keyboard, the mirrors and the weather, so it is a card that says what it
-		     holds rather than a bare pill. It opens the picker, it does not advance
-		     the wizard, so it discloses downward — the footer owns the only forward
-		     chevron. -->
-		<div class="region-card">
-			<div class="field-label">{t('page.welcome.region')}</div>
-			<div class="region-row">
-				<span class="region-glyph" aria-hidden="true">
-					<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M12 21s-6.5-6.1-6.5-10.4A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.6C18.5 14.9 12 21 12 21z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-						<circle cx="12" cy="10.4" r="2.3" stroke="currentColor" stroke-width="1.8"/>
-					</svg>
-				</span>
-				<span class="region-place">
-					<span class="region-value">{selectedRegionName}</span>
-					{#if selectedRegion?.timezone}
-						<span class="region-zone">{selectedRegion.timezone}</span>
-					{/if}
-				</span>
-				<button type="button" class="region-change" onclick={() => (showRegionPicker = true)}>
-					{t('page.welcome.regionChange')}
-					<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M3.5 6L8 10.5L12.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
+		<!-- The three answers, and the only way to switch which list is being edited.
+		     They are rows in one card rather than three buttons that each open a
+		     dialog: the answers are the page's subject, so all three stay on screen
+		     while one of them is being changed. -->
+		<div class="summary" role="group" aria-label={t('page.welcome.summary')}>
+			{#each summaryRows as row (row.tab)}
+				<button
+					type="button"
+					class={['summary-row', { 'summary-row--active': tab === row.tab }]}
+					aria-pressed={tab === row.tab}
+					onclick={() => pickTab(row.tab)}
+				>
+					<span class="s-label">{t(row.key)}</span>
+					<span class="s-value">{row.value}</span>
+					{#if row.sub}<span class="s-sub">{row.sub}</span>{/if}
+					<span class="s-check" aria-hidden="true">
+						<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</span>
 				</button>
-			</div>
+			{/each}
 		</div>
 	{/snippet}
 
 	{#if loading}
 		<span class="loading-text">{t('page.welcome.loading')}</span>
 	{:else}
-		<label class="field-label list-label" for="language-filter">{t('page.welcome.language')}</label>
+		<label class="list-label" for="welcome-search">{tabLabel}</label>
 		<input
-			id="language-filter"
+			id="welcome-search"
 			type="text"
 			class="line-edit list-filter"
-			placeholder={t('page.welcome.filter')}
-			bind:value={filter}
+			placeholder={tabPlaceholder}
+			autocomplete="off"
+			spellcheck="false"
+			bind:value={queries[tab]}
+			bind:this={searchEl}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') queries[tab] = '';
+			}}
 		/>
+
+		{#if tab === 'timezone'}
+			<!-- The clock list's two scopes. Both say how many clocks they hold, so
+			     the difference is visible before anything is pressed. -->
+			<div class="tz-toggle">
+				<button
+					type="button"
+					class={['tz-pill', { 'tz-pill--active': tzCountryOnly }]}
+					onclick={() => (tzOnlyCountry = true)}
+				>
+					{t('page.welcome.timezoneOnlyCountry', { x: selectedRegion?.name ?? '' })}
+					· {zonesForRegion(zones, selectedRegion).length}
+				</button>
+				<button
+					type="button"
+					class={['tz-pill', { 'tz-pill--active': !tzOnlyCountry }]}
+					onclick={() => (tzOnlyCountry = false)}
+				>
+					{t('page.welcome.timezoneAllZones')} · {zones.length}
+				</button>
+			</div>
+		{/if}
+
 		<ScrollBox persistKey={PAGE_IDS.WELCOME}>
-			{#if visibleLanguages.length > 0}
-				<OptionList
-					items={visibleLanguages}
-					selected={installState.locale}
-					onSelect={selectLanguage}
-					label={t('page.welcome.language')}
-				/>
+			{#if listItems.length === 0}
+				<p class="list-empty">{tabEmpty}</p>
+			{:else if zoneGroups.length > 0}
+				{#each zoneGroups as group (group.name)}
+					<div class="group-head">{group.name}</div>
+					<OptionList items={group.zones.map(zoneRow)} selected={selectedValue} onSelect={select} label={tabLabel} />
+				{/each}
 			{:else}
-				<p class="list-empty">{t('page.welcome.noMatch')}</p>
+				<OptionList items={listItems} selected={selectedValue} onSelect={select} label={tabLabel} />
 			{/if}
 		</ScrollBox>
 	{/if}
 </PageLayout>
-
-<RegionPicker
-	bind:show={showRegionPicker}
-	{regions}
-	selected={installState.region}
-	onSelect={selectRegion}
-/>
 
 <style>
 	.loading-text {
@@ -183,9 +353,10 @@
 		margin-top: 16px;
 	}
 
-	/* Small uppercase label above a control — the location card's header and the
-	   language list's label are the same kind of thing, so they are one style. */
-	.field-label {
+	/* Small uppercase label above a control — the summary card's row labels and the
+	   list's label are the same kind of thing, so they are one style. */
+	.s-label,
+	.list-label {
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-600);
 		color: var(--color-text-muted);
@@ -193,98 +364,104 @@
 		text-transform: uppercase;
 	}
 
-	/* Opens itself from the subtitle block above it (the rail's own gap is the
-	   paragraph rhythm) and takes the rail's width: a control this consequential
-	   is not a pill floating in the middle of an empty column. */
-	.region-card {
-		margin-top: var(--spacing-lg);
+	.s-label {
+		font-size: var(--font-size-xs);
+	}
+
+	/* The summary card takes the rail's width and wears the same chrome as every
+	   other card in a rail: a light surface, a light border, a soft shadow.
+	   Its margin is deliberately small: the rail centres this whole stack in a
+	   fixed 900×600 window, and with all three rows filled the identity block,
+	   the gaps and the card together are the rail's full height — a wider margin
+	   here is what pushed the card's frame under the footer. */
+	.summary {
+		margin-top: var(--spacing-sm);
+		width: 100%;
+		box-sizing: border-box;
+		text-align: start;
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-xs);
+		gap: 2px;
 		background-color: var(--color-bg-white);
 		border: 1px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-md);
-		padding: var(--spacing-md) var(--spacing-lg);
-		text-align: start;
+		padding: var(--spacing-sm);
 	}
 
-	.region-row {
-		display: flex;
+	/* A row is the control that switches the list: it names an answer, shows its
+	   value, and marks which one the content column is editing. The active one
+	   carries a primary tint and a leading rule, so the current list is legible from
+	   the rail alone. */
+	.summary-row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		grid-template-areas:
+			'label check'
+			'value check'
+			'sub check';
 		align-items: center;
-		gap: var(--spacing-md);
-	}
-
-	.region-glyph {
-		flex-shrink: 0;
-		display: inline-flex;
-		color: var(--color-primary);
-	}
-
-	.region-glyph svg {
-		width: 1.15em;
-		height: 1.15em;
-	}
-
-	/* The place is one block: the name on top, its clock underneath. Side by side
-	   they wrapped ("United / States") in a narrow window; a name of a country is
-	   one line, so it gets one line and ellipsises instead of breaking. */
-	.region-place {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.region-value {
-		font-size: var(--font-size-base-lg);
-		font-weight: var(--font-weight-600);
+		column-gap: var(--spacing-sm);
+		text-align: start;
+		font-family: inherit;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		border-radius: var(--radius-md);
+		padding: 6px 10px;
 		color: var(--color-text);
+		transition: background-color 0.15s ease;
+		border-inline-start: 2px solid transparent;
+	}
+
+	.summary-row:hover {
+		background-color: var(--color-primary-lighter);
+	}
+
+	.summary-row--active {
+		background-color: var(--color-primary-light);
+		border-inline-start-color: var(--color-primary);
+	}
+
+	.s-label {
+		grid-area: label;
+	}
+
+	/* A country name, a language name and a city are each one line, so they get one
+	   line and ellipsise rather than wrapping — "United / States" reads as a bug. */
+	.s-value {
+		grid-area: value;
+		font-size: var(--font-size-md-lg);
+		font-weight: var(--font-weight-600);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		max-width: 210px;
 	}
 
-	/* The zone is the part of the answer that is not obvious from a country name —
-	   it is what the installed system's clock will say, so it is shown, not stored. */
-	.region-zone {
-		font-size: var(--font-size-sm);
+	.s-sub {
+		grid-area: sub;
+		font-size: var(--font-size-xs);
 		color: var(--color-text-light);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		max-width: 210px;
 	}
 
-	.region-change {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--spacing-xs);
-		flex-shrink: 0;
-		font-family: inherit;
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-600);
+	.s-check {
+		grid-area: check;
 		color: var(--color-primary);
-		background: transparent;
-		border: none;
-		padding: 6px 10px;
-		border-radius: var(--radius-pill);
-		cursor: pointer;
-		transition: background-color 0.15s ease;
+		display: none;
 	}
 
-	.region-change:hover {
-		background-color: var(--color-primary-light);
+	.summary-row--active .s-check {
+		display: inline-flex;
 	}
 
-	.region-change svg {
-		width: 1em;
-		height: 1em;
-	}
-
-	.list-label {
-		display: block;
-		margin-bottom: var(--spacing-sm);
+	.s-check svg {
+		width: 15px;
+		height: 15px;
 	}
 
 	/* The filter sits outside the ScrollBox on purpose: it is the way into the list,
@@ -292,7 +469,51 @@
 	.list-filter {
 		width: 100%;
 		box-sizing: border-box;
-		margin-bottom: var(--spacing-md);
+	}
+
+	/* The clock list's scope switch: quiet pills, the active one wearing the same
+	   selection tint a selected row wears. */
+	.tz-toggle {
+		display: flex;
+		gap: var(--spacing-xs);
+		align-items: center;
+	}
+
+	.tz-pill {
+		font-family: inherit;
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-600);
+		padding: 5px 14px;
+		border-radius: var(--radius-pill);
+		cursor: pointer;
+		border: 1px solid var(--color-border-light);
+		background: transparent;
+		color: var(--color-text-muted);
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.tz-pill:hover {
+		background-color: var(--color-primary-lighter);
+	}
+
+	.tz-pill--active {
+		background-color: var(--color-selection);
+		color: var(--color-on-selection);
+		border-color: transparent;
+	}
+
+	/* A continent heading between two lists. It is a label, not a row, so it wears
+	   the list's own indent without its height. */
+	.group-head {
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-600);
+		color: var(--color-text-light);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		padding: 10px 20px 4px 24px;
 	}
 
 	.list-empty {
@@ -300,5 +521,6 @@
 		font-size: var(--font-size-md);
 		color: var(--color-text-light);
 		text-align: start;
+		padding-inline-start: 24px;
 	}
 </style>

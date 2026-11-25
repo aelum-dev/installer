@@ -71,21 +71,46 @@ export interface ManualLayout {
 // LanguageOption is one entry in the language picker, mirrored from the backend
 // GetLanguages() binding. A language is only what the system reads and writes —
 // where the machine is comes from RegionOption.
+//
+// The list is every locale glibc can generate, so the same language appears once
+// per written form ("Deutsch (Germany)" and "Deutsch (Austria)" are two rows).
+// `name` is what the row shows — the native name plus, in parentheses, whatever
+// tells the near-identical rows apart. `native` and `en` are its two halves, kept
+// separate so a search matches both.
 export interface LanguageOption {
 	code: string; // backend language code, e.g. "en_US"
-	name: string; // display name, e.g. "English"
+	name: string; // display name, e.g. "Deutsch (Germany)"
 	locale: string; // full backend locale, e.g. "en_US.UTF-8"
+	native: string; // what the language calls itself, e.g. "Deutsch"
+	en: string; // its English name, e.g. "German"
+	territory: string; // lowercase ISO code of its country, "" when it has none
 }
 
 // RegionOption is one entry in the location picker, mirrored from the backend
-// GetRegions() binding: a country Arch has mirrors for, or the worldwide list.
-// Choosing one sets the installed system's clock, console keymap and mirrors —
-// never its language.
+// GetRegions() binding: an ISO 3166-1 country, or the worldwide list. Choosing one
+// sets the installed system's console keymap, mirrors and weather location, and
+// pre-fills its clock — never its language.
 export interface RegionOption {
 	code: string; // ISO 3166-1 alpha-2 (or "worldwide")
 	name: string; // display name, as the Arch mirrorlist spells its sections
-	timezone: string; // zoneinfo name, e.g. "Europe/Kyiv"
+	timezone: string; // the country's default zoneinfo name, e.g. "Europe/Kyiv"
 	keymap: string; // console keymap name, e.g. "ua"
+	xkb: string; // desktop keyboard layout, in xkeyboard-config names
+	// True when Arch has a mirror section for this country, so the install can
+	// come from servers there. False means the worldwide list is used — the
+	// country is still a valid place to be.
+	mirrors: boolean;
+}
+
+// TimezoneOption is one entry in the time zone picker, mirrored from the backend
+// GetTimezones() binding: a civil clock the installed system can be set to. The
+// location pre-fills one, but the person can pick any of them.
+export interface TimezoneOption {
+	id: string; // zoneinfo name, e.g. "Europe/Kyiv"
+	// Lowercase ISO 3166-1 codes tzdata names in this zone's row, so a country's
+	// own clocks can be listed without a second round trip.
+	countries: string[];
+	comment: string; // tzdata's own note for the row, shown nowhere critical
 }
 
 // DiskInfo represents a block device discovered on the system.

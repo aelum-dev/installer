@@ -96,6 +96,54 @@ var ArchCountryISO = map[string]string{
 	"Vietnam":              "vn",
 }
 
+// CountryNameByISO overrides the display name iso-codes carries for a country
+// whose official short name reads badly in a picker. iso-codes names countries by
+// their UN short form, which is precise on a treaty and awkward on a row:
+// "Korea, Republic of", "Iran, Islamic Republic of", "Venezuela, Bolivarian
+// Republic of". The name here is what a person reads on a map and types to find
+// the place — the ordinary English name, no comma, no parenthetical.
+//
+// It is the human half of the country list; the generated table (regions_table.go)
+// starts from iso-codes' name and applies this over it. A country Arch has a
+// mirror section for is named by its mirrorlist section instead (ArchCountryISO's
+// keys), which already spells these the plain way ("South Korea", "Vietnam"), so
+// the two never disagree about a country that is in both.
+var CountryNameByISO = map[string]string{
+	"ax": "Åland",
+	"bq": "Caribbean Netherlands",
+	"bo": "Bolivia",
+	"bn": "Brunei",
+	"cc": "Cocos (Keeling) Islands",
+	"cd": "DR Congo",
+	"cg": "Congo",
+	"ck": "Cook Islands",
+	"fk": "Falkland Islands",
+	"fm": "Micronesia",
+	"fo": "Faroe Islands",
+	"hm": "Heard Island",
+	"io": "British Indian Ocean Territory",
+	"ir": "Iran",
+	"kr": "South Korea",
+	"kp": "North Korea",
+	"la": "Laos",
+	"mf": "Saint Martin",
+	"mh": "Marshall Islands",
+	"mp": "Northern Mariana Islands",
+	"ps": "Palestine",
+	"sh": "Saint Helena",
+	"sx": "Sint Maarten",
+	"sb": "Solomon Islands",
+	"gs": "South Georgia",
+	"sy": "Syria",
+	"tc": "Turks and Caicos Islands",
+	"tz": "Tanzania",
+	"um": "U.S. Outlying Islands",
+	"va": "Vatican City",
+	"ve": "Venezuela",
+	"vg": "British Virgin Islands",
+	"vi": "U.S. Virgin Islands",
+}
+
 // PreferredZone is every timezone tzdata cannot name for a location, for either
 // of two reasons.
 //
@@ -146,6 +194,20 @@ var PreferredZone = map[string]string{
 	"us": "America/New_York",
 	"uz": "Asia/Tashkent",
 	"vn": "Asia/Ho_Chi_Minh",
+}
+
+// ZonelessFallback names a clock for the few places tzdata's zone1970.tab gives
+// no row of their own — a country with no civil clock of its own in the table.
+// Each is named after the clock of the place it physically sits inside, which is
+// the only honest answer: Vatican City and San Marino run on Rome's clock, Monaco
+// on Paris's. Without one the generator would have to invent a zone or drop the
+// country from the list; neither is true.
+var ZonelessFallback = map[string]string{
+	"va": "Europe/Rome",
+	"sm": "Europe/Rome",
+	"mc": "Europe/Paris",
+	"bv": "Europe/Oslo",
+	"hm": "Australia/Perth",
 }
 
 // KeymapByISO maps a country to the console keymap its keyboards most commonly

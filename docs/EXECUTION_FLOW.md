@@ -188,17 +188,19 @@ installDone chan struct{}; installationRunning atomic.Bool
 ctx context.Context; dryRun bool
 
 // install.Installer — shared logic (CLI + GUI)
-diskID, username, hostname, region, fileSystem, luks/lvm/gpu/inputMethod options
+diskID, username, hostname, region, timezone, fileSystem, luks/lvm/gpu/inputMethod options
 Logger; OnProgress; OnError
 interrupted atomic.Bool; cancelOnce, cleanupOnce sync.Once; cancel chan struct{}
 
 // shared.InstallContext — per-install state threaded through all steps
-DiskID, ESP, Username, Password []byte, Hostname, Region, FileSystem
+DiskID, ESP, Username, Password []byte, Hostname, Region, Timezone, FileSystem
 Luks, Lvm, ManualMode, ManualLayout, GPUDriver/DriverPackages, IMPackages
 Logger; ProgressCallback; Cancel chan struct{}
 ```
 
-New state goes into `InstallContext`, not the `Installer` struct.
+New state goes into `InstallContext`, not the `Installer` struct. `Timezone` is concrete by the
+time the step loop starts: `Installer.Install` resolves an empty one to the region's own clock, so
+no step reads an empty field and falls back on its own.
 
 ---
 

@@ -63,7 +63,7 @@ Weights total 100 and drive the progress bar (`shared.Weight*` in `backend/share
 snapshot only contains what was written before it was taken):
 
 1. Generate fstab (ESP at `/efi`, per-install `/boot` bind; no `subvol=` for the btrfs root)
-2. System config: hostname, timezone, locale, keymap, NTP, mirrorlist
+2. System config: hostname, clock (the chosen zone), locale (guarded against a glibc the target cannot generate), keymap, NTP, mirrorlist
 3. Input method list for the session (`/etc/xdg/fcitx5/profile`, from language + location)
 4. initramfs HOOKS (plymouth always, `sd-encrypt` with LUKS, `lvm2` with LVM) + regenerate
 5. Bootloader: rEFInd install, branded theme, per-install `aelum/<id>.conf`, NVRAM entry
@@ -87,7 +87,7 @@ percentage during the other steps.
 ## Frontend (Wizard Flow)
 
 ```
-Welcome (language list + location picker)
+Welcome (language + location + time zone — one summary card, one searchable list)
   → User Account (username + password)
     → Disk Selection (disk list + storage options in the info rail)
       [→ Manual Partition (only in manual mode)]
@@ -104,12 +104,35 @@ Welcome (language list + location picker)
 | `frontend/src/lib/navigation.ts` | Navigation state |
 | `frontend/src/lib/validate.ts` | Single user-account rule engine (shared by UI and `page-validation.ts`) |
 | `frontend/src/lib/constants.ts` | **Generated** from Go by `backend/scripts/gen-ts-constants.go` |
+| `frontend/src/lib/welcome-cascade.ts` | Pure Welcome-page logic: the language→location→clock cascade, the three filters, the country-only clock list |
 | `frontend/src/lib/i18n/` | 28-locale translation runtime (`t()`, English fallback, RTL for ar/he/fa) |
 | `frontend/wailsjs/` | Generated Wails bindings (regenerate after adding Go methods) |
 
 ---
 
 ## Key Design Decisions
+
+### Three answers, each over the complete set
+The Welcome page takes language, location and time zone as three separate questions, and each
+list is the whole set rather than a curated subset: every locale glibc can generate, every
+ISO 3166-1 country, every civil clock tzdata has kept since 1970. A curated list is the
+installer deciding the answer for someone before they have been asked, and each widening
+removes a case where the right answer was simply absent:
+
+- **Language** — a person should be able to install in the language their machine reads. The
+  UI has 28 translations; a language with none sets the system locale and keeps English
+  chrome, which is a working system.
+- **Location** — where a machine is is a fact about the machine. A country Arch has no mirror
+  section for still installs (the worldwide list is the fallback), so mirror availability is a
+  flag shown on the row, not a gate on the list.
+- **Time zone** — a country is not a clock. Someone in a multi-zone country, or one who simply
+  wants a named city, picks the zone directly instead of being held to whatever their country
+  defaults to.
+
+The three are linked by a cascade, not merged: the language pre-fills its country and that
+country's clock, the location sets the clock, and a hand-picked answer outranks the suggestion
+below it. `frontend/src/lib/welcome-cascade.ts` owns those rules and is unit-tested without a
+browser; the CLI mirrors them through `--language` / `--region` / `--timezone`.
 
 ### CLI spawning
 The GUI (running as a normal user) spawns `sudo aelum-installer-cli`, writes the password to

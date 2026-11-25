@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { GetSelectedLanguage, GetSelectedRegion, GetSessionInputMethods, GetLanguages, GetRegions } from '$lib/backend';
+	import { GetSelectedLanguage, GetSelectedRegion, GetSelectedTimezone, GetSessionInputMethods, GetLanguages, GetRegions } from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 	import { uiState } from '$lib/ui.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
@@ -38,23 +38,33 @@
 	let regions = $state<RegionOption[]>([]);
 	let selectedLanguageName = $state<string>('—');
 	let selectedRegionName = $state<string>('—');
+	let selectedTimezoneName = $state<string>('—');
 	let inputMethodValue = $state<string>('—');
 
-	// The summary names both choices separately: the language the system speaks and
-	// the country whose clock, keyboard and mirrors it gets. They are separate
-	// choices, so the summary must not read as one.
+	// The summary names all three choices separately: the language the system
+	// speaks, the country whose keyboard, mirrors and weather it gets, and the clock
+	// it runs on. They are separate choices, so the summary must not read as one.
 	async function loadChoices(): Promise<void> {
 		try {
 			[languages, regions] = await Promise.all([GetLanguages(), GetRegions()]);
-			const [languageCode, regionCode] = await Promise.all([GetSelectedLanguage(), GetSelectedRegion()]);
+			const [languageCode, regionCode, timezoneId] = await Promise.all([
+				GetSelectedLanguage(),
+				GetSelectedRegion(),
+				GetSelectedTimezone(),
+			]);
 			selectedLanguageName = languages.find((l) => l.code === languageCode)?.name || languageCode || '—';
 			selectedRegionName = regions.find((r) => r.code === regionCode)?.name || regionCode || '—';
+			// The zone is shown by its full name, not its city: this is the line a
+			// person reads to catch a wrong clock, and "Kyiv" alone does not say
+			// whether it is the Europe/ one.
+			selectedTimezoneName = timezoneId || '—';
 			// Fire-and-forget: the input method line fills itself in; the summary
 			// must not wait on it to render.
 			void loadInputMethods(languageCode, regionCode);
 		} catch {
 			selectedLanguageName = '—';
 			selectedRegionName = '—';
+			selectedTimezoneName = '—';
 		}
 	}
 
@@ -135,6 +145,10 @@
 			<div class="crow">
 				<h3 class="clabel">{t('page.confirmation.sectionRegion')}</h3>
 				<p class="cvalue">{selectedRegionName}</p>
+			</div>
+			<div class="crow">
+				<h3 class="clabel">{t('page.confirmation.sectionTimezone')}</h3>
+				<p class="cvalue">{selectedTimezoneName}</p>
 			</div>
 			<div class="crow">
 				<h3 class="clabel">{t('page.confirmation.sectionInputMethod')}</h3>

@@ -26,10 +26,17 @@ func (a *App) GetLanguages() []shared.Language {
 	return shared.GetLanguages()
 }
 
-// GetRegions returns the list of locations the installer can offer: the countries
-// Arch has mirrors for, plus the worldwide list. Wails binding.
+// GetRegions returns the list of locations the installer can offer: every ISO
+// 3166-1 country, plus the worldwide list. Wails binding.
 func (a *App) GetRegions() []shared.Region {
 	return shared.GetRegions()
+}
+
+// GetTimezones returns every time zone the installer can offer — the full tzdb
+// set plus UTC. The location pre-fills one, but the Welcome page lets the person
+// pick any of them. Wails binding.
+func (a *App) GetTimezones() []shared.Timezone {
+	return shared.GetTimezones()
 }
 
 // GetSessionInputMethods returns the input methods the session for this language
@@ -47,14 +54,17 @@ func (a *App) GetSelectedLanguage() string {
 	return a.selectedLanguage
 }
 
-// SetSelectedLanguage sets the selected language and pre-fills the location from
-// its country. That is the whole of the link between the two: most people's
-// language and country do agree, so they never have to touch the location, and
-// the ones whose do not say so directly.
+// SetSelectedLanguage sets the selected language and pre-fills the location and
+// its clock from the language's country. That is the whole of the link between
+// them: most people's language, country and clock agree, so they never have to
+// touch the location or the time zone, and the ones whose do not say so directly
+// (the frontend then pushes its own choices back with SetSelectedRegion and
+// SetSelectedTimezone).
 func (a *App) SetSelectedLanguage(code string) error {
 	a.selectedLanguage = code
 	a.locale = shared.LocaleForLanguage(code)
 	a.region = shared.RegionForLanguage(code)
+	a.timezone = a.region.Timezone
 	return nil
 }
 
@@ -63,14 +73,34 @@ func (a *App) GetSelectedRegion() string {
 	return a.region.Code
 }
 
-// SetSelectedRegion sets the location: the installed system's clock, console
-// keymap and Arch mirrors. It is independent of the language.
+// SetSelectedRegion sets the location: the installed system's console keymap,
+// Arch mirrors and weather location, and the clock it pre-fills. It is independent
+// of the language. The clock is re-defaulted to the location's own; a person who
+// had picked a zone by hand has the frontend push it back after this.
 func (a *App) SetSelectedRegion(code string) error {
 	region := shared.GetRegion(code)
 	if region.Code == "" {
 		return fmt.Errorf("unknown region: %s", code)
 	}
 	a.region = region
+	a.timezone = region.Timezone
+	return nil
+}
+
+// GetSelectedTimezone returns the IANA zone name the installed system's clock is
+// set to.
+func (a *App) GetSelectedTimezone() string {
+	return a.timezone
+}
+
+// SetSelectedTimezone sets the installed system's clock. It is a choice of its
+// own, independent of the location, which only pre-fills it. An unknown zone is
+// refused rather than stored, so a bad value cannot reach the install.
+func (a *App) SetSelectedTimezone(id string) error {
+	if err := shared.ValidateTimezone(id); err != nil {
+		return err
+	}
+	a.timezone = id
 	return nil
 }
 

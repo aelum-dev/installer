@@ -21,9 +21,11 @@ import {
 	GetManualLayout as rawGetManualLayout,
 	GetSelectedLanguage,
 	GetSelectedRegion,
+	GetSelectedTimezone,
 	GetRegions as rawGetRegions,
 	GetSessionInputMethods,
 	GetStartPage as rawGetStartPage,
+	GetTimezones as rawGetTimezones,
 	RebootAndClose,
 	ResetDiskSelection,
 	SaveDiskSelection,
@@ -36,6 +38,7 @@ import {
 	SetManualMode,
 	SetSelectedLanguage,
 	SetSelectedRegion,
+	SetSelectedTimezone,
 	SetStartPage,
 	SetWallpaper,
 	StartInstallation,
@@ -46,7 +49,14 @@ import {
 import { EventsOn, LogInfo, Quit } from '@wails/runtime/runtime.js';
 import { gui } from '@wails/go/models';
 import type { shared } from '@wails/go/models';
-import type { DiskInfo, LanguageOption, ManualLayout, PartitionEntry, RegionOption } from '$lib/types';
+import type {
+	DiskInfo,
+	LanguageOption,
+	ManualLayout,
+	PartitionEntry,
+	RegionOption,
+	TimezoneOption,
+} from '$lib/types';
 
 // ── Pass-through bindings (signatures already line up) ──────────────────────
 
@@ -55,6 +65,7 @@ export {
 	GetDryRun,
 	GetSelectedLanguage,
 	GetSelectedRegion,
+	GetSelectedTimezone,
 	GetSessionInputMethods,
 	RebootAndClose,
 	ResetDiskSelection,
@@ -67,6 +78,7 @@ export {
 	SetManualMode,
 	SetSelectedLanguage,
 	SetSelectedRegion,
+	SetSelectedTimezone,
 	SetStartPage,
 	SetWallpaper,
 	StartInstallation,
@@ -114,10 +126,17 @@ export async function GetLanguages(): Promise<LanguageOption[]> {
 	return (await rawGetLanguages()) as unknown as LanguageOption[];
 }
 
-// GetRegions returns the locations the backend can supply: the countries Arch has
-// mirror sections for, plus the worldwide list.
+// GetRegions returns the locations the backend can supply: every ISO 3166-1
+// country, plus the worldwide list. A country without its own Arch mirrors is
+// still there — its `mirrors` flag says so.
 export async function GetRegions(): Promise<RegionOption[]> {
 	return (await rawGetRegions()) as unknown as RegionOption[];
+}
+
+// GetTimezones returns every clock the installed system can be set to: the full
+// tzdb set plus UTC. The location pre-fills one; this is what it can change to.
+export async function GetTimezones(): Promise<TimezoneOption[]> {
+	return (await rawGetTimezones()) as unknown as TimezoneOption[];
 }
 
 export async function GetStartPage(): Promise<number> {

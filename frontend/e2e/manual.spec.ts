@@ -42,8 +42,9 @@ async function gotoDiskSelection(page: import('@playwright/test').Page): Promise
   await page.goto('/');
   // Pin the UI language: the backend may remember a different selection from
   // the native dev window, and the rest of the flow assumes English labels.
-  // (Language names carry no country since bba8044 — match the bare name.)
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  // Selected by language code, not by name: the row now reads "English (United
+  // States)" with its locale beside it, and a name is something i18n owns.
+  await page.locator('.option-item[data-code="en_US"]').click();
   await next(page).click(); // Welcome -> User account
   await page.getByLabel('Username').fill('alice');
   await page.getByLabel('Password', { exact: true }).fill('secret1');

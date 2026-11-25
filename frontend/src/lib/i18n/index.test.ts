@@ -62,6 +62,31 @@ describe('translation completeness', () => {
 	const english = translationsByLocale['en-US'];
 	const englishKeys = Object.keys(english).sort();
 
+	// The Welcome page builds some keys from the current tab (`page.welcome.${tab}Placeholder`),
+	// and a dynamic key is exactly the kind a rename breaks silently: the runtime falls back to
+	// printing the key itself, so the page still renders and nobody notices until someone reads
+	// it. These are the keys it can build — if the page changes its prefixes, change these.
+	it('defines every key the Welcome page builds from its tab', () => {
+		for (const prefix of ['language', 'region', 'timezone']) {
+			for (const suffix of ['Placeholder', 'Empty']) {
+				expect(englishKeys, `page.welcome.${prefix}${suffix}`).toContain(`page.welcome.${prefix}${suffix}`);
+			}
+		}
+		for (const key of [
+			'page.welcome.language',
+			'page.welcome.region',
+			'page.welcome.timezone',
+			'page.welcome.keyboard',
+			'page.welcome.mirrorsLocal',
+			'page.welcome.mirrorsWorld',
+			'page.welcome.summary',
+			'page.welcome.timezoneOnlyCountry',
+			'page.welcome.timezoneAllZones',
+		]) {
+			expect(englishKeys, key).toContain(key);
+		}
+	});
+
 	for (const [locale, messages] of Object.entries(translationsByLocale)) {
 		it(`${locale} matches en-US keys and placeholders`, () => {
 			expect(Object.keys(messages).sort()).toEqual(englishKeys);

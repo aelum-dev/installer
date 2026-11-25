@@ -37,11 +37,15 @@ type App struct {
 	hostname         string
 	selectedLanguage string
 	locale           string        // system locale implied by selectedLanguage
-	region           shared.Region // location: timezone, keymap, mirrors
-	uiLocale         string        // UI language (separate from installed system locale)
-	fileSystem       string        // root filesystem: "ext4" or "btrfs"
-	manualMode       bool          // manual partitioning enabled
-	manualLayout     shared.ManualLayout
+	region           shared.Region // location: keymap, mirrors, default clock
+	// timezone is the installed system's clock (an IANA zone name). It defaults to
+	// the region's clock but is a choice of its own, so the Welcome page can set it
+	// independently of the location.
+	timezone     string
+	uiLocale     string // UI language (separate from installed system locale)
+	fileSystem   string // root filesystem: "ext4" or "btrfs"
+	manualMode   bool   // manual partitioning enabled
+	manualLayout shared.ManualLayout
 
 	// luks enables optional LUKS2 encryption of the root partition. luksPassphrase
 	// is the passphrase held in memory (zeroed buffer) from entry until the CLI

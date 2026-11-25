@@ -7,16 +7,18 @@ import (
 
 func TestGetLanguages_Invariants(t *testing.T) {
 	langs := GetLanguages()
-	if len(langs) < 28 {
-		t.Fatalf("expected at least 28 languages, got %d", len(langs))
+	if len(langs) < 300 {
+		t.Fatalf("expected the full glibc locale list (300+), got %d", len(langs))
 	}
 
 	seen := map[string]bool{}
 	for _, l := range langs {
-		if l.Code == "" || l.Name == "" || l.Locale == "" {
+		if l.Code == "" || l.Name == "" || l.Locale == "" || l.Native == "" || l.En == "" {
 			t.Errorf("language has an empty field: %+v", l)
 		}
-		if !strings.HasSuffix(l.Locale, ".UTF-8") {
+		// Every locale is UTF-8, optionally with a @modifier written form after it
+		// (sr_RS.UTF-8@latin), which is what locale.gen and locale.conf take.
+		if !strings.Contains(l.Locale, ".UTF-8") {
 			t.Errorf("language %q locale %q is not a UTF-8 locale", l.Code, l.Locale)
 		}
 		if seen[l.Code] {
@@ -54,10 +56,9 @@ func TestLanguagesResolveToLocaleAndLocation(t *testing.T) {
 			t.Errorf("language %q resolves to no location at all", l.Code)
 			continue
 		}
-		territory := ""
-		if i := strings.IndexByte(l.Code, '_'); i >= 0 {
-			territory = strings.ToLower(l.Code[i+1:])
-		}
+		// The generator already resolved the territory half (and dropped any
+		// @modifier), so the row says whether this language names a country.
+		territory := l.Territory
 		if territory == "" {
 			if r.Code != DefaultRegionCode {
 				t.Errorf("language %q has no territory but resolved to %q", l.Code, r.Code)

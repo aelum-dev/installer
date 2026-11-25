@@ -99,6 +99,7 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		Hostname:   "aelum",
 		Locale:     "ru_RU.UTF-8",
 		Region:     shared.GetRegion("ru"),
+		Timezone:   "Europe/Moscow",
 		FileSystem: shared.FileSystemBtrfs,
 		Luks:       true,
 		Partitions: &shared.PartitionInfo{
@@ -121,6 +122,7 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		WithFile(shared.MountRoot+"/etc/fstab", fstab).
 		WithFile(shared.MountRoot+"/etc/passwd", "alice:x:1000:1000::/home/alice:/bin/bash\n").
 		WithFile(shared.MountRoot+"/etc/hostname", "aelum\n").
+		WithFile(shared.MountRoot+"/etc/locale.conf", "LANG=ru_RU.UTF-8\n").
 		WithFile(shared.MountRoot+"/etc/mkinitcpio.conf", "HOOKS=(base systemd plymouth sd-encrypt filesystems)\n").
 		WithFile(shared.MountRoot+shared.FirewalldConfPath, packagedFirewalldConf).
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindThemeConfigPath, "banner themes/aelum/background.png\n").
@@ -128,7 +130,8 @@ func TestRun_PassesWithLuks(t *testing.T) {
 		WithFile(shared.ESPMountPoint+"/"+shared.RefindEntryPath(id), entry), "keyboard-us", "keyboard-ru"),
 		"Moscow", "55.7558,37.6173") // the capital of the region this ctx chose
 	defer primitives.SetFileSystem(fs)()
-	rec := recorderMounted()
+	rec := recorderMounted().
+		OnArgsOutput([]string{"readlink", shared.MountRoot + "/etc/localtime"}, "/usr/share/zoneinfo/Europe/Moscow\n")
 	defer primitives.SetCommandRunner(rec)()
 
 	if err := Run(ctx); err != nil {
@@ -613,6 +616,58 @@ func TestCheckHostname(t *testing.T) {
 			if tt.wantIssue == "" {
 				if len(issues) != 0 || len(info) != 1 {
 					t.Fatalf("issues = %v info = %v, want only info", issues, info)
+				}
+				return
+			}
+			if len(issues) != 1 || !strings.Contains(issues[0], tt.wantIssue) {
+				t.Fatalf("issues = %v, want one containing %q", issues, tt.wantIssue)
+			}
+		})
+	}
+}
+
+// TestCheckClockAndLocale covers the two answers the Welcome page now makes on
+// its own: the clock must match exactly (no fallback for a zone), while a locale
+// that differs from what was asked is only a note — the configure step may have
+// fallen back to the default when the target could not generate the chosen one.
+func TestCheckClockAndLocale(t *testing.T) {
+	const localtime = shared.MountRoot + "/etc/localtime"
+	const localeConf = shared.MountRoot + "/etc/locale.conf"
+
+	tests := []struct {
+		name       string
+		zone       string
+		locale     string
+		linkTarget string // "" → readlink fails
+		localeFile string
+		wantIssue  string
+		wantInfo   int
+	}{
+		{"both match", "Europe/Kyiv", "uk_UA.UTF-8", "/usr/share/zoneinfo/Europe/Kyiv", "LANG=uk_UA.UTF-8\n", "", 2},
+		{"clock mismatch", "Europe/Kyiv", "", "/usr/share/zoneinfo/Europe/Berlin", "", "want zone", 0},
+		{"locale fallback is a note", "", "de_DE.UTF-8", "", "LANG=en_US.UTF-8\n", "", 1},
+		{"locale not UTF-8", "", "de_DE", "", "LANG=de_DE\n", "not a UTF-8", 0},
+		{"locale no LANG", "", "de_DE.UTF-8", "", "KEYMAP=de\n", "sets no LANG", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := &shared.InstallContext{Timezone: tt.zone, Locale: tt.locale}
+			fs := primitivestest.NewMemFS()
+			if tt.localeFile != "" {
+				fs = fs.WithFile(localeConf, tt.localeFile)
+			}
+			defer primitives.SetFileSystem(fs)()
+			rec := primitivestest.NewRecorder()
+			if tt.linkTarget != "" {
+				rec = rec.OnArgsOutput([]string{"readlink", localtime}, tt.linkTarget+"\n")
+			}
+			defer primitives.SetCommandRunner(rec)()
+
+			var issues, info []string
+			checkClockAndLocale(ctx, &issues, &info)
+			if tt.wantIssue == "" {
+				if len(issues) != 0 || len(info) != tt.wantInfo {
+					t.Fatalf("issues = %v info = %v, want %d info", issues, info, tt.wantInfo)
 				}
 				return
 			}

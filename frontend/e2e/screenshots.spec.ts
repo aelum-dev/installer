@@ -131,8 +131,9 @@ async function walkthrough(page: Page, theme: Theme): Promise<void> {
   await chooseTheme(page, theme);
 
   // English pins the UI language: the backend remembers whatever the last session
-  // chose, and the site's frames are the English wizard.
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  // chose, and the site's frames are the English wizard. Selected by language code
+  // — the row's name now carries its territory and its locale beside it.
+  await page.locator('.option-item[data-code="en_US"]').click();
   await page.waitForTimeout(SETTLE_MS);
   await shoot(page, theme, 1);
 

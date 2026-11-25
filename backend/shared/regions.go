@@ -18,12 +18,25 @@ type Region struct {
 	// mirror file is named by (mirrorlist/<code>.list) — or DefaultRegionCode for
 	// the worldwide list.
 	Code string `json:"code"`
-	// Name is the display name, exactly as Arch's mirrorlist spells its country
-	// sections. It is English for every locale: these are the names of the mirrors'
-	// countries, not UI text, and they are what a user recognises on a map.
-	Name     string `json:"name"`
-	Timezone string `json:"timezone"` // zoneinfo name, e.g. "Europe/Kyiv"
-	Keymap   string `json:"keymap"`   // console keymap name, e.g. "ua"
+	// Name is the display name: the country's ordinary English name, the one a
+	// person recognises on a map. For a country Arch has a mirror section for it
+	// is exactly how that section is spelled; for the rest it is iso-codes' name
+	// with CountryNameByISO applied over the awkward official forms.
+	Name string `json:"name"`
+	// Timezone is the zone this location's clock defaults to — the answer the
+	// installer pre-fills, not a ceiling. The person can now pick any zone on the
+	// Welcome page; this is where a location lands before they do.
+	Timezone string `json:"timezone"`
+	Keymap   string `json:"keymap"` // console keymap name, e.g. "ua"
+	// Xkb is the desktop keyboard layout, in xkeyboard-config's names — the
+	// keyboard-<layout> input method the session offers beside English. Shown on
+	// the location row so the answer says what it decides.
+	Xkb string `json:"xkb"`
+	// Mirrors reports that the installer ships a mirror list for this country
+	// (mirrorlist/<code>.list exists). A location without its own mirrors still
+	// works — BuildMirrorList falls back to the worldwide list — so this is shown
+	// on the row ("Arch mirrors" / "Worldwide mirrors"), never used to hide it.
+	Mirrors bool `json:"mirrors"`
 }
 
 // WeatherPlace is the one place a location's weather is reported for: the name the
@@ -48,9 +61,10 @@ var regionsByCode = func() map[string]Region {
 }()
 
 // GetRegions returns every location the installer can offer, sorted by display
-// name. The list is exactly the countries Arch has a mirror section for, plus the
-// worldwide entry — a location with no mirrors behind it would be a choice the
-// installer cannot honour.
+// name: every ISO 3166-1 country plus the worldwide entry. A country Arch has no
+// mirror section for is still offered — its row says "Worldwide mirrors" and the
+// installed system falls back to the worldwide list — because where a machine is
+// is a fact about the machine, not about which mirrors happen to exist.
 func GetRegions() []Region {
 	out := make([]Region, len(regionTable))
 	copy(out, regionTable)
@@ -112,10 +126,13 @@ func territoryOf(code string) string {
 }
 
 // normalizeTag lowercases a language or location code, trims it, drops any
-// encoding suffix and unifies the separators.
+// encoding or written-form suffix (".UTF-8", "@latin") and unifies the separators.
 func normalizeTag(code string) string {
 	code = strings.ToLower(strings.TrimSpace(code))
 	if i := strings.IndexByte(code, '.'); i >= 0 {
+		code = code[:i]
+	}
+	if i := strings.IndexByte(code, '@'); i >= 0 {
 		code = code[:i]
 	}
 	return strings.ReplaceAll(code, "-", "_")

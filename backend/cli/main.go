@@ -105,7 +105,8 @@ func run(args []string) int {
 	cleanupFlag := fs.Bool("cleanup", false, "Unmount /mnt and clean up stale mounts")
 	fileSystemFlag := fs.String("filesystem", shared.DefaultFileSystem, "Root filesystem type: ext4 or btrfs")
 	languageFlag := fs.String("language", "", "Language code (e.g. en_US, de_DE)")
-	regionFlag := fs.String("region", "", "Location: ISO 3166-1 alpha-2 code (e.g. ua, de). Sets the timezone, keymap, mirrors and the desktop's weather location. Defaults to the country of --language.")
+	regionFlag := fs.String("region", "", "Location: ISO 3166-1 alpha-2 code (e.g. ua, de). Sets the keymap, mirrors and the desktop's weather location, and pre-fills the time zone. Defaults to the country of --language.")
+	timezoneFlag := fs.String("timezone", "", "Time zone: an IANA zone name (e.g. Europe/Kyiv). Sets the installed system's clock. Defaults to the location's zone.")
 	usernameFlag := fs.String("username", "", "Username for the new user account")
 	manualLayoutFlag := fs.String("manual-layout", "", "JSON manual partition layout (formats the selected Boot and System partitions)")
 	luksFlag := fs.Bool("luks", false, "Encrypt the root partition with LUKS2 (prompts for a passphrase on stdin)")
@@ -195,6 +196,7 @@ func run(args []string) int {
 		fileSystem:       *fileSystemFlag,
 		language:         *languageFlag,
 		region:           *regionFlag,
+		timezone:         *timezoneFlag,
 		dryRun:           *dryRun,
 		manualLayoutJSON: *manualLayoutFlag,
 		luks:             *luksFlag,
@@ -228,6 +230,7 @@ type installOptions struct {
 	fileSystem       string
 	language         string
 	region           string
+	timezone         string
 	dryRun           bool
 	manualLayoutJSON string
 	luks, lvm        bool
@@ -236,8 +239,48 @@ type installOptions struct {
 }
 
 // runInstallation performs validation and runs the installation.
+// resolveLocaleRegionTimezone turns the three Welcome-page answers into the three
+// values the install writes, each from its own flag, and refuses a value no part
+// of the system can use. An unknown language gets no guessed locale: writing
+// LANG=xx_YY.UTF-8 for something locale.gen cannot generate is a system that
+// boots straight into a broken locale. --language still picks the country of that
+// language, which is what it did before the two were split apart (--language
+// de_DE means German on German mirrors); only --region says otherwise, and that is
+// the flag a person who reads English and lives somewhere else uses. The clock is
+// a choice of its own too: --timezone sets it and defaults to the location's zone,
+// and a typed zone is validated here, before anything is written, so a typo is a
+// clear message and not a broken /etc/localtime symlink.
+func resolveLocaleRegionTimezone(language, region, timezone string) (string, shared.Region, string, error) {
+	lang := language
+	if lang == "" {
+		lang = shared.DefaultLanguageCode
+	}
+	locale := shared.LocaleForLanguage(lang)
+	if locale == "" {
+		return "", shared.Region{}, "", fmt.Errorf("unknown language %q (see --help for the codes this installer offers)", language)
+	}
+
+	location := shared.RegionForLanguage(lang)
+	if region != "" {
+		location = shared.GetRegion(region)
+		if location.Code == "" {
+			return "", shared.Region{}, "", fmt.Errorf("unknown region %q (a region is an ISO 3166-1 alpha-2 code, e.g. ua or de)", region)
+		}
+	}
+
+	zone := timezone
+	if zone == "" {
+		zone = location.Timezone
+	} else if err := shared.ValidateTimezone(zone); err != nil {
+		return "", shared.Region{}, "", err
+	}
+
+	return locale, location, zone, nil
+}
+
 func runInstallation(disk, stepName, username string, opts installOptions) int {
 	fileSystem, language, region := opts.fileSystem, opts.language, opts.region
+	timezone := opts.timezone
 	dryRun, manualLayoutJSON := opts.dryRun, opts.manualLayoutJSON
 	luks, lvm, gpuDriver := opts.luks, opts.lvm, opts.gpuDriver
 	inputMethod := opts.inputMethod
@@ -320,31 +363,12 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 		}
 	}
 
-	// Language and location are resolved apart from each other, and each failure
-	// names the flag that caused it. An unknown language gets no guessed locale:
-	// writing LANG=xx_YY.UTF-8 for something locale.gen cannot generate is a
-	// system that boots straight into a broken locale.
-	lang := language
-	if lang == "" {
-		lang = shared.DefaultLanguageCode
-	}
-	locale := shared.LocaleForLanguage(lang)
-	if locale == "" {
-		log.Error(`unknown language %q (see --help for the codes this installer offers)`, language)
+	// Language, location and clock are resolved apart from each other, and each
+	// failure names the flag that caused it.
+	locale, location, zone, err := resolveLocaleRegionTimezone(language, region, timezone)
+	if err != nil {
+		log.Error("%v", err)
 		return 1
-	}
-
-	// --language still picks the country of that language, which is what it did
-	// before the two were split apart: --language de_DE means German on German
-	// mirrors. Only --region says otherwise, and that is the flag a person who
-	// reads English and lives somewhere else uses.
-	location := shared.RegionForLanguage(lang)
-	if region != "" {
-		location = shared.GetRegion(region)
-		if location.Code == "" {
-			log.Error("unknown region %q (a region is an ISO 3166-1 alpha-2 code, e.g. ua or de)", region)
-			return 1
-		}
 	}
 
 	installer := install.NewInstaller(install.InstallerConfig{
@@ -354,6 +378,7 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 		Hostname:       shared.DefaultHostname, // hostname
 		Locale:         locale,                 // from --language or default
 		Region:         location,               // from --region, else --language
+		Timezone:       zone,                   // from --timezone, else --region
 		FileSystem:     fileSystem,
 		Luks:           luks,           // encrypt root with LUKS2
 		LuksPassphrase: luksPassphrase, // read from stdin
@@ -424,7 +449,7 @@ func runInstallation(disk, stepName, username string, opts installOptions) int {
 
 	// Run full installation
 	log.Info("Installing Aelum to %s...", disk)
-	err := installer.Install()
+	err = installer.Install()
 	if err != nil {
 		// If interrupted by SIGINT, exit with 130 (standard POSIX signal exit code)
 		// instead of 1. The signal handler already logged the interruption and
@@ -554,7 +579,7 @@ func resolveDiskAndStep(flags ...stepFlag) (disk string, stepName string) {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--region <iso>]"+
+	fmt.Fprintf(os.Stderr, "  %s --install <disk> [--filesystem ext4|btrfs] [--language <code>] [--region <iso>] [--timezone <zone>]"+
 		" [--username <user>] [--luks] [--lvm] [--gpu-driver auto|amd|intel|nvidia|mesa] [--input-method auto|none] [--dry-run]   Full installation\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --rollback <disk>                                              Clean up partial install\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s --format-disk <disk> [--dry-run]                               Format disk partitions\n", os.Args[0])
@@ -586,13 +611,15 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "none installs none of them, for a machine whose language was chosen for its\n")
 	fmt.Fprintf(os.Stderr, "UI rather than its keyboard.\n")
 	fmt.Fprintf(os.Stderr, "\n")
-	fmt.Fprintf(os.Stderr, "Language and location are separate questions. --language is what the system\n")
-	fmt.Fprintf(os.Stderr, "speaks (en_US, de_DE, uk_UA, ...); --region is where the machine is, an ISO\n")
-	fmt.Fprintf(os.Stderr, "3166-1 alpha-2 code (ua, de, us, ...), and it sets the clock, the console\n")
-	fmt.Fprintf(os.Stderr, "keymap and which Arch mirrors the installed system gets. --region defaults to\n")
-	fmt.Fprintf(os.Stderr, "the country of --language; say otherwise when they differ:\n")
+	fmt.Fprintf(os.Stderr, "Language, location and time zone are three separate questions. --language is what the system\n")
+	fmt.Fprintf(os.Stderr, "speaks (any locale glibc can generate: en_US, de_DE, uk_UA, ...); --region is where the\n")
+	fmt.Fprintf(os.Stderr, "machine is, an ISO 3166-1 alpha-2 code (ua, de, us, ...), and it sets the console keymap,\n")
+	fmt.Fprintf(os.Stderr, "which Arch mirrors the installed system gets, and the desktop's weather location; --timezone\n")
+	fmt.Fprintf(os.Stderr, "is the clock, an IANA zone name (Europe/Kyiv, America/New_York, ...).\n")
+	fmt.Fprintf(os.Stderr, "--region defaults to the country of --language, and --timezone to that location's zone:\n")
 	fmt.Fprintf(os.Stderr, "  English on Ukrainian mirrors  --language en_US --region ua\n")
-	fmt.Fprintf(os.Stderr, "  Every mirror, no country      --region worldwide\n")
+	fmt.Fprintf(os.Stderr, "  A named city's clock        --region us --timezone America/Los_Angeles\n")
+	fmt.Fprintf(os.Stderr, "  Every mirror, no country    --region worldwide\n")
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "Examples:\n")
 	fmt.Fprintf(os.Stderr, "  %s --install /dev/vda --filesystem btrfs --language de_DE\n", os.Args[0])

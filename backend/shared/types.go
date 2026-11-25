@@ -35,8 +35,14 @@ type InstallContext struct {
 	// the language the person chose, never from the region: what a machine's
 	// mirrors and clock should be is a separate question from what language it
 	// speaks.
-	Locale     string
-	Region     Region // location: timezone, console keymap, mirrors
+	Locale string
+	Region Region // location: default timezone, console keymap, mirrors
+	// Timezone is the installed system's clock — an IANA zone name, e.g.
+	// "Europe/Kyiv". It defaults to the location's clock (Region.Timezone) but is
+	// now a choice in its own right, so a person in a multi-zone country, or one
+	// who simply wants a named city, is not held to whatever the country defaults
+	// to. Empty means "use the region's clock".
+	Timezone   string
 	FileSystem string // root filesystem: "ext4" or "btrfs"
 	Logger     Logger // injected by Installer; nil if not set
 
@@ -96,11 +102,28 @@ func (ctx *InstallContext) Cancelled() bool {
 	}
 }
 
-// Language represents a selectable language.
+// Language represents a selectable language: one locale glibc can generate.
 type Language struct {
-	Code   string `json:"code"`
-	Name   string `json:"name"`
+	// Code is the glibc locale name without its encoding — "en_US", "zh_CN",
+	// "sr_RS@latin" — the key the list is selected by and --language takes.
+	Code string `json:"code"`
+	// Name is the display name: the language's own name plus, in parentheses,
+	// the territory or written form that tells the near-identical rows apart —
+	// "English (United States)", "中文 (China)", "српски (Serbia, Cyrillic)".
+	Name string `json:"name"`
+	// Locale is the full locale string written to locale.gen and locale.conf,
+	// e.g. "en_US.UTF-8" or "sr_RS.UTF-8@latin".
 	Locale string `json:"locale"`
+	// Native is what the language calls itself, in its own script — the part of
+	// the row a reader recognises when they cannot read the English name.
+	Native string `json:"native"`
+	// En is the English name, so someone who reads English can search for
+	// "German" and find Deutsch.
+	En string `json:"en"`
+	// Territory is the lowercase ISO 3166-1 code of the locale's country ("us"
+	// for en_US), or "" when the locale names none. It is what pre-fills the
+	// location from the language.
+	Territory string `json:"territory"`
 }
 
 // UserAccountData holds user account form fields.

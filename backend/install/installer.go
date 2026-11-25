@@ -25,12 +25,16 @@ type InstallationProgress struct {
 // Installer orchestrates the full installation process.
 // Single source of truth — used by both CLI and GUI.
 type Installer struct {
-	diskID         string
-	username       string
-	password       []byte // zeroed after being copied to InstallContext
-	hostname       string
-	locale         string // the installed system's locale, from the chosen language
-	region         shared.Region
+	diskID   string
+	username string
+	password []byte // zeroed after being copied to InstallContext
+	hostname string
+	locale   string // the installed system's locale, from the chosen language
+	region   shared.Region
+	// timezone is the installed system's clock (an IANA zone name). Empty means
+	// "the region's clock" — the location still pre-fills it, but the Welcome page
+	// and --timezone can now override it independently.
+	timezone       string
 	fileSystem     string // root filesystem: "ext4" or "btrfs"
 	luks           bool
 	luksPassphrase []byte // zeroed after being copied to InstallContext
@@ -91,8 +95,13 @@ type InstallerConfig struct {
 	// and Arch mirrors. They arrive as two inputs because they are two questions —
 	// a person in Ukraine who reads English wants an English system on Ukrainian
 	// mirrors, and one field for both used to make that impossible.
-	Locale         string
-	Region         shared.Region
+	Locale string
+	Region shared.Region
+	// Timezone is the installed system's clock (an IANA zone name, e.g.
+	// "Europe/Kyiv"). Empty means "use the region's clock" — the location still
+	// pre-fills it, but it is now a choice of its own, so a person in a multi-zone
+	// country is not held to whatever their country defaults to.
+	Timezone       string
 	FileSystem     string // root filesystem: "ext4" or "btrfs"
 	Luks           bool
 	LuksPassphrase string
@@ -118,6 +127,7 @@ func NewInstaller(cfg InstallerConfig) *Installer {
 		hostname:       cfg.Hostname,
 		locale:         cfg.Locale,
 		region:         cfg.Region,
+		timezone:       cfg.Timezone,
 		fileSystem:     cfg.FileSystem,
 		luks:           cfg.Luks,
 		luksPassphrase: []byte(cfg.LuksPassphrase),
@@ -455,6 +465,14 @@ func (inst *Installer) context() *InstallContext {
 		fileSystem = shared.DefaultFileSystem
 	}
 
+	// The clock is the person's choice when they made one, else the location's.
+	// Resolving it here means every step and the verify step read one concrete
+	// zone, never an empty field they each have to fall back on.
+	timezone := inst.timezone
+	if timezone == "" {
+		timezone = inst.region.Timezone
+	}
+
 	ctx := &InstallContext{
 		DiskID:         inst.diskID,
 		ESP:            inst.esp,
@@ -463,6 +481,7 @@ func (inst *Installer) context() *InstallContext {
 		Hostname:       inst.hostname,
 		Locale:         inst.locale,
 		Region:         inst.region,
+		Timezone:       timezone,
 		FileSystem:     fileSystem,
 		Luks:           inst.luks,
 		LuksPassphrase: luksPassphrase,

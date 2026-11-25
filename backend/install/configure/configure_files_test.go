@@ -625,6 +625,50 @@ func TestConfigureSystemBase_AlreadyEnabledLocale(t *testing.T) {
 	}
 }
 
+// TestConfigureSystemBase_LocaleFallback covers the glibc-drift guard: the language
+// list is generated from the build host's glibc, so it can name a locale the
+// target's older glibc cannot generate. Writing it would fail locale-gen near the
+// end of the install, so the installer checks the target first and falls back to
+// the default locale rather than aborting.
+func TestConfigureSystemBase_LocaleFallback(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	// The target has no source for de_DE, only for en_US.
+	fs := primitivestest.NewMemFS().
+		WithFile(shared.MountRoot+"/etc/locale.gen", "#de_DE.UTF-8 UTF-8\n").
+		WithFile(shared.MountRoot+"/usr/share/i18n/locales/en_US", "LC_IDENTIFICATION ...")
+	defer primitives.SetFileSystem(fs)()
+
+	ctx := newSystemContext()
+	ctx.Locale = "de_DE.UTF-8"
+	if err := ConfigureSystemBase(ctx); err != nil {
+		t.Fatalf("ConfigureSystemBase() = %v, want nil", err)
+	}
+	if got, _ := fs.Read(shared.MountRoot + "/etc/locale.conf"); got != "LANG=en_US.UTF-8\n" {
+		t.Errorf("locale.conf = %q, want the en_US fallback", got)
+	}
+}
+
+// TestConfigureSystemBase_LocaleAvailableInTarget is the other side of the guard:
+// when the target can generate the chosen locale, it is used verbatim.
+func TestConfigureSystemBase_LocaleAvailableInTarget(t *testing.T) {
+	rec := mountedRunner()
+	defer primitives.SetCommandRunner(rec)()
+	fs := primitivestest.NewMemFS().
+		WithFile(shared.MountRoot+"/etc/locale.gen", "#de_DE.UTF-8 UTF-8\n").
+		WithFile(shared.MountRoot+"/usr/share/i18n/locales/de_DE", "LC_IDENTIFICATION ...")
+	defer primitives.SetFileSystem(fs)()
+
+	ctx := newSystemContext()
+	ctx.Locale = "de_DE.UTF-8"
+	if err := ConfigureSystemBase(ctx); err != nil {
+		t.Fatalf("ConfigureSystemBase() = %v, want nil", err)
+	}
+	if got, _ := fs.Read(shared.MountRoot + "/etc/locale.conf"); got != "LANG=de_DE.UTF-8\n" {
+		t.Errorf("locale.conf = %q, want the chosen de_DE.UTF-8", got)
+	}
+}
+
 func TestEnableLocale_Forms(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -9,16 +9,21 @@ import { SetLuks, SetLuksPassphrase, SetLvm, SetManualMode } from '$lib/backend'
 // Durable wizard data. Ephemeral view state (dialog flags, previews, inline
 // errors) lives in uiState (ui.svelte.ts), not here.
 export const installState = $state({
-	// Language (what the system reads and writes) and location (where the machine
-	// is: clock, console keymap, Arch mirrors). The backend pre-fills the location
-	// from the language's country, so only someone whose language and country
-	// differ has to touch it.
+	// Language (what the system reads and writes), location (where the machine is:
+	// console keymap, Arch mirrors, weather) and clock. The backend pre-fills the
+	// location from the language's country and the clock from the location, so only
+	// someone whose language, country and clock do not all agree touches the second
+	// and third.
 	locale: '',
 	region: '',
 	// regionChosen records that the person picked a location by hand. A language
 	// change re-prefills the location from its country only until then — an
 	// explicit choice must not quietly disappear when someone edits their language.
 	regionChosen: false as boolean,
+	timezone: '',
+	// timezoneChosen is the same rule one step on: a location change re-defaults the
+	// clock only until the person has named a city themselves.
+	timezoneChosen: false as boolean,
 
 	// User account
 	username: '',

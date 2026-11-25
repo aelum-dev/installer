@@ -34,6 +34,58 @@ test.describe('Installer wizard', () => {
     await expect(next(page)).toBeEnabled();
   });
 
+  test('Welcome page: three answers in the rail, one list in the content column', async ({ page }) => {
+    await page.goto('/');
+
+    // The summary card holds all three answers and is the only way to switch which
+    // list the content column edits.
+    const summary = page.locator('.summary');
+    await expect(summary.getByRole('button')).toHaveCount(3);
+    await expect(summary.getByText('Language')).toBeVisible();
+    await expect(summary.getByText('Location')).toBeVisible();
+    await expect(summary.getByText('Time zone')).toBeVisible();
+
+    // It opens on the language list, and the row it selected is the marked one.
+    await expect(page.locator('.option-item--selected')).toHaveAttribute('data-code', 'en_US');
+
+    // The pre-selected language brings its country and that country's clock with
+    // it, so the card is complete on the first paint — the same three answers a
+    // click produces, not an empty location and clock until the person touches
+    // the list.
+    await expect(summary.getByRole('button', { name: /Keyboard us/ })).toBeVisible();
+    await expect(summary.getByRole('button', { name: /New York/ })).toBeVisible();
+
+    // Location: the list becomes every country. A country Arch has no mirror
+    // section for is still there (Afghanistan), and every row says which mirror
+    // list the install will use — Ukraine has its own section, so it says so.
+    await summary.getByRole('button', { name: /Location/ }).click();
+    await expect(page.locator('.option-item[data-code="af"]')).toContainText('Worldwide mirrors');
+    await page.locator('.option-item[data-code="ua"]').click();
+    await expect(summary.getByText('Ukraine')).toBeVisible();
+    await expect(summary.getByText(/Arch mirrors/)).toBeVisible();
+
+    // Time zone: the country's own clocks first, with the whole set one press away.
+    await summary.getByRole('button', { name: /Time zone/ }).click();
+    await expect(page.locator('.tz-pill')).toHaveCount(2);
+    await expect(page.locator('.option-item')).toHaveCount(2); // Kyiv and Simferopol
+
+    await page.locator('.tz-pill', { hasText: 'All zones' }).click();
+    await page.locator('.option-item[data-code="Europe/Kyiv"]').click();
+    // The city leads the row and the summary, so the offset beside it is not
+    // asserted here — it moves with the season.
+    await expect(summary.getByRole('button', { name: /Kyiv/ })).toBeVisible();
+
+    // The clock the person named survives the wizard: the summary carries it.
+    await next(page).click();
+    await fillUserAccount(page);
+    await next(page).click(); // Disk selection
+    await page.locator('.disk-card').first().click();
+    await next(page).click(); // Confirmation
+    // Scoped to the confirmation's own value markup: the page transition keeps
+    // the Welcome page mounted briefly, and its clock row would match too.
+    await expect(page.locator('.cvalue', { hasText: 'Europe/Kyiv' })).toBeVisible();
+  });
+
   test('User account: shows the validation modal on bad input, advances when valid', async ({ page }) => {
     await page.goto('/');
     await next(page).click();
@@ -139,6 +191,10 @@ test.describe('Installer wizard', () => {
     // transition keeps the previous page mounted briefly, and substring text
     // (e.g. "User Account" ⊂ "Create user account") races the exiting page.
     await expect(page.getByRole('heading', { name: 'Language', exact: true })).toBeVisible();
+    // The three Welcome answers each get their own row — the summary is where a
+    // person catches one that came out wrong.
+    await expect(page.getByRole('heading', { name: 'Location', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Time zone', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'User Account', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Target Disk', exact: true })).toBeVisible();
     await expect(page.locator('.disk-path code')).toHaveText(/dev/);

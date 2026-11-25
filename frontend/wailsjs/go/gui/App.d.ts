@@ -38,9 +38,13 @@ export function GetSelectedLanguage():Promise<string>;
 
 export function GetSelectedRegion():Promise<string>;
 
+export function GetSelectedTimezone():Promise<string>;
+
 export function GetSessionInputMethods(arg1:string,arg2:string):Promise<Array<string>>;
 
 export function GetStartPage():Promise<number>;
+
+export function GetTimezones():Promise<Array<shared.Timezone>>;
 
 export function GetUILocale():Promise<string>;
 
@@ -69,6 +73,8 @@ export function SetManualMode(arg1:boolean):Promise<void>;
 export function SetSelectedLanguage(arg1:string):Promise<void>;
 
 export function SetSelectedRegion(arg1:string):Promise<void>;
+
+export function SetSelectedTimezone(arg1:string):Promise<void>;
 
 export function SetStartPage(arg1:gui.PageID):Promise<void>;
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"aelum-installer/backend/install"
+	"aelum-installer/backend/shared"
 )
 
 // ============================================================================
@@ -343,5 +344,86 @@ func TestResolveDiskAndStep_ManyEmpty(t *testing.T) {
 	)
 	if disk != "" || stepName != "" {
 		t.Errorf("expected empty, got disk=%q stepName=%q", disk, stepName)
+	}
+}
+
+// ============================================================================
+// resolveLocaleRegionTimezone — the three Welcome-page answers
+// ============================================================================
+
+func TestResolveLocaleRegionTimezone_Defaults(t *testing.T) {
+	locale, region, zone, err := resolveLocaleRegionTimezone("", "", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if locale != "en_US.UTF-8" {
+		t.Errorf("locale = %q, want the default", locale)
+	}
+	// The default language names a country, so the location follows it — that is
+	// the pre-fill, not a fallback. --region worldwide is how a person says no.
+	if region.Code != "us" {
+		t.Errorf("region = %q, want us (the default language's country)", region.Code)
+	}
+	if zone != "America/New_York" {
+		t.Errorf("zone = %q, want that location's clock", zone)
+	}
+
+	// The worldwide location is the honest "no preference" answer, and it carries
+	// the clock with no city.
+	_, region, zone, err = resolveLocaleRegionTimezone("", shared.DefaultRegionCode, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if region.Code != shared.DefaultRegionCode || zone != "UTC" {
+		t.Errorf("worldwide = %q / %q, want worldwide and UTC", region.Code, zone)
+	}
+}
+
+// TestResolveLocaleRegionTimezone_SeparateAnswers is the reason the three are
+// separate flags: the language decides the locale, the location decides the
+// mirrors and keymap, and the clock follows the location unless --timezone says
+// otherwise.
+func TestResolveLocaleRegionTimezone_SeparateAnswers(t *testing.T) {
+	locale, region, zone, err := resolveLocaleRegionTimezone("en_US", "ua", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if locale != "en_US.UTF-8" {
+		t.Errorf("locale = %q, want English", locale)
+	}
+	if region.Code != "ua" {
+		t.Errorf("region = %q, want ua", region.Code)
+	}
+	if zone != "Europe/Kyiv" {
+		t.Errorf("zone = %q, want the location's clock", zone)
+	}
+
+	// A hand-picked clock wins over the location's default.
+	_, _, zone, err = resolveLocaleRegionTimezone("en_US", "us", "America/Los_Angeles")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if zone != "America/Los_Angeles" {
+		t.Errorf("zone = %q, want the chosen clock", zone)
+	}
+}
+
+func TestResolveLocaleRegionTimezone_RefusesBadValues(t *testing.T) {
+	tests := []struct {
+		name                       string
+		language, region, timezone string
+	}{
+		{"unknown language", "xx_YY", "", ""},
+		{"unknown region", "en_US", "zz", ""},
+		{"unknown timezone", "en_US", "us", "Europe/Kiev"},
+		{"not a zone name", "en_US", "us", "Berlin"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, _, _, err := resolveLocaleRegionTimezone(tt.language, tt.region, tt.timezone); err == nil {
+				t.Errorf("resolveLocaleRegionTimezone(%q, %q, %q) = nil error, want one",
+					tt.language, tt.region, tt.timezone)
+			}
+		})
 	}
 }

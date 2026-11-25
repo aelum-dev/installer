@@ -70,12 +70,20 @@ export function GetSelectedRegion() {
   return window['go']['gui']['App']['GetSelectedRegion']();
 }
 
+export function GetSelectedTimezone() {
+  return window['go']['gui']['App']['GetSelectedTimezone']();
+}
+
 export function GetSessionInputMethods(arg1, arg2) {
   return window['go']['gui']['App']['GetSessionInputMethods'](arg1, arg2);
 }
 
 export function GetStartPage() {
   return window['go']['gui']['App']['GetStartPage']();
+}
+
+export function GetTimezones() {
+  return window['go']['gui']['App']['GetTimezones']();
 }
 
 export function GetUILocale() {
@@ -132,6 +140,10 @@ export function SetSelectedLanguage(arg1) {
 
 export function SetSelectedRegion(arg1) {
   return window['go']['gui']['App']['SetSelectedRegion'](arg1);
+}
+
+export function SetSelectedTimezone(arg1) {
+  return window['go']['gui']['App']['SetSelectedTimezone'](arg1);
 }
 
 export function SetStartPage(arg1) {

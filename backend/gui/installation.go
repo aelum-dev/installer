@@ -144,6 +144,12 @@ func (a *App) installCLIArgs() ([]string, error) {
 		"--language", a.selectedLanguage,
 		"--region", a.region.Code,
 	}
+	// The clock travels as its own flag now: the location pre-fills it, but the
+	// person may have chosen a different zone, and the CLI must not re-derive one
+	// from the region and lose that choice.
+	if a.timezone != "" {
+		args = append(args, "--timezone", a.timezone)
+	}
 	if a.luks {
 		args = append(args, "--luks")
 	}
