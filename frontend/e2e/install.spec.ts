@@ -24,6 +24,11 @@ test('full wizard flow reaches the finish screen', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/');
 
+  // English pins the UI language: the warm backend remembers whatever the last
+  // session chose, and this flow drives the English wizard. Selected by
+  // language code, so it works from any starting UI (see screenshots.spec).
+  await page.locator('.option-item[data-code="en_US"]').click();
+
   // Welcome -> User account
   await next(page).click();
   await fillUserAccount(page);

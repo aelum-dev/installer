@@ -22,6 +22,15 @@ async function dismissValidationModal(page: import('@playwright/test').Page): Pr
 }
 
 test.describe('Installer wizard', () => {
+  // English pins the UI language and, through the cascade, the location and
+  // clock: the warm backend remembers whatever the last session chose, and
+  // every assertion below is the English wizard starting from en_US. Selected
+  // by language code, so it works from any starting UI (see screenshots.spec).
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.option-item[data-code="en_US"]').click();
+  });
+
   test('Welcome page loads languages and enables Next', async ({ page }) => {
     await page.goto('/');
 
@@ -48,16 +57,24 @@ test.describe('Installer wizard', () => {
   test('Welcome page: switching list opens it on the current answer', async ({ page }) => {
     await page.goto('/');
 
-    // Distance between the selected row's top and the scroll viewport's top;
-    // near zero means the answer leads the view rather than hiding in the list.
-    const topOffset = async () => {
-      const row = await page.locator('.option-item--selected').boundingBox();
-      const box = await page.locator('.scroll-box').boundingBox();
-      return row && box ? Math.abs(row.y - box.y) : Number.MAX_SAFE_INTEGER;
-    };
+    // How far the scroll sits from "selected row at the top" — the one place
+    // that can differ is the bottom of the list, where the browser clamps the
+    // scroll and the row rides at the foot of the view instead. That is the
+    // same distance-to-ideal, so the assertion is viewport-independent.
+    const topOffset = () =>
+      page.evaluate(() => {
+        const box = document.querySelector('.scroll-box');
+        const row = document.querySelector('.option-item--selected');
+        if (!box || !row) return Number.MAX_SAFE_INTEGER;
+        const inContent = row.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+        const maxScroll = box.scrollHeight - box.clientHeight;
+        return Math.abs(box.scrollTop - Math.min(inContent, maxScroll));
+      });
     const summary = page.locator('.summary');
 
-    // Location: the cascade's pre-fill (United States) leads the country list.
+    // Location: the cascade's pre-fill (United States) is brought as far to the
+    // top of the country list as the list allows — near the list's end, that is
+    // its foot, which the clamped distance-to-ideal accepts.
     await summary.getByRole('button', { name: /Location/ }).click();
     await expect(page.locator('.option-item--selected')).toHaveAttribute('data-code', 'us');
     await expect.poll(topOffset).toBeLessThan(4);
