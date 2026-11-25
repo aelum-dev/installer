@@ -1,5 +1,12 @@
 import { LOCALES, RTL_LOCALES } from './locales';
 
+export { isDmsLocale } from './locales';
+
+// The locale the chrome falls back to: both the initial state and the reset when
+// a language with no UI translation is selected. English is the source language
+// every translation file is measured against (see index.test.ts).
+export const DEFAULT_LOCALE = 'en-US';
+
 // Every translation file under src/translations is bundled eagerly and keyed by
 // its frontend locale code (the filename). Adding a locale is then a one-file
 // change: drop in the JSON and add its display name to locales.ts.
@@ -16,7 +23,7 @@ const translations: Record<string, Record<string, string>> = Object.fromEntries(
 );
 
 // Svelte $state for guaranteed reactivity
-let _locale = $state('en-US');
+let _locale = $state(DEFAULT_LOCALE);
 
 export const t = (key: string, args?: Record<string, unknown>): string => {
 	// Flat key lookup only (e.g. 'app.brand', 'validation.selectDisk', 'validation.modal.title')

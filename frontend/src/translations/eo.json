@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Uzantnomo: 1–255 signoj; literoj, nombroj, punktoj, streketoj, substrekoj",
   "page.userAccount.usernamePlaceholder": "Enigu uzantnomon",
   "page.welcome.keyboard": "Klavaro",
+  "page.welcome.langTooltipDesktop": "La labortablo estas tradukita en ĉi tiun lingvon",
+  "page.welcome.langTooltipInstallerOnly": "Nur la instalilo kaj la Aelum-aplikaĵoj estas tradukitaj",
   "page.welcome.language": "Lingvo",
   "page.welcome.languageEmpty": "Neniu lingvo kongruas.",
   "page.welcome.languagePlaceholder": "Lingvonomo aŭ kodo",

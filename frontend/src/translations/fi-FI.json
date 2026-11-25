@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Käyttäjänimi: 1–255 merkkiä; kirjaimet, numerot, pisteet, väliviivat, alaviivat",
   "page.userAccount.usernamePlaceholder": "Syötä käyttäjänimi",
   "page.welcome.keyboard": "Näppäimistö",
+  "page.welcome.langTooltipDesktop": "Työpöytä on käännetty tälle kielelle",
+  "page.welcome.langTooltipInstallerOnly": "Vain asennusohjelma ja Aelum-sovellukset on käännetty",
   "page.welcome.language": "Kieli",
   "page.welcome.languageEmpty": "Mikään kieli ei täsmää.",
   "page.welcome.languagePlaceholder": "Kielen nimi tai koodi",

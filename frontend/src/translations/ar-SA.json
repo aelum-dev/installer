@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "اسم المستخدم: 1–255 حرفاً؛ أحرف وأرقام ونقاط وشرطات وشرطات سفلية",
   "page.userAccount.usernamePlaceholder": "أدخل اسم المستخدم",
   "page.welcome.keyboard": "لوحة المفاتيح",
+  "page.welcome.langTooltipDesktop": "سطح المكتب مترجم إلى هذه اللغة",
+  "page.welcome.langTooltipInstallerOnly": "المُثبِّت وتطبيقات Aelum فقط مترجمة",
   "page.welcome.language": "اللغة",
   "page.welcome.languageEmpty": "لا توجد لغة مطابقة.",
   "page.welcome.languagePlaceholder": "اسم اللغة أو رمزها",

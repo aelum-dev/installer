@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Brukernavn: 1–255 tegn; bokstaver, tall, punktum, bindestreker, understreker",
   "page.userAccount.usernamePlaceholder": "Skriv inn brukernavn",
   "page.welcome.keyboard": "Tastatur",
+  "page.welcome.langTooltipDesktop": "Skrivebordet er oversatt til dette språket",
+  "page.welcome.langTooltipInstallerOnly": "Bare installasjonsprogrammet og Aelum-appene er oversatt",
   "page.welcome.language": "Språk",
   "page.welcome.languageEmpty": "Intet språk samsvarer.",
   "page.welcome.languagePlaceholder": "Språknavn eller kode",

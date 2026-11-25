@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Όνομα χρήστη: 1–255 χαρακτήρες· γράμματα, αριθμοί, τελείες, παύλες, κάτω παύλες",
   "page.userAccount.usernamePlaceholder": "Εισάγετε όνομα χρήστη",
   "page.welcome.keyboard": "Πληκτρολόγιο",
+  "page.welcome.langTooltipDesktop": "Η επιφάνεια εργασίας είναι μεταφρασμένη σε αυτήν τη γλώσσα",
+  "page.welcome.langTooltipInstallerOnly": "Μόνο το πρόγραμμα εγκατάστασης και οι εφαρμογές Aelum είναι μεταφρασμένα",
   "page.welcome.language": "Γλώσσα",
   "page.welcome.languageEmpty": "Καμία γλώσσα δεν ταιριάζει.",
   "page.welcome.languagePlaceholder": "Όνομα γλώσσας ή κωδικός",

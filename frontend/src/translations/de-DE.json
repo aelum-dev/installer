@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Benutzername: 1–255 Zeichen; Buchstaben, Zahlen, Punkte, Bindestriche, Unterstriche",
   "page.userAccount.usernamePlaceholder": "Benutzernamen eingeben",
   "page.welcome.keyboard": "Tastatur",
+  "page.welcome.langTooltipDesktop": "Die Desktopumgebung ist in diese Sprache übersetzt",
+  "page.welcome.langTooltipInstallerOnly": "Nur Installationsprogramm und Aelum-Apps sind übersetzt",
   "page.welcome.language": "Sprache",
   "page.welcome.languageEmpty": "Keine Sprache passt dazu.",
   "page.welcome.languagePlaceholder": "Sprachname oder Code",

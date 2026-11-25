@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Nazwa użytkownika: 1–255 znaków; litery, cyfry, kropki, myślniki, podkreślenia",
   "page.userAccount.usernamePlaceholder": "Wpisz nazwę użytkownika",
   "page.welcome.keyboard": "Klawiatura",
+  "page.welcome.langTooltipDesktop": "Środowisko graficzne jest przetłumaczone na ten język",
+  "page.welcome.langTooltipInstallerOnly": "Tylko instalator i aplikacje Aelum są przetłumaczone",
   "page.welcome.language": "Język",
   "page.welcome.languageEmpty": "Żaden język nie pasuje.",
   "page.welcome.languagePlaceholder": "Nazwa języka lub kod",

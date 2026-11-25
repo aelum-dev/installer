@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "ユーザー名：1～255 文字、英字・数字・ピリオド・ハイフン・アンダースコア",
   "page.userAccount.usernamePlaceholder": "ユーザー名を入力",
   "page.welcome.keyboard": "キーボード",
+  "page.welcome.langTooltipDesktop": "デスクトップはこの言語に翻訳されています",
+  "page.welcome.langTooltipInstallerOnly": "インストーラーと Aelum アプリのみ翻訳されています",
   "page.welcome.language": "言語",
   "page.welcome.languageEmpty": "一致する言語はありません。",
   "page.welcome.languagePlaceholder": "言語名またはコード",

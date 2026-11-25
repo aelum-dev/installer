@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Nom d'utilisateur : 1–255 caractères ; lettres, chiffres, points, tirets, underscores",
   "page.userAccount.usernamePlaceholder": "Entrez le nom d'utilisateur",
   "page.welcome.keyboard": "Clavier",
+  "page.welcome.langTooltipDesktop": "Le bureau est traduit dans cette langue",
+  "page.welcome.langTooltipInstallerOnly": "Seuls l'installateur et les applications Aelum sont traduits",
   "page.welcome.language": "Langue",
   "page.welcome.languageEmpty": "Aucune langue ne correspond.",
   "page.welcome.languagePlaceholder": "Nom de la langue ou code",

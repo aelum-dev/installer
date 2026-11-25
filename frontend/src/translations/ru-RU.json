@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Имя пользователя: 1–255 символов; буквы, цифры, точки, дефисы, подчёркивания",
   "page.userAccount.usernamePlaceholder": "Введите имя пользователя",
   "page.welcome.keyboard": "Клавиатура",
+  "page.welcome.langTooltipDesktop": "Рабочая среда переведена на этот язык",
+  "page.welcome.langTooltipInstallerOnly": "Переведены только установщик и приложения Aelum",
   "page.welcome.language": "Язык",
   "page.welcome.languageEmpty": "Нет подходящих языков.",
   "page.welcome.languagePlaceholder": "Название языка или код",

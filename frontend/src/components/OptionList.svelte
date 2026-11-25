@@ -16,6 +16,8 @@
 	 * ellipsis and no added trailing text can change — which is what the e2e suite
 	 * selects on.
 	 */
+	import { tooltip } from '$lib/tooltip.svelte';
+
 	let {
 		items,
 		selected,
@@ -41,7 +43,16 @@
 		subMono?: boolean;
 		/** A pill after `sub`, for a fact that should read as a fact. */
 		chip?: string;
+		/** A leading status glyph (e.g. the globe marking a translated language). */
+		icon?: string;
+		/** Hover/focus hint for the row. Empty or absent means no tooltip. */
+		tooltip?: string;
 	}
+
+	// Whether any row carries a leading icon. When one does, every row reserves the
+	// column — translated and plain alike — so the names stay on one left edge
+	// instead of stepping in and out with each mark.
+	const hasIcons = $derived(items.some((i) => i.icon));
 </script>
 
 <ul class="option-list" aria-label={label}>
@@ -51,8 +62,12 @@
 				type="button"
 				class={['option-item', { 'option-item--selected': item.code === selected }]}
 				data-code={item.code}
+				use:tooltip={item.tooltip}
 				onclick={() => onSelect(item.code)}
 			>
+				{#if hasIcons}
+					<span class="option-icon" aria-hidden="true">{item.icon ?? ''}</span>
+				{/if}
 				<span class="option-main"
 					>{item.name}{#if item.nameTail}
 						<span class="option-tail">{' '}({item.nameTail})</span>{/if}</span
@@ -126,6 +141,26 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* The leading status column. Once any row uses it the column is reserved on
+	   every row, so a name never shifts sideways when a neighbour gains a mark. The
+	   glyph is deliberately quiet — the tooltip, not the icon, is what explains it. */
+	.option-icon {
+		flex-shrink: 0;
+		width: 1.4em;
+		text-align: center;
+		font-family: 'NerdFontsSymbols Nerd Font';
+		font-size: 1.15em;
+		line-height: 1;
+		color: var(--color-text-muted);
+	}
+
+	/* A selected row tints its whole content; the mark follows, dimmed like the
+	   other trailing facts rather than recoloured. */
+	.option-item--selected .option-icon {
+		color: inherit;
+		opacity: 0.85;
 	}
 
 	/* The tail is always Latin ("Germany", "Serbia, Latin"), so pin it to the

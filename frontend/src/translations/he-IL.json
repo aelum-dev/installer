@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "שם משתמש: 1–255 תווים; אותיות, ספרות, נקודות, מקפים, קווים תחתונים",
   "page.userAccount.usernamePlaceholder": "הזן שם משתמש",
   "page.welcome.keyboard": "מקלדת",
+  "page.welcome.langTooltipDesktop": "שולחן העבודה מתורגם לשפה זו",
+  "page.welcome.langTooltipInstallerOnly": "רק המתקין ויישומי Aelum מתורגמים",
   "page.welcome.language": "שפה",
   "page.welcome.languageEmpty": "אין שפה תואמת.",
   "page.welcome.languagePlaceholder": "שם השפה או קוד",

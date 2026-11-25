@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Потребителско име: 1–255 знака; букви, цифри, точки, тирета и долни черти",
   "page.userAccount.usernamePlaceholder": "Въведете потребителско име",
   "page.welcome.keyboard": "Клавиатура",
+  "page.welcome.langTooltipDesktop": "Работната среда е преведена на този език",
+  "page.welcome.langTooltipInstallerOnly": "Само инсталаторът и приложенията на Aelum са преведени",
   "page.welcome.language": "Език",
   "page.welcome.languageEmpty": "Няма съвпадащ език.",
   "page.welcome.languagePlaceholder": "Име на езика или код",

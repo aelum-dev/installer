@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Felhasználónév: 1–255 karakter; betűk, számok, pontok, kötőjelek, aláhúzásjelek",
   "page.userAccount.usernamePlaceholder": "Adja meg a felhasználónevet",
   "page.welcome.keyboard": "Billentyűzet",
+  "page.welcome.langTooltipDesktop": "Az asztal le van fordítva erre a nyelvre",
+  "page.welcome.langTooltipInstallerOnly": "Csak a telepítő és az Aelum alkalmazások vannak lefordítva",
   "page.welcome.language": "Nyelv",
   "page.welcome.languageEmpty": "Nincs megfelelő nyelv.",
   "page.welcome.languagePlaceholder": "A nyelv neve vagy kódja",

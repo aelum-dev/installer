@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "نام کاربری: ۱–۲۵۵ حرف؛ حروف، اعداد، نقطه، خط تیره و خط زیرین",
   "page.userAccount.usernamePlaceholder": "نام کاربری را وارد کنید",
   "page.welcome.keyboard": "صفحه‌کلید",
+  "page.welcome.langTooltipDesktop": "دسکتاپ به این زبان ترجمه شده است",
+  "page.welcome.langTooltipInstallerOnly": "فقط نصب‌کننده و برنامه‌های Aelum ترجمه شده‌اند",
   "page.welcome.language": "زبان",
   "page.welcome.languageEmpty": "زبانی مطابق نیست.",
   "page.welcome.languagePlaceholder": "نام زبان یا کد",

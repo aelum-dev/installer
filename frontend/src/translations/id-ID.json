@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Nama pengguna: 1–255 karakter; huruf, angka, titik, tanda hubung, garis bawah",
   "page.userAccount.usernamePlaceholder": "Masukkan nama pengguna",
   "page.welcome.keyboard": "Papan tik",
+  "page.welcome.langTooltipDesktop": "Desktop diterjemahkan ke bahasa ini",
+  "page.welcome.langTooltipInstallerOnly": "Hanya penginstal dan aplikasi Aelum yang diterjemahkan",
   "page.welcome.language": "Bahasa",
   "page.welcome.languageEmpty": "Tidak ada bahasa yang cocok.",
   "page.welcome.languagePlaceholder": "Nama bahasa atau kode",

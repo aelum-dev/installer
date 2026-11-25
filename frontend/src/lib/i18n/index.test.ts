@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { BACKEND_TO_FRONTEND, backendLocaleToFrontend, setLocale, t } from './index.svelte';
-import { LOCALES } from './locales';
+import { DMS_LOCALES, LOCALES, isDmsLocale } from './locales';
 
 afterEach(() => setLocale('en-US'));
 
@@ -37,6 +37,36 @@ describe('i18n locale registry', () => {
 
 	it('returns the key itself when no locale defines it', () => {
 		expect(t('missing.translation.key')).toBe('missing.translation.key');
+	});
+});
+
+describe('desktop (DMS) translation set', () => {
+	// The set mirrors dux-shell's shipped languages (22 poexports + English).
+	it('holds the 23 languages the desktop speaks', () => {
+		expect(DMS_LOCALES.size).toBe(23);
+	});
+
+	// A code with no installer translation has no row to mark, so a DMS code that
+	// is not a bundled locale would silently never light up a row.
+	it('is a subset of the installer locales', () => {
+		for (const code of DMS_LOCALES) {
+			expect(LOCALES, code).toHaveProperty(code);
+		}
+	});
+
+	// The installer-only languages: translated chrome, but the desktop stays in
+	// English. These are the rows that get the "only installer" tooltip.
+	it('excludes the installer-only languages', () => {
+		for (const code of ['el-GR', 'fi-FI', 'nb-NO', 'ca-ES', 'id-ID']) {
+			expect(isDmsLocale(code), code).toBe(false);
+			expect(LOCALES, code).toHaveProperty(code);
+		}
+	});
+
+	it('recognises a desktop locale and rejects an unknown one', () => {
+		expect(isDmsLocale('de-DE')).toBe(true);
+		expect(isDmsLocale('eo')).toBe(true);
+		expect(isDmsLocale('xx-XX')).toBe(false);
 	});
 });
 

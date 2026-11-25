@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Username: 1–255 characters; letters, numbers, dots, hyphens, underscores",
   "page.userAccount.usernamePlaceholder": "Enter username",
   "page.welcome.keyboard": "Keyboard",
+  "page.welcome.langTooltipDesktop": "Desktop is translated into this language",
+  "page.welcome.langTooltipInstallerOnly": "Only installer and Aelum apps are translated",
   "page.welcome.language": "Language",
   "page.welcome.languageEmpty": "No language matches that.",
   "page.welcome.languagePlaceholder": "Language name or code",

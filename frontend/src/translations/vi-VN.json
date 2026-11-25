@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Tên người dùng: 1–255 ký tự; chữ cái, số, dấu chấm, dấu gạch ngang, dấu gạch dưới",
   "page.userAccount.usernamePlaceholder": "Nhập tên người dùng",
   "page.welcome.keyboard": "Bàn phím",
+  "page.welcome.langTooltipDesktop": "Màn hình nền đã được dịch sang ngôn ngữ này",
+  "page.welcome.langTooltipInstallerOnly": "Chỉ trình cài đặt và ứng dụng Aelum được dịch",
   "page.welcome.language": "Ngôn ngữ",
   "page.welcome.languageEmpty": "Không có ngôn ngữ nào khớp.",
   "page.welcome.languagePlaceholder": "Tên ngôn ngữ hoặc mã",

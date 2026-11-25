@@ -162,6 +162,8 @@
   "page.userAccount.usernameHint": "Användarnamn: 1–255 tecken; bokstäver, siffror, punkter, bindestreck, understreck",
   "page.userAccount.usernamePlaceholder": "Ange användarnamn",
   "page.welcome.keyboard": "Tangentbord",
+  "page.welcome.langTooltipDesktop": "Skrivbordet är översatt till detta språk",
+  "page.welcome.langTooltipInstallerOnly": "Endast installationsprogrammet och Aelum-apparna är översatta",
   "page.welcome.language": "Språk",
   "page.welcome.languageEmpty": "Inget språk matchar.",
   "page.welcome.languagePlaceholder": "Språknamn eller kod",

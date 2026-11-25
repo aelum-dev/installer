@@ -12,7 +12,7 @@
 	} from '$lib/backend';
 	import { installState } from '$lib/store.svelte';
 	import { DefaultLanguageCode } from '$lib/constants';
-	import { t, setLocale, backendLocaleToFrontend } from '$lib/i18n';
+	import { t, setLocale, backendLocaleToFrontend, isDmsLocale, DEFAULT_LOCALE } from '$lib/i18n';
 	import PageLayout from '$components/PageLayout.svelte';
 	import ScrollBox from '$components/ScrollBox.svelte';
 	import OptionList from '$components/OptionList.svelte';
@@ -36,6 +36,9 @@
 	} from '$lib/welcome-cascade';
 
 	const pageIcon = glyph(STEP_ICONS.welcome);
+	// The same globe marks a language the installer itself speaks, so the welcome
+	// mark and the "this language is translated" mark are one and the same icon.
+	const globe = pageIcon;
 
 	let languages = $state<LanguageOption[]>([]);
 	let regions = $state<RegionOption[]>([]);
@@ -125,13 +128,24 @@
 
 	const listItems = $derived.by(() => {
 		if (tab === 'language') {
-			return filterLanguages(languages, query).map((l) => ({
-				code: l.code,
-				name: l.name,
-				nameTail: l.nameTail,
-				sub: l.locale,
-				subMono: true,
-			}));
+			return filterLanguages(languages, query).map((l) => {
+				// A language the installer has no translation for gets no mark: the
+				// globe means "this row is translated", so it must not sit on a row
+				// that only sets the system locale. The tooltip then splits the
+				// translated rows by how far the translation reaches.
+				const uiLocale = backendLocaleToFrontend(l.locale);
+				return {
+					code: l.code,
+					name: l.name,
+					nameTail: l.nameTail,
+					sub: l.locale,
+					subMono: true,
+					icon: uiLocale ? globe : '',
+					tooltip: uiLocale
+						? t(isDmsLocale(uiLocale) ? 'page.welcome.langTooltipDesktop' : 'page.welcome.langTooltipInstallerOnly')
+						: '',
+				};
+			});
 		}
 		if (tab === 'location') {
 			return filterRegions(regions, query).map((r) => ({
@@ -171,12 +185,15 @@
 
 	// Apply the UI translation that belongs to a backend language code. Used for
 	// both the restored selection and a user click, so the UI language always
-	// matches the selected install language. A language with no UI translation keeps
-	// the chrome as it is — the system it installs still reads that language.
+	// matches the selected install language. A language with no UI translation
+	// drops the chrome back to English: the system it installs still reads that
+	// language, but the wizard cannot, and leaving it in whatever language the
+	// previous choice had set would strand the chrome on a language no longer
+	// selected.
 	function applyUiLocale(code: string): void {
 		const lang = languages.find((l) => l.code === code);
 		const uiLocale = lang ? backendLocaleToFrontend(lang.locale) : undefined;
-		if (uiLocale) setLocale(uiLocale);
+		setLocale(uiLocale ?? DEFAULT_LOCALE);
 	}
 
 	async function loadChoices(): Promise<void> {
