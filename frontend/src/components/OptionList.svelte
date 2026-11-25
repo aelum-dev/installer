@@ -6,9 +6,10 @@
 	 * countries, clocks), so the row design (selected fill, hover, height, RTL-safe
 	 * padding) lives in one place instead of being copied per mode. Callers pass
 	 * anything with a `code` and a `name`, plus the optional trailing text each mode
-	 * shows: a `sub` (a locale, a mirror answer, a zone name) and a `chip` (a UTC
-	 * offset). The component owns no state, so filtering and persistence stay with
-	 * the page that needs them.
+	 * shows: a `nameTail` (a language's territory, rendered beside the name), a
+	 * `sub` (a locale, a mirror answer, a zone name) and a `chip` (a UTC offset).
+	 * The component owns no state, so filtering and persistence stay with the page
+	 * that needs them.
 	 *
 	 * Each row carries its `code` in a data attribute: the code is the row's
 	 * identity, and it is the one thing about a row that no translation, no
@@ -32,6 +33,8 @@
 		code: string;
 		/** The row's primary text — what the row is a name of. */
 		name: string;
+		/** Parenthetical rendered beside the name, e.g. a language's territory. */
+		nameTail?: string;
 		/** Quiet text at the trailing edge, beside the mark. */
 		sub?: string;
 		/** Renders `sub` in the mono face: it is a code, not a sentence. */
@@ -50,7 +53,9 @@
 				data-code={item.code}
 				onclick={() => onSelect(item.code)}
 			>
-				<span class="option-main">{item.name}</span>
+				<span class="option-main"
+					>{item.name}{#if item.nameTail} <span class="option-tail">({item.nameTail})</span>{/if}</span
+				>
 				{#if item.sub}
 					<span class={['option-sub', { 'option-sub--mono': item.subMono }]}>{item.sub}</span>
 				{/if}
@@ -120,6 +125,15 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* The tail is always Latin ("Germany", "Serbia, Latin"), so pin it to the
+	   stack's Latin faces. The script font a native name resolves to (Noto Sans
+	   Tifinagh) carries no Latin at all, and WebKitGTK does not fall back per
+	   glyph inside one text run — it would drop the parenthetical whole. As its
+	   own element the tail resolves its font on its own and always renders. */
+	.option-tail {
+		font-family: 'Nunito', 'Noto Sans', sans-serif;
 	}
 
 	/* Trailing facts sit at the far edge, before the mark. Only the first of them

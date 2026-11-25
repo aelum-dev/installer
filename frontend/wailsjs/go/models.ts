@@ -103,6 +103,7 @@ export namespace shared {
 	export class Language {
 	    code: string;
 	    name: string;
+	    nameTail: string;
 	    locale: string;
 	    native: string;
 	    en: string;
@@ -116,6 +117,7 @@ export namespace shared {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.code = source["code"];
 	        this.name = source["name"];
+	        this.nameTail = source["nameTail"];
 	        this.locale = source["locale"];
 	        this.native = source["native"];
 	        this.en = source["en"];

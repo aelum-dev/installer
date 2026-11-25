@@ -72,12 +72,14 @@
 				tab: 'language' as const,
 				key: 'page.welcome.language',
 				value: selectedLanguage?.name ?? '',
+				tail: selectedLanguage?.nameTail ?? '',
 				sub: selectedLanguage?.locale ?? '',
 			},
 			{
 				tab: 'location' as const,
 				key: 'page.welcome.region',
 				value: selectedRegion?.name ?? '',
+				tail: '',
 				// The two things a country decides that are not obvious from its name:
 				// which keyboards it sells and whether the install comes from there.
 				sub: selectedRegion
@@ -89,6 +91,7 @@
 				tab: 'timezone' as const,
 				key: 'page.welcome.timezone',
 				value: zone === '' ? '' : zoneCity(zone),
+				tail: '',
 				sub: zone === '' ? '' : `${zone} · ${utcOffset(zone)}`,
 			},
 		];
@@ -125,6 +128,7 @@
 			return filterLanguages(languages, query).map((l) => ({
 				code: l.code,
 				name: l.name,
+				nameTail: l.nameTail,
 				sub: l.locale,
 				subMono: true,
 			}));
@@ -287,7 +291,9 @@
 					onclick={() => pickTab(row.tab)}
 				>
 					<span class="s-label">{t(row.key)}</span>
-					<span class="s-value">{row.value}</span>
+					<span class="s-value"
+						>{row.value}{#if row.tail} <span class="s-tail">({row.tail})</span>{/if}</span
+					>
 					{#if row.sub}<span class="s-sub">{row.sub}</span>{/if}
 					<span class="s-check" aria-hidden="true">
 						<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -445,6 +451,12 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		max-width: 210px;
+	}
+
+	/* Same reason as OptionList's .option-tail: the parenthetical is Latin and
+	   must not share a text run with a script font that carries no Latin. */
+	.s-tail {
+		font-family: 'Nunito', 'Noto Sans', sans-serif;
 	}
 
 	.s-sub {

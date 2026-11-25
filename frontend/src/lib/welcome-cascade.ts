@@ -149,15 +149,16 @@ export function selectTimezone(
 // ── The lists ────────────────────────────────────────────────────────────────
 
 // filterLanguages matches a language on anything a person might type for it: the
-// name in either language, the code, or the locale. Someone hunting for German
-// types "German" without being able to read "Deutsch"; someone who knows the code
-// types "de".
+// name in either language, the parenthetical tail, the code, or the locale.
+// Someone hunting for German types "German" without being able to read "Deutsch";
+// someone who knows the code types "de".
 export function filterLanguages(languages: LanguageOption[], query: string): LanguageOption[] {
 	const q = query.trim().toLowerCase();
 	if (q === '') return languages;
 	return languages.filter(
 		(l) =>
 			l.name.toLowerCase().includes(q) ||
+			l.nameTail.toLowerCase().includes(q) ||
 			l.native.toLowerCase().includes(q) ||
 			l.en.toLowerCase().includes(q) ||
 			l.code.toLowerCase().includes(q) ||

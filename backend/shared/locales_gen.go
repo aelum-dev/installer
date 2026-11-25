@@ -114,7 +114,7 @@ func generate(localesDir, isoDir string) error {
 		if fi, fj := foldName(table[i].Native), foldName(table[j].Native); fi != fj {
 			return fi < fj
 		}
-		if fi, fj := foldName(table[i].Name), foldName(table[j].Name); fi != fj {
+		if fi, fj := foldName(table[i].NameTail), foldName(table[j].NameTail); fi != fj {
 			return fi < fj
 		}
 		return table[i].Code < table[j].Code
@@ -154,9 +154,9 @@ func capitalizeFirst(s string) string {
 }
 
 // buildLanguage turns one glibc locale file name into a Language row. The name is
-// "lang[_TERR][@modifier]"; the display name is the native name plus, in
-// parentheses, the territory and the written form that tell the near-identical
-// rows apart.
+// "lang[_TERR][@modifier]"; the display name is the native name, and the
+// parenthetical tail carries the territory and the written form that tell the
+// near-identical rows apart.
 func buildLanguage(file string, enNames map[string]string) shared.Language {
 	base, modifier := file, ""
 	if i := strings.IndexByte(file, '@'); i >= 0 {
@@ -199,14 +199,12 @@ func buildLanguage(file string, enNames map[string]string) shared.Language {
 			paren = append(paren, modifier)
 		}
 	}
-	name := capitalizeFirst(native)
-	if len(paren) > 0 {
-		name += " (" + strings.Join(paren, ", ") + ")"
-	}
-
+	// The tail is kept as its own piece (not folded into Name) so the UI can
+	// render it in a Latin-capable font — see Language.NameTail.
 	return shared.Language{
 		Code:      file,
-		Name:      name,
+		Name:      capitalizeFirst(native),
+		NameTail:  strings.Join(paren, ", "),
 		Locale:    locale,
 		Native:    native,
 		En:        en,
@@ -282,8 +280,8 @@ func writeTable(table []shared.Language) error {
 //
 // Native names (what a language calls itself) are curated in locales_native.go;
 // English names and territory names come from iso-codes. Sorted by the native
-// name the row displays — accents and case folded — then by the full display
-// name. Display names carry a capital first letter; Native keeps the speakers'
+// name the row displays — accents and case folded — then by the parenthetical
+// tail. Display names carry a capital first letter; Native keeps the speakers'
 // own form, which is often lower case.
 
 package shared
@@ -292,8 +290,8 @@ package shared
 var languageTable = []Language{
 `)
 	for _, l := range table {
-		_, _ = fmt.Fprintf(w, "\t{Code: %q, Name: %q, Locale: %q, Native: %q, En: %q, Territory: %q},\n",
-			l.Code, l.Name, l.Locale, l.Native, l.En, l.Territory)
+		_, _ = fmt.Fprintf(w, "\t{Code: %q, Name: %q, NameTail: %q, Locale: %q, Native: %q, En: %q, Territory: %q},\n",
+			l.Code, l.Name, l.NameTail, l.Locale, l.Native, l.En, l.Territory)
 	}
 	_, _ = w.WriteString("}\n")
 

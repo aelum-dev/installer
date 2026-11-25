@@ -37,6 +37,7 @@
 	let languages = $state<LanguageOption[]>([]);
 	let regions = $state<RegionOption[]>([]);
 	let selectedLanguageName = $state<string>('—');
+	let selectedLanguageTail = $state<string>('');
 	let selectedRegionName = $state<string>('—');
 	let selectedTimezoneName = $state<string>('—');
 	let inputMethodValue = $state<string>('—');
@@ -52,7 +53,9 @@
 				GetSelectedRegion(),
 				GetSelectedTimezone(),
 			]);
-			selectedLanguageName = languages.find((l) => l.code === languageCode)?.name || languageCode || '—';
+			const language = languages.find((l) => l.code === languageCode);
+			selectedLanguageName = language?.name || languageCode || '—';
+			selectedLanguageTail = language?.nameTail ?? '';
 			selectedRegionName = regions.find((r) => r.code === regionCode)?.name || regionCode || '—';
 			// The zone is shown by its full name, not its city: this is the line a
 			// person reads to catch a wrong clock, and "Kyiv" alone does not say
@@ -63,6 +66,7 @@
 			void loadInputMethods(languageCode, regionCode);
 		} catch {
 			selectedLanguageName = '—';
+			selectedLanguageTail = '';
 			selectedRegionName = '—';
 			selectedTimezoneName = '—';
 		}
@@ -140,7 +144,10 @@
 		<section class="card choices-card">
 			<div class="crow">
 				<h3 class="clabel">{t('page.confirmation.sectionLanguage')}</h3>
-				<p class="cvalue">{selectedLanguageName}</p>
+				<p class="cvalue"
+					>{selectedLanguageName}{#if selectedLanguageTail}
+						<span class="c-tail">({selectedLanguageTail})</span>{/if}</p
+				>
 			</div>
 			<div class="crow">
 				<h3 class="clabel">{t('page.confirmation.sectionRegion')}</h3>
@@ -325,6 +332,12 @@
 
 	.cvalue strong {
 		font-weight: var(--font-weight-600);
+	}
+
+	/* Same reason as OptionList's .option-tail: the parenthetical is Latin and
+	   must not share a text run with a script font that carries no Latin. */
+	.c-tail {
+		font-family: 'Nunito', 'Noto Sans', sans-serif;
 	}
 
 	.dim {

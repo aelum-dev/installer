@@ -19,10 +19,10 @@ import {
 // default clock is a local name tzdata does not list as its own row, and the
 // worldwide entry.
 const LANGUAGES: LanguageOption[] = [
-	{ code: 'en_US', name: 'English (United States)', locale: 'en_US.UTF-8', native: 'English', en: 'English', territory: 'us' },
-	{ code: 'en_GB', name: 'English (United Kingdom)', locale: 'en_GB.UTF-8', native: 'English', en: 'English', territory: 'gb' },
-	{ code: 'de_DE', name: 'Deutsch (Germany)', locale: 'de_DE.UTF-8', native: 'Deutsch', en: 'German', territory: 'de' },
-	{ code: 'eo', name: 'Esperanto', locale: 'eo.UTF-8', native: 'Esperanto', en: 'Esperanto', territory: '' },
+	{ code: 'en_US', name: 'English', nameTail: 'United States', locale: 'en_US.UTF-8', native: 'English', en: 'English', territory: 'us' },
+	{ code: 'en_GB', name: 'English', nameTail: 'United Kingdom', locale: 'en_GB.UTF-8', native: 'English', en: 'English', territory: 'gb' },
+	{ code: 'de_DE', name: 'Deutsch', nameTail: 'Germany', locale: 'de_DE.UTF-8', native: 'Deutsch', en: 'German', territory: 'de' },
+	{ code: 'eo', name: 'Esperanto', nameTail: '', locale: 'eo.UTF-8', native: 'Esperanto', en: 'Esperanto', territory: '' },
 ];
 
 const REGIONS: RegionOption[] = [
@@ -81,6 +81,10 @@ describe('the language list', () => {
 
 	it('keeps every written form of one language when the query names the language', () => {
 		expect(filterLanguages(LANGUAGES, 'english').map((l) => l.code)).toEqual(['en_US', 'en_GB']);
+	});
+
+	it('matches the parenthetical tail, so "germany" finds Deutsch (Germany)', () => {
+		expect(filterLanguages(LANGUAGES, 'germany').map((l) => l.code)).toEqual(['de_DE']);
 	});
 
 	it('returns everything for an empty query', () => {

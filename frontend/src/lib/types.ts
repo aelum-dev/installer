@@ -74,12 +74,15 @@ export interface ManualLayout {
 //
 // The list is every locale glibc can generate, so the same language appears once
 // per written form ("Deutsch (Germany)" and "Deutsch (Austria)" are two rows).
-// `name` is what the row shows — the native name plus, in parentheses, whatever
-// tells the near-identical rows apart. `native` and `en` are its two halves, kept
-// separate so a search matches both.
+// `name` is the row's primary text — the native name — and `nameTail` the
+// parenthetical that tells the near-identical rows apart, kept separate so the UI
+// can render the Latin tail in a Latin-capable font (the script fonts a native
+// name resolves to may carry no Latin at all). `native` and `en` are its other
+// halves, kept separate so a search matches both.
 export interface LanguageOption {
 	code: string; // backend language code, e.g. "en_US"
-	name: string; // display name, e.g. "Deutsch (Germany)"
+	name: string; // display name, e.g. "Deutsch"
+	nameTail: string; // parenthetical tail, e.g. "Germany"; "" when there is none
 	locale: string; // full backend locale, e.g. "en_US.UTF-8"
 	native: string; // what the language calls itself, e.g. "Deutsch"
 	en: string; // its English name, e.g. "German"

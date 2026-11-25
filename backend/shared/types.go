@@ -107,11 +107,18 @@ type Language struct {
 	// Code is the glibc locale name without its encoding — "en_US", "zh_CN",
 	// "sr_RS@latin" — the key the list is selected by and --language takes.
 	Code string `json:"code"`
-	// Name is the display name: the language's own name, with a capital first
-	// letter for a consistent list, plus in parentheses the territory or written
-	// form that tells the near-identical rows apart — "English (United States)",
-	// "中文 (China)", "Српски (Serbia, Cyrillic)".
+	// Name is the display name: the language's own name with a capital first
+	// letter — "English", "Српски", "Deutsch". The territory or written form
+	// that tells the near-identical rows apart lives in NameTail, kept separate
+	// so the UI can render it in a Latin-capable font: the script font a native
+	// name resolves to (Noto Sans Tifinagh) carries no Latin at all, and an
+	// engine that does not fall back per glyph drops a parenthetical sharing
+	// their run.
 	Name string `json:"name"`
+	// NameTail is the display name's parenthetical without its parentheses —
+	// "Germany", "Serbia, Latin" — or "" when the name carries none. The UI
+	// shows "Name (NameTail)".
+	NameTail string `json:"nameTail"`
 	// Locale is the full locale string written to locale.gen and locale.conf,
 	// e.g. "en_US.UTF-8" or "sr_RS.UTF-8@latin".
 	Locale string `json:"locale"`

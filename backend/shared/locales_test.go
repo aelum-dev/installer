@@ -89,8 +89,8 @@ func TestLanguagesSortedByNativeName(t *testing.T) {
 		if curKey < prevKey {
 			t.Fatalf("language %q (%q) sorts before %q (%q)", cur.Code, cur.Native, prev.Code, prev.Native)
 		}
-		if curKey == prevKey && foldForSort(cur.Name) < foldForSort(prev.Name) {
-			t.Fatalf("language %q (%q) sorts before %q (%q)", cur.Code, cur.Name, prev.Code, prev.Name)
+		if curKey == prevKey && foldForSort(cur.NameTail) < foldForSort(prev.NameTail) {
+			t.Fatalf("language %q (%q) sorts before %q (%q)", cur.Code, cur.NameTail, prev.Code, prev.NameTail)
 		}
 	}
 }
