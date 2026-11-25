@@ -39,6 +39,17 @@ test.describe('Installer wizard', () => {
     // A language is auto-selected on load (required to proceed).
     await expect(page.locator('.option-item--selected')).toBeVisible();
 
+    // Name and territory separated by exactly one space. The tail is its own
+    // span (pinned to a Latin font), and Svelte's whitespace trimming has
+    // broken that space twice — swallowed, then doubled — so compare the raw
+    // textContent, which no normalisation forgives.
+    expect(await page.locator('.option-item--selected .option-main').textContent()).toBe(
+      'English (United States)',
+    );
+    expect(await page.locator('.summary .s-value').first().textContent()).toBe(
+      'English (United States)',
+    );
+
     // The list opens scrolled to that language: it is the first row in view,
     // not something to hunt for deep in the table. (en_US sits mid-table once
     // the list is sorted by native name, so this only passes if it scrolled.)

@@ -146,8 +146,8 @@
 				<h3 class="clabel">{t('page.confirmation.sectionLanguage')}</h3>
 				<p class="cvalue"
 					>{selectedLanguageName}{#if selectedLanguageTail}
-						<span class="c-tail">({selectedLanguageTail})</span>{/if}</p
-				>
+						<span class="c-tail">{' '}({selectedLanguageTail})</span>{/if}</p
+					>
 			</div>
 			<div class="crow">
 				<h3 class="clabel">{t('page.confirmation.sectionRegion')}</h3>

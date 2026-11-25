@@ -54,8 +54,9 @@
 				onclick={() => onSelect(item.code)}
 			>
 				<span class="option-main"
-					>{item.name}{#if item.nameTail} <span class="option-tail">({item.nameTail})</span>{/if}</span
-				>
+					>{item.name}{#if item.nameTail}
+						<span class="option-tail">{' '}({item.nameTail})</span>{/if}</span
+					>
 				{#if item.sub}
 					<span class={['option-sub', { 'option-sub--mono': item.subMono }]}>{item.sub}</span>
 				{/if}

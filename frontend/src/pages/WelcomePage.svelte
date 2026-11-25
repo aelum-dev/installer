@@ -292,8 +292,9 @@
 				>
 					<span class="s-label">{t(row.key)}</span>
 					<span class="s-value"
-						>{row.value}{#if row.tail} <span class="s-tail">({row.tail})</span>{/if}</span
-					>
+						>{row.value}{#if row.tail}
+							<span class="s-tail">{' '}({row.tail})</span>{/if}</span
+						>
 					{#if row.sub}<span class="s-sub">{row.sub}</span>{/if}
 					<span class="s-check" aria-hidden="true">
 						<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
