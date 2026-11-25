@@ -137,5 +137,11 @@
 		flex-direction: column;
 		gap: var(--spacing-md);
 		padding-inline-end: var(--spacing-sm);
+		/* The browser's scroll anchoring nudges scrollTop to keep visible
+		   content steady when content above it changes — exactly when this box
+		   swaps lists (the Welcome page's tabs). That nudge lands after a
+		   programmatic scrollToCode scroll and silently offsets it, so the box
+		   that scrolls itself must not be anchored. */
+		overflow-anchor: none;
 	}
 </style>
