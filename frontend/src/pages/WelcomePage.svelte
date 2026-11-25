@@ -228,6 +228,22 @@
 		}
 	}
 
+	// Re-read the three answers from the backend and show exactly what it holds.
+	// Used when a push was refused partway, so the card never shows a choice the
+	// install would not honour: a refused SetSelectedRegion leaves the backend on
+	// the cascade of whatever landed before it, not on the pre-click answer.
+	async function syncFromBackend(): Promise<void> {
+		const [lang, region, zone] = await Promise.all([
+			GetSelectedLanguage(),
+			GetSelectedRegion(),
+			GetSelectedTimezone(),
+		]);
+		if (languages.some((l) => l.code === lang)) installState.locale = lang;
+		const r = findRegion(regions, region);
+		if (r) installState.region = r.code;
+		if (zones.some((z) => z.id === zone)) installState.timezone = zone;
+	}
+
 	async function select(code: string): Promise<void> {
 		const current: WelcomeSelection = {
 			locale: installState.locale,
@@ -253,6 +269,8 @@
 			await pushSelection();
 		} catch (err) {
 			console.error(`Failed to record the choice: ${err}`);
+			// The backend refused one of the answers — show its truth, not ours.
+			await syncFromBackend();
 		}
 		// The list re-rendered and took the clicked row's focus with it; the search
 		// field is where the next keystroke belongs.
