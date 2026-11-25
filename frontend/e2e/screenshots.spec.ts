@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { settleEnglishBackend } from './reset';
 
 // Website screenshots of the installer, shot from the real app.
 //
@@ -134,6 +135,7 @@ async function walkthrough(page: Page, theme: Theme): Promise<void> {
   // chose, and the site's frames are the English wizard. Selected by language code
   // — the row's name now carries its territory and its locale beside it.
   await page.locator('.option-item[data-code="en_US"]').click();
+  await settleEnglishBackend(page);
   await page.waitForTimeout(SETTLE_MS);
   await shoot(page, theme, 1);
 

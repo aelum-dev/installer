@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { settleEnglishBackend } from './reset';
 
 // End-to-end tests for the installer wizard navigation. These exercise the full
 // stack: Svelte frontend + Go backend bindings served by `wails dev` (fake
@@ -29,6 +30,7 @@ test.describe('Installer wizard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.locator('.option-item[data-code="en_US"]').click();
+    await settleEnglishBackend(page);
   });
 
   test('Welcome page loads languages and enables Next', async ({ page }) => {

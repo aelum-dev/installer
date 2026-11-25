@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { settleEnglishBackend } from './reset';
 
 // Full end-to-end flow: Welcome -> User account -> Disk selection ->
 // Confirmation -> Installation -> Finish.
@@ -28,6 +29,7 @@ test('full wizard flow reaches the finish screen', async ({ page }) => {
   // session chose, and this flow drives the English wizard. Selected by
   // language code, so it works from any starting UI (see screenshots.spec).
   await page.locator('.option-item[data-code="en_US"]').click();
+  await settleEnglishBackend(page);
 
   // Welcome -> User account
   await next(page).click();

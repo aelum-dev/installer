@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { settleEnglishBackend } from './reset';
 
 // End-to-end tests for manual partition mode. These drive the
 // real Wails app through `wails dev` (fake disks, dry-run), same as
@@ -45,6 +46,7 @@ async function gotoDiskSelection(page: import('@playwright/test').Page): Promise
   // Selected by language code, not by name: the row now reads "English (United
   // States)" with its locale beside it, and a name is something i18n owns.
   await page.locator('.option-item[data-code="en_US"]').click();
+  await settleEnglishBackend(page);
   await next(page).click(); // Welcome -> User account
   await page.getByLabel('Username').fill('alice');
   await page.getByLabel('Password', { exact: true }).fill('secret1');
