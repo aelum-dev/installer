@@ -109,8 +109,8 @@ describe('the clock list', () => {
 		expect(zonesForRegion(ZONES, REGIONS[3]).map((z) => z.id)).toEqual(['Europe/Copenhagen']);
 	});
 
-	it('has no clocks of its own for the worldwide location', () => {
-		expect(zonesForRegion(ZONES, REGIONS[5])).toEqual([]);
+	it('gives the worldwide location its own UTC clock, not an empty list', () => {
+		expect(zonesForRegion(ZONES, REGIONS[5]).map((z) => z.id)).toEqual(['UTC']);
 		expect(zonesForRegion(ZONES, undefined)).toEqual([]);
 	});
 
@@ -140,9 +140,9 @@ describe('the cascade', () => {
 		expect(next).toMatchObject({ locale: 'de_DE', region: 'de', timezone: 'Europe/Berlin' });
 	});
 
-	it('a language with no country leaves the location alone', () => {
+	it('a language with no country falls back to Worldwide, as the backend does', () => {
 		const next = selectLanguage(START, LANGUAGES, REGIONS, 'eo');
-		expect(next).toMatchObject({ locale: 'eo', region: 'us', timezone: 'America/New_York' });
+		expect(next).toMatchObject({ locale: 'eo', region: 'worldwide', timezone: 'UTC' });
 	});
 
 	it('a language does not move a location the person chose', () => {

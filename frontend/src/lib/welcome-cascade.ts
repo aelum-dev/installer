@@ -12,6 +12,7 @@
 // region's default zone, a zone's countries all arrive on the bindings — so the
 // two agree by construction rather than by keeping two lists in step.
 
+import { DefaultRegionCode } from '$lib/constants';
 import type { LanguageOption, RegionOption, TimezoneOption } from '$lib/types';
 
 // Which list the content column is showing. The summary card's three rows are the
@@ -87,7 +88,10 @@ export function utcOffset(id: string): string {
 // selectLanguage answers a language pick. The location follows the language's
 // country only while the person has not named one themselves; the clock follows
 // the location, and a clock the person named is dropped along with the location it
-// came from — a new country means a new default clock.
+// came from — a new country means a new default clock. A language with no country
+// (Esperanto, Toki Pona, Syriac) falls back to the worldwide location, mirroring
+// the backend's RegionForLanguage — both ends must land on the same answer, or the
+// card shows one thing while the install honours another.
 export function selectLanguage(
 	sel: WelcomeSelection,
 	languages: LanguageOption[],
@@ -97,7 +101,7 @@ export function selectLanguage(
 	const next: WelcomeSelection = { ...sel, locale: code };
 	if (next.regionChosen) return next;
 
-	const territory = languages.find((l) => l.code === code)?.territory ?? '';
+	const territory = languages.find((l) => l.code === code)?.territory || DefaultRegionCode;
 	const region = findRegion(regions, territory);
 	if (!region) return next;
 
@@ -175,9 +179,15 @@ export function filterRegions(regions: RegionOption[], query: string): RegionOpt
 
 // zonesForRegion is the country-only view: the clocks tzdata names that country in,
 // plus its own default when that default is a local name (Europe/Copenhagen) that
-// is not itself a tzdata row. Sorted by the city a person reads.
+// is not itself a tzdata row. Sorted by the city a person reads. Worldwide has no
+// country's clocks, but it does have its own answer — UTC — and showing that row
+// beats an empty list that reads "no zone matches" while nothing was searched.
 export function zonesForRegion(zones: TimezoneOption[], region: RegionOption | undefined): TimezoneOption[] {
-	if (!region || region.code === 'worldwide') return [];
+	if (!region) return [];
+	if (region.code === DefaultRegionCode) {
+		const utc = zones.find((z) => z.id === 'UTC');
+		return utc ? [utc] : [];
+	}
 	const own = zones.filter((z) => z.countries?.includes(region.code));
 	const seen = new Set(own.map((z) => z.id));
 	const fallback = zones.find((z) => z.id === region.timezone);
