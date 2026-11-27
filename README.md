@@ -5,7 +5,9 @@ desktop by asking four questions — language, user, disk, confirm — and it in
 carries, so the install needs no internet. There's a GUI (Wails v2: Go + Svelte 5) and a headless CLI;
 both run the same eight steps.
 
-![The Aelum installer welcome screen](./images/installer-screenshot.png)
+
+https://github.com/user-attachments/assets/e2ccb8c2-9e5d-43f0-8eb2-641dc39b01df
+
 
 It ships inside the live ISO and opens on its own when that ISO boots.
 
