@@ -686,6 +686,189 @@ func TestRegisterRefindBootEntry_Errors(t *testing.T) {
 	}
 }
 
+// nvramListing is a realistic `efibootmgr -v` for the case that matters: this
+// ESP's rEFInd entry exists, but the firmware would still boot the installation
+// medium, because the DVD entry is the head of BootOrder.
+const nvramListing = `BootCurrent: 0002
+Timeout: 0 seconds
+BootOrder: 0002,0007,0001
+Boot0001* EFI Internal Shell	FV(70692445-c28b-4d0a-87ff-4c7a44f6e5f3)
+Boot0002* UEFI QEMU DVD-ROM QM00005	PciRoot(0x0)/Pci(0x1f,0x2)/CDROM(1,0x0,0x800)
+Boot0007* Aelum (vda2)	HD(1,GPT,esp-partuuid,0x800,0x200000)/File(\EFI\refind\refind_x64.efi)
+`
+
+// nvramListingForeign is the same firmware with no entry for this ESP yet.
+const nvramListingForeign = `BootCurrent: 0002
+Timeout: 0 seconds
+BootOrder: 0002,0001
+Boot0001* EFI Internal Shell	FV(70692445-c28b-4d0a-87ff-4c7a44f6e5f3)
+Boot0002* UEFI QEMU DVD-ROM QM00005	PciRoot(0x0)/Pci(0x1f,0x2)/CDROM(1,0x0,0x800)
+`
+
+func TestRegisterRefindBootEntry_PromotesExistingEntry(t *testing.T) {
+	// The regression this pins: a reinstall over a reused ESP keeps that ESP's
+	// PARTUUID, so the previous install's entry still matches and nothing needs
+	// creating. Having an entry is not enough — it sits behind the medium in the
+	// boot order, and reboot lands on the live ISO instead of the new system.
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"}, nvramListing).
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, "ESP-PARTUUID\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1", RootPart: "/dev/vda2"},
+	}
+	if err := registerRefindBootEntry(ctx); err != nil {
+		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
+	}
+	want := []string{"efibootmgr", "--bootorder", "0007,0002,0001"}
+	if !hasCall(rec.CallsFor("efibootmgr"), want...) {
+		t.Fatalf("efibootmgr --bootorder argv missing; calls = %v", rec.CallsFor("efibootmgr"))
+	}
+	if bootCreateRan(rec) {
+		t.Fatal("efibootmgr --create ran despite an existing entry")
+	}
+}
+
+func TestRegisterRefindBootEntry_LeavesFirstEntryAlone(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"},
+			strings.Replace(nvramListing, "BootOrder: 0002,0007,0001", "BootOrder: 0007,0002,0001", 1)).
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, "ESP-PARTUUID\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1", RootPart: "/dev/vda2"},
+	}
+	if err := registerRefindBootEntry(ctx); err != nil {
+		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
+	}
+	if bootOrderRan(rec) {
+		t.Fatal("efibootmgr --bootorder ran although the entry is already first")
+	}
+}
+
+func TestRegisterRefindBootEntry_PromotesCreatedEntry(t *testing.T) {
+	// Nothing matches this ESP yet, so the entry is created. efibootmgr names it
+	// on stdout, and that number is what moves ahead of the DVD entry.
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"}, nvramListingForeign).
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, "AELUM-PARTUUID\n").
+		OnArgsOutput([]string{"efibootmgr", "--create"},
+			`Boot000A* Aelum (vda2)	HD(1,GPT,aelum-partuuid,0x800,0x200000)/File(\EFI\refind\refind_x64.efi)`+"\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1", RootPart: "/dev/vda2"},
+	}
+	if err := registerRefindBootEntry(ctx); err != nil {
+		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
+	}
+	want := []string{"efibootmgr", "--bootorder", "000a,0002,0001"}
+	if !hasCall(rec.CallsFor("efibootmgr"), want...) {
+		t.Fatalf("efibootmgr --bootorder argv missing; calls = %v", rec.CallsFor("efibootmgr"))
+	}
+}
+
+func TestRegisterRefindBootEntry_NoBootOrderWritesNothing(t *testing.T) {
+	// A firmware holding no BootOrder is booting devices in its own order.
+	// Writing an order that lists only Aelum would leave it nothing to fall back
+	// to if rEFInd itself failed to load, so the entry is left to the firmware.
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"},
+			`Boot0007* Aelum (vda2)	HD(1,GPT,esp-partuuid,0x800,0x200000)/File(\EFI\refind\refind_x64.efi)`+"\n").
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, "ESP-PARTUUID\n")
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1", RootPart: "/dev/vda2"},
+	}
+	if err := registerRefindBootEntry(ctx); err != nil {
+		t.Fatalf("registerRefindBootEntry() = %v, want nil", err)
+	}
+	if bootOrderRan(rec) || bootCreateRan(rec) {
+		t.Fatalf("efibootmgr wrote the boot order or created an entry: %v", rec.CallsFor("efibootmgr"))
+	}
+}
+
+func TestRegisterRefindBootEntry_PromoteFails(t *testing.T) {
+	rec := primitivestest.NewRecorder().
+		OnArgsOutput([]string{"efibootmgr", "-v"}, nvramListing).
+		OnArgsOutput([]string{"blkid", "-s", "PARTUUID", "-o", "value", "/dev/vda1"}, "ESP-PARTUUID\n").
+		OnArgsError([]string{"efibootmgr", "--bootorder"}, errors.New("exit status 1"))
+	defer primitives.SetCommandRunner(rec)()
+
+	ctx := &shared.InstallContext{
+		DiskID:     "/dev/vda",
+		Partitions: &shared.PartitionInfo{EFIPart: "/dev/vda1", RootPart: "/dev/vda2"},
+	}
+	if err := registerRefindBootEntry(ctx); err == nil || !strings.Contains(err.Error(), "efibootmgr --bootorder failed") {
+		t.Fatalf("registerRefindBootEntry() error = %v, want efibootmgr failure", err)
+	}
+}
+
+// bootOrderRan reports whether the recorder saw an efibootmgr --bootorder call.
+func bootOrderRan(rec *primitivestest.Recorder) bool {
+	for _, argv := range rec.CallsFor("efibootmgr") {
+		if len(argv) > 1 && argv[1] == "--bootorder" {
+			return true
+		}
+	}
+	return false
+}
+
+// --- parseBootState / bootOrderWithFirst (pure) ------------------------------
+
+func TestParseBootState(t *testing.T) {
+	order, entry := parseBootState(nvramListing, "ESP-PARTUUID\n")
+	if entry != "0007" {
+		t.Errorf("parseBootState() entry = %q, want 0007", entry)
+	}
+	if got := strings.Join(order, ","); got != "0002,0007,0001" {
+		t.Errorf("parseBootState() order = %q, want 0002,0007,0001", got)
+	}
+
+	// A foreign ESP's PARTUUID identifies no entry here, but the order is still
+	// read — the create path needs both halves.
+	order, entry = parseBootState(nvramListing, "OTHER-PARTUUID")
+	if entry != "" {
+		t.Errorf("parseBootState() entry for a foreign PARTUUID = %q, want empty", entry)
+	}
+	if got := strings.Join(order, ","); got != "0002,0007,0001" {
+		t.Errorf("parseBootState() order = %q, want 0002,0007,0001", got)
+	}
+
+	// An unreadable PARTUUID matches nothing, so the caller creates an entry.
+	if _, entry = parseBootState(nvramListing, ""); entry != "" {
+		t.Errorf("parseBootState() entry without a PARTUUID = %q, want empty", entry)
+	}
+}
+
+func TestBootOrderWithFirst(t *testing.T) {
+	tests := []struct {
+		name    string
+		order   []string
+		bootnum string
+		want    string
+	}{
+		{"moves a later entry to the head", []string{"0002", "0007", "0001"}, "0007", "0007,0002,0001"},
+		{"an entry already first changes nothing", []string{"0007", "0002"}, "0007", "0007,0002"},
+		{"a later duplicate is dropped", []string{"0002", "0007", "0007"}, "0007", "0007,0002"},
+		{"an entry absent from the order is added", []string{"0002"}, "000a", "000a,0002"},
+		{"case is not significant", []string{"0002", "000A"}, "000a", "000a,0002"},
+	}
+	for _, tt := range tests {
+		got := strings.Join(bootOrderWithFirst(tt.order, tt.bootnum), ",")
+		if got != tt.want {
+			t.Errorf("%s: bootOrderWithFirst(%v, %q) = %q, want %q", tt.name, tt.order, tt.bootnum, got, tt.want)
+		}
+	}
+}
+
 // --- verifyBootloaderInstallation --------------------------------------------
 
 func TestVerifyBootloaderInstallation_Success(t *testing.T) {

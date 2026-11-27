@@ -110,6 +110,28 @@ A missing NVRAM entry is logged as a warning (the install still completes); the
 system remains bootable through the firmware boot menu or by selecting
 `EFI/refind/refind_x64.efi` manually.
 
+### Rebooting after an install comes back to the live ISO
+
+The installer registers the rEFInd entry and moves it to the head of the
+firmware's `BootOrder`, so the machine boots the new system rather than what it
+booted last. Both halves are best-effort — some firmware rejects `efibootmgr`
+writes outright — so check what the firmware actually holds:
+
+```bash
+efibootmgr -v
+# BootOrder must list the "Aelum (<root partition>)" entry first.
+# If it does not:  efibootmgr -o <aelum>,<...the rest...>
+```
+
+If the order is right and the medium still boots, the firmware is choosing the
+removable device itself; nothing written to NVRAM overrides that. Remove the
+installation medium before rebooting.
+
+In the QEMU test harness this is deliberate: `run-iso.sh` and `test-install.sh`
+promote the DVD entry on every ISO run, because OVMF boots strictly from
+`BootOrder` and ignores `-boot d`. Use `make -C docker run-disk` (or
+`scripts/boot-target.sh disk`) to boot an installed system.
+
 ### rEFInd does not show Arch (or another OS)
 
 rEFInd scans every readable ESP and volume, so other OSes on their own ESPs

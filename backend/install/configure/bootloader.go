@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -68,12 +69,13 @@ func ConfigureBootloader(ctx *shared.InstallContext) error {
 		fontIsHiDPI(mode, haveMode, "/sys/class/drm")); err != nil {
 		return err
 	}
-	// NVRAM registration is best-effort, mirroring systemd-boot's --graceful:
-	// some firmware (and some virtual machines) reject efibootmgr writes, but
-	// the installed system is still bootable via the firmware boot menu. Log the
-	// failure instead of failing an otherwise complete install.
+	// NVRAM registration and the boot-order promote are best-effort, mirroring
+	// systemd-boot's --graceful: some firmware (and some virtual machines) reject
+	// efibootmgr writes, but the installed system is still bootable via the
+	// firmware boot menu. Log the failure instead of failing an otherwise
+	// complete install.
 	if err := registerRefindBootEntry(ctx); err != nil && ctx.Logger != nil {
-		ctx.Logger.Error("Warning: could not register the rEFInd NVRAM boot entry (non-fatal): %v", err)
+		ctx.Logger.Error("Warning: could not register the rEFInd boot entry or set it first in the boot order (non-fatal): %v", err)
 	}
 	return verifyBootloaderInstallation(esp, ctx)
 }
@@ -459,19 +461,155 @@ func bootEntryOptions(ctx *shared.InstallContext) string {
 	return options
 }
 
-// registerRefindBootEntry adds (or leaves alone) the firmware boot entry for
-// rEFInd. efibootmgr runs in the live environment and writes the host's NVRAM,
-// exactly as archiso and bootctl do; it is not run inside arch-chroot.
+// registerRefindBootEntry makes the firmware boot the system this installer
+// just wrote: it adds the firmware entry for rEFInd when the firmware has none
+// for this ESP, then puts that entry at the head of the firmware's boot order.
+// efibootmgr runs in the live environment and writes the host's NVRAM, exactly
+// as archiso and bootctl do; it is not run inside arch-chroot.
+//
+// The promote is the half that matters on a reinstall. `efibootmgr --create`
+// orders the entry it makes for you, but when the entry already exists there is
+// nothing to create — and a reused ESP keeps its PARTUUID across the format, so
+// the previous install's entry still matches this ESP. Without the promote the
+// firmware keeps booting whatever it booted last, which with the installation
+// medium still plugged in is the live ISO rather than the new system.
 func registerRefindBootEntry(ctx *shared.InstallContext) error {
 	if ctx.Partitions == nil || ctx.Partitions.EFIPart == "" {
 		return fmt.Errorf("EFI partition path not set")
 	}
-	if refindNvramEntryExists(ctx.Partitions.EFIPart) {
+
+	out, err := primitives.Run("efibootmgr", "-v").Output()
+	if err != nil {
+		// An unreadable listing is not an empty one: fall through with nothing
+		// found so the create path still runs. Assuming "no entries" is the safe
+		// direction, for the reason parseBootState spells out.
+		out = nil
+	}
+	order, bootnum := parseBootState(string(out), espPartUUID(ctx.Partitions.EFIPart))
+
+	if bootnum == "" {
+		if bootnum, err = createRefindBootEntry(ctx); err != nil {
+			return err
+		}
+	}
+	return promoteBootEntry(bootnum, order)
+}
+
+// espPartUUID reads the ESP's partition UUID, or "" when it cannot be read.
+func espPartUUID(espPart string) string {
+	out, err := primitives.Run("blkid", "-s", "PARTUUID", "-o", "value", espPart).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// bootEntryRe matches the "Boot####" name efibootmgr gives a boot option, at
+// the head of an entry line in `efibootmgr -v` and at the head of the line
+// `efibootmgr --create` prints for the entry it just made. BootOrder,
+// BootCurrent and BootNext also start with "Boot" but never with four hex
+// digits, so they cannot be mistaken for an entry.
+var bootEntryRe = regexp.MustCompile(`(?i)^boot([0-9a-f]{4})`)
+
+// parseBootState reads the two things this step needs out of `efibootmgr -v`:
+// the firmware's current boot order, and the boot number of the entry belonging
+// to this ESP ("" when the firmware has none).
+//
+// The loader path alone is not enough to identify the entry: a dualboot machine
+// may have another rEFInd on a different ESP with the same
+// \EFI\refind\refind_x64.efi path. efibootmgr -v prints one line per entry and
+// each line carries that entry's own device path, so both signals must appear on
+// the same line: matching each against the whole output reads a foreign rEFInd
+// entry (right loader, wrong ESP) plus this ESP's PARTUUID on some other entry —
+// a stale Windows entry on the freshly formatted ESP, say — as "ours".
+//
+// An empty espPartUUID matches no line, so an unreadable PARTUUID always means
+// "create one". A duplicate firmware entry is a nuisance someone can undo with
+// efibootmgr; skipping the create on an unreadable PARTUUID leaves the install
+// with no Aelum entry in the boot order at all, and that failure is invisible
+// because registration is best-effort. Creating is the only safe default.
+func parseBootState(output, espPartUUID string) (order []string, entry string) {
+	loader := strings.ToLower(shared.RefindNvramLoader)
+	uuid := strings.ToLower(strings.TrimSpace(espPartUUID))
+	for _, raw := range strings.Split(output, "\n") {
+		line := strings.TrimSpace(raw)
+		if rest, ok := cutPrefixFold(line, "BootOrder:"); ok {
+			order = append(order, splitBootOrder(rest)...)
+			continue
+		}
+		if entry != "" || uuid == "" {
+			continue
+		}
+		lower := strings.ToLower(line)
+		if strings.Contains(lower, loader) && strings.Contains(lower, uuid) {
+			if m := bootEntryRe.FindStringSubmatch(lower); m != nil {
+				entry = m[1]
+			}
+		}
+	}
+	return order, entry
+}
+
+// cutPrefixFold splits line on a case-insensitive prefix and returns what
+// follows it. The BootOrder line is matched by name rather than lowercased with
+// everything else, so its value can keep the case efibootmgr printed.
+func cutPrefixFold(line, prefix string) (rest string, ok bool) {
+	if len(line) < len(prefix) || !strings.EqualFold(line[:len(prefix)], prefix) {
+		return "", false
+	}
+	return line[len(prefix):], true
+}
+
+// splitBootOrder turns efibootmgr's "0013,0002,0012" into its boot numbers.
+func splitBootOrder(value string) []string {
+	var order []string
+	for _, field := range strings.Split(value, ",") {
+		if num := strings.TrimSpace(field); num != "" {
+			order = append(order, num)
+		}
+	}
+	return order
+}
+
+// bootOrderWithFirst returns order with bootnum at the head and any later copy
+// of it dropped. Every other entry keeps its place: retiring a firmware entry
+// is not this step's decision, and an order that listed only Aelum would leave
+// the firmware nothing to fall back to if rEFInd itself failed to load.
+func bootOrderWithFirst(order []string, bootnum string) []string {
+	want := make([]string, 0, len(order)+1)
+	want = append(want, bootnum)
+	for _, num := range order {
+		if !strings.EqualFold(num, bootnum) {
+			want = append(want, num)
+		}
+	}
+	return want
+}
+
+// promoteBootEntry puts bootnum at the head of the firmware's boot order,
+// unless it is already there. An empty order means the firmware has no
+// BootOrder to reorder and is booting devices in its own order; writing one
+// that holds only this entry would leave no fallback, so it is left alone.
+func promoteBootEntry(bootnum string, order []string) error {
+	if bootnum == "" || len(order) == 0 || strings.EqualFold(order[0], bootnum) {
 		return nil
 	}
+	want := bootOrderWithFirst(order, bootnum)
+	out, err := primitives.Run("efibootmgr", "--bootorder", strings.Join(want, ",")).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("efibootmgr --bootorder failed: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// createRefindBootEntry adds the firmware entry for this ESP's rEFInd and
+// returns its boot number, or "" when efibootmgr's output named no entry.
+// efibootmgr already puts an entry it creates at the head of the boot order, so
+// an unparseable number costs the explicit promote and nothing else.
+func createRefindBootEntry(ctx *shared.InstallContext) (string, error) {
 	partNum := partitionNumber(ctx.DiskID, ctx.Partitions.EFIPart)
 	if partNum <= 0 {
-		return fmt.Errorf("could not derive the ESP partition number from %s", ctx.Partitions.EFIPart)
+		return "", fmt.Errorf("could not derive the ESP partition number from %s", ctx.Partitions.EFIPart)
 	}
 	out, err := primitives.Run(
 		"efibootmgr",
@@ -482,44 +620,13 @@ func registerRefindBootEntry(ctx *shared.InstallContext) error {
 		"--label", shared.RefindEntryTitle(ctx.Partitions.RootPart),
 	).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("efibootmgr --create failed: %w: %s", err, strings.TrimSpace(string(out)))
+		return "", fmt.Errorf("efibootmgr --create failed: %w: %s", err, strings.TrimSpace(string(out)))
 	}
-	return nil
-}
-
-// refindNvramEntryExists reports whether the firmware already has a boot entry
-// pointing at this ESP's rEFInd binary. Re-creating it on every reinstall would
-// pile up duplicate entries. The loader path alone is not enough to identify the
-// entry: a dualboot machine may have another rEFInd on a different ESP with the
-// same \EFI\refind\refind_x64.efi path. efibootmgr -v prints one line per entry
-// and each line carries that entry's own device path, so both signals must
-// appear on the same line: matching each against the whole output reads a
-// foreign rEFInd entry (right loader, wrong ESP) plus this ESP's PARTUUID on
-// some other entry — a stale Windows entry on the freshly formatted ESP, say —
-// as "ours" and silently skips the create.
-//
-// When the ESP's PARTUUID cannot be read, the entry counts as missing and the
-// caller creates one. A duplicate firmware entry is a nuisance someone can
-// undo with efibootmgr; skipping on an unreadable PARTUUID leaves the install
-// with no Aelum entry in the boot order at all, and that failure is invisible
-// because registration is best-effort. Creating is the only safe default.
-func refindNvramEntryExists(espPart string) bool {
-	out, err := primitives.Run("efibootmgr", "-v").Output()
-	if err != nil {
-		return false
+	first := strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
+	if m := bootEntryRe.FindStringSubmatch(strings.ToLower(first)); m != nil {
+		return m[1], nil
 	}
-	partUUID, err := primitives.Run("blkid", "-s", "PARTUUID", "-o", "value", espPart).Output()
-	if err != nil || strings.TrimSpace(string(partUUID)) == "" {
-		return false
-	}
-	loader := strings.ToLower(shared.RefindNvramLoader)
-	uuid := strings.ToLower(strings.TrimSpace(string(partUUID)))
-	for _, line := range strings.Split(strings.ToLower(string(out)), "\n") {
-		if strings.Contains(line, loader) && strings.Contains(line, uuid) {
-			return true
-		}
-	}
-	return false
+	return "", nil
 }
 
 // partitionNumber extracts the partition number from an existing device path by
